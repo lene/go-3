@@ -51,7 +51,7 @@ archive:
 	tar zcf $(ARCHIVE) *.java *.class *.form JavaDoc Makefile TO-DO # HISTORY
 
 jar:	
-	@echo "not yet implemented"
+	jar cf GoGrid.jar *.class
 
 javadoc:	
 	javadoc -d JavaDoc -author -version -private -breakiterator *.java
