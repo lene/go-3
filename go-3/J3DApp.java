@@ -506,49 +506,138 @@ public class J3DApp extends JApplet implements ActionListener {
 									   JOptionPane.INFORMATION_MESSAGE );
 	}
 	
+	/** 
+		add a menu to a JMenuBar
+		@param menuBar
+		@param menuTitle
+		@param mnemonic
+		@param description
+		@return the added menu
+	*/
+	private JMenu addMenu (JMenuBar menuBar, String menuTitle, int mnemonic, String description) {
+		JMenu menu = new JMenu(menuTitle);
+		if (mnemonic != 0) 
+			menu.setMnemonic(mnemonic);
+		menu.getAccessibleContext().setAccessibleDescription(description);
+		menuBar.add(menu);
+
+		return menu;
+	}
+
+	/** 
+		add a JMenuItem to a JMenu
+		@param menu
+		@param ItemTitle
+		@param mnemonic
+		@param description
+		@param enabled
+		@return the added menu
+	*/
+	private void addMenuItem (JMenu menu, String itemTitle, int mnemonic, int actionMask, String description, boolean enabled) {
+		JMenuItem menuItem = new JMenuItem(itemTitle);
+		if (mnemonic != 0)
+			menuItem.setAccelerator(KeyStroke.getKeyStroke(mnemonic, actionMask));
+		menuItem.getAccessibleContext().setAccessibleDescription(description);
+		menuItem.addActionListener(this);
+		menuItem.setEnabled(enabled);
+        menu.add(menuItem);
+	}
+	
 	/**
 		set up the menu structure
 	*/
 	JMenuBar setupMenu () {
 	//Where the GUI is created:
 		JMenuBar menuBar = new JMenuBar();
-		JMenu menu = new JMenu("File");
-		menu.setMnemonic(KeyEvent.VK_F);
-		menu.getAccessibleContext().setAccessibleDescription(
-	    													 "The only menu in this program that has menu items");
-		menuBar.add(menu);
+		
+		JMenu menu = addMenu (menuBar, "File", KeyEvent.VK_F, 
+							  "The only menu in this program that has menu items");
+		addMenuItem (menu, "Connect", 
+					 KeyEvent.VK_C, ActionEvent.ALT_MASK, 
+					 "This doesn't really do anything yet", false);
+		addMenuItem (menu, "Quit", 
+					 KeyEvent.VK_Q, ActionEvent.CTRL_MASK, 
+					 "Exit the Program", true);
+		
+		menu = addMenu (menuBar, "Navigation", KeyEvent.VK_N, 
+							  "Rotating and moving the board; setting stones");
+		addMenuItem (menu, "Cursor down one in x", 
+					 KeyEvent.VK_X, 0, 
+					 "Decrease X Coordinate of cursor by 1", false);
+		addMenuItem (menu, "Cursor up one in x", 
+					 KeyEvent.VK_X, ActionEvent.SHIFT_MASK, 
+					 "Increase X Coordinate of cursor by 1", false);
+		addMenuItem (menu, "Cursor down one in y", 
+					 KeyEvent.VK_Y, 0, 
+					 "Decrease Y Coordinate of cursor by 1", false);
+		addMenuItem (menu, "Cursor up one in y", 
+					 KeyEvent.VK_Y, ActionEvent.SHIFT_MASK, 
+					 "Increase Y Coordinate of cursor by 1", false);
+		addMenuItem (menu, "Cursor down one in z", 
+					 KeyEvent.VK_Z, 0, 
+					 "Decrease Z Coordinate of cursor by 1", false);
+		addMenuItem (menu, "Cursor up one in z", 
+					 KeyEvent.VK_Z, ActionEvent.SHIFT_MASK, 
+					 "Increase Z Coordinate of cursor by 1", false);
+		menu.addSeparator ();
+		addMenuItem (menu, "Rotate right 5°", 
+					 KeyEvent.VK_RIGHT, 0,
+					 "Rotate 5 degrees in positive x direction (right)", false);
+		addMenuItem (menu, "Rotate left 5°", 
+					 KeyEvent.VK_LEFT, 0,
+					 "Rotate 5 degrees in negative x direction (left)", false);
+		addMenuItem (menu, "Rotate up 5°", 
+					 KeyEvent.VK_UP, 0,
+					 "Rotate 5 degrees in positive y direction (up)", false);
+		addMenuItem (menu, "Rotate left 5°", 
+					 KeyEvent.VK_DOWN, 0,
+					 "Rotate 5 degrees in negative y direction (down)", false);
+		menu.addSeparator ();
+		addMenuItem (menu, "Rotate right 1°", 
+					 KeyEvent.VK_RIGHT, ActionEvent.ALT_MASK,
+					 "Rotate 1 degrees in positive x direction (right)", false);
+		addMenuItem (menu, "Rotate left 1°", 
+					 KeyEvent.VK_LEFT, ActionEvent.ALT_MASK,
+					 "Rotate 1 degrees in negative x direction (left)", false);
+		addMenuItem (menu, "Rotate up 1°", 
+					 KeyEvent.VK_UP, ActionEvent.ALT_MASK,
+					 "Rotate 1 degrees in positive y direction (up)", false);
+		addMenuItem (menu, "Rotate left 1°", 
+					 KeyEvent.VK_DOWN, ActionEvent.ALT_MASK,
+					 "Rotate 1 degrees in negative y direction (down)", false);
+		menu.addSeparator ();
+		addMenuItem (menu, "Rotate right 45°", 
+					 KeyEvent.VK_RIGHT, ActionEvent.SHIFT_MASK,
+					 "Rotate 45 degrees in positive x direction (right)", false);
+		addMenuItem (menu, "Rotate left 45°", 
+					 KeyEvent.VK_LEFT, ActionEvent.SHIFT_MASK,
+					 "Rotate 45 degrees in negative x direction (left)", false);
+		addMenuItem (menu, "Rotate up 45°", 
+					 KeyEvent.VK_UP, ActionEvent.SHIFT_MASK,
+					 "Rotate 45 degrees in positive y direction (up)", false);
+		addMenuItem (menu, "Rotate left 45°", 
+					 KeyEvent.VK_DOWN, ActionEvent.SHIFT_MASK,
+					 "Rotate 45 degrees in negative y direction (down)", false);
+		menu.addSeparator ();
+		addMenuItem (menu, "Default position", 
+					 KeyEvent.VK_NUMPAD5, 0,
+					 "Reset board to default position", false);
+		
+		
+		menu = addMenu (menuBar, "Help", KeyEvent.VK_H, 
+							  "Rudimentary documentation about the program");
 
-		JMenuItem menuItem = new JMenuItem("Connect");
-		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, ActionEvent.ALT_MASK));
-		menuItem.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
-		menuItem.addActionListener(this);
-		menuItem.setEnabled(false);
-        menu.add(menuItem);
-		
-		menuItem = new JMenuItem("Quit",
-								 KeyEvent.VK_Q);
-		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
-		menuItem.getAccessibleContext().setAccessibleDescription("Exit the Program");
-		menuItem.addActionListener(this);
-        menu.add(menuItem);
-		
-		menu = new JMenu ("Help");
-		menu.setMnemonic(KeyEvent.VK_H);
-		menu.getAccessibleContext().setAccessibleDescription("Rudimentary documentation about the program");
-		menuBar.add(menu);
-		
-		menuItem = new JMenuItem("About", KeyEvent.VK_A);
-		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, ActionEvent.ALT_MASK));
-		menuItem.getAccessibleContext().setAccessibleDescription("About the Program");
-		menuItem.addActionListener(this);
-        menu.add(menuItem);
-		
+		addMenuItem (menu, "About", 
+					 KeyEvent.VK_A, ActionEvent.ALT_MASK,
+					 "About the Program", true);
+			
 		return menuBar;
 	}
 	
 	private void about () {
 		JOptionPane.showMessageDialog (this,
-									   "dummy message",
+									   "Sorry, there is no help available apart from\n"+
+									   "what you can deduce from the menu structure.",
 									   "About Go³",
 									   JOptionPane.INFORMATION_MESSAGE );	
 	}
