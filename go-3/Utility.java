@@ -7,7 +7,15 @@ class OutsideGridException extends IllegalArgumentException {
 }
 
 class Utility {
-    static boolean DEBUG = true;
+    private static boolean DEBUG = true;
+	
+	static void setDebugMode (boolean debug) {
+		DEBUG = debug;
+	}
+	
+	static boolean getDebugMode () {
+		return DEBUG;
+	}
 
     static String getArg (String input, int field) {
 	String [] fields = input.trim ().split ("\\s");         //  split input string at whitespace 

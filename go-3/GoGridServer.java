@@ -6,15 +6,17 @@ import java.util.Vector;
 class GoGridServer extends GoGrid {
 
     public GoGridServer (int size) {
-	super (size);
+		super (size);
+	
+		Utility.setDebugMode (false);
 
-	setupBoard ();                                          //  initialize board structure
+		setupBoard ();                                          //  initialize board structure
+	
+		reserveVectors ();              	                //  get storage space for client data
 
-	reserveVectors ();              	                //  get storage space for client data
+		setupConnections ();
 
-	setupConnections ();
-
-	if (true) startGame ();
+		if (true) startGame ();
     }
 
 

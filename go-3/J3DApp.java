@@ -50,6 +50,8 @@ public class J3DApp extends JApplet implements ActionListener {
 
 		//	new StartupDialog (null, true, this).show ();
 
+		Utility.setDebugMode (false);
+		
 		setHostname (hostname);
 		setBoardSize (size);
 
@@ -560,7 +562,7 @@ public class J3DApp extends JApplet implements ActionListener {
 					 "Exit the Program", true);
 		
 		menu = addMenu (menuBar, "Navigation", KeyEvent.VK_N, 
-							  "Rotating and moving the board; setting stones");
+							  "Rotating and moving the board");
 		addMenuItem (menu, "Cursor down one in x", 
 					 KeyEvent.VK_X, 0, 
 					 "Decrease X Coordinate of cursor by 1", false);
@@ -623,6 +625,14 @@ public class J3DApp extends JApplet implements ActionListener {
 					 KeyEvent.VK_NUMPAD5, 0,
 					 "Reset board to default position", false);
 		
+		menu = addMenu (menuBar, "Setting", KeyEvent.VK_N, 
+						"Setting stones");
+		addMenuItem (menu, "Set", 
+					 KeyEvent.VK_SPACE, 0, 
+					 "Set a stone at the current cursor location", false);
+		addMenuItem (menu, "Show Liberties", 
+					 KeyEvent.VK_L, ActionEvent.CTRL_MASK,
+					 "Query liberties of grid point under cursor", false);
 		
 		menu = addMenu (menuBar, "Help", KeyEvent.VK_H, 
 							  "Rudimentary documentation about the program");

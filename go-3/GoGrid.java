@@ -162,14 +162,14 @@ abstract class GoGrid {
        print the grid, all z values in a row, x and y values stacked
     */
     protected void printGrid () {
-	for (int x = 1; x <= getBoardSize (); x++) {
-	    for (int y = 1; y <= getBoardSize (); y++) {
-		for (int z = 1; z <= getBoardSize (); z++) 
-		    System.out.print(stones[x][y][z]);
-		System.out.println();
-	    }
-	    System.out.println();
-	}
+		for (int x = 1; x <= getBoardSize (); x++) {
+		    for (int y = 1; y <= getBoardSize (); y++) {
+				for (int z = 1; z <= getBoardSize (); z++) 
+				    System.out.print(stones[x][y][z]);
+				System.out.println();
+		    }
+		    System.out.println();
+		}
     }   
 
 

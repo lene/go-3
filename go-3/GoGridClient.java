@@ -370,7 +370,7 @@ class GoGridClient extends GoGrid {
 	}
 
 	if (parent != null) parent.repaint ();
-	printGrid ();
+	if (Utility.getDebugMode ()) printGrid ();
 	Utility.debug ("done");
     }
 
@@ -448,57 +448,57 @@ class GoGridClient extends GoGrid {
     */
     protected void updateBoard (int xsize, int ysize, int zsize) {
 	
-	Utility.debug (""+xsize+"x"+ysize+"x"+zsize+" box");
+		Utility.debug (""+xsize+"x"+ysize+"x"+zsize+" box");
 
-	if (xsize != getBoardSize () || ysize != getBoardSize () || zsize != getBoardSize ()) {	    
-	    setBoardSize (Math.max (xsize, Math.max (ysize, zsize)));
-	}
+		if (xsize != getBoardSize () || ysize != getBoardSize () || zsize != getBoardSize ()) {	    
+	    	setBoardSize (Math.max (xsize, Math.max (ysize, zsize)));
+		}
 
-	int xread, yread, zread, color;
-	String input = new String ();
+		int xread, yread, zread, color;
+		String input = new String ();
 	
-	commandThread.undefineStatus ();
-	while (! commandThread.statusDefined ())
-	    Utility.sleep (10);
-	input = commandThread.lastMessage ();
-	/*
-	try {
-	    input = in.readLine ();
-	} catch (IOException e) {
-	    Utility.warning ("GoGridClient.updateBoard (): error reading line from socket!");
-	}
-	*/
-	Utility.debug (input);
+		commandThread.undefineStatus ();
+		while (! commandThread.statusDefined ())
+		    Utility.sleep (10);
+		input = commandThread.lastMessage ();
+		/*
+		try {
+		    input = in.readLine ();
+		} catch (IOException e) {
+		    Utility.warning ("GoGridClient.updateBoard (): error reading line from socket!");
+		}
+		*/
+		Utility.debug (input);
 
-	if (! input.startsWith ("stones")) {
-	    Utility.bitch (new Throwable ("bad board description line: "+input));
-	    return;
-	}
+		if (! input.startsWith ("stones")) {
+		    Utility.bitch (new Throwable ("bad board description line: "+input));
+	    	return;
+		}
 
-	for (int i = 0; i < xsize*ysize*zsize; i++) {
+		for (int i = 0; i < xsize*ysize*zsize; i++) {
+	
+		    try {
+				color = Integer.parseInt (Utility.getArg (input, 2+i*4));
+				xread = Integer.parseInt (Utility.getArg (input, 3+i*4));
+				yread = Integer.parseInt (Utility.getArg (input, 4+i*4));
+				zread = Integer.parseInt (Utility.getArg (input, 5+i*4));
+	    	} catch (NumberFormatException e) {
+				Utility.warning ("GoGridClient.updateBoard (): NumberFormatException: "+input);
+				continue;
+		    }
 
-	    try {
-		color = Integer.parseInt (Utility.getArg (input, 2+i*4));
-		xread = Integer.parseInt (Utility.getArg (input, 3+i*4));
-		yread = Integer.parseInt (Utility.getArg (input, 4+i*4));
-		zread = Integer.parseInt (Utility.getArg (input, 5+i*4));
-	    } catch (NumberFormatException e) {
-		Utility.warning ("GoGridClient.updateBoard (): NumberFormatException: "+input);
-		continue;
-	    }
+		    try {
+				stones[xread][yread][zread] = color;
+		    }
+		    catch (ArrayIndexOutOfBoundsException e) {
+				Utility.warning ("GoGridClient.updateBoard (): ArrayIndexOutOfBoundsException: "
+							    +"("+xread+", "+yread+", "+zread+")");
+				continue;
+		    }
+		}
 
-	    try {
-		stones[xread][yread][zread] = color;
-	    }
-	    catch (ArrayIndexOutOfBoundsException e) {
-		Utility.warning ("GoGridClient.updateBoard (): ArrayIndexOutOfBoundsException: "
-				 +"("+xread+", "+yread+", "+zread+")");
-		continue;
-	    }
-	}
-
-	if (parent != null) parent.repaint ();
-	Utility.debug ("done");
+		if (parent != null) parent.repaint ();
+		Utility.debug ("done");
     }
 
 
@@ -506,7 +506,7 @@ class GoGridClient extends GoGrid {
        exit cleanly
     */
     protected void exit () {
-	System.exit (0);
+		System.exit (0);
     }
 
 
@@ -544,13 +544,13 @@ class GoGridClient extends GoGrid {
 
 
     public static void main (String args[]) {
-	int s;
-	if (args.length == 0) s = 5;
-	else s = Integer.parseInt(args[0]);
-	String h;
-	if (args.length <= 1) h = new String ("localhost");
-	else h = args[1];
-	GoGridClient client = new GoGridClient (s, h, null);
+		int s;
+		if (args.length == 0) s = 5;
+		else s = Integer.parseInt(args[0]);
+		String h;
+		if (args.length <= 1) h = new String ("localhost");
+		else h = args[1];
+		GoGridClient client = new GoGridClient (s, h, null);
     }
 }
 
