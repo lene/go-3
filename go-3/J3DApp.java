@@ -13,7 +13,17 @@ import javax.vecmath.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Enumeration;
-import java.applet.Applet;
+// import java.applet.Applet;
+
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.JMenuItem;
+import javax.swing.JMenuBar;
+import javax.swing.JMenu;
+import javax.swing.KeyStroke;
+import javax.swing.JFrame;
+import javax.swing.JApplet;
+
 
 /**
  * class J3DApp represents 
@@ -29,7 +39,7 @@ import java.applet.Applet;
        <li>do i really need all the imports here?
    </ul>
 */
-public class J3DApp extends Applet {
+public class J3DApp extends JApplet implements ActionListener {
     
     /**
        Constructor for known size of the grid and hostname of the server
@@ -38,32 +48,36 @@ public class J3DApp extends Applet {
      */
     public J3DApp (int size, String hostname) {
 
-	//	new StartupDialog (null, true, this).show ();
+		//	new StartupDialog (null, true, this).show ();
 
-	setHostname (hostname);
-	setBoardSize (size);
+		setHostname (hostname);
+		setBoardSize (size);
 
-	G = new GoGridClient (size, hostname, this);
+		G = new GoGridClient (size, hostname, this);
 
-	//  for some reason known only to the designers of Java3D, this is necessary
-	setLayout (new BorderLayout());				
+		//  for some reason known only to the designers of Java3D, this is necessary
+		getContentPane ().setLayout (new BorderLayout());				
 
-	//  create a Canvas3D to perform all subsequent drawing on
-	C = new Canvas3D (SimpleUniverse.getPreferredConfiguration());
-	add ("Center", C);
-	U = new SimpleUniverse (C);
+		JPopupMenu.setDefaultLightWeightPopupEnabled(false);
+		getContentPane ().add ("North", setupMenu ());
+		
+		//  create a Canvas3D to perform all subsequent drawing on
+		C = new Canvas3D (SimpleUniverse.getPreferredConfiguration());
+		getContentPane ().add ("Center", C);
+		U = new SimpleUniverse (C);
 
-	// Create a simple scene and attach it to the virtual universe
-	BranchGroup scene = createSceneGraph (U);
+		// Create a simple scene and attach it to the virtual universe
+		BranchGroup scene = createSceneGraph (U);
 
-	scene.compile ();
+		scene.compile ();
 	
-	//  create a SimpleUniverse with a reference to C
-	//  move the ViewPlatform back a bit
-	U.getViewingPlatform ().setNominalViewingTransform ();
+		//  create a SimpleUniverse with a reference to C
+		//  move the ViewPlatform back a bit
+		U.getViewingPlatform ().setNominalViewingTransform ();
 
-	U.addBranchGraph (scene);
-    }
+		U.addBranchGraph (scene);
+	
+		}
 
     
     /**
@@ -469,7 +483,98 @@ public class J3DApp extends Applet {
 	points.setCoordinate (0, new Point3f (0.f, 0.f, 0.f));
     }	
 
-    
+	/** 
+		calculate the number of liberties the caller has at a given point
+		@param x
+		@param y
+		@param z
+		@param current the player whose liberties are checked
+		@param shortCut 
+		@return number of liberties
+	*/
+    private int Liberty (int x, int y, int z, int current, boolean shortCut) {
+		return G.Liberty (x, y, z,  current, shortCut);
+	}
+
+	/**
+		display the number of liberties at the current cursor position
+	*/
+	void Liberty () {
+		JOptionPane.showMessageDialog (this,
+									   new Integer (Liberty (xc (), yc (), zc (), G.getCurrentPlayer (), false)),
+									   "Liberties at...",
+									   JOptionPane.INFORMATION_MESSAGE );
+	}
+	
+	/**
+		set up the menu structure
+	*/
+	JMenuBar setupMenu () {
+	//Where the GUI is created:
+		JMenuBar menuBar = new JMenuBar();
+		JMenu menu = new JMenu("File");
+		menu.setMnemonic(KeyEvent.VK_F);
+		menu.getAccessibleContext().setAccessibleDescription(
+	    													 "The only menu in this program that has menu items");
+		menuBar.add(menu);
+
+		JMenuItem menuItem = new JMenuItem("Connect");
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, ActionEvent.ALT_MASK));
+		menuItem.getAccessibleContext().setAccessibleDescription("This doesn't really do anything");
+		menuItem.addActionListener(this);
+		menuItem.setEnabled(false);
+        menu.add(menuItem);
+		
+		menuItem = new JMenuItem("Quit",
+								 KeyEvent.VK_Q);
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
+		menuItem.getAccessibleContext().setAccessibleDescription("Exit the Program");
+		menuItem.addActionListener(this);
+        menu.add(menuItem);
+		
+		menu = new JMenu ("Help");
+		menu.setMnemonic(KeyEvent.VK_H);
+		menu.getAccessibleContext().setAccessibleDescription("Rudimentary documentation about the program");
+		menuBar.add(menu);
+		
+		menuItem = new JMenuItem("About", KeyEvent.VK_A);
+		menuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_A, ActionEvent.ALT_MASK));
+		menuItem.getAccessibleContext().setAccessibleDescription("About the Program");
+		menuItem.addActionListener(this);
+        menu.add(menuItem);
+		
+		return menuBar;
+	}
+	
+	private void about () {
+		JOptionPane.showMessageDialog (this,
+									   "dummy message",
+									   "About Go³",
+									   JOptionPane.INFORMATION_MESSAGE );	
+	}
+	
+	/**
+		implementation of actionPerformed for interface ActionListener
+		
+	*/    
+	public void actionPerformed(ActionEvent e) {
+        JMenuItem source = (JMenuItem)(e.getSource());
+        String text = source.getText();
+		if (text == "Quit")
+			exit ();
+		
+		if (text == "About") {
+			about ();
+			return;
+		}
+		
+		JOptionPane.showMessageDialog (this,
+									   text,
+									   "Action Event",
+									   JOptionPane.INFORMATION_MESSAGE );
+    }
+
+
     ////////////////////////////////////////////////////////////////////////////
     //                                                                        //
     //          VARIABLES SECTION STARTS                                      //
@@ -672,7 +777,7 @@ public class J3DApp extends Applet {
     }
 
     
-    /**
+	/**
        main method; allows this class to be run as an application as well as an
        applet
     */
@@ -681,7 +786,10 @@ public class J3DApp extends Applet {
 
 	J3DApp game = new J3DApp (s, h);
 	Frame frame = new MainFrame (game, 600, 600);
-	
+/*	JFrame jFrame = new JFrame (frame.getGraphicsConfiguration ());
+	jFrame.setJMenuBar (game.setupMenu ());
+	jFrame.setContentPane ();
+	*/
 	for (int i = 0; i < m; i++) {
 	    game.fakeGame (2, Colour.BLACK);
 	    game.repaint ();

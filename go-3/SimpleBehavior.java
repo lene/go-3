@@ -98,17 +98,23 @@ class SimpleBehavior extends Behavior {
 				                        angleY += delta;    	break;
 			    case KeyEvent.VK_NUMPAD5:   angleX = 0; angleY = 0;	break;
 				                                //  setting a stone
-			    case KeyEvent.VK_SPACE:	J.setStone ();		break;
+			    case KeyEvent.VK_SPACE:		J.setStone ();
+											break;
 				                                //  moving the cursor
 			    case KeyEvent.VK_X:	    	xc += (eventKey.isShiftDown ()? 1: -1);
-				                                                break;
+				                            break;
 			    case KeyEvent.VK_Y:	    	yc += (eventKey.isShiftDown ()? 1: -1);
-				                                                break;
+				                            break;
 			    case KeyEvent.VK_Z:	    	zc += (eventKey.isShiftDown ()? 1: -1);
-				                                                break;
+				                            break;
 								//
-			    case KeyEvent.VK_Q:	    	if (eventKey.isControlDown ())
-				                           J.exit ();           break;
+			    case KeyEvent.VK_L:	    	if (eventKey.isControlDown ())
+												J.Liberty ();
+				                            break;
+			    
+				case KeyEvent.VK_Q:	    	if (eventKey.isControlDown ())
+												J.exit ();
+											break;
 										
 			    default:  						break;
 			    }
