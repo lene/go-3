@@ -44,13 +44,10 @@ distclean: clean
 $(TARGET): $(OBJECTS)
 	$(JAVAC) $(OBJECTS) -o $(TARGET)
 
-help:	
-	@echo "not yet implemented"
-
 archive: 
 	tar zcf $(ARCHIVE) *.java *.class *.form JavaDoc Makefile TO-DO # HISTORY
 
-jar:	
+jar: all
 	jar cf GoGrid.jar *.class
 
 javadoc:	
