@@ -1,9 +1,14 @@
-CFLAGS  = 
-LFLAGS  = 
-JAVAC   = javac
-A2PS    = a2ps
-ARCHIVE = go3d.`date +%y%m%d`.tar.gz
-CLIENT  = J3DApp.java
+I         = /opt/sun-java3d-bin/lib
+CLASSPATH = .:/usr/share/sun-java3d-bin/lib/vecmath.jar:/usr/share/sun-java3d-bin/lib/j3dutils.jar:/usr/share/sun-java3d-bin/lib/j3dcore.jar
+CFLAGS    = -Xlint:unchecked -cp $(CLASSPATH)
+LFLAGS    = 
+JAVAC     = javac 
+A2PS      = a2ps
+ARCHIVE   = go3d.`date +%y%m%d`.tar.gz
+
+
+SERVER    = GoGridServer.java
+CLIENT    = J3DApp.java
 
 ########  files
 
@@ -15,6 +20,16 @@ CLIENT  = J3DApp.java
 
 .java.class:
 	$(JAVAC) $(CFLAGS) $<
+
+
+SERVER_SOURCES = Colour.java GoGrid.java GoGridProtocol.java GoGridServer.java \
+		 Utility.java
+CLIENT_SOURCES = Colour.java Cursor.java CursorBehavior.java DisplayAttributes.java \
+		 Exchange.java GoGrid.java GoGridClient.java GoGridProtocol.java \
+		 Grid.java GridObject.java Handicap.java IntersectInfoBehavior.java \
+		 J3DApp.java SimpleBehavior.java Stone.java Utility.java
+UNUSED_SOURCES = SettingsDialog.java StartupDialog.java		
+
 
 ########  build rules
 
@@ -53,12 +68,13 @@ jar: all
 javadoc:	
 	javadoc -d JavaDoc -author -version -private -breakiterator *.java
 
-server:	
-	javac GoGridServer.java
+server:	$(SERVER_SOURCES)
+	$(JAVAC) $(CFLAGS) $(SERVER)
 	@echo "Start the server with \"java GoGridServer\""
 
-client: 
+client: $(CLIENT_SOURCES)
 	$(JAVAC) $(CFLAGS) $(CLIENT)
+	@echo "Start client with \"java -Djava.library.path=$(I) -cp $(CLASSPATH) J3DApp\""
 
 all: server client
 
