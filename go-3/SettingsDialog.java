@@ -143,7 +143,7 @@ class SettingsDialog extends javax.swing.JDialog {
     * @param args the command line arguments
     */
     public static void main(String args[]) {
-        new SettingsDialog(new javax.swing.JFrame(), true).show();
+        new SettingsDialog(new javax.swing.JFrame(), true, null).setVisible (true);
     }
 
 

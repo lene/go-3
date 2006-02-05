@@ -1,17 +1,15 @@
 //
 
 import javax.media.j3d.*;
-import com.sun.j3d.utils.universe.*;
-import com.sun.j3d.utils.geometry.*;
-import com.sun.j3d.utils.applet.MainFrame;
-import com.sun.j3d.utils.behaviors.keyboard.*;
-import com.sun.j3d.utils.behaviors.mouse.*;
-import com.sun.j3d.utils.picking.PickTool;
+//import com.sun.j3d.utils.universe.*;
+//import com.sun.j3d.utils.geometry.*;
+//import com.sun.j3d.utils.applet.MainFrame;
+//import com.sun.j3d.utils.behaviors.keyboard.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Enumeration;
-import javax.vecmath.*;
-import java.applet.Applet;
+//import javax.vecmath.*;
+//import java.applet.Applet;
 
 //
 

@@ -2,14 +2,11 @@
 //
 
 import javax.media.j3d.*;
-import com.sun.j3d.utils.behaviors.keyboard.*;
-import com.sun.j3d.utils.behaviors.mouse.*;
 //import com.sun.j3d.utils.picking.PickTool;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.Enumeration;
 import javax.vecmath.*;
-import java.applet.Applet;
 
 //
 
@@ -65,10 +62,10 @@ class SimpleBehavior extends Behavior {
 			    /*
 			    Utility.debug (" before:  c_x = "+cosX+
 					   " s_x = "+sinX);
-			    Utility.debug ("          a_x = "+Math.toDegrees (angleX)+"°");
+			    Utility.debug ("          a_x = "+Math.toDegrees (angleX)+"?");
 			    Utility.debug ("          c_y = "+cosY+
 					   " s_y = "+sinY);
-			    Utility.debug ("          a_y = "+Math.toDegrees (angleY)+"°");
+			    Utility.debug ("          a_y = "+Math.toDegrees (angleY)+"?");
 			    */
 			    if (eventKey.isShiftDown ()) {
 				delta *= 9;
@@ -128,10 +125,10 @@ class SimpleBehavior extends Behavior {
 				/*
 				Utility.debug (" after:  c_x = "+Math.cos (angleX)+
 					       "         s_x = "+Math.sin (angleX));
-				Utility.debug ("         a_x = "+Math.toDegrees (angleX)+"°");
+				Utility.debug ("         a_x = "+Math.toDegrees (angleX)+"?");
 				Utility.debug ("         c_y = "+Math.cos(angleY)+
 					       "         s_y = "+Math.sin (angleY));
-				Utility.debug ("         a_y = "+Math.toDegrees (angleY)+"°");
+				Utility.debug ("         a_y = "+Math.toDegrees (angleY)+"?");
 				*/
 			    }
 			}

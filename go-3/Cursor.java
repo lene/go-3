@@ -1,16 +1,11 @@
 
-//
-
 import javax.media.j3d.*;
-import com.sun.j3d.utils.universe.*;
+//import com.sun.j3d.utils.universe.*;
 import com.sun.j3d.utils.geometry.Primitive;
 import com.sun.j3d.utils.geometry.Sphere;
-import com.sun.j3d.utils.applet.MainFrame;
-import java.awt.*;
+//import com.sun.j3d.utils.applet.MainFrame;
+//import java.awt.*;
 import javax.vecmath.*;
-import java.applet.Applet;
-
-//
 
 
 public class Cursor extends Sphere {

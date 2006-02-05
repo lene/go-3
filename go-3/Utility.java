@@ -38,7 +38,7 @@ class Utility {
     static void sleep (int msec) {
 	try {
 	    Thread t = new Thread ();
-	    t.sleep (msec);
+	    Thread.sleep (msec);
 	    t.join (msec);
 	} catch (InterruptedException e) { }
     }
