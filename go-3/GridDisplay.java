@@ -12,6 +12,7 @@ import java.awt.*;
 import java.awt.event.*;
 // import java.applet.Applet;
 
+import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
@@ -886,7 +887,7 @@ public class GridDisplay extends JApplet implements ActionListener {
       u = System.getProperty ("user.name")+"@"+addr.getHostName();
     } catch (UnknownHostException e) {
     	u = System.getProperty ("user.name");
-    }
+    }    
   
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].equals("-s") || args[i].equals("--board-size")) {
@@ -931,6 +932,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	public static void main (String[] args) {
 		parse (args);
+		
+		ConnectionDialog conn = new ConnectionDialog (s,h,p,u);
 		
 		GridDisplay game = new GridDisplay (s, h, p, u);
 		Frame frame = new MainFrame (game, 600, 600);
