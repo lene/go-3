@@ -35,13 +35,18 @@ public class ConnectionDialog extends javax.swing.JDialog {
 	private int serverPort = 6666;
 	private String username = "";
 	private int boardSize = 3;
-
-	public ConnectionDialog(int s, String h, int p, String u) {
-		super((Frame)null, "", true);
-		this.boardSize = s;
-		this.serverHost = h;
-		this.serverPort = p;
-		this.username = u;
+//	private GridDisplay parent;
+	private ConnectionData connectionData;
+	
+	public ConnectionDialog(ConnectionData c) {
+//		super((Frame)null, "", true);
+		super ();
+		this.connectionData = c;
+		this.boardSize = c.getBoardSize();
+		this.serverHost = c.getServerHost();
+		this.serverPort = c.getServerPort();
+		this.username = c.getUsername();
+//		this.parent = parent;
 		
 		initialize();
 	}
@@ -55,22 +60,17 @@ public class ConnectionDialog extends javax.swing.JDialog {
 		if (contentPane == null) {
 			contentPane = new javax.swing.JPanel();
 			contentPane.setName("contentPane");
-			contentPane.setLayout(new javax.swing.BoxLayout(contentPane,
-					javax.swing.BoxLayout.Y_AXIS));
+			contentPane.setLayout(
+					new javax.swing.BoxLayout(contentPane,
+							javax.swing.BoxLayout.Y_AXIS));
 //			contentPane.setLayout(new java.awt.GridBagLayout());
 			contentPane.add(getJLabel1(), null);
 			contentPane.add(getJTextField1(), null);
-			getContentPane().add(getJLabel1());
-			getContentPane().add(getJTextField1());
 			contentPane.add(getJLabel2());
 			contentPane.add(getJTextField2(), null);
-			getContentPane().add(getJTextField2());
 			contentPane.add(getJLabel3());
 			contentPane.add(getJTextField3(), null);
 			contentPane.add(getJLabel4(), null);
-			getContentPane().add(getJTextField3());
-			
-			getContentPane().add(getJLabel4());
 			contentPane.add(getJSlider1());
 			
 			contentPane.add(getJButton1());
@@ -98,8 +98,13 @@ public class ConnectionDialog extends javax.swing.JDialog {
 	private javax.swing.JTextField getJTextField1() {
 		if (serverHostTextField == null) {
 			serverHostTextField = new javax.swing.JTextField();
-			serverHostTextField.setName("JTextField1");
+			serverHostTextField.setName("serverHostTextField");
 			serverHostTextField.setText(this.serverHost);
+			serverHostTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+				public void keyTyped(java.awt.event.KeyEvent e) {
+					connectionData.setServerHost(serverHostTextField.getText());					
+				}
+			});
 		}
 		return serverHostTextField;
 	}
@@ -111,7 +116,7 @@ public class ConnectionDialog extends javax.swing.JDialog {
 	private javax.swing.JLabel getJLabel2() {
 		if (serverPortLabel == null) {
 			serverPortLabel = new javax.swing.JLabel();
-			serverPortLabel.setName("JLabel2");
+			serverPortLabel.setName("serverPortLabel");
 			serverPortLabel.setText("Server Port");
 		}
 		return serverPortLabel;
@@ -126,6 +131,11 @@ public class ConnectionDialog extends javax.swing.JDialog {
 			serverPortTextField = new javax.swing.JTextField();
 			serverPortTextField.setName("JTextField2");
 			serverPortTextField.setText(String.valueOf(this.serverPort));
+			serverPortTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+				public void keyTyped(java.awt.event.KeyEvent e) {
+					connectionData.setServerPort(Integer.valueOf(serverPortTextField.getText()).intValue());					
+				}
+			});
 		}
 		return serverPortTextField;
 	}
@@ -152,6 +162,11 @@ public class ConnectionDialog extends javax.swing.JDialog {
 			usernameTextField = new javax.swing.JTextField();
 			usernameTextField.setName("JTextField3");
 			usernameTextField.setText(this.username);
+			usernameTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+				public void keyTyped(java.awt.event.KeyEvent e) {
+					connectionData.setUsername(usernameTextField.getText());					
+				}
+			});
 		}
 		return usernameTextField;
 	}
@@ -164,7 +179,8 @@ public class ConnectionDialog extends javax.swing.JDialog {
 		if (sizeLabel == null) {
 			sizeLabel = new javax.swing.JLabel();
 			sizeLabel.setName("JLabel4");
-			sizeLabel.setText("Board size");
+			sizeLabel.setText("Board size: "+String.valueOf(this.boardSize)+"x"
+					+String.valueOf(this.boardSize)+"x"+String.valueOf(this.boardSize));
 		}
 		return sizeLabel;
 	}
@@ -180,6 +196,15 @@ public class ConnectionDialog extends javax.swing.JDialog {
 			sizeSlider.setMaximum(25);
 			sizeSlider.setMinorTickSpacing(2);
 			sizeSlider.setValue(this.boardSize);
+			sizeSlider.addChangeListener(new javax.swing.event.ChangeListener() {
+				public void stateChanged(javax.swing.event.ChangeEvent e) {
+					String boardSizeString = String.valueOf(sizeSlider.getValue());
+					sizeLabel.setText("Board Size: "+boardSizeString+"x"
+							+boardSizeString+"x"+boardSizeString);
+					connectionData.setBoardSize(sizeSlider.getValue());
+				}
+			});
+			
 		}
 		return sizeSlider;
 	}
@@ -193,6 +218,15 @@ public class ConnectionDialog extends javax.swing.JDialog {
 			connectButton = new javax.swing.JButton();
 			connectButton.setName("JButton1");
 			connectButton.setText("Connect to Server");
+			connectButton.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					if (e.getActionCommand().equals (connectButton.getText())) {
+						System.out.println("actionPerformed(): "+e.getActionCommand()); // TODO Auto-generated Event stub actionPerformed()
+						setVisible (false);
+						
+					}
+				}
+			});
 		}
 		return connectButton;
 	}
@@ -206,9 +240,12 @@ public class ConnectionDialog extends javax.swing.JDialog {
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(true);
 		this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-		this.setSize(250, 182);
+		this.setSize(206, 217);
 		this.setTitle("Connect to Go Server");
 		this.setContentPane(getJContentPane());
 
+	}
+	static public void main (String args[]) {
+		new ConnectionDialog (new ConnectionData ()).setVisible(true);
 	}
 }  //  @jve:decl-index=0:visual-constraint="10,10"

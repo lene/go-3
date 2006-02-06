@@ -851,31 +851,17 @@ public class GridDisplay extends JApplet implements ActionListener {
 	protected static void help () {
 		System.out.println ("usage: java GridDisplay [-s|--board-size boardsize]\n"+
 				"                   [-m|--auto-moves automoves]\n"+
+				"                   [-u|--user-id username]\n"+
 		    "                   [-h|--server-host serverhost]\n"+
 	      "                   [-p|--server-port serverport]\n");
 	}
 	
 	/**
-	 board size
-	 */
-	static int s = 3;
-	/**
 	 number of moves to fake
 	 */
 	static int m = 0;
-	/**
-	 server port
-	 */
-	static int p = 6666;
-	/**
-	 server host
-	 */
-	static String h = "localhost";
-	/**
-	 user id
-	 */
-	static String u = "";
-	
+
+	static ConnectionData connectionData = new ConnectionData ();
 	
 	/**
 	 parse the command line and set appropriate options
@@ -884,15 +870,15 @@ public class GridDisplay extends JApplet implements ActionListener {
 		
 		try {
 			InetAddress addr = InetAddress.getLocalHost();
-      u = System.getProperty ("user.name")+"@"+addr.getHostName();
+			connectionData.setUsername(System.getProperty ("user.name")+"@"+addr.getHostName());
     } catch (UnknownHostException e) {
-    	u = System.getProperty ("user.name");
+    	connectionData.setUsername(System.getProperty ("user.name"));
     }    
   
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].equals("-s") || args[i].equals("--board-size")) {
 				try {
-					s = Integer.parseInt(args[++i]);
+					connectionData.setBoardSize(Integer.parseInt(args[++i]));
 				} catch (NumberFormatException e) {
 					help ();
 				}
@@ -906,23 +892,18 @@ public class GridDisplay extends JApplet implements ActionListener {
 			}
 			if (args[i].equals("-p") || args[i].equals("--server-port")) {
 				try {
-					p = Integer.parseInt(args[++i]);
+					connectionData.setServerPort(Integer.parseInt(args[++i]));
 				} catch (NumberFormatException e) {
 					help ();
 				}
 			}
 			if (args[i].equals("-h") || args[i].equals("--server-host")) {
-				h = args[++i];
+				connectionData.setServerHost(args[++i]);
 			}
 			if (args[i].equals("-u") || args[i].equals("--user-id")) {
-				u = args[++i];
+				connectionData.setUsername(args[++i]);
 			}
 		}
-		Utility.debug("Board size  = "+s);
-		Utility.debug("Pre-moves   = "+m);
-		Utility.debug("Server port = "+p);
-		Utility.debug("Server host = "+h);
-		Utility.debug("Username    = "+u);
 	}
 	
 	
@@ -932,11 +913,21 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	public static void main (String[] args) {
 		parse (args);
+	
+		if (true) {
+			ConnectionDialog conn = new ConnectionDialog (connectionData);
+			conn.setVisible(true);
+		}
 		
-		ConnectionDialog conn = new ConnectionDialog (s,h,p,u);
-		conn.setVisible(true);
-		
-		GridDisplay game = new GridDisplay (s, h, p, u);
+		Utility.debug("Board size  = "+connectionData.getBoardSize());
+		Utility.debug("Pre-moves   = "+m);
+		Utility.debug("Server port = "+connectionData.getServerPort());
+		Utility.debug("Server host = "+connectionData.getServerHost());
+		Utility.debug("Username    = "+connectionData.getUsername());
+
+		GridDisplay game = new GridDisplay (connectionData.getBoardSize(), 
+				connectionData.getServerHost(), connectionData.getServerPort(), 
+				connectionData.getUsername());
 		Frame frame = new MainFrame (game, 600, 600);
 		/*	JFrame jFrame = new JFrame (frame.getGraphicsConfiguration ());
 		 jFrame.setJMenuBar (game.setupMenu ());
