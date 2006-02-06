@@ -7,10 +7,13 @@
  
  TODO
  */
+
+import java.awt.Frame;
+import javax.swing.JButton;
 /**
  * Example of components laid out in a grid
  */
-public class ConnectionDialog extends javax.swing.JFrame {
+public class ConnectionDialog extends javax.swing.JDialog {
 
 	private javax.swing.JPanel contentPane = null;
 
@@ -28,8 +31,18 @@ public class ConnectionDialog extends javax.swing.JFrame {
 
 	private javax.swing.JButton connectButton = null;
 
-	public ConnectionDialog() {
-		super();
+	private String serverHost = "";
+	private int serverPort = 6666;
+	private String username = "";
+	private int boardSize = 3;
+
+	public ConnectionDialog(int s, String h, int p, String u) {
+		super((Frame)null, "", true);
+		this.boardSize = s;
+		this.serverHost = h;
+		this.serverPort = p;
+		this.username = u;
+		
 		initialize();
 	}
 
@@ -42,22 +55,25 @@ public class ConnectionDialog extends javax.swing.JFrame {
 		if (contentPane == null) {
 			contentPane = new javax.swing.JPanel();
 			contentPane.setName("contentPane");
-			contentPane.setLayout(new java.awt.GridLayout(0,2));
+			contentPane.setLayout(new javax.swing.BoxLayout(contentPane,
+					javax.swing.BoxLayout.Y_AXIS));
 //			contentPane.setLayout(new java.awt.GridBagLayout());
-			getContentPane().add(getJLabel1(), getJLabel1().getName());
-			getContentPane().add(getJTextField1(),
-					getJTextField1().getName());
-			contentPane.add(getJLabel2(), getJLabel2().getName());
-						getContentPane().add(getJTextField2(),
-					getJTextField2().getName());
-						contentPane.add(getJLabel3(), getJLabel3().getName());
-			getContentPane().add(getJTextField3(),
-					getJTextField3().getName());
+			contentPane.add(getJLabel1(), null);
+			contentPane.add(getJTextField1(), null);
+			getContentPane().add(getJLabel1());
+			getContentPane().add(getJTextField1());
+			contentPane.add(getJLabel2());
+			contentPane.add(getJTextField2(), null);
+			getContentPane().add(getJTextField2());
+			contentPane.add(getJLabel3());
+			contentPane.add(getJTextField3(), null);
+			contentPane.add(getJLabel4(), null);
+			getContentPane().add(getJTextField3());
 			
-			getContentPane().add(getJLabel4(), getJLabel4().getName());
-			contentPane.add(getJSlider1(), getJSlider1().getName());
+			getContentPane().add(getJLabel4());
+			contentPane.add(getJSlider1());
 			
-			contentPane.add(getJButton1(), getJButton1().getName());
+			contentPane.add(getJButton1());
 		}
 		return contentPane;
 	}
@@ -69,7 +85,7 @@ public class ConnectionDialog extends javax.swing.JFrame {
 	private javax.swing.JLabel getJLabel1() {
 		if (serverHostLabel == null) {
 			serverHostLabel = new javax.swing.JLabel();
-			serverHostLabel.setName("JLabel1");
+			serverHostLabel.setName("serverHostLabel");
 			serverHostLabel.setText("Server Host");
 		}
 		return serverHostLabel;
@@ -83,7 +99,7 @@ public class ConnectionDialog extends javax.swing.JFrame {
 		if (serverHostTextField == null) {
 			serverHostTextField = new javax.swing.JTextField();
 			serverHostTextField.setName("JTextField1");
-			serverHostTextField.setText("localhost");
+			serverHostTextField.setText(this.serverHost);
 		}
 		return serverHostTextField;
 	}
@@ -109,7 +125,7 @@ public class ConnectionDialog extends javax.swing.JFrame {
 		if (serverPortTextField == null) {
 			serverPortTextField = new javax.swing.JTextField();
 			serverPortTextField.setName("JTextField2");
-			serverPortTextField.setText("6666");
+			serverPortTextField.setText(String.valueOf(this.serverPort));
 		}
 		return serverPortTextField;
 	}
@@ -135,7 +151,7 @@ public class ConnectionDialog extends javax.swing.JFrame {
 		if (usernameTextField == null) {
 			usernameTextField = new javax.swing.JTextField();
 			usernameTextField.setName("JTextField3");
-			usernameTextField.setText("...");
+			usernameTextField.setText(this.username);
 		}
 		return usernameTextField;
 	}
@@ -160,6 +176,10 @@ public class ConnectionDialog extends javax.swing.JFrame {
 		if (sizeSlider == null) {
 			sizeSlider = new javax.swing.JSlider();
 			sizeSlider.setName("JSlider1");
+			sizeSlider.setMinimum(3);
+			sizeSlider.setMaximum(25);
+			sizeSlider.setMinorTickSpacing(2);
+			sizeSlider.setValue(this.boardSize);
 		}
 		return sizeSlider;
 	}
@@ -183,11 +203,12 @@ public class ConnectionDialog extends javax.swing.JFrame {
 	private void initialize() {
 
 		this.setName("JFrame1");
-		this
-				.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-		this.setBounds(45, 25, 317, 273);
-		this.setTitle("Connect to Go? Server");
+		this.setForeground(java.awt.SystemColor.textHighlight);
+		this.setModal(true);
+		this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+		this.setSize(250, 182);
+		this.setTitle("Connect to Go Server");
 		this.setContentPane(getJContentPane());
 
 	}
-}
+}  //  @jve:decl-index=0:visual-constraint="10,10"

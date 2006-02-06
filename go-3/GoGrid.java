@@ -199,7 +199,7 @@ abstract class GoGrid {
 	/**
 	 stores the moves for replays and saves of the game
 	 */
-	protected Vector<Move> moveBuffer = new Vector<Move> ();
+//	protected Vector<Move> moveBuffer = new Vector<Move> ();
 	
 	
 	/**

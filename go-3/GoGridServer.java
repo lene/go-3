@@ -86,9 +86,9 @@ class GoGridServer extends GoGrid {
 			xset = x; yset = y; zset = z;			//  remember last set position
 			
 			checkArea ();					//  check for captives
-			moveBuffer.add (new Move (x, y, z, col));		//  remember this move
-			Utility.debug (moveBuffer.size ()+": ("+x+", "+y+", "+z+"), "
-					+Liberty (x, y, z, col, false)+" liberties");
+//			moveBuffer.add (new Move (x, y, z, col));		//  remember this move
+//			Utility.debug (moveBuffer.size ()+": ("+x+", "+y+", "+z+"), "
+//					+Liberty (x, y, z, col, false)+" liberties");
 			//	    printGrid ();
 			return true;					//  success
 		}

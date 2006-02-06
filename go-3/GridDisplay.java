@@ -934,6 +934,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		parse (args);
 		
 		ConnectionDialog conn = new ConnectionDialog (s,h,p,u);
+		conn.setVisible(true);
 		
 		GridDisplay game = new GridDisplay (s, h, p, u);
 		Frame frame = new MainFrame (game, 600, 600);
