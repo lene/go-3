@@ -168,9 +168,10 @@ class GoGridClient extends GoGrid {
 	/**
 	 @param s (preliminary) board size
 	 @param h server's hostname
-	 @param parent the J3DApp creating this GoGridClient, or <tt>null</tt>
+	 @param parent the <tt>GridDisplay</tt> creating this <tt>GoGridClient</tt>, 
+	 			  or <tt>null</tt>
 	 */
-	public GoGridClient (int s, String h, int p, String u, J3DApp parent) {
+	public GoGridClient (int s, String h, int p, String u, GridDisplay parent) {
 		super (s);
 		
 		this.parent = parent;
@@ -553,7 +554,7 @@ class GoGridClient extends GoGrid {
 	/**
 	 
 	 */
-	protected J3DApp parent = null;
+	protected GridDisplay parent = null;
 	
 	
 	public static void main (String args[]) {

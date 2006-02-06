@@ -26,11 +26,8 @@ import java.net.UnknownHostException;
 
 
 /**
- * class J3DApp represents 
- * <p>
- * Constructor:
- * Move (int s)
- * <p> 
+ class GridDisplay represents the canvas on which the GoGrid and all actions
+ are shown 
  
  TO DO:
  <ul>
@@ -38,14 +35,16 @@ import java.net.UnknownHostException;
  <li>remove <tt>size</tt>, replace with <tt>GoGrid.getBoardSize ()</tt>
  </ul>
  */
-public class J3DApp extends JApplet implements ActionListener {
+public class GridDisplay extends JApplet implements ActionListener {
 	
 	/**
 	 Constructor for known size of the grid and hostname of the server
 	 @param size the size of the grid
 	 @param hostname the server host
+	 @param port the port the server listens on
+	 @param username the name under which the player shall be represented
 	 */
-	public J3DApp (int size, String hostname, int port, String username) {
+	public GridDisplay (int size, String hostname, int port, String username) {
 		
 		//	new StartupDialog (null, true, this).show ();
 		
@@ -680,7 +679,8 @@ public class J3DApp extends JApplet implements ActionListener {
 	////////////////////////////////////////////////////////////////////////////
 	
 	String hostname = "localhost";
-	void setHostname (String hostname) { this.hostname = hostname; System.err.println ("hostname "+hostname); }
+	void setHostname (String hostname) { 
+		this.hostname = hostname; System.err.println ("Server host: "+hostname); }
 	String getHostname () { return hostname; }
 	
 	//  GoGrid related variables, getters and setters
@@ -830,9 +830,10 @@ public class J3DApp extends JApplet implements ActionListener {
 	 print a message on how to call the program
 	 */
 	protected static void help () {
-		System.out.println ("usage: java J3DApp [-s|--board-size boardsize]\n"+
+		System.out.println ("usage: java GridDisplay [-s|--board-size boardsize]\n"+
 				"                   [-m|--auto-moves automoves]\n"+
-		"                   [-h|--server-host serverhost]\n");
+		    "                   [-h|--server-host serverhost]\n"+
+	      "                   [-p|--server-port serverport]\n");
 	}
 	
 	/**
@@ -913,7 +914,7 @@ public class J3DApp extends JApplet implements ActionListener {
 	public static void main (String[] args) {
 		parse (args);
 		
-		J3DApp game = new J3DApp (s, h, p, u);
+		GridDisplay game = new GridDisplay (s, h, p, u);
 		Frame frame = new MainFrame (game, 600, 600);
 		/*	JFrame jFrame = new JFrame (frame.getGraphicsConfiguration ());
 		 jFrame.setJMenuBar (game.setupMenu ());

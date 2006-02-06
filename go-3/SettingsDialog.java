@@ -18,10 +18,10 @@ class SettingsDialog extends javax.swing.JDialog {
     
     int color;
 
-    protected J3DApp caller;
+    protected GridDisplay caller;
 
     /** Creates new form SettingsDialog */
-    public SettingsDialog(java.awt.Frame parent, boolean modal, J3DApp caller) {
+    public SettingsDialog(java.awt.Frame parent, boolean modal, GridDisplay caller) {
         super(parent, modal);
 	this.caller = caller;
         initComponents();

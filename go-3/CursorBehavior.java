@@ -15,7 +15,7 @@ import java.util.Enumeration;
 
 class CursorBehavior extends Behavior {
 
-    CursorBehavior (J3DApp J, int x, int y, int z) {
+    CursorBehavior (GridDisplay J, int x, int y, int z) {
 	this.J = J;
 	this.x = x;
 	this.y = y;
@@ -65,6 +65,6 @@ class CursorBehavior extends Behavior {
     }
 	
     int x, y, z;
-    private J3DApp J;
+    private GridDisplay J;
 }
 

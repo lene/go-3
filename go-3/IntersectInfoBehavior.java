@@ -28,9 +28,9 @@ public class IntersectInfoBehavior extends Behavior {
     TransformGroup[] sphTrans = new TransformGroup [6];
     Sphere[] sph = new Sphere [6];
     Transform3D spht3 = new Transform3D();
-    J3DApp J;
+    GridDisplay J;
 
-    public IntersectInfoBehavior(J3DApp J,
+    public IntersectInfoBehavior(GridDisplay J,
 				 Canvas3D canvas3D, BranchGroup branchGroup,
 				 TransformGroup transformGroup,
 				 float size) {

@@ -14,7 +14,7 @@ public class StartupDialog extends javax.swing.JDialog {
     
     protected int serverPort = GoGrid.getServerPort ();
 
-    protected J3DApp caller;
+    protected GridDisplay caller;
     
     /** Creates new form StartupDialog */
     public StartupDialog(java.awt.Frame parent, boolean modal) {
@@ -25,7 +25,7 @@ public class StartupDialog extends javax.swing.JDialog {
     }
 
     /** Creates new form StartupDialog */
-    public StartupDialog(java.awt.Frame parent, boolean modal, J3DApp caller) {
+    public StartupDialog(java.awt.Frame parent, boolean modal, GridDisplay caller) {
         super(parent, modal);
 	this.caller = caller;
         initComponents();
