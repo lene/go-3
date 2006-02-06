@@ -11,7 +11,7 @@ abstract public class GridObject extends Shape3D {
 	public GridObject (int s) {
 		setSize (s);
 		gGeometry = createGeometry ();
-		gAppearance = createAppearance ();
+		createAppearance ();
 		this.setGeometry (gGeometry);
 		this.setAppearance (gAppearance);
 	}
@@ -24,43 +24,76 @@ abstract public class GridObject extends Shape3D {
 		return size;
 	}
 	
-	protected static int size;
-	protected Color3f gColor = new Color3f (0.8f,0.8f,0.8f);
-	protected Appearance gAppearance;
-	protected Geometry gGeometry;
+	void transparencyUp () {
+		float transparency = gTransparency.getTransparency();
+		transparency *= 1.2f; 
+		if (transparency > 1.0f) transparency = 1.0f;
+		gTransparency.setTransparency (transparency);
+	}
+
+	void transparencyDown () {
+		float transparency = gTransparency.getTransparency();
+		transparency /= 1.2f; 
+		if (transparency < 0.05f) transparency = 0.05f;
+		gTransparency.setTransparency (transparency);
+	}
+
 	
-	protected Appearance createAppearance (/* ... */) {
-		Appearance app = new Appearance ();
+	protected void createAppearance (/* ... */) {
+		gAppearance = new Appearance ();
 		
 		Material m = new Material ();
-		app.setMaterial (m);
+		gAppearance.setMaterial (m);
 		
-		ColoringAttributes ca = new ColoringAttributes ();
-		ca.setColor (gColor);
-		app.setColoringAttributes (ca);
+		setColor (DEFAULT_GRIDCOLOR);
 		
-		if (true) {
-			LineAttributes la = new LineAttributes ();
-			la.setLineAntialiasingEnable(true);
-			app.setLineAttributes (la);
-		}
+		setAntialiasing (true);
 		
-		if (true) {
-			PolygonAttributes pa = new PolygonAttributes ();
-			pa.setCullFace (PolygonAttributes.CULL_NONE);
-			//	    pa.setPolygonMode (PolygonAttributes.POLYGON_LINE);
-			app.setPolygonAttributes (pa);
-		}
+		setCulling (PolygonAttributes.CULL_NONE);
 		
-		if (true) {
-			TransparencyAttributes ta = new TransparencyAttributes (TransparencyAttributes.NICEST, 0.5f);
-			app.setTransparencyAttributes (ta);
-		}
-		
-		return app;
+		setTransparency (DEFAULT_TRANSPARENCY);
 	}
 	
+	protected void setColor (Color3f col) {
+		ColoringAttributes ca = new ColoringAttributes ();
+		gColor = col;
+		ca.setColor (gColor);
+		gAppearance.setColoringAttributes (ca);		
+	}
+	
+	protected void setAntialiasing (boolean enable) {
+		LineAttributes la = new LineAttributes ();
+		la.setLineAntialiasingEnable(enable);
+		gAppearance.setLineAttributes (la);		
+	}
+	
+	protected void setCulling (int mode) {
+		PolygonAttributes pa = new PolygonAttributes ();
+		pa.setCullFace (mode);
+		//	    pa.setPolygonMode (PolygonAttributes.POLYGON_LINE);
+		gAppearance.setPolygonAttributes (pa);		
+	}
+
+	protected void setTransparency (float tVal) {
+		gTransparency = new TransparencyAttributes (TransparencyAttributes.NICEST, tVal);
+		gTransparency.setCapability(TransparencyAttributes.ALLOW_VALUE_READ);
+		gTransparency.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
+		gAppearance.setTransparencyAttributes (gTransparency);		
+	}
+		
+	
 	abstract protected Geometry createGeometry ();
+
+	
+	protected static int size;
+	protected Color3f gColor;
+	protected Appearance gAppearance;
+	protected TransparencyAttributes gTransparency;
+	protected Geometry gGeometry;
+//	protected float transparency;
+	
+	protected static float DEFAULT_TRANSPARENCY = 0.5f;
+	protected static Color3f DEFAULT_GRIDCOLOR = new Color3f (0.8f,0.8f,0.8f);
 	
 }
 

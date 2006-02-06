@@ -207,6 +207,15 @@ public class GridDisplay extends JApplet implements ActionListener {
 		System.exit (0);
 	}
 	
+	/**
+	 makes the grid less visible. passes the call to the Grid object.
+	 */
+	void transparencyUp () { objGrid.transparencyUp(); }
+
+	/**
+	 makes the grid more visible. passes the call to the Grid object.
+	 */
+	void transparencyDown () { objGrid.transparencyDown(); }
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
@@ -217,7 +226,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 	
 	/**
 	 changes the cursor for another.<br>
-	 DOES NOT YET WORK!
 	 */
 	private void reinitCursor () {
 		try {
@@ -559,6 +567,15 @@ public class GridDisplay extends JApplet implements ActionListener {
 				KeyEvent.VK_Q, ActionEvent.CTRL_MASK, 
 				"Exit the Program", true);
 		
+		menu = addMenu (menuBar, "View", KeyEvent.VK_V, 
+		"Adjusting the display of the board");
+		addMenuItem (menu, "Make grid less visible", 
+				KeyEvent.VK_G, ActionEvent.CTRL_MASK,
+				"Make grid less visible", false);
+		addMenuItem (menu, "Make grid more visible", 
+				KeyEvent.VK_G, ActionEvent.SHIFT_MASK,
+				"Make grid more visible", false);
+		
 		menu = addMenu (menuBar, "Navigation", KeyEvent.VK_N, 
 		"Rotating and moving the board");
 		addMenuItem (menu, "Cursor down one in x", 
@@ -735,7 +752,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	/**
 	 the geometry of the grid
 	 */
-	private Shape3D objGrid = null;
+//	private Shape3D objGrid = null;
+	private Grid objGrid = null;
 	/**
 	 transform belonging to the cursor
 	 */

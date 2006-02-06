@@ -109,8 +109,14 @@ class SimpleBehavior extends Behavior {
 								J.Liberty ();
 							break;
 							
+							case KeyEvent.VK_G:	    	if (eventKey.isControlDown ()) 
+																					J.transparencyUp();
+																				if (eventKey.isShiftDown ()) 
+																					J.transparencyDown();
+							break;
+
 							case KeyEvent.VK_Q:	    	if (eventKey.isControlDown ())
-								J.exit ();
+																					J.exit ();
 							break;
 							
 							default:  						break;

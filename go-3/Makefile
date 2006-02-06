@@ -77,7 +77,7 @@ server:	$(SERVER_SOURCES)
 
 client: $(CLIENT_SOURCES)
 	$(JAVAC) $(CFLAGS) $(CLIENT)
-	@echo "Start client with \"java -Djava.library.path=$(I) -cp $(CLASSPATH) J3DApp\""
+	@echo "Start client with \"java -Djava.library.path=$(I) -cp $(CLASSPATH) GridDisplay\""
 
 all: server client
 
