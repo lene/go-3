@@ -357,7 +357,7 @@ abstract class GoGrid {
 	////////////////////////////////////////////////////////////////////////////
 	
 	
-	static final String VERSION = "0.3.3";
+	static final String VERSION = "0.3.4";
 	static final String MAINTAINER = "helge.preuss@gmx.net";
 	
 	/**
