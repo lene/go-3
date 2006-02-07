@@ -26,15 +26,15 @@ abstract public class GridObject extends Shape3D {
 	
 	void transparencyUp () {
 		float transparency = gTransparency.getTransparency();
-		transparency *= 1.2f; 
-		if (transparency > 1.0f) transparency = 1.0f;
+		transparency *= TRANSPARENCY_STEP; 
+		if (transparency > MAX_TRANSPARENCY) transparency = MAX_TRANSPARENCY;
 		gTransparency.setTransparency (transparency);
 	}
 
 	void transparencyDown () {
 		float transparency = gTransparency.getTransparency();
-		transparency /= 1.2f; 
-		if (transparency < 0.05f) transparency = 0.05f;
+		transparency /= TRANSPARENCY_STEP; 
+		if (transparency < MIN_TRANSPARENCY) transparency = MIN_TRANSPARENCY;
 		gTransparency.setTransparency (transparency);
 	}
 
@@ -92,8 +92,10 @@ abstract public class GridObject extends Shape3D {
 	protected Geometry gGeometry;
 //	protected float transparency;
 	
-	protected static float DEFAULT_TRANSPARENCY = 0.5f;
 	protected static Color3f DEFAULT_GRIDCOLOR = new Color3f (0.8f,0.8f,0.8f);
-	
+	protected static float DEFAULT_TRANSPARENCY = 0.5f;
+	protected static float MIN_TRANSPARENCY = 0.1f;
+	protected static float MAX_TRANSPARENCY = 0.98f;
+	protected static float TRANSPARENCY_STEP = 1.1f;
 }
 

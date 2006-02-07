@@ -87,6 +87,7 @@ public class ConnectionDialog extends javax.swing.JDialog {
 			serverHostLabel = new javax.swing.JLabel();
 			serverHostLabel.setName("serverHostLabel");
 			serverHostLabel.setText("Server Host");
+			serverHostLabel.setToolTipText("The address of the server.");
 		}
 		return serverHostLabel;
 	}
@@ -105,6 +106,7 @@ public class ConnectionDialog extends javax.swing.JDialog {
 					connectionData.setServerHost(serverHostTextField.getText());					
 				}
 			});
+			serverHostTextField.setToolTipText("The address of the server.");
 		}
 		return serverHostTextField;
 	}
@@ -118,6 +120,8 @@ public class ConnectionDialog extends javax.swing.JDialog {
 			serverPortLabel = new javax.swing.JLabel();
 			serverPortLabel.setName("serverPortLabel");
 			serverPortLabel.setText("Server Port");
+			serverPortLabel.setToolTipText("The port on which the " +
+			"server listens. You usually shouldn't need to change this.");
 		}
 		return serverPortLabel;
 	}
@@ -136,6 +140,9 @@ public class ConnectionDialog extends javax.swing.JDialog {
 					connectionData.setServerPort(Integer.valueOf(serverPortTextField.getText()).intValue());					
 				}
 			});
+			serverPortTextField.setToolTipText("The port on which the " +
+					"server listens. You usually shouldn't need to change this.");
+			
 		}
 		return serverPortTextField;
 	}
@@ -149,6 +156,9 @@ public class ConnectionDialog extends javax.swing.JDialog {
 			usernameLabel = new javax.swing.JLabel();
 			usernameLabel.setName("JLabel3");
 			usernameLabel.setText("Username");
+			usernameLabel.setToolTipText("Enter the name under which you want" +
+					" to connect to the server. You can only connect once" +
+					" under any name.");
 		}
 		return usernameLabel;
 	}
@@ -167,6 +177,9 @@ public class ConnectionDialog extends javax.swing.JDialog {
 					connectionData.setUsername(usernameTextField.getText());					
 				}
 			});
+			usernameTextField.setToolTipText("Enter the name under which you want" +
+					" to connect to the server. You can only connect once" +
+					" under any name.");
 		}
 		return usernameTextField;
 	}
@@ -181,6 +194,11 @@ public class ConnectionDialog extends javax.swing.JDialog {
 			sizeLabel.setName("JLabel4");
 			sizeLabel.setText("Board size: "+String.valueOf(this.boardSize)+"x"
 					+String.valueOf(this.boardSize)+"x"+String.valueOf(this.boardSize));
+			
+			sizeLabel.setToolTipText("The size of the board on which you want" +
+					" to play. This is not adjustable yet, you have to take" +
+					" whichever size the server offers you.");
+			sizeLabel.setEnabled (false);
 		}
 		return sizeLabel;
 	}
@@ -205,6 +223,10 @@ public class ConnectionDialog extends javax.swing.JDialog {
 				}
 			});
 			
+			sizeSlider.setToolTipText("The size of the board on which you want" +
+					" to play. This is not adjustable yet, you have to take" +
+					" whichever size the server offers you.");
+			sizeSlider.setEnabled(false);
 		}
 		return sizeSlider;
 	}

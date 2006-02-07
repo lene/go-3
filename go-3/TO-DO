@@ -1,94 +1,54 @@
 
-	TO DO LIST for go3d on 22 Aug 2003
+	TO DO LIST for go3d on 6 Feb 2006
 	==================================
-
-
-	0) Finished
-	-----------
-
-activation of clients from server
-	the clients must be told when they are able to set		DONE
-	and act accordingly						
-	method GoGridClient.activate ()
-	client activation -> protocol					
-	client.activate () -> if not active, can't set
-
-setting of cursor in protocol & GoGrid base class			DONE
-	
-integration w/ graphics (display of grid, GUI)				DONE
-
-remove remaining sloppiness:
-	access rights (public or package?)				DONE
-	reorder functions						DONE
-	abstract base class GoGrid (Go3DBox, Go3DBlock, ...?)		DONE
-	clean functions from gogrid					DONE
-
-updating board : 1 line for whole board					DONE
-
-debug ():  include stack trace, use throughout whole classes		DONE
-
-integrate mouse and keyboard behaviour into one => transform should	DONE
-stay the same
-
-reorder and clean up functions in J3DApp				DONE
-
-disable reconnecting of clients, as it is buggy				(bugfix)
-
-change cursor colors according to whether on the move or not		(feature)
 
 
 	1) Short-term
 	-------------
 
-1.5 jar-distribution, packaging						(feature)
-
 1.6 user and installation documentation					(doc)
+
+buggy reconnecting of clients - deadlock if current player disconnects
+
+settings dialog at startup:						(feature)
+	set board size
+	leave room for setting of handicaps, number of players,
+		load game, etc.
 
 --------------------------------------------------->	ALPHA RELEASE
 
 	2) Beta-release
 	---------------
 
-write javadoc info							(doc)
-	GoGrid classes
-	the other classes too
-
-remove remaining sloppiness in code:					(code)
-	names of classes and methods
-	names of the getters and setters
-	players should be 1 and 2 (and ...) throughout
+players should be changed from ints to Player objects throughout
 	
-
-settings dialog at startup:						(feature)
-	set board size
-	start game
-	leave room for setting of handicaps, number of players,
-		load game, etc.
-	chat & messages line
 
 recheck protocol - what instances can occur?				(code)
 
 check for deadlocks							(code)
 
-careful w/ the timings; measure delay to server				(bugfix)
-
 clearArea () code - where's the bug?					(bugfix)
 
-? Debug the graphical display						(bugfix)
+display correctly after (re-)connecting					(bugfix)
 
 calculation af rotation angles from Transform3D				(bugfix)
-
-handle termination and reconnection of clients (and server)		(feature)
 
 command line for clients to manually type commands			(feature)
 	done for non-graphical client; the graphical needs an interface
 
-talk window								(feature)
+talk window, chat & messages line					(feature)
 
 Picking: 								(bugfix)
 	  better transform inverse (see transformation behaviors) 
 	  enable picking for occupied points 
-	  remove pick cursor 
+	  remove pick cursor, it is confusing				
+
+Multithreaded server spawning new game instances
+
+connection window displays games running on server with sizes; possibility
+to join open games
+
+saving and restoring games
 
 --------------------------------------------------->	BETA RELEASE
 
@@ -97,24 +57,21 @@ Picking: 								(bugfix)
 	----------------
 
 fix all remaining bugs
-	java.util.prefs.FileSystemPreferences$3 run
-	WARNING: Could not create system preferences directory. System preferences are unusable. 
 	[xyz]set in J3DApp should show last move
 
 profile code and optimize hotspots
-
-document all code and generate javadoc
 
 
 	4) Mid-term
 	-----------
 
+user management 
+
 base class call in protocol classes -> derived classes			(code)
 
-J3DApp extends GoGridClient						(code)
+GridDisplay extends GoGridClient					(code)
 
 add a control window							(feature)
-	first:	select server, then connect
 
 	finally:controls to manipulate the board
 		moving the cursor
@@ -159,10 +116,6 @@ add a context menu							(feature)
 
 handicap markers: tiny coarse spheres istead of tetheds			("bug"fix)
 
-saving and restoring games (move buffer needed)				(feature)
-
-player info -> class Player						(code)
-
 rendering improvements/adjustments					(feature)
 	lighting on/off 
 	material -> color info 
@@ -185,10 +138,7 @@ cut away or fade parts of the grid for better orientation
 
 undo capability and forking of the game					
 
-a central server spawning GoGridServers, so multiple servers can run on	
-one machine
-
-logging of games, preferably to MySQL database, for analyzation		
+logging of games, preferably to MySQL database, for analysis
 
 server-side setting of multiple cursors					PREPARED
 
@@ -208,3 +158,16 @@ different geometries:
 	4D?!								
 	tetrahedral or dodecahedral (or what else?) connections		
 
+
+	6) Ongoing work
+	===============
+
+write javadoc info							(doc)
+	GoGrid classes
+	the other classes too
+
+remove remaining sloppiness in code:					(code)
+	names of classes and methods
+	names of the getters and setters
+
+jar-distribution, packaging						(feature)

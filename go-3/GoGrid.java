@@ -209,17 +209,32 @@ abstract class GoGrid {
 	/**
 	 @return cursor x position
 	 */
-	int xc () { return xc[currentPlayer]; }
+	int xc () { 
+		if (currentPlayer >= 0 && currentPlayer < numPlayers)
+			return xc[currentPlayer]; 
+		else 
+			return (size[0]+1)/2;
+	}
 	int xc (int player) { return xc[player]; }
 	/**
 	 @return cursor y position
 	 */
-	int yc () { return yc[currentPlayer]; }
+	int yc () {
+		if (currentPlayer >= 0 && currentPlayer < numPlayers)
+		  return yc[currentPlayer]; 
+		else 
+			return (size[1]+1)/2;		
+	}
 	int yc (int player) { return yc[player]; }
 	/**
 	 @return cursor z position
 	 */
-	int zc () { return zc[currentPlayer]; }
+	int zc () { 
+		if (currentPlayer >= 0 && currentPlayer < numPlayers)
+			return zc[currentPlayer]; 
+		else 
+			return (size[2]+1)/2;
+	}
 	int zc (int player) { return zc[player]; }
 	/**
 	 set the cursor, checking for over- and underflow
@@ -228,9 +243,11 @@ abstract class GoGrid {
 	 @param z cursor z position
 	 */
 	void setCursor (int x, int y, int z) {
-		xc[currentPlayer] = Math.max (1, Math.min (size[0], x));//  check for under- and overflow
-		yc[currentPlayer] = Math.max (1, Math.min (size[1], y));
-		zc[currentPlayer] = Math.max (1, Math.min (size[2], z));
+		int player = (currentPlayer >= 0 && currentPlayer < numPlayers)?
+				currentPlayer: 0;
+		xc[player] = Math.max (1, Math.min (size[0], x));//  check for under- and overflow
+		yc[player] = Math.max (1, Math.min (size[1], y));
+		zc[player] = Math.max (1, Math.min (size[2], z));
 	}
 	/**
 	 set cursor position for a certain player without checking for over- and

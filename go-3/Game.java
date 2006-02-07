@@ -2,24 +2,34 @@
 import java.net.*;
 import java.io.*;
 import java.util.Vector;
-import java.util.ListIterator;
+import java.util.HashMap;
 
-class GoGridServer extends GoGrid {
+/**
+ * A Game consists of 2 (or generally <tt>numPlayers</tt>) Players, who can dis-
+ * and reconnect to the same Game. Thus a Game has a unique GameID.
+ * A Game is spawned by the GoGridServer upon request by a Client for a new 
+ * Game. Thereafter it is in a pending state, until another Client connects and
+ * is accepted.
+ *  
+ * @author helge
+ */
+class Game extends GoGrid {
 	
-	public GoGridServer (int size) {
+	public Game (int size, Player player, ServerSocket serverSocket, Socket clientSocket) {
 		super (size);
+		this.serverSocket = serverSocket;
 		
 		Utility.setDebugMode (true);
 		
-		setupBoard ();                                          //  initialize board structure
+		setupBoard ();                  //  initialize board structure
 		
-		reserveVectors ();              	                //  get storage space for client data
+		reserveContainers ();           //  get storage space for client data
 		
-		if (false) {
-			setupConnections ();
-			startGame ();
-		}
-		else newGame ();
+		initPlayer (player, clientSocket);
+		
+		waitForConnections ();
+		
+		startGame ();
 	}
 	
 	
@@ -35,22 +45,26 @@ class GoGridServer extends GoGrid {
 	 */
 	void startGame () {
 		Utility.debug ("GoGridServer.startGame (): "+numPlayers+" Players");
-		for (int player = 0; player < numPlayers; player++) {	    	    
+		for (int i = 0; i < players.size(); i++) {
+			ConnectedPlayer player = players.elementAt(i);
 			updateBoard (player);
-			((GoGridProtocol)proto.elementAt (player)).startGame ();
+			player.getProtocol().startGame ();
 		}
-		nextPlayer ();                                          //  currentPlayer = -1 => start with player 0
+		nextPlayer ();                  //  currentPlayer initialized to -1 => start with player 0
 	}
+	
 	
 	/**
 	 switches to next player
 	 */
 	void nextPlayer () {
 		currentPlayer = (currentPlayer+1)%numPlayers;
-		Utility.debug ("current player is now "+currentPlayer);
-		((GoGridProtocol)proto.elementAt (currentPlayer)).awaitMove ();
-		((PrintWriter)out.elementAt (currentPlayer)).println ("ready");
+		ConnectedPlayer player = players.elementAt(currentPlayer);
+		Utility.debug ("current player is now "+player);
+		player.getProtocol().awaitMove ();
+		player.getOutStream().println ("ready");
 	}
+	
 	
 	/**
 	 sets a stone of color <tt>currentPlayer</tt>at the cursor position<br>
@@ -60,6 +74,23 @@ class GoGridServer extends GoGrid {
 	boolean setStone () {
 		Utility.bitch (new Throwable ("This function does not make sense. or does it?"));
 		return super.setStone ();
+	}
+	
+	/**
+	 sets a stone of given player at the given position<br>
+	 if that position is already occupied, returns false<br>
+	 clears any stones captured by the move<br>
+	 @param p Player to set
+	 @param x x position to set
+	 @param y y position to set
+	 @param z z position to set
+	 @return success
+	 */
+	boolean setStone (Player p, int x, int y, int z) {
+		Utility.bitch(new Throwable ("setStone (Player, ...) not yet " +
+		"implemented - add Colour property to Player class first"));
+		System.exit(0);
+		return false;
 	}
 	
 	/**
@@ -80,14 +111,14 @@ class GoGridServer extends GoGrid {
 			return false;
 		
 		//  TO DO: check for ko's
-		if (stones[x][y][z] == Colour.EMPTY) {			//  able to set?	
+		if (stones[x][y][z] == Colour.EMPTY) {	//  able to set?	
 			stones[x][y][z] = col;				//  fill board position	
-			xset = x; yset = y; zset = z;			//  remember last set position
+			xset = x; yset = y; zset = z;		//  remember last set position
 			
 			checkArea ();					//  check for captives
 //			moveBuffer.add (new Move (x, y, z, col));		//  remember this move
 //			Utility.debug (moveBuffer.size ()+": ("+x+", "+y+", "+z+"), "
-//					+Liberty (x, y, z, col, false)+" liberties");
+//			+Liberty (x, y, z, col, false)+" liberties");
 			//	    printGrid ();
 			return true;					//  success
 		}
@@ -98,26 +129,51 @@ class GoGridServer extends GoGrid {
 	}	    
 	
 	/**
-	 sends the whole board to all players
+	 sends the whole board to a specified player
+	 @param player the player who made the request
 	 */
-	void updateBoard () {
-		for (int i = 0; i < numPlayers; i++)
-			updateBoard (i);
+	void updateBoard (ConnectedPlayer p) {
+		p.getOutStream().println ("size "+getBoardSize (0)
+				+" "+getBoardSize (1)
+				+" "+getBoardSize (2));
+		String content = "stones ";
+		for (int x = 1; x <= getBoardSize (0); x++)
+			for (int y = 1; y <= getBoardSize (1); y++)
+				for (int z = 1; z <= getBoardSize (2); z++)
+					content += getStone (x, y, z)+" "+x+" "+y+" "+z+" ";
+		
+		Utility.debug ("Player "+p/*+": "+content*/);
+		p.getOutStream().println (content);
 	}
 	
 	/**
-	 send a text message to one or all players
-	 @param player the addressee or -1 for all (actually any int < 0)
+	 sends the whole board to all players
+	 */
+	void updateBoard () {
+		for (int i = 0; i < players.size(); i++) {
+			ConnectedPlayer player = players.elementAt(i);
+			updateBoard (player);
+		}
+	}
+
+	/** 
+	 * reimplemented because it is abstract in the base class; makes no sense  
+	 * with all players represented by a Player (or ConnectedPlayer) object.
+	 * should be removed soon in the base class. 
+	 */	
+	void sendMessage (int i, String message) { 
+		sendMessage (players.elementAt (i), message);
+	}
+
+	/**
+	 send a text message to one player
+	 @param player the addressee
 	 @param message the message to be sent
 	 */
-	void sendMessage (int player, String message) {
-		if (player < 0) 
-			broadcast ("message "+message);
-		else if (player < numPlayers)
-			((PrintWriter)out.elementAt (player)).println ("message "+message);
-		else 
-			Utility.bitch (new Throwable (""+player+", \""+message+"\"): numPlayers = "+numPlayers));
+	void sendMessage (ConnectedPlayer player, String message) {
+		player.getOutStream().println ("message "+message);
 	}
+	
 	
 	/**
 	 return (a generally wrong, i.e. much too high, value for) the liberties
@@ -184,181 +240,182 @@ class GoGridServer extends GoGrid {
 	//          OVERRIDDEN METHODS END                                        //
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
-	
-	void newGame () {
-		try {						
-			serverSocket = new ServerSocket(serverPort);	//  set up the server socket
+
+	/**
+	 construct a ConnectedPlayer as first player and add it to the player list
+	 @param player a preexisting simple Player object
+	 @param clientSocket a socket from which the player attempts a connection
+	 @return the completely initialized ConnectedPlayer
+	 */
+	ConnectedPlayer initPlayer (Player player, Socket clientSocket) {
+		ConnectedPlayer cp = new ConnectedPlayer (player, clientSocket);
+		String username = null;
+		try {
+			username = cp.getInStream().readLine ();
+
+			cp.setUsername (username);
+			cp.getOutStream().println ("ok");
+
+			cp.setColour(Colour.BLACK);
+
+			setColor (cp);
+			updateBoard (cp);
+			cp.setProtocol(new GoGridProtocol (cp, this, 
+					cp.getInStream(), cp.getOutStream()));
+			cp.getProtocol().start ();
 		} catch (IOException e) {
-			Utility.bitch (new Throwable ("Could not listen on port: "+serverPort));
-			System.exit(0);                                    //  die of resource starvation
+			e.printStackTrace();
+			System.err.println (e.getMessage());
+			System.exit(0);
 		}
+		Utility.debug("player "+username+" connected from "+
+				clientSocket.getInetAddress().getHostName());
 		
-		Socket clientSocket = null;
-		try {						
-			clientSocket = serverSocket.accept();
-		} catch (IOException e) {
-			Utility.bitch (new Throwable ("accept() failed:"+e.getMessage()));
-			System.exit(0);                                    //  die of resource starvation
-		}
-	
-		Game game = new Game (getBoardSize(), new Player (0), serverSocket, clientSocket);
-		
-		
+		players.addElement (cp);
+		return players.lastElement();
 	}
+	
 	/**
 	 set up 1 (one) client connection:
 	 <ul>
 	 <li>client socket
 	 <li>output stream to client
 	 <li>input stream from client
+	 <li>user name
 	 <li>tell the client its color
 	 <li>send board size and board to client
 	 <li>start a thread to handle communication with the client
 	 </ul>
+	 @param player the client with whom to (re-)connect
 	 */
 	void connectWith (Player player) {
 		Utility.debug ("waiting for player "+player.toInt()
-									+" ["+player.toString()+"] to connect");
+				+(!player.getUsername().equals("")? 
+						" ["+player.getUsername ()+"]": 
+						"")+
+		" to connect");
 		
-		while (true) {											//	loop until connection succeeds
-			try {
-				//  create a client socket with accept() and insert it into the
-				//  socket list
-				clientSocket.insertElementAt ( 
-						serverSocket.accept(), 
-						player.toInt());
-				
-				//  create an output channel to the client and insert it into 
-				//  the output list
-				out.insertElementAt (
-						new PrintWriter (
-								((Socket)clientSocket.elementAt (player.toInt())).getOutputStream(), true), 
-								player.toInt());
-				
-				//  create an input channel from the client and insert it into
-				//  the input list
-				in.insertElementAt (
-						new BufferedReader (
-								new InputStreamReader(
-										((Socket)clientSocket.elementAt (player.toInt())).getInputStream())), 
-										player.toInt());
-				
-				//	read the player's name from in and set it in the Player object
-				//	or compare it if it's already set in the object
+		ConnectedPlayer activePlayer;
+		
+		connect:
+			while (true) {					//	loop until connection succeeds
 				try {
-					String username = in.elementAt (player.toInt()).readLine ();
-					//	new player connecting
-					if (player.toString().equals("")) {
-						//	check whether a player of name username is already connected		[TO DO] 
-						//	if so, reject this name:																				[TO DO]
-						//	if not:
-						player.setUsername(username);
+					//  create a client socket with accept() and insert it into the
+					//  socket map
+					Socket clientSocket = serverSocket.accept();
+					
+					activePlayer = new ConnectedPlayer (player, clientSocket);
+					
+					//	read the player's name from in and set it in the Player object
+					//	or compare it if it's already set in the object
+					try {
+						String username = activePlayer.getInStream().readLine ();
+						if (player.getUsername().equals("")) {	//	new player connecting, player not yet set
+							//	check whether a player of name username is already connected	[TODO]
+							for (int i = 0; i < players.size(); i++) {
+								//	if so, reject this name:										[TODO]
+								if (players.elementAt(i).getUsername().equals (username)) {
+									Utility.debug(username+" tried to connect, but is already connected!");
+									activePlayer.getOutStream().println(
+											"message go away, you're already connected!");
+									activePlayer.getClientSocket().close();
+
+									continue connect;		//	next connection attempt								
+								}
+							}
+							//	if not, we can continue:
+							activePlayer.setUsername(username);
+							activePlayer.setColour(player.toInt());	//	the number of the initial Player object denotes its colour
+
+							players.addElement (activePlayer);
+						}
+						//	player reconnects after a disconnection
+						else if (username.equals(player.toString())) { 
+							//	replace entry in player list with active player
+							activePlayer.setUsername(username);
+							for (int i = 0; i < players.size(); i++) {
+								if (players.elementAt(i).getUsername().equals (username)) {
+									players.setElementAt(activePlayer, i);
+									break;
+								}
+							}
+						}
+						//	we wait for a specific player to reconnect, but 
+						//	someone else connects
+						else {
+							Utility.debug(username+" tried to connect, but we want user "+
+									player+" to connect!");
+							activePlayer.getOutStream().println(
+									"message go away, we want user "+player+" to connect!");
+							activePlayer.getClientSocket().close();
+							
+							continue connect;		//	next connection attempt
+						}
+						
+						//	if we reach  this point, we have a connected, accepted
+						//	player with a defined username.
+						Utility.debug(activePlayer.getUsername()+" connected from "
+								+activePlayer.getClientSocket().getInetAddress().getHostAddress());
+						//	acknowledge player name
+						activePlayer.getOutStream().println ("ok");
+					} catch (IOException e) {
+						e.printStackTrace();
+						System.err.println (e.getMessage());
+						continue connect;										//	try it again, although there's not much hope.
 					}
-					//	player reconnects after a disconnection
-					else if (username.equals(player.toString())) { 
-						//	everything ok, we can simply continue
-						updateBoard (player.toInt());
-					}		
-					else {
-						Utility.debug(username+" tried to connect, but we want user "+
-													player+" to connect!");
-						out.elementAt (player.toInt()).println(
-								"no, we want user "+player+" to connect!");
-						continue;										//	next connection attempt
-					}
-					Utility.debug("username is "+player);
-					//	acknowledge player name
-					out.elementAt (player.toInt()).println ("ok");
+					
+					//  tell the client its color
+					setColor (activePlayer);
+					
+					//  send board size and board to client
+					updateBoard (activePlayer);
+					
+					//  create a thread to handle communications with the client 
+					//  and add it to the thread list
+					activePlayer.setProtocol(
+							new GoGridProtocol (activePlayer, this, 
+									activePlayer.getInStream(), 
+									activePlayer.getOutStream()));
+					
+					//  start the created thread
+					activePlayer.getProtocol().start ();
+					
 				} catch (IOException e) {
-					e.printStackTrace();
+					Utility.bitch (new Throwable ("Accept failed: "+serverPort));
+					e.printStackTrace ();
 					System.err.println (e.getMessage());
-					continue;												//	try it again, although there's not much hope.
+					continue connect;											//	try it again, although there's not much hope.
+				}
+				catch (ArrayIndexOutOfBoundsException e) {
+					Utility.bitch (new Throwable ("Couldn't create client socket: Player number"+
+							player.toInt()+"out of range"));
+					e.printStackTrace ();
+					System.err.println (e.getMessage());
+					continue connect;											//	try it again, although there's not much hope.
 				}
 				
-				//  tell the client its color
-				setColor (player.toInt(), player.toInt());
+				if (currentPlayer >= 0) {
+					activePlayer.getProtocol().startGame ();
+					updateBoard (activePlayer);
+					if (player.toInt() == currentPlayer)
+						activePlayer.getOutStream().println ("ready");
+				}
 				
-				//  send board size and board to client
-				updateBoard (player.toInt());
+				Utility.debug ("Client "+(player.toInt()+1)+" connected from "+
+						activePlayer.getClientSocket().getInetAddress ().getHostAddress());
 				
-				handicap.insertElementAt (new Integer (0), player.toInt());
-				
-				//  create a thread to handle communications with the client 
-				//  and add it to the thread list
-				proto.insertElementAt (
-						new GoGridProtocol (player.toInt(), this, 
-								(BufferedReader)in.elementAt (player.toInt()), 
-								(PrintWriter)out.elementAt (player.toInt())), 
-								player.toInt());
-				
-				//  start the created thread
-				((GoGridProtocol)proto.elementAt (player.toInt())).start ();
-				
-			} catch (IOException e) {
-				Utility.bitch (new Throwable ("Accept failed: "+serverPort));
-				e.printStackTrace ();
-				System.err.println (e.getMessage());
-				continue;												//	try it again, although there's not much hope.
+				return;
 			}
-			catch (ArrayIndexOutOfBoundsException e) {
-				Utility.bitch (new Throwable ("Couldn't create client socket: Player number"+
-						player.toInt()+"out of range"));
-				e.printStackTrace ();
-				System.err.println (e.getMessage());
-				continue;												//	try it again, although there's not much hope.
-			}
-			
-			if (currentPlayer >= 0) {
-				((GoGridProtocol)proto.elementAt (player.toInt())).startGame ();
-				updateBoard (player.toInt());
-				if (player.toInt() == currentPlayer)
-					((PrintWriter)out.elementAt (currentPlayer)).println ("ready");
-			}
-			
-			Utility.debug ("Client "+(player.toInt()+1)+" connected from "+
-					((Socket)clientSocket.elementAt (player.toInt())).getInetAddress ().toString ());
-			return;
-		}
 	}
-	
-	/**
-	 sends the whole board to a specified player
-	 @param player the player who made the request
-	 */
-	void updateBoard (int p) {
-		Utility.debug ("Player "+p);
-		
-		((PrintWriter)out.elementAt (p)).println ("size "+getBoardSize (0)
-				+" "+getBoardSize (1)
-				+" "+getBoardSize (2));
-		String content = "stones ";
-		for (int x = 1; x <= getBoardSize (0); x++)
-			for (int y = 1; y <= getBoardSize (1); y++)
-				for (int z = 1; z <= getBoardSize (2); z++)
-					content += getStone (x, y, z)+" "+x+" "+y+" "+z+" ";
-		
-		((PrintWriter)out.elementAt (p)).println (content);
-	}
-	
 	
 	/**
 	 tries to change the color of a player 
-	 @param oldc current color of the player
-	 @param newc wanted color
+	 @param p the player
 	 */
-	boolean setColor (int oldc, int newc) {
-		if (oldc == newc) {
-			((PrintWriter)out.elementAt (oldc)).println ("color "+(oldc+1));
-			return true;
-		} 
-		else {
-			//  move the elements in the corresponding vectors around
-			//  tell the members of the proto vectors about their color
-			Utility.bitch (new Throwable (""+oldc+" != "+newc+"): not yet implemented!"));
-			return false;
-		}
+	boolean setColor (ConnectedPlayer p) {
+		p.getOutStream().println ("color "+p.getColour());
+		return true;
 	}
-	
 	
 	/**
 	 set the handicap of a player
@@ -366,34 +423,27 @@ class GoGridServer extends GoGrid {
 	 @param handicap wanted handicap; will be normalized taking the handicaps
 	 of all other players into account
 	 */
-	void setHandicap (int player, int h) {
+	void setHandicap (Player player, int h) {
 		if (h <= MAX_HANDICAPS && h >= 0) 
-			handicap.setElementAt (new Integer (h), player);													//	UNCHECKED setElementAt ()
+			player.setHandicap(h);
 		
 		//  find out whether smallest handicap of all players is > 0
-		Integer hmin = new Integer (MAX_HANDICAPS+1);
-		for (int i = 0; i < numPlayers; i++)
-			if (((Integer)handicap.elementAt (i)).compareTo (hmin) < 0) 
-				hmin = (Integer)handicap.elementAt (i);
-			
-			//  if so, subtract its value from all handicaps, so that handicaps
-			//  start at 0 again
-		for (int i = 0; i < numPlayers; i++)
-			handicap.setElementAt (new Integer (																			//	UNCHECKED setElementAt ()
-					((Integer)handicap.elementAt (i)).intValue ()
-					-hmin.intValue ()),
-					i);
+		int hmin = MAX_HANDICAPS+1;
+		for (int i = 0; i < players.size(); i++) {
+			Player p = players.elementAt (i);
+			if (p.getHandicap() < hmin)	hmin = p.getHandicap();
+		}
+		
+		//  if so, subtract its value from all handicaps, so that handicaps
+		//  start at 0 again
+		//	TODO this is not safe for numPlayers > 2, as the handicaps may be
+		//	renormalized REPEATEDLY, leading to too small values
+		for (int i = 0; i < players.size(); i++) {
+			Player p = players.elementAt (i);
+			p.setHandicap(p.getHandicap()-hmin);
+		}
 	}
-	
-	
-	/**
-	 @param player the player whose handicap is read
-	 @return the handicap of the player
-	 */
-	int getHandicap (int player) {
-		return ((Integer)handicap.elementAt (player)).intValue ();
-	}
-	
+		
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
@@ -406,19 +456,12 @@ class GoGridServer extends GoGrid {
 	 reserve all <tt>java.util.Vector</tt>s to have a size of
 	 <tt>numPlayers</tt>
 	 */
-	protected void reserveVectors () {
-		handicap.ensureCapacity (numPlayers);
-		clientSocket.ensureCapacity (numPlayers);
-		out.ensureCapacity (numPlayers);
-		in.ensureCapacity (numPlayers);
-		proto.ensureCapacity (numPlayers);
+	protected void reserveContainers () {
 		players.ensureCapacity (numPlayers);
 	}	
 	
-	
 	/**
-	 set up the server socket<br>
-	 accept <tt>numPlayers</tt> client connections<br>
+	 wait for further players to connect.
 	 block until all connections are made<br>
 	 set up client connections:
 	 <ul>
@@ -430,24 +473,13 @@ class GoGridServer extends GoGrid {
 	 <li>start a thread to handle communication with the client
 	 </ul>
 	 */
-	protected void setupConnections () {
-		try {						
-			serverSocket = new ServerSocket(serverPort);	//  set up the server socket
-		} catch (IOException e) {
-			Utility.bitch (new Throwable ("Could not listen on port: "+serverPort));
-			System.exit(0);                                    //  die of resource starvation
-		}
+	protected void waitForConnections () {
+		Utility.debug ("waiting for "+(numPlayers-1)+" clients to connect...");
 		
-		Utility.debug ("waiting for "+numPlayers+" clients to connect...");
-		
-		for (int player = 0; player < numPlayers; player++) {
-			players.add (player, new Player (player));
-			connectWith (players.elementAt (player));
-		}
-		
+		for (int i = 1; i < numPlayers; i++) 
+			connectWith (new Player (i));
 	}
-	
-	
+		
 	/**
 	 check the whole grid for captives<br>
 	 clear any captives found<br>
@@ -460,10 +492,9 @@ class GoGridServer extends GoGrid {
 					if (((x != xset) || (y != yset) || (z != zset))//  the   stone  set  now ...
 							&& (stones[x][y][z] != Colour.EMPTY))
 						checkArea (x, y, z);
-					
+		
 		checkArea (xset, yset, zset);				//  ... must  be checked last
 	}
-	
 	
 	/** 
 	 check whether the stone at the given position has been captured<br>
@@ -479,7 +510,6 @@ class GoGridServer extends GoGrid {
 			if (Liberty (x, y, z, P, true) == 0)            //  check liberties
 				clearArea (x, y, z, P);                     //  remove, if zero
 	}
-	
 	
 	/** 
 	 clear the stone at the given position and all stones connected to it<br>
@@ -503,18 +533,17 @@ class GoGridServer extends GoGrid {
 			if (getStone (xx, y, z) == current &&           //  same  color ?
 					xx >= 1 && xx <= getBoardSize (0))      //  on  grid ?
 				clearArea (xx, y, z, current);              //  then  clear !
-			
+		
 		for (int yy = y-1; yy <= y+1; yy += 2)          	//  again...
 			if (getStone (x, yy, z) == current &&           //  same  color ?
 					yy >= 1 && yy <= getBoardSize (1))      //  on  grid ?
 				clearArea (x, yy, z, current); 
-			
+		
 		for (int zz = z-1; zz <= z+1; zz += 2)          	//  and again
 			if (getStone (x, y, zz) == current &&           //  same  color ?
 					zz >= 1 && zz <= getBoardSize (2))      //  on  grid ?
 				clearArea (x, y, zz, current);
 	}
-	
 	
 	/**
 	 send a string message to all connected clients
@@ -522,8 +551,8 @@ class GoGridServer extends GoGrid {
 	 */
 	protected void broadcast (String msg) {
 		try {
-			for (int i = 0; i < numPlayers; i++)
-				((PrintWriter)out.elementAt (i)).println (msg);
+			for (int i = 0; i < players.size (); i++)
+				players.elementAt (i).getOutStream().println (msg);
 		}
 		catch (ArrayIndexOutOfBoundsException e) { }
 		catch (NullPointerException e) { }
@@ -561,36 +590,9 @@ class GoGridServer extends GoGrid {
 	protected ServerSocket serverSocket = null;
 	
 	/**
-	 the connections to the clients, of type <tt>Socket</tt>
+	 <tt>ConnectedPlayer</tt>s representing the participant - 
 	 */
-	protected Vector<Socket> clientSocket = new Vector<Socket> ();
-	
-	/**
-	 <tt>PrintWriter</tt>s as output connections to all clients
-	 */
-	protected Vector<PrintWriter> out = new Vector<PrintWriter> ();
-	
-	/**
-	 <tt>BufferedReader</tt>s as input connections from all clients
-	 */
-	protected Vector<BufferedReader> in = new Vector<BufferedReader> ();
-	
-	/**
-	 <tt>GoGridProtocol</tt>s handling the input as a thread for each client
-	 */
-	protected Vector<GoGridProtocol> proto = new Vector<GoGridProtocol> ();
-	
-	/**
-	 <tt>Player</tt>s representing the participant - 
-	 I think eventually all the sockets, connections and protocols should be 
-	 handled through these objects
-	 */
-	protected Vector<Player> players = new Vector<Player> ();
-	
-	/**
-	 the handicaps for each client, stored as <tt>Integer</tt>s
-	 */
-	protected Vector<Integer> handicap = new Vector<Integer> ();
+	protected Vector<ConnectedPlayer> players = new Vector<ConnectedPlayer> ();
 	
 	
 	////////////////////////////////////////////////////////////////////////////
@@ -598,32 +600,5 @@ class GoGridServer extends GoGrid {
 	//          VARIABLES SECTION ENDS                                        //
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
-	
-	
-	/** print some information and marketing blah */
-	static void banner () {
-		System.out.println ("Three-dimensional Go server version "+VERSION);
-		System.out.println ("written by "+MAINTAINER);
-		System.out.println ();
-		System.out.println ("Usage: ");
-		System.out.println ("java GoGridServer [gridsize]");  	
-	}
-	
-	/**
-	 start a gogrid server
-	 @param args the command line
-	 command line: java GoGrid [gridsize]
-	 MISSING: A BETTER PARSE FUNCTION, SETTING E.G. PORT, NUMBER OF PLAYERS,
-	 WHATEVER, AND TAKING COMMAND LINE SWITCHES
-	 */
-	public static void main (String args[]) {
-		int s;
-		if (args.length == 0) s = 3;
-		else s = Integer.parseInt(args[0]);
 		
-		banner ();
-		
-		GoGridServer server = new GoGridServer (s);
-	}
 }
-

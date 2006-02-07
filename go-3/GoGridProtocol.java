@@ -15,27 +15,36 @@ class GoGridProtocol extends Thread {
 	game_started = false,
 	awaiting_move = false;
 	
-	protected Player player = new Player (-1);
+//	protected Player player = new Player (-1);
+	protected ConnectedPlayer player = new ConnectedPlayer (new Player (-1), null);
 	
-	protected GoGridServer server;
+//	protected GoGridServer server = null;
+	protected Game server = null;
 	
-	protected BufferedReader in;
-	protected PrintWriter out;
+	protected BufferedReader in = null;
+	protected PrintWriter out = null;
 	
 	GoGridProtocol (int player, GoGridServer server, BufferedReader in, PrintWriter out) {
 		connected = true;
-		this.server = server;
-		this.player = new Player (player);
+//		this.server = server;
+//		this.player = new Player (player);
 		this.in = in;
 		this.out = out;
 	}
 	
+	GoGridProtocol (ConnectedPlayer player, Game game, BufferedReader in, PrintWriter out) {
+		connected = true;
+		this.server = game;
+		this.player = player;
+		this.in = in;
+		this.out = out;
+	}
 	
 	public void run () {
 		while (true) {											//	outer loop to catch disconnects
 			
 			while (true) {										//	inner loop over moves
-				String inputLine = new String ();
+				String inputLine = null;
 				
 				try {
 					inputLine = in.readLine ();
@@ -49,6 +58,8 @@ class GoGridProtocol extends Thread {
 				
 				processInput (inputLine);
 			}
+
+			//	we're here because we've lost connection to the client
 			
 			if (false) {											//	disabling bailout, just for kicks
 				Utility.warning ("null input - player "+player+" disconnected!");
@@ -91,7 +102,8 @@ class GoGridProtocol extends Thread {
 		if (gameStarted ()) {
 			
 			if (input.startsWith ("send board")) {
-				server.updateBoard (player.toInt());                    //  send board to player
+//				server.updateBoard (player.toInt());                    //  send board to player
+				server.updateBoard (player);                    //  send board to player
 				return;
 			}
 			
@@ -188,7 +200,8 @@ class GoGridProtocol extends Thread {
 				
 				//  pass this move
 				if (input.startsWith ("pass")) {
-					server.updateBoard (player.toInt());                //  send board to player
+//					server.updateBoard (player.toInt());                //  send board to player
+					server.updateBoard (player);                //  send board to player
 					awaiting_move = false;		        //  toggle state to 'not ready'
 					server.nextPlayer ();                       //  activate next player
 					return;
@@ -241,10 +254,11 @@ class GoGridProtocol extends Thread {
 					return;
 				}
 				if (c < server.getNumPlayers ()) {
-					if (server.setColor (player.toInt(), c)) {		//  set color, if not yet in use
+//					if (server.setColor (player.toInt(), c)) {		//  set color, if not yet in use
+					if (server.setColor (player)) {		//  set color, if not yet in use
 						server.sendMessage (-1,		        //  inform all players about color change for player
 								"Player "+player+" now has color "+c);
-						player = new Player (c);
+//						player = new Player (c);
 					}
 				}
 				else {
@@ -264,9 +278,10 @@ class GoGridProtocol extends Thread {
 					return;		    
 				}
 				if (h >= 2 && h <= GoGrid.MAX_HANDICAPS) {
-					server.setHandicap (player.toInt(), h);		//  set handicaps
+//					server.setHandicap (player.toInt(), h);		//  set handicaps
+					server.setHandicap (player, h);		//  set handicaps
 					server.sendMessage (-1,		        //  inform all players about handicap for player
-							"Player "+player+" has handicap "+server.getHandicap (player.toInt()));
+							"Player "+player+" has handicap "+player.getHandicap());
 					
 				} 
 				else {
