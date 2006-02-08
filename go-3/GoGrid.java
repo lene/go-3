@@ -10,17 +10,24 @@ import java.util.ArrayList;
  * <p> 
  */
 
-class Move {
-	int x;
-	int y;
-	int z;
-	int col;
+class Move extends GameBase {
 	public Move (int x, int y, int z, int col) {
+
+		assert precondition (x >= 0 && x < MAX_GRID_SIZE &&
+				y >= 0 && y < MAX_GRID_SIZE &&
+				z >= 0 && z < MAX_GRID_SIZE,
+				"point ["+x+", "+y+", "+z+"] must lie inside the allowed grid size!");
+		assert precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
+				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
+
 		this.x = x;
 		this.y = y;
 		this.z = z;
 		this.col = col;
 	}
+
+	private int x, y, z;
+	private int col;
 }
 
 
@@ -31,11 +38,12 @@ abstract class GoGrid extends GameBase {
 	 */
 	
 	public GoGrid (int s) {
+		assert precondition ((s >= MIN_GRID_SIZE && s <= MAX_GRID_SIZE), 
+				"Board size must lie between "+MIN_GRID_SIZE+" and "+MAX_GRID_SIZE);		
+		
 		setBoardSize (s);
 		setNumPlayers (DEFAULT_PLAYERS);
 	}
-	
-	
 	
 	/**
 	 starts the game, i.e. makes setting possible
@@ -75,6 +83,7 @@ abstract class GoGrid extends GameBase {
 	
 	/**
 	 send a text message to one or all players
+	 TODO an int as parameter sucks! use a Player or ConnectedPlayer!
 	 @param player the addressee or -1 for all
 	 @param message the message to be sent
 	 */
@@ -109,7 +118,9 @@ abstract class GoGrid extends GameBase {
 	 </ul>
 	 */
 	void fakeGame (int numMoves, int playerToStart) {
-		
+		assert precondition ((playerToStart >= 0 && playerToStart < numPlayers), 
+				"starting player must be between 0 and "+numPlayers);
+
 		for (int i = playerToStart-1; i < numMoves+playerToStart-1; i++) {
 			boolean free = true;
 			while (free) {
@@ -192,31 +203,43 @@ abstract class GoGrid extends GameBase {
 	 */
 	int xc () { 
 		if (currentPlayer >= 0 && currentPlayer < numPlayers)
-			return xc[currentPlayer]; 
+			return xc(currentPlayer); 
 		else 
-			return (size[0]+1)/2;
+			return (getBoardSize(0)+1)/2;
 	}
-	int xc (int player) { return xc[player]; }
+	int xc (int player) { 
+		assert precondition ((player >= 0 && player < numPlayers), 
+				"player must be between 0 and "+numPlayers);
+		
+		return xc[player]; }
 	/**
 	 @return cursor y position
 	 */
 	int yc () {
 		if (currentPlayer >= 0 && currentPlayer < numPlayers)
-		  return yc[currentPlayer]; 
+		  return yc(currentPlayer); 
 		else 
-			return (size[1]+1)/2;		
+			return (getBoardSize(1)+1)/2;		
 	}
-	int yc (int player) { return yc[player]; }
+	int yc (int player) { 
+		assert precondition ((player >= 0 && player < numPlayers), 
+				"player must be between 0 and "+numPlayers);
+		
+		return yc[player]; }
 	/**
 	 @return cursor z position
 	 */
 	int zc () { 
 		if (currentPlayer >= 0 && currentPlayer < numPlayers)
-			return zc[currentPlayer]; 
+			return zc(currentPlayer); 
 		else 
-			return (size[2]+1)/2;
+			return (getBoardSize(2)+1)/2;
 	}
-	int zc (int player) { return zc[player]; }
+	int zc (int player) { 
+		assert precondition ((player >= 0 && player < numPlayers), 
+				"player must be between 0 and "+numPlayers);
+
+		return zc[player]; }
 	/**
 	 set the cursor, checking for over- and underflow
 	 @param x cursor x position
@@ -224,11 +247,12 @@ abstract class GoGrid extends GameBase {
 	 @param z cursor z position
 	 */
 	void setCursor (int x, int y, int z) {
-		int player = (currentPlayer >= 0 && currentPlayer < numPlayers)?
-				currentPlayer: 0;
-		xc[player] = Math.max (1, Math.min (size[0], x));//  check for under- and overflow
-		yc[player] = Math.max (1, Math.min (size[1], y));
-		zc[player] = Math.max (1, Math.min (size[2], z));
+		assert precondition ((currentPlayer >= 0 && currentPlayer < numPlayers), 
+				"current player must be between 0 and "+numPlayers);
+
+		xc[currentPlayer] = Math.max (1, Math.min (getBoardSize(0), x));//  check for under- and overflow
+		yc[currentPlayer] = Math.max (1, Math.min (getBoardSize(1), y));
+		zc[currentPlayer] = Math.max (1, Math.min (getBoardSize(2), z));
 	}
 	/**
 	 set cursor position for a certain player without checking for over- and
@@ -239,6 +263,9 @@ abstract class GoGrid extends GameBase {
 	 @param z cursor z position 
 	 */
 	void setCursor (int player, int x, int y, int z) {
+		assert precondition ((player >= 0 && player < numPlayers), 
+				"player must be between 0 and "+numPlayers);
+
 		xc[player] = x; yc[player] = y; zc[player] = z;
 	}
 	
@@ -283,7 +310,11 @@ abstract class GoGrid extends GameBase {
 	/**
 	 @param p current player
 	 */
-	void setCurrentPlayer (int p) { currentPlayer = p; }
+	void setCurrentPlayer (int p) { 
+		assert precondition ((p >= 0 && p < numPlayers), 
+				"player must be between 0 and "+numPlayers);
+
+		currentPlayer = p; }
 	
 	
 	/**
@@ -306,7 +337,5 @@ abstract class GoGrid extends GameBase {
 	//          VARIABLES SECTION ENDS                                        //
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
-	
-	
 	
 }

@@ -224,6 +224,11 @@ class Game extends GoGrid {
 	int Liberty (int x, int y, int z, 
 			int Current, boolean ShortCut) {
 		
+		assert precondition (x > 0 && x <= getBoardSize(0) &&
+				y > 0 && y <= getBoardSize(1) &&
+				z > 0 && z <= getBoardSize(2),
+				"point to check must lie inside the board!");
+
 		Utility.debug ("TODO: Fix Liberties()!\n" +
 				"Save the whole board and set EVERY visited grid place to OCCUPIED.");
 		
@@ -580,10 +585,10 @@ class Game extends GoGrid {
 	 THERE SHOULD BE A MORE DESCRIPTIVE NAME FOR THIS FUNCTION<br>
 	 */
 	protected void checkArea (int x, int y, int z) {
-		assert precondition (x > 0 && x <= this.getBoardSize(0) &&
-				y > 0 && y <= this.getBoardSize(1) &&
-				z > 0 && z <= this.getBoardSize(2),
-				"point to check must lie inside the board!");
+		assert precondition (x >= 0 && x <= this.getBoardSize(0)+1 &&
+				y >= 0 && y <= this.getBoardSize(1)+1 &&
+				z >= 0 && z <= this.getBoardSize(2)+1,
+				"point ["+x+", "+y+", "+z+"] to check must lie inside the board!");
 		
 		int P = stones[x][y][z];
 		if (P != Colour.EMPTY && P != Colour.OCCUPIED)
@@ -600,10 +605,10 @@ class Game extends GoGrid {
 	 @param current player who owns this position
 	 */
 	protected void clearArea (int x, int y, int z, int current) {
-		assert precondition (x > 0 && x <= this.getBoardSize(0) &&
-				y > 0 && y <= this.getBoardSize(1) &&
-				z > 0 && z <= this.getBoardSize(2),
-				"point to check must lie inside the board!");
+		assert precondition (x >= 0 && x <= this.getBoardSize(0)+1 &&
+				y >= 0 && y <= this.getBoardSize(1)+1 &&
+				z >= 0 && z <= this.getBoardSize(2)+1,
+				"point ["+x+", "+y+", "+z+"] to check must lie inside the board!");
 
 		if (stones[x][y][z] != current) return;            	//  nothing  to  clear
 		
