@@ -9,118 +9,125 @@ import javax.vecmath.*;
 
 
 public class Cursor extends Sphere {
-    private static float radius = 0.5f;
-
-    public Cursor () {
-	super (radius, Primitive.GENERATE_NORMALS, 16);
-	this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
-	this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
-	setColour (Colour.BLUE);
-    }
-
-    public Cursor (int c) {
-	super (radius, Primitive.GENERATE_NORMALS, 16);
-	this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
-	this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
-	setColour (c);
-    }
-
-    public int getColour () {
-	return color;
-    }
-    public void setColour (int c) {
-	color = c;
-	material = materials[c];
-	sAppearance = createAppearance ();
-	try {
-	    this.setAppearance (sAppearance);
-	} catch (CapabilityNotSetException e) {
-	    Utility.debug ("CapabilityNotSetException");
-	}
-    }
-    
-    public static void setSegments (int s) {
-	segments = s;
-	//  redraw spheres, repaint board
-    }
-
-    public static int getSegments () {
-	return segments;
-    }
-
-    private int color;
-    private Material material = materials[color];
-    private static int segments;
-
-    private Appearance sAppearance;
-    private AlternateAppearance aAppearance = new AlternateAppearance ();
-
-    private Appearance createAppearance (/* ... */) {
-	Appearance app = new Appearance ();
-
-	app.setMaterial (material);
 	
-	ColoringAttributes ca = new ColoringAttributes ();
-	Color3f tmpColor = new Color3f ();
-	material.getAmbientColor (tmpColor);
-	ca.setColor (tmpColor);
-	app.setColoringAttributes (ca);
-
-	if (true) {
-	    PolygonAttributes pa = new PolygonAttributes ();
-	    //	    pa.setCullFace (PolygonAttributes.CULL_BACK);
-	    pa.setPolygonMode (PolygonAttributes.POLYGON_LINE);
-	    app.setPolygonAttributes (pa);
-	}
-
-	if (true) {
-	    LineAttributes la = new LineAttributes ();
-	    la.setLineAntialiasingEnable(true);
-	    la.setLineWidth (2.0f);
-	    app.setLineAttributes (la);
+	////////	CONSTANTS	////////
+	private static float RADIUS = 0.5f;
+	private static int NUM_SEGMENTS = 16;
+	private static float CURSOR_SHININESS = 20.f;
+	private static float CURSOR_LINEWIDTH = 2.f;
+	private static float CURSOR_TRANSPARENCY = 0.5f;
+	private static int DEFAULT_COLOUR = Colour.BLUE;
+	
+	////////	C'TORS		////////
+	/** default constructor: creates a cursor of default color */
+	public Cursor () {
+		super (RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
+		setColour (DEFAULT_COLOUR);
 	}
 	
-	if (false) {
-	    TransparencyAttributes ta =
-		new TransparencyAttributes (TransparencyAttributes.NICEST, 0.5f);
-	    app.setTransparencyAttributes (ta);
+	public Cursor (int c) {
+		super (RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
+		setColour (c);
 	}
 	
-	return app;
-    }
+	
+	////////	PUBLIC METHODS	////////
+	public int getColour () {
+		return colour;
+	}
+	
+	public void setColour (int c) {
+		assert GameBase.precondition ((c >= 0 && c < materials.length), 
+		"There are only "+materials.length+" colors defined. tried to choose color "+c);
+		
+		colour = c;
+		material = materials[c];
+		createAppearance ();
 
-    private static Material[] materials = {
-	new Material (),
-	new Material (					//  BLACK	//
-		      new Color3f (0.05f, 0.05f, 0.05f),//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.1f, 0.1f, 0.1f),	//  diffuse
-		      new Color3f (0.8f, 0.8f, 0.8f),	//  specular
-		      20.f),				//  shininess
-	new Material (					//  WHITE	//
-		      new Color3f (0.3f, 0.3f, 0.3f),	//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.8f, 0.8f, 0.8f),	//  diffuse
-		      new Color3f (1.0f, 1.0f, 1.0f),	//  specular
-		      20.f),				//  shininess
-	new Material (					//  RED		//
-		      new Color3f (0.3f, 0.1f, 0.1f),	//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.8f, 0.1f, 0.1f),	//  diffuse
-		      new Color3f (1.0f, 0.8f, 0.8f),	//  specular
-		      20.f),				//  shininess
-	new Material (					//  GREEN	//
-		      new Color3f (0.1f, 0.3f, 0.1f),	//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.1f, 0.8f, 0.1f),	//  diffuse
-		      new Color3f (0.8f, 1.0f, 0.8f),	//  specular
-		      20.f),				//  shininess
-	new Material (					//  BLUE	//
-		      new Color3f (0.1f, 0.1f, 0.3f),	//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.1f, 0.1f, 0.8f),	//  diffuse
-		      new Color3f (0.8f, 0.8f, 1.0f),	//  specular
-		      20.f)				//  shininess
-    };
+		this.setAppearance (cAppearance);
+	}
+
+	
+	////////	PROTECTED METHODS	////////
+	protected void createAppearance (/* ... */) {
+				
+		cAppearance.setMaterial (material);
+		
+		Color3f tmpColor = new Color3f ();
+		material.getAmbientColor (tmpColor);
+		ColoringAttributes ca = new ColoringAttributes ();
+		ca.setColor (tmpColor);
+		cAppearance.setColoringAttributes (ca);
+
+		setLineStyle ();
+		
+		setTransparency (CURSOR_TRANSPARENCY);
+	}
+	
+	private void setLineStyle () {
+		//	set draw mode to wireframe
+		PolygonAttributes pa = new PolygonAttributes ();
+		pa.setPolygonMode (PolygonAttributes.POLYGON_LINE);
+		cAppearance.setPolygonAttributes (pa);
+		
+		LineAttributes la = new LineAttributes ();
+		la.setLineAntialiasingEnable(true);
+		la.setLineWidth (CURSOR_LINEWIDTH);
+		cAppearance.setLineAttributes (la);		
+	}
+
+	private void setTransparency (float tVal) {
+		cTransparency = new TransparencyAttributes (TransparencyAttributes.NICEST, tVal);
+		cTransparency.setCapability(TransparencyAttributes.ALLOW_VALUE_READ);
+		cTransparency.setCapability(TransparencyAttributes.ALLOW_VALUE_WRITE);
+		cAppearance.setTransparencyAttributes (cTransparency);		
+	}
+
+
+	////////	MEMBER VARIABLES	////////
+	private int colour = 0;
+	private Material material = materials[colour];
+	
+	protected Appearance cAppearance = new Appearance ();
+	protected TransparencyAttributes cTransparency;
+
+	
+	////////	MORE CONSTANTS		////////
+	private static Material[] materials = {
+		new Material (),				//	dummy entry because colours start at 1
+		new Material (					//  BLACK	//
+				new Color3f (0.05f, 0.05f, 0.05f),//  ambient
+				new Color3f (0,0,0),		//  emissive
+				new Color3f (0.1f, 0.1f, 0.1f),	//  diffuse
+				new Color3f (0.8f, 0.8f, 0.8f),	//  specular
+				CURSOR_SHININESS),				//  shininess
+		new Material (					//  WHITE	//
+				new Color3f (0.3f, 0.3f, 0.3f),	//  ambient
+				new Color3f (0,0,0),		//  emissive
+				new Color3f (0.8f, 0.8f, 0.8f),	//  diffuse
+				new Color3f (1.0f, 1.0f, 1.0f),	//  specular
+				CURSOR_SHININESS),				//  shininess
+		new Material (					//  RED		//
+				new Color3f (0.3f, 0.1f, 0.1f),	//  ambient
+				new Color3f (0,0,0),		//  emissive
+				new Color3f (0.8f, 0.1f, 0.1f),	//  diffuse
+				new Color3f (1.0f, 0.8f, 0.8f),	//  specular
+				CURSOR_SHININESS),				//  shininess
+		new Material (					//  GREEN	//
+				new Color3f (0.1f, 0.3f, 0.1f),	//  ambient
+				new Color3f (0,0,0),		//  emissive
+				new Color3f (0.1f, 0.8f, 0.1f),	//  diffuse
+				new Color3f (0.8f, 1.0f, 0.8f),	//  specular
+				CURSOR_SHININESS),				//  shininess
+		new Material (					//  BLUE	//
+				new Color3f (0.1f, 0.1f, 0.3f),	//  ambient
+				new Color3f (0,0,0),		//  emissive
+				new Color3f (0.1f, 0.1f, 0.8f),	//  diffuse
+				new Color3f (0.8f, 0.8f, 1.0f),	//  specular
+				CURSOR_SHININESS)				//  shininess
+	};
 }
-

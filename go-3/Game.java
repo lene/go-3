@@ -312,7 +312,8 @@ class Game extends GoGrid {
 						if (player.getUsername().equals("")) {	//	new player connecting, player not yet set
 							//	check whether a player of name username is already connected	[TODO]
 							for (int i = 0; i < players.size(); i++) {
-								//	if so, reject this name:										[TODO]
+								//	if so, reject this name:
+								//	EXCEPT if you are the player who has disconnected	[TODO]
 								if (players.elementAt(i).getUsername().equals (username)) {
 									Utility.debug(username+" tried to connect, but is already connected!");
 									activePlayer.getOutStream().println(

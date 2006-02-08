@@ -929,10 +929,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 				connectionData.getServerHost(), connectionData.getServerPort(), 
 				connectionData.getUsername());
 		Frame frame = new MainFrame (game, 600, 600);
-		/*	JFrame jFrame = new JFrame (frame.getGraphicsConfiguration ());
-		 jFrame.setJMenuBar (game.setupMenu ());
-		 jFrame.setContentPane ();
-		 */
+
 		for (int i = 0; i < m; i++) {
 			game.fakeGame (2, Colour.BLACK);
 			game.repaint ();

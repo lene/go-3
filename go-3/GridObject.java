@@ -90,7 +90,7 @@ abstract public class GridObject extends Shape3D {
 	protected Appearance gAppearance;
 	protected TransparencyAttributes gTransparency;
 	protected Geometry gGeometry;
-//	protected float transparency;
+
 	
 	protected static Color3f DEFAULT_GRIDCOLOR = new Color3f (0.8f,0.8f,0.8f);
 	protected static float DEFAULT_TRANSPARENCY = 0.5f;

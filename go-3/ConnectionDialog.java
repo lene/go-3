@@ -2,51 +2,54 @@
 /* Created on Feb 6, 2006 by helge
  */
 
-/**
- @author helge
+/** select and adjust the server settings
+    TODO: when entering an IP manually in the Server Host field, the last letter
+    of the IP is not passed. This does not happen with resolved host names.
+    Strange. see getJTextField1().
  
- TODO
- */
+ @author helge
+*/
 
 import java.awt.Frame;
 import javax.swing.JButton;
-/**
- * Example of components laid out in a grid
- */
-public class ConnectionDialog extends javax.swing.JDialog {
+import javax.swing.JPanel;
+import javax.swing.JLabel;
+import javax.swing.JTextField;
+import javax.swing.JSlider;
+import javax.swing.JDialog;
 
-	private javax.swing.JPanel contentPane = null;
 
-	private javax.swing.JLabel serverHostLabel = null;
-	private javax.swing.JTextField serverHostTextField = null;
+public class ConnectionDialog extends JDialog {
 
-	private javax.swing.JLabel serverPortLabel = null;
-	private javax.swing.JTextField serverPortTextField = null;
+	private JPanel contentPane = null;
 
-	private javax.swing.JLabel usernameLabel = null;
-	private javax.swing.JTextField usernameTextField = null;
+	private JLabel serverHostLabel = null;
+	private JTextField serverHostTextField = null;
 
-	private javax.swing.JLabel sizeLabel = null;
-	private javax.swing.JSlider sizeSlider = null;
+	private JLabel serverPortLabel = null;
+	private JTextField serverPortTextField = null;
 
-	private javax.swing.JButton connectButton = null;
+	private JLabel usernameLabel = null;
+	private JTextField usernameTextField = null;
+
+	private JLabel sizeLabel = null;
+	private JSlider sizeSlider = null;
+
+	private JButton connectButton = null;
 
 	private String serverHost = "";
 	private int serverPort = 6666;
 	private String username = "";
 	private int boardSize = 3;
-//	private GridDisplay parent;
 	private ConnectionData connectionData;
 	
 	public ConnectionDialog(ConnectionData c) {
-//		super((Frame)null, "", true);
 		super ();
 		this.connectionData = c;
 		this.boardSize = c.getBoardSize();
 		this.serverHost = c.getServerHost();
 		this.serverPort = ConnectionData.getServerPort();
 		this.username = c.getUsername();
-//		this.parent = parent;
 		
 		initialize();
 	}
@@ -56,14 +59,14 @@ public class ConnectionDialog extends javax.swing.JDialog {
 	 * Return the JFrameContentPane property value.
 	 * @return javax.swing.JPanel
 	 */
-	private javax.swing.JPanel getJContentPane() {
+	private JPanel getJContentPane() {
 		if (contentPane == null) {
-			contentPane = new javax.swing.JPanel();
+			contentPane = new JPanel();
 			contentPane.setName("contentPane");
 			contentPane.setLayout(
 					new javax.swing.BoxLayout(contentPane,
 							javax.swing.BoxLayout.Y_AXIS));
-//			contentPane.setLayout(new java.awt.GridBagLayout());
+
 			contentPane.add(getJLabel1(), null);
 			contentPane.add(getJTextField1(), null);
 			contentPane.add(getJLabel2());
