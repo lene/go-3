@@ -34,8 +34,12 @@ class Player extends GameBase {
 	
 	public int getID () { return id; }
 	
-	public void setUsername (String username) {	this.username = username;	}
+	public void setUsername (String username) {	
+		this.username = username;
+		hasname = true;
+	}
 	public String getUsername () { return this.username; } 
+	public boolean hasUsername () { return hasname; }
 	
 	public int getHandicap() { return handicap;	}
 	public void setHandicap(int handicap) {	
@@ -54,4 +58,5 @@ class Player extends GameBase {
 	protected String username = "";
 	protected int handicap = 0;
 	protected int colour = Colour.UNDEFINED;
+	protected boolean hasname = false;
 }

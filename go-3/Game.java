@@ -1,8 +1,8 @@
 
 import java.net.*;
 import java.io.*;
-import java.util.Vector;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.ListIterator;
 
 /**
  * A Game consists of 2 (or generally <tt>numPlayers</tt>) Players, who can dis-
@@ -15,16 +15,35 @@ import java.util.HashMap;
  */
 class Game extends GoGrid {
 	
-	public Game (int size, Player player, ServerSocket serverSocket, Socket clientSocket) {
-		super (size);
-		this.serverSocket = serverSocket;
+	/** A Game is constructed from a known board size, a <tt>Player</tt> who has
+	 * just connected from a <tt>ServerSocket</tt> and the <tt>Socket</tt> which
+	 * has been created by the <tt>ServerSocket</tt> during <tt>accept ()</tt>.
+	 * 
+	 * @param size
+	 * @param player 
+	 * @param serverSocket
+	 * @param clientSocket
+	 */
+	public Game (int size, Player player, 
+				 ServerSocket serverSocket, Socket clientSocket) {
 		
+		super (size);
+
+		assert precondition ((size >= MIN_GRID_SIZE && size <= MAX_GRID_SIZE), 
+				"Board size ["+size+"] must lie between "+MIN_GRID_SIZE+" and "+MAX_GRID_SIZE);
+		assert precondition ((player.getID() >= 0 && player.getID() < MAX_PLAYERS), 
+				"Player ID ["+player.getID()+"] must be between 0 and "+MAX_PLAYERS);
+		assert precondition ((serverSocket != null), 
+				"Server Socket must not be null, or nothing makes sense anymore");
+		assert precondition ((clientSocket != null), 
+				"Client Socket must not be null, else there is no Player connected");
+
 		Utility.setDebugMode (true);
 		
+		this.serverSocket = serverSocket;
+				
 		setupBoard ();                  //  initialize board structure
-		
-		reserveContainers ();           //  get storage space for client data
-		
+			
 		initPlayer (player, clientSocket);
 		
 		waitForConnections ();
@@ -44,36 +63,43 @@ class Game extends GoGrid {
 	 starts the game, i.e. makes setting possible
 	 */
 	void startGame () {
+		assert precondition (players.size() == numPlayers,
+				"There must be exactly "+numPlayers+" players connected.");
+		assert precondition (currentPlayer == -1, 
+				"currentPlayer ["+currentPlayer+"] must be initialized to -1");
+		
 		Utility.debug ("GoGridServer.startGame (): "+numPlayers+" Players");
-		for (int i = 0; i < players.size(); i++) {
-			ConnectedPlayer player = players.elementAt(i);
+		
+		ListIterator<ConnectedPlayer> i = players.listIterator();
+		while (i.hasNext()) {
+			ConnectedPlayer player = i.next();
 			updateBoard (player);
 			player.getProtocol().startGame ();
 		}
 		nextPlayer ();                  //  currentPlayer initialized to -1 => start with player 0
 	}
 	
-	
 	/**
 	 switches to next player
 	 */
 	void nextPlayer () {
+		assert precondition (currentPlayer < numPlayers, 
+				"currentPlayer ["+currentPlayer+"] must be < "+numPlayers+
+				".\nThough the algorithm is tolerant to that, it means something strange has happened.");
+		
 		currentPlayer = (currentPlayer+1)%numPlayers;
-		ConnectedPlayer player = players.elementAt(currentPlayer);
-		Utility.debug ("current player is now "+player);
-		player.getProtocol().awaitMove ();
-		player.getOutStream().println ("ready");
-	}
-	
-	
-	/**
-	 sets a stone of color <tt>currentPlayer</tt>at the cursor position<br>
-	 if that position is already occupied, or some other error occurs, does
-	 nothing<br>
-	 */
-	boolean setStone () {
-		Utility.bitch (new Throwable ("This function does not make sense. or does it?"));
-		return super.setStone ();
+		ConnectedPlayer player = players.get(currentPlayer);
+		Utility.debug ("current player is now "+player.toString());
+
+		if (player.isConnected()) {
+			//	signal readiness to set to player
+			player.getProtocol().awaitMove ();
+		}
+		else {
+			Utility.bitch(new Throwable ("Sorry - the current player disconnected.\n" +
+					"Handling this condition is not yet implemented."));
+			System.exit(0);
+		}
 	}
 	
 	/**
@@ -87,10 +113,7 @@ class Game extends GoGrid {
 	 @return success
 	 */
 	boolean setStone (Player p, int x, int y, int z) {
-		Utility.bitch(new Throwable ("setStone (Player, ...) not yet " +
-		"implemented - add Colour property to Player class first"));
-		System.exit(0);
-		return false;
+		return setStone (p.getColour(), x, y, z);
 	}
 	
 	/**
@@ -105,21 +128,24 @@ class Game extends GoGrid {
 	 ADD EXCEPTION HANDLERS (ARRAY INDEX OUT OF BOUNDS, ...?)
 	 */
 	boolean setStone (int col, int x, int y, int z) {
+		assert precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
+				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
+		
 		if (x < 1 || x > getBoardSize () ||
 				y < 1 || y > getBoardSize () ||
 				z < 1 || z > getBoardSize ())
 			return false;
 		
-		//  TO DO: check for ko's
+		//  TODO: check for ko's
 		if (stones[x][y][z] == Colour.EMPTY) {	//  able to set?	
 			stones[x][y][z] = col;				//  fill board position	
 			xset = x; yset = y; zset = z;		//  remember last set position
 			
-			checkArea ();					//  check for captives
-//			moveBuffer.add (new Move (x, y, z, col));		//  remember this move
-//			Utility.debug (moveBuffer.size ()+": ("+x+", "+y+", "+z+"), "
-//			+Liberty (x, y, z, col, false)+" liberties");
-			//	    printGrid ();
+			checkArea ();						//  check for captives
+			moveBuffer.add (new Move (x, y, z, col));		//  remember this move
+			Utility.debug (moveBuffer.size ()+": ("+x+", "+y+", "+z+"), "
+					+Liberty (x, y, z, col, false)+" liberties");
+
 			return true;					//  success
 		}
 		else {
@@ -133,25 +159,28 @@ class Game extends GoGrid {
 	 @param player the player who made the request
 	 */
 	void updateBoard (ConnectedPlayer p) {
-		p.getOutStream().println ("size "+getBoardSize (0)
-				+" "+getBoardSize (1)
-				+" "+getBoardSize (2));
-		String content = "stones ";
+		assert precondition (p != null, "Player must not be null");
+		assert precondition (p.getProtocol() != null, "Protocol must not be null");
+		
+		p.getProtocol().sendSize(getBoardSize (0), getBoardSize (1), getBoardSize (2));
+
+		p.getProtocol().startBoardTransmission();
 		for (int x = 1; x <= getBoardSize (0); x++)
 			for (int y = 1; y <= getBoardSize (1); y++)
-				for (int z = 1; z <= getBoardSize (2); z++)
-					content += getStone (x, y, z)+" "+x+" "+y+" "+z+" ";
-		
-		Utility.debug ("Player "+p/*+": "+content*/);
-		p.getOutStream().println (content);
+				for (int z = 1; z <= getBoardSize (2); z++) {
+					p.getProtocol().transmitStone (
+							getStone (x, y, z), x, y, z);
+				}
+		p.getProtocol().sendBoard();
 	}
 	
 	/**
 	 sends the whole board to all players
 	 */
 	void updateBoard () {
-		for (int i = 0; i < players.size(); i++) {
-			ConnectedPlayer player = players.elementAt(i);
+		ListIterator<ConnectedPlayer> i = players.listIterator();
+		while (i.hasNext()) {
+			ConnectedPlayer player = i.next();
 			updateBoard (player);
 		}
 	}
@@ -161,8 +190,12 @@ class Game extends GoGrid {
 	 * with all players represented by a Player (or ConnectedPlayer) object.
 	 * should be removed soon in the base class. 
 	 */	
-	void sendMessage (int i, String message) { 
-		sendMessage (players.elementAt (i), message);
+	void sendMessage (int i, String message) {
+		assert precondition (i >= 0 && i < numPlayers, 
+				"Player must not be between 0 and "+numPlayers);
+		Utility.bitch(new Throwable ("sendMessage (int, String) should not be used anymore." +
+				" Replace it with sendMessage (ConnectedPlayer, String)."));
+		sendMessage (players.get (i), message);
 	}
 
 	/**
@@ -171,7 +204,9 @@ class Game extends GoGrid {
 	 @param message the message to be sent
 	 */
 	void sendMessage (ConnectedPlayer player, String message) {
-		player.getOutStream().println ("message "+message);
+		assert precondition (player != null, "Player must not be null");
+		assert precondition (player.getProtocol() != null, "Protocol must not be null");
+		player.getProtocol().message(message);
 	}
 	
 	
@@ -188,6 +223,11 @@ class Game extends GoGrid {
 	 */
 	int Liberty (int x, int y, int z, 
 			int Current, boolean ShortCut) {
+		
+		Utility.debug ("TODO: Fix Liberties()!\n" +
+				"Save the whole board and set EVERY visited grid place to OCCUPIED.");
+		
+		
 		int S = stones[x][y][z];                         	//  save  current  color
 		
 		int liberty = 0;                                	//  start  counting
@@ -231,6 +271,9 @@ class Game extends GoGrid {
 				liberty += Liberty (x, y, zz, Current, ShortCut); } }
 		
 		stones[x][y][z] = S;                               	//  reset  grid  place       
+
+		//	TODO: check that the board is unchanged before returning
+		
 		return liberty;
 	}    
 	
@@ -239,41 +282,14 @@ class Game extends GoGrid {
 	//                                                                        //
 	//          OVERRIDDEN METHODS END                                        //
 	//                                                                        //
+	////////////////////////////////////////////////////////////////////////////	
+	
+	////////////////////////////////////////////////////////////////////////////
+	//                                                                        //
+	//          PROTECTED SECTION 		                                      //
+	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
 
-	/**
-	 construct a ConnectedPlayer as first player and add it to the player list
-	 @param player a preexisting simple Player object
-	 @param clientSocket a socket from which the player attempts a connection
-	 @return the completely initialized ConnectedPlayer
-	 */
-	ConnectedPlayer initPlayer (Player player, Socket clientSocket) {
-		ConnectedPlayer cp = new ConnectedPlayer (player, clientSocket);
-		String username = null;
-		try {
-			username = cp.getInStream().readLine ();
-
-			cp.setUsername (username);
-			cp.getOutStream().println ("ok");
-
-			cp.setColour(Colour.BLACK);
-
-			setColor (cp);
-			updateBoard (cp);
-			cp.setProtocol(new GoGridProtocol (cp, this));
-			cp.getProtocol().start ();
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.err.println (e.getMessage());
-			System.exit(0);
-		}
-		Utility.debug("player "+username+" connected from "+
-				clientSocket.getInetAddress().getHostName());
-		
-		players.addElement (cp);
-		return players.lastElement();
-	}
-	
 	/**
 	 set up 1 (one) client connection:
 	 <ul>
@@ -287,65 +303,71 @@ class Game extends GoGrid {
 	 </ul>
 	 @param player the client with whom to (re-)connect
 	 */
-	void connectWith (Player player) {
+	protected void connectWith (Player player) {
+		assert precondition (player.getID() > 0 && player.getID() <= numPlayers,
+				"Player must lie between 1 and "+numPlayers);
+		
 		Utility.debug ("waiting for player "+player.getID()
 				+(!player.getUsername().equals("")? 
 						" ["+player.getUsername ()+"]": 
 						"")+
-		" to connect");
+				" to connect");
 		
 		ConnectedPlayer activePlayer;
 		
 		connect:
 			while (true) {					//	loop until connection succeeds
 				try {
-					//  create a client socket with accept() and insert it into the
-					//  socket map
+					//  (blocking) accept() a client, creating a client socket
 					Socket clientSocket = serverSocket.accept();
-					
+
 					activePlayer = new ConnectedPlayer (player, clientSocket);
 					
 					//	read the player's name from in and set it in the Player object
 					//	or compare it if it's already set in the object
 					try {
 						String username = activePlayer.getInStream().readLine ();
-						if (player.getUsername().equals("")) {	//	new player connecting, player not yet set
-							//	check whether a player of name username is already connected	[TODO]
+						if (!player.hasUsername()) {	//	new player connecting, player not yet set
+							//	check whether a player of name username is already connected
 							for (int i = 0; i < players.size(); i++) {
 								//	if so, reject this name:
 								//	EXCEPT if you are the player who has disconnected	[TODO]
-								if (players.elementAt(i).getUsername().equals (username)) {
+								if (players.get(i).getUsername().equals (username)) {
 									Utility.debug(username+" tried to connect, but is already connected!");
-									activePlayer.getOutStream().println(
-											"message go away, you're already connected!");
+									activePlayer.getOutStream().println(		//	no Protocol exists yet, complain manually
+											"go away, you're already connected!");
 									activePlayer.getClientSocket().close();
 
 									continue connect;		//	next connection attempt								
 								}
 							}
-							//	if not, we can continue:
+							//	if current player is not yet connected, we can continue:
 							activePlayer.setUsername(username);
 							activePlayer.setColour(player.getID());	//	the number of the initial Player object denotes its colour
 
-							players.addElement (activePlayer);
+							players.add (player.getID(), activePlayer);
 						}
 						//	player reconnects after a disconnection
 						else if (username.equals(player.toString())) { 
 							//	replace entry in player list with active player
 							activePlayer.setUsername(username);
 							for (int i = 0; i < players.size(); i++) {
-								if (players.elementAt(i).getUsername().equals (username)) {
-									players.setElementAt(activePlayer, i);
+								if (players.get(i).getUsername().equals (username)) {
+									players.set(i, activePlayer);
 									break;
 								}
 							}
+							Utility.bitch(new Throwable("Didn't find the current Player in the list of " +
+									"active Players, even if its name matches! Fscking strange... " +
+									"I'm outta here!"));
+							System.exit(0);
 						}
 						//	we wait for a specific player to reconnect, but 
 						//	someone else connects
 						else {
 							Utility.debug(username+" tried to connect, but we want user "+
 									player+" to connect!");
-							activePlayer.getOutStream().println(
+							activePlayer.getOutStream().println(				//	no Protocol exists yet, complain manually
 									"message go away, we want user "+player+" to connect!");
 							activePlayer.getClientSocket().close();
 							
@@ -356,27 +378,30 @@ class Game extends GoGrid {
 						//	player with a defined username.
 						Utility.debug(activePlayer.getUsername()+" connected from "
 								+activePlayer.getClientSocket().getInetAddress().getHostAddress());
-						//	acknowledge player name
-						activePlayer.getOutStream().println ("ok");
 					} catch (IOException e) {
 						e.printStackTrace();
 						System.err.println (e.getMessage());
 						continue connect;										//	try it again, although there's not much hope.
 					}
-					
+										
+					//  create a thread to handle communications with the client 
+					//  and add it to the thread list
+					activePlayer.setProtocol(
+							new GoGridProtocol (activePlayer, this));
+
+					//	acknowledge player name
+					activePlayer.getProtocol().ackUsername();
+
 					//  tell the client its color
 					setColor (activePlayer);
 					
 					//  send board size and board to client
 					updateBoard (activePlayer);
-					
-					//  create a thread to handle communications with the client 
-					//  and add it to the thread list
-					activePlayer.setProtocol(
-							new GoGridProtocol (activePlayer, this));
-					
+
 					//  start the created thread
 					activePlayer.getProtocol().start ();
+					
+					//	if activePlayer == currentPlayer activePlayer.getProtocol().awaitMove()
 					
 				} catch (IOException e) {
 					Utility.bitch (new Throwable ("Accept failed: "+serverPort));
@@ -402,16 +427,24 @@ class Game extends GoGrid {
 				Utility.debug ("Client "+(player.getID()+1)+" connected from "+
 						activePlayer.getClientSocket().getInetAddress ().getHostAddress());
 				
+				assert postcondition (players.contains(activePlayer), 
+						"Active player must be in the player list when finished!");
+				assert postcondition (players.get(player.getID()).isConnected(),
+						"Player "+player.getID()+" must be connected when finished!");
+				
 				return;
 			}
 	}
 	
 	/**
-	 tries to change the color of a player 
+	 update or change the color of a player 
 	 @param p the player
 	 */
-	boolean setColor (ConnectedPlayer p) {
-		p.getOutStream().println ("color "+p.getColour());
+	protected boolean setColor (ConnectedPlayer p) {
+		assert precondition (p.isConnected(), "Player must be connected");
+		assert precondition (p.getProtocol() != null, "Protocol must exist");
+		
+		p.getProtocol().setColour(p.getColour());
 		return true;
 	}
 	
@@ -421,14 +454,18 @@ class Game extends GoGrid {
 	 @param handicap wanted handicap; will be normalized taking the handicaps
 	 of all other players into account
 	 */
-	void setHandicap (Player player, int h) {
-		if (h <= MAX_HANDICAPS && h >= 0) 
-			player.setHandicap(h);
+	protected void setHandicap (Player player, int h) {
+		assert precondition (player.getID() > 0 && player.getID() <= numPlayers,
+				"Player must lie between 1 and "+numPlayers);
+		assert precondition (h <= MAX_HANDICAPS && h >= 0,
+				"Handicaps must lie between 0 and "+MAX_HANDICAPS);
+		
+		player.setHandicap(h);
 		
 		//  find out whether smallest handicap of all players is > 0
-		int hmin = MAX_HANDICAPS+1;
+		int hmin = MAX_HANDICAPS;
 		for (int i = 0; i < players.size(); i++) {
-			Player p = players.elementAt (i);
+			Player p = players.get (i);
 			if (p.getHandicap() < hmin)	hmin = p.getHandicap();
 		}
 		
@@ -437,26 +474,54 @@ class Game extends GoGrid {
 		//	TODO this is not safe for numPlayers > 2, as the handicaps may be
 		//	renormalized REPEATEDLY, leading to too small values
 		for (int i = 0; i < players.size(); i++) {
-			Player p = players.elementAt (i);
+			Player p = players.get (i);
 			p.setHandicap(p.getHandicap()-hmin);
 		}
+
+		assert postcondition (player.getHandicap() <= MAX_HANDICAPS && player.getHandicap() >= 0,
+				"Handicaps must lie between 0 and "+MAX_HANDICAPS);
 	}
-		
-	
-	////////////////////////////////////////////////////////////////////////////
-	//                                                                        //
-	//          PROTECTED SECTION STARTS                                      //
-	//                                                                        //
-	////////////////////////////////////////////////////////////////////////////
-	
 	
 	/**
-	 reserve all <tt>java.util.Vector</tt>s to have a size of
-	 <tt>numPlayers</tt>
+	 construct a ConnectedPlayer as first player and add it to the player list
+	 @param player a preexisting simple Player object
+	 @param clientSocket a socket from which the player attempts a connection
+	 @return the completely initialized ConnectedPlayer
 	 */
-	protected void reserveContainers () {
-		players.ensureCapacity (numPlayers);
-	}	
+	protected void initPlayer (Player player, Socket clientSocket) {
+		assert precondition ((player.getID() >= 0 && player.getID() < MAX_PLAYERS), 
+				"Player ID ["+player.getID()+"] must be between 0 and "+MAX_PLAYERS);
+		assert precondition ((clientSocket != null), 
+				"Client Socket must not be null, else there is no Player connected");
+
+		ConnectedPlayer cp = new ConnectedPlayer (player, clientSocket);
+		String username = null;
+		try {
+			username = cp.getInStream().readLine ();
+
+			cp.setUsername (username);
+
+			cp.setColour(Colour.BLACK);
+
+			cp.setProtocol(new GoGridProtocol (cp, this));
+
+			cp.getProtocol().ackUsername();
+			setColor (cp);
+			updateBoard (cp);
+			
+			cp.getProtocol().start ();
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err.println (e.getMessage());
+			System.exit(0);
+		}
+		Utility.debug("player "+username+" connected from "+
+				clientSocket.getInetAddress().getHostName());
+		
+		players.add (cp);
+		
+		assert postcondition (players.size() == 1, "players.size() must be 1!");
+	}
 	
 	/**
 	 wait for further players to connect.
@@ -472,18 +537,30 @@ class Game extends GoGrid {
 	 </ul>
 	 */
 	protected void waitForConnections () {
-		Utility.debug ("waiting for "+(numPlayers-1)+" clients to connect...");
-		
-		for (int i = 1; i < numPlayers; i++) 
+		assert precondition (players.size() == 1, "players.size() must be 1!");
+				
+		for (int i = 1; i < numPlayers; i++) {
+			Utility.debug ("waiting for "+(numPlayers-i)
+					+" more clients to connect...");
 			connectWith (new Player (i));
+		}
+		
+		assert postcondition (players.size() == numPlayers, 
+				"players.size() must be "+numPlayers+"!");
 	}
 		
+	
 	/**
 	 check the whole grid for captives<br>
 	 clear any captives found<br>
 	 THERE SHOULD BE A MORE DESCRIPTIVE NAME FOR THIS FUNCTION<br>
 	 */
 	protected void checkArea () {
+		assert precondition (xset > 0 && xset <= this.getBoardSize(0) &&
+				yset > 0 && yset <= this.getBoardSize(1) &&
+				zset > 0 && zset <= this.getBoardSize(2),
+				"last set point must lie inside the board!");
+		
 		for (int x = xset-1; x <= xset+1; x ++)			//  check neighboring stones
 			for (int y = yset-1; y <= yset+1; y ++)		//  on the grid
 				for (int z = zset-1; z <= zset+1; z ++)          
@@ -503,6 +580,11 @@ class Game extends GoGrid {
 	 THERE SHOULD BE A MORE DESCRIPTIVE NAME FOR THIS FUNCTION<br>
 	 */
 	protected void checkArea (int x, int y, int z) {
+		assert precondition (x > 0 && x <= this.getBoardSize(0) &&
+				y > 0 && y <= this.getBoardSize(1) &&
+				z > 0 && z <= this.getBoardSize(2),
+				"point to check must lie inside the board!");
+		
 		int P = stones[x][y][z];
 		if (P != Colour.EMPTY && P != Colour.OCCUPIED)
 			if (Liberty (x, y, z, P, true) == 0)            //  check liberties
@@ -518,13 +600,18 @@ class Game extends GoGrid {
 	 @param current player who owns this position
 	 */
 	protected void clearArea (int x, int y, int z, int current) {
+		assert precondition (x > 0 && x <= this.getBoardSize(0) &&
+				y > 0 && y <= this.getBoardSize(1) &&
+				z > 0 && z <= this.getBoardSize(2),
+				"point to check must lie inside the board!");
+
 		if (stones[x][y][z] != current) return;            	//  nothing  to  clear
-		
-		Utility.debug ("cleared ("+x+", "+y+", "+z+")");
 		
 		stones[x][y][z] = Colour.EMPTY;                     //  clear  this  point
 		
-		//  ISSUE: does this need to be set in the move buffer?
+		Utility.debug ("cleared ("+x+", "+y+", "+z+")");
+		
+		//  TODO: does this need to be set in the move buffer?
 		//  MoveBuffer[++MoveNbr] = Entry (xset, yset, zset, stones[xset][yset][zset]); 
 		
 		for (int xx = x-1; xx <= x+1; xx += 2)          	//  check  neighbors :
@@ -549,17 +636,23 @@ class Game extends GoGrid {
 	 */
 	protected void broadcast (String msg) {
 		try {
-			for (int i = 0; i < players.size (); i++)
-				players.elementAt (i).getOutStream().println (msg);
+			ListIterator<ConnectedPlayer> i = players.listIterator();
+			while (i.hasNext())
+				i.next().getProtocol().message (msg);
 		}
-		catch (ArrayIndexOutOfBoundsException e) { }
-		catch (NullPointerException e) { }
+		catch (NullPointerException e) { 
+			//	this catch is necessary because the GoGrid c'tor calls 
+			//	setBoardSize(), which in the Game subclass in turn calls
+			//	broadcast(), which, at construction time, accesses a null 
+			//	pointer. 
+			//	maybe this catch is a bad solution, but it Works For Me (TM).
+		}
 	}
 	
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
-	//          VARIABLES SECTION STARTS                                      //
+	//          VARIABLES SECTION 		                                      //
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
 	
@@ -590,7 +683,7 @@ class Game extends GoGrid {
 	/**
 	 <tt>ConnectedPlayer</tt>s representing the participant - 
 	 */
-	protected Vector<ConnectedPlayer> players = new Vector<ConnectedPlayer> ();
+	protected ArrayList<ConnectedPlayer> players = new ArrayList<ConnectedPlayer> ();
 	
 	
 	////////////////////////////////////////////////////////////////////////////

@@ -27,11 +27,15 @@ class ConnectedPlayer extends Player {
 			setInStream (new BufferedReader (new InputStreamReader(
 					clientSocket.getInputStream())));
 //			setProtocol ();
-			
+			isconnected = true;
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.err.println (e.getMessage());
 		}
+	}
+	
+	public boolean isConnected () {
+		return isconnected;
 	}
 	
 	public Socket getClientSocket() { return clientSocket;	}
@@ -63,4 +67,5 @@ class ConnectedPlayer extends Player {
 	protected BufferedReader in = null;
 	protected GoGridProtocol proto = null;
 	
+	protected boolean isconnected = false;
 }

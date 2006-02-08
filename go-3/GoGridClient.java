@@ -362,7 +362,7 @@ class GoGridClient extends GoGrid {
 				
 				stones[xread][yread][zread] = color;
 			} catch (NumberFormatException e) {
-				Utility.debug ("NumberFormatException: "+input);
+				Utility.debug ("NumberFormatException: "+e.getMessage()+input);
 			}
 			catch (ArrayIndexOutOfBoundsException e) {
 				Utility.debug ("ArrayIndexOutOfBoundsException");
@@ -490,14 +490,13 @@ class GoGridClient extends GoGrid {
 		}
 		
 		for (int i = 0; i < xsize*ysize*zsize; i++) {
-			
 			try {
 				color = Integer.parseInt (Utility.getArg (input, 2+i*4));
 				xread = Integer.parseInt (Utility.getArg (input, 3+i*4));
 				yread = Integer.parseInt (Utility.getArg (input, 4+i*4));
 				zread = Integer.parseInt (Utility.getArg (input, 5+i*4));
 			} catch (NumberFormatException e) {
-				Utility.warning ("GoGridClient.updateBoard (): NumberFormatException: "+input);
+				Utility.warning ("GoGridClient.updateBoard (): NumberFormatException: "+e.getMessage()+input);
 				continue;
 			}
 			

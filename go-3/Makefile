@@ -37,7 +37,7 @@ UNUSED_SOURCES = SettingsDialog.java StartupDialog.java
 
 ########  build rules
 
-default: all
+default: distclean all
 
 help:
 	@echo possible targets include:

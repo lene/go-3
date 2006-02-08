@@ -8,30 +8,19 @@ import java.io.*;
  */
 class GoGridProtocol extends Thread {
 	
-	//    boolean UTILITY.DEBUG = true;
-	
 	protected boolean connected = false,
 	await_clients = false,
 	game_started = false,
 	awaiting_move = false;
 	
-//	protected Player player = new Player (-1);
 	protected ConnectedPlayer player = null;
 	
-//	protected GoGridServer server = null;
 	protected Game server = null;
 	
 	protected BufferedReader in = null;
 	protected PrintWriter out = null;
 	
-	GoGridProtocol (int player, GoGridServer server, BufferedReader in, PrintWriter out) {
-		connected = true;
-//		this.server = server;
-//		this.player = new Player (player);
-		this.in = in;
-		this.out = out;
-	}
-	
+
 	GoGridProtocol (ConnectedPlayer player, Game game) {
 		connected = true;
 		this.server = game;
@@ -330,23 +319,45 @@ class GoGridProtocol extends Thread {
 		Utility.warning ("command invalid: "+input);
 	}
 	
+	protected void sendSize (int xsize, int ysize, int zsize) {
+		out.println ("size "+xsize+" "+ysize+" "+zsize);
+	}
+	
+	protected void startBoardTransmission () { boardContent = "stones "; }
+	protected void transmitStone (int col, int x, int y, int z) {
+		assert GameBase.precondition ((col >= 0 && col <= Colour.WHITE), 
+				"color must lie between 0 and "+Colour.name(Colour.WHITE));
+
+		boardContent += col+" "+x+" "+y+" "+z+" ";
+	}
+	protected void sendBoard () { out.println (boardContent); }
+	private String boardContent = "";
+	
+	protected void ackUsername () {	out.println ("ok");	}
 	
 	protected void awaitMove () {
 		Utility.debug ("player "+player+" ready");
 		awaiting_move = true;
+		out.println ("ready");		
 	}
 	
-	protected boolean gameStarted () {
-		return game_started;
-	}
+	protected void setColour (int col) { 
+		assert GameBase.precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
+				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
+		
+		out.println ("color "+col); }
+	
+	protected boolean gameStarted () { return game_started; }
 	protected void startGame () {
 		game_started = true;
 		out.println ("start game");
 	}
 	
+	protected void message (String m) {	out.println(m); }
+	
 	protected void error (String e) {
 		Utility.warning (e);
-		server.sendMessage (player.getID(), e);                         //  send e to player
+		out.println(e);                         //  send e to player
 	}
 	
 	

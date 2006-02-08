@@ -47,8 +47,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	public GridDisplay (int size, String hostname, int port, String username) {
 		
-		//	new StartupDialog (null, true, this).show ();
-		
 		Utility.setDebugMode (false);
 		
 		setHostname (hostname);

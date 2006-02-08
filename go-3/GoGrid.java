@@ -1,5 +1,5 @@
 
-import java.util.Vector;
+import java.util.ArrayList;
 
 /**
  * class Move represents a move on the go grid, consisting of a position
@@ -180,7 +180,7 @@ abstract class GoGrid extends GameBase {
 	/**
 	 stores the moves for replays and saves of the game
 	 */
-//	protected Vector<Move> moveBuffer = new Vector<Move> ();
+	protected ArrayList<Move> moveBuffer = new ArrayList<Move> ();
 	
 	
 	/**
