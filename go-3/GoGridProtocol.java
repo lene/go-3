@@ -16,7 +16,7 @@ class GoGridProtocol extends Thread {
 	awaiting_move = false;
 	
 //	protected Player player = new Player (-1);
-	protected ConnectedPlayer player = new ConnectedPlayer (new Player (-1), null);
+	protected ConnectedPlayer player = null;
 	
 //	protected GoGridServer server = null;
 	protected Game server = null;
@@ -32,12 +32,12 @@ class GoGridProtocol extends Thread {
 		this.out = out;
 	}
 	
-	GoGridProtocol (ConnectedPlayer player, Game game, BufferedReader in, PrintWriter out) {
+	GoGridProtocol (ConnectedPlayer player, Game game) {
 		connected = true;
 		this.server = game;
 		this.player = player;
-		this.in = in;
-		this.out = out;
+		this.in = player.getInStream();
+		this.out = player.getOutStream();
 	}
 	
 	public void run () {
@@ -123,7 +123,7 @@ class GoGridProtocol extends Thread {
 					Utility.warning (input);
 					return;
 				}
-				server.setCursor (player.toInt(),  x, y, z);
+				server.setCursor (player.getID(),  x, y, z);
 				return;
 			}
 			
@@ -143,7 +143,7 @@ class GoGridProtocol extends Thread {
 					Utility.warning (input);
 					return;
 				}
-				int liberties = server.Liberty (x, y, z, player.toInt(), false);
+				int liberties = server.Liberty (x, y, z, player.getID(), false);
 				
 				out.println ("liberties "+liberties);
 				
@@ -182,7 +182,7 @@ class GoGridProtocol extends Thread {
 					Utility.debug ("    setting player "+player+" at ("+x+", "+y+", "+z+")");
 					
 					//  try setting at (x, y, z)
-					boolean success = server.setStone (player.toInt()+1, x, y, z);
+					boolean success = server.setStone (player.getID()+1, x, y, z);
 					if (success) {		                //  on success:
 						//			Utility.debug ("    ok");
 						out.println ("ok");
@@ -346,7 +346,7 @@ class GoGridProtocol extends Thread {
 	
 	protected void error (String e) {
 		Utility.warning (e);
-		server.sendMessage (player.toInt(), e);                         //  send e to player
+		server.sendMessage (player.getID(), e);                         //  send e to player
 	}
 	
 	

@@ -260,8 +260,7 @@ class Game extends GoGrid {
 
 			setColor (cp);
 			updateBoard (cp);
-			cp.setProtocol(new GoGridProtocol (cp, this, 
-					cp.getInStream(), cp.getOutStream()));
+			cp.setProtocol(new GoGridProtocol (cp, this));
 			cp.getProtocol().start ();
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -289,7 +288,7 @@ class Game extends GoGrid {
 	 @param player the client with whom to (re-)connect
 	 */
 	void connectWith (Player player) {
-		Utility.debug ("waiting for player "+player.toInt()
+		Utility.debug ("waiting for player "+player.getID()
 				+(!player.getUsername().equals("")? 
 						" ["+player.getUsername ()+"]": 
 						"")+
@@ -325,7 +324,7 @@ class Game extends GoGrid {
 							}
 							//	if not, we can continue:
 							activePlayer.setUsername(username);
-							activePlayer.setColour(player.toInt());	//	the number of the initial Player object denotes its colour
+							activePlayer.setColour(player.getID());	//	the number of the initial Player object denotes its colour
 
 							players.addElement (activePlayer);
 						}
@@ -373,9 +372,7 @@ class Game extends GoGrid {
 					//  create a thread to handle communications with the client 
 					//  and add it to the thread list
 					activePlayer.setProtocol(
-							new GoGridProtocol (activePlayer, this, 
-									activePlayer.getInStream(), 
-									activePlayer.getOutStream()));
+							new GoGridProtocol (activePlayer, this));
 					
 					//  start the created thread
 					activePlayer.getProtocol().start ();
@@ -388,7 +385,7 @@ class Game extends GoGrid {
 				}
 				catch (ArrayIndexOutOfBoundsException e) {
 					Utility.bitch (new Throwable ("Couldn't create client socket: Player number"+
-							player.toInt()+"out of range"));
+							player.getID()+"out of range"));
 					e.printStackTrace ();
 					System.err.println (e.getMessage());
 					continue connect;											//	try it again, although there's not much hope.
@@ -397,11 +394,11 @@ class Game extends GoGrid {
 				if (currentPlayer >= 0) {
 					activePlayer.getProtocol().startGame ();
 					updateBoard (activePlayer);
-					if (player.toInt() == currentPlayer)
+					if (player.getID() == currentPlayer)
 						activePlayer.getOutStream().println ("ready");
 				}
 				
-				Utility.debug ("Client "+(player.toInt()+1)+" connected from "+
+				Utility.debug ("Client "+(player.getID()+1)+" connected from "+
 						activePlayer.getClientSocket().getInetAddress ().getHostAddress());
 				
 				return;

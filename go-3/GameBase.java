@@ -24,7 +24,11 @@ class GameBase {
 	/**
 	 @param sp the future server port
 	 */
-	static void setServerPort (int sp) { serverPort = sp; }
+	static void setServerPort (int sp) { 
+		assert precondition ((sp >= 1024 && sp < 65535), 
+		"Port must lie between 1024 and 65535");
+		
+		serverPort = sp; }
 
 	/**
 	 board size
@@ -38,13 +42,19 @@ class GameBase {
 	 @param i axis to read [0..2]
 	 @return board size in that direction
 	 */
-	int getBoardSize (int i) { return size[i]; }
+	int getBoardSize (int i) { 
+		assert precondition ((i >= 0 && i < 3), 
+		"index must lie between 0 and 3");
+		return size[i]; 
+	}
 
 	/**
 	 sets the board size
 	 @param s board size
 	 */
 	void setBoardSize (int s) {
+		assert precondition ((s >= MIN_GRID_SIZE && s <= MAX_GRID_SIZE), 
+				"Board size must lie between "+MIN_GRID_SIZE+" and "+MAX_GRID_SIZE);
 		for (int i = 0; i < size.length; i++) setBoardSize (s, i);
 	}
 	/**
@@ -52,10 +62,36 @@ class GameBase {
 	 @param i axis to set [0..2]
 	 */
 	protected void setBoardSize (int s, int i) {
-		if (s >= MIN_GRID_SIZE && s <= MAX_GRID_SIZE)
-			size[i] = s;
-		else throw (new IllegalArgumentException ("Board size must lie between "+
-				MIN_GRID_SIZE+" and "+MAX_GRID_SIZE));
+		assert precondition ((s >= MIN_GRID_SIZE && s <= MAX_GRID_SIZE), 
+				"Board size must lie between "+MIN_GRID_SIZE+" and "+MAX_GRID_SIZE);
+		assert precondition ((i >= 0 && i < 3), 
+				"index must lie between 0 and 3");
+
+		size[i] = s;
+	}
+	
+	
+	////////////////////////////////////////////////////////////////////////////
+	//																		  //
+	//			DESIGN BY CONTRACT CHECKING METHODS							  //
+	//																		  //
+	////////////////////////////////////////////////////////////////////////////
+	
+	static boolean precondition (boolean cond, String msg) {
+		if (!cond) throw new TestException (msg);
+		return true;
+	}
+
+	static boolean postcondition (boolean cond, String msg) {
+		if (!cond) throw new TestException (msg);
+		return true;
+	}
+
+	static boolean invariant () {
+		if (true)
+			throw new TestException (
+					"Override GameBase.invariant () to suit your class!");
+		return true;
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -94,4 +130,7 @@ class GameBase {
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
 
+	protected static class TestException extends RuntimeException {
+		public TestException (String msg) { super (msg); }
+	}
 }

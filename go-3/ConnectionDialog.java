@@ -44,7 +44,7 @@ public class ConnectionDialog extends javax.swing.JDialog {
 		this.connectionData = c;
 		this.boardSize = c.getBoardSize();
 		this.serverHost = c.getServerHost();
-		this.serverPort = c.getServerPort();
+		this.serverPort = ConnectionData.getServerPort();
 		this.username = c.getUsername();
 //		this.parent = parent;
 		

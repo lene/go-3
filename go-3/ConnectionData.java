@@ -1,32 +1,15 @@
 
-class ConnectionData {
-	/**
-	 board size
-	 */
-	private int boardSize = 3;
-	/**
-	 server port
-	 */
-	private int serverPort = 6666;
-	/**
-	 server host
-	 */
+class ConnectionData extends GameBase {
+
+	/**	 server host */
 	private String serverHost = "localhost";
-	/**
-	 user id
-	 */
+	/**	 user id	 */
 	private String username = "";
-	/**
-	 * @return Returns the boardSize.
-	 */
+
+
 	public int getBoardSize() {
-		return boardSize;
-	}
-	/**
-	 * @param boardSize The boardSize to set.
-	 */
-	public void setBoardSize(int boardSize) {
-		this.boardSize = boardSize;
+		return Math.max(MIN_GRID_SIZE, 
+				Math.min(MAX_GRID_SIZE, super.getBoardSize()));
 	}
 	/**
 	 * @return Returns the serverHost.
@@ -39,18 +22,6 @@ class ConnectionData {
 	 */
 	public void setServerHost(String serverHost) {
 		this.serverHost = serverHost;
-	}
-	/**
-	 * @return Returns the serverPort.
-	 */
-	public int getServerPort() {
-		return serverPort;
-	}
-	/**
-	 * @param serverPort The serverPort to set.
-	 */
-	public void setServerPort(int serverPort) {
-		this.serverPort = serverPort;
 	}
 	/**
 	 * @return Returns the username.
