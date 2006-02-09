@@ -50,6 +50,7 @@ to 0,0,0.
 
 players should be changed from ints to Player objects throughout
 	
+display the captured stones in the background, along with their number
 
 recheck protocol - what instances can occur?				(code)
 
