@@ -3,164 +3,6 @@ import java.net.*;
 import java.io.*;
 import java.util.Stack;
 
-/**
- client side implementation of the GoGridProtocol.
- 
- the protocol specified:
- <ol>
- <li>connect to the server
- <li>read your color
- <li>in no particular order:
- <ul>
- <li>read grid size and grid
- <li>read number of players
- <li>?
- </ul>
- <li>now the client is ready to:
- <ul>
- <li>send messages to any and all other clients
- <li>request change of board size
- <li>request change in number of players
- <li>request change of own handicaps
- <li>request change of color
- <li>request start of game
- </ul>
- <li>after starting the game, the client may:
- <ul>
- <li>request an update of the grid
- </ul>
- <li>when on the move, it may additionally
- <ul>
- <li>set a stone
- <li>pass
- </ul>
- </ol>
- 
- TODO decouple the CommandThread from the GoGridClient, so that the client 
- 	  doesn't need to know the Protocol syntax.
- TODO redesign and extend the protocol. 
- */
-
-class CommandThread extends Thread {
-	
-	BufferedReader in;
-	GoGridClient client;
-	
-	CommandThread (GoGridClient client, BufferedReader in) {
-		super ();
-
-		assert GameBase.precondition(client != null, "Client must exist");
-		assert GameBase.precondition(in != null, "Instream must exist");
-
-		this.client = client;
-		this.in = in;
-	}
-	
-	public void run () {
-		
-		while (true) {
-
-			String inputLine = new String ();
-			
-			try {
-				inputLine = in.readLine ();
-			} catch (IOException e) {
-				Utility.bitch (new Throwable ("error reading line from socket!"));
-				break;
-			}
-			if (inputLine == null) break;
-			
-			messages.push(inputLine);
-			
-			processInput (inputLine);
-		}
-		Utility.warning ("null input - server terminated!");
-		client.lostServerConnection ();
-	}
-	
-	
-	/**
-	 read a command from the server and act on it
-	 @param input the command - redundant, could read lastMessage()
-	 */
-	void processInput (String input) {
-		
-		Utility.debug (input);
-		
-		if (input.startsWith ("start game")) {
-			client.startGame ();
-			return;
-		}
-		
-		if (input.startsWith ("ready")) {
-			client.activate ();
-			return;
-		}
-		
-		if (input.startsWith ("ok")) {
-			client.deactivate ();
-			defineStatus (true);
-			return;
-		}
-		
-		if (input.startsWith ("error")) {
-			defineStatus (false);
-			return;
-		}
-		
-		if (input.startsWith ("size")) {
-			//	TODO decouple client code from protocol syntax
-			client.setSize (input);
-			return;
-		}
-		
-		if (input.startsWith ("stones")) {
-			//	TODO decouple client code from protocol syntax
-			client.updateBoard (input);
-			return;
-		}
-		
-		if (input.startsWith ("message")) {
-			client.message (Utility.getArgs (input, 2));
-			return;
-		}
-		if (input.startsWith ("liberties")) {
-			try {
-				liberties = Integer.parseInt (Utility.getArg (input, 2));
-			} catch (NumberFormatException e) {
-				Utility.debug ("NumberFormatException: "+input);
-				liberties = -1;
-			} 
-			return;
-		}
-
-		Utility.debug ("input sucks: "+input);
-	}
-	
-	/** used to exchange data with the GoGridClient, which reads it */
-	protected int liberties = -1;
-	int liberties () { 
-		int l = liberties;
-		liberties = -1;		//	marks "read" state, not yet re-set by the server
-		return l; }
-	void liberties (int l) { liberties = l; }
-	
-	protected boolean status = false;
-	boolean status () { return status; }
-	
-	protected boolean statusDefined = false;
-	boolean statusDefined () { return statusDefined; }
-	void undefineStatus () { statusDefined = false; }    
-	private void defineStatus (boolean s) {
-		statusDefined = true;
-		status = s;
-	}
-	
-	/** sort of an anally retentive inclination of mine to keep all messages  */
-	protected Stack<String> messages = new Stack<String>();
-	String lastMessage () { return messages.peek(); }
-}
-
 /** basic implementation of a GoGrid client, which is controlled from and 
  * displays on the console.
  * mainly serves as a parent class to a Java3D based client, but can 
@@ -186,12 +28,12 @@ class GoGridClient extends GoGrid {
 		GoGrid.setServerPort(p);
 		setupConnection (h, u);			//	connect with server
 		
-		readColor ();					//	blocks! TODO move into CommandThread
+		readColor ();					//	blocks! TODO move into ClientProtocol
 		
 		setupBoard ();					//	initialize board structure
 		
-		commandThread = new CommandThread (this, in);
-		commandThread.start ();			//	start reading from server
+		clientProtocol = new ClientProtocol (this, in);
+		clientProtocol.start ();			//	start reading from server
 		
 		startGame ();					
 	}
@@ -283,10 +125,10 @@ class GoGridClient extends GoGrid {
 
 		String input = new String ();
 
-		//	loop idle waiting for message to be delivered to the CommandThread
-		commandThread.undefineStatus ();
-		while (! commandThread.statusDefined ()) Utility.sleep (10);
-		input = commandThread.lastMessage ();	//	then read the last message
+		//	loop idle waiting for message to be delivered to the ClientProtocol
+		clientProtocol.undefineStatus ();
+		while (! clientProtocol.statusDefined ()) Utility.sleep (10);
+		input = clientProtocol.lastMessage ();	//	then read the last message
 		
 		Utility.debug (input);
 		
@@ -347,11 +189,11 @@ class GoGridClient extends GoGrid {
 				"point to check must lie inside the board!");
 		
 		//	TODO decouple client code from protocol syntax
-//		commandThread.liberties = -1;
+//		ClientProtocol.liberties = -1;
 		out.println ("liberties "+x+" "+y+" "+z);	//	request liberties from server
-		while (commandThread.liberties == -1)		//  wait until server has replied
+		while (clientProtocol.liberties == -1)		//  wait until server has replied
 			Utility.sleep (10);						//  sleep 10 msec
-		return commandThread.liberties();
+		return clientProtocol.liberties();
 	}
 	
 	void setSize (String input) {
@@ -502,17 +344,11 @@ class GoGridClient extends GoGrid {
 		int xread, yread, zread, color;
 		String input = new String ();
 		
-		commandThread.undefineStatus ();
-		while (! commandThread.statusDefined ())
+		clientProtocol.undefineStatus ();
+		while (! clientProtocol.statusDefined ())
 			Utility.sleep (10);
-		input = commandThread.lastMessage ();
-		/*
-		 try {
-		 input = in.readLine ();
-		 } catch (IOException e) {
-		 Utility.warning ("GoGridClient.updateBoard (): error reading line from socket!");
-		 }
-		 */
+		input = clientProtocol.lastMessage ();
+
 		Utility.debug (input);
 		
 		if (! input.startsWith ("stones")) {
@@ -579,7 +415,7 @@ class GoGridClient extends GoGrid {
 	/**
 	 
 	 */
-	protected CommandThread commandThread;
+	protected ClientProtocol clientProtocol;
 	
 	/**
 	 

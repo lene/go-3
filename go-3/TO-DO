@@ -8,6 +8,8 @@
 
 1.6 user and installation documentation					(doc)
 
+startup scripts
+
 buggy reconnecting of clients - deadlock if current player disconnects
 
 settings dialog at startup:						(feature)

@@ -392,7 +392,7 @@ class Game extends GoGrid {
 					//  create a thread to handle communications with the client 
 					//  and add it to the thread list
 					activePlayer.setProtocol(
-							new GoGridProtocol (activePlayer, this));
+							new ServerProtocol (activePlayer, this));
 
 					//	acknowledge player name
 					activePlayer.getProtocol().ackUsername();
@@ -508,7 +508,7 @@ class Game extends GoGrid {
 
 			cp.setColour(Colour.BLACK);
 
-			cp.setProtocol(new GoGridProtocol (cp, this));
+			cp.setProtocol(new ServerProtocol (cp, this));
 
 			cp.getProtocol().ackUsername();
 			setColor (cp);
