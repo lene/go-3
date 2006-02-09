@@ -19,17 +19,27 @@ class hierarchy: derive a Server(Game) and a client class separately from GoGrid
 the Server defines the method nextPlayer(), the client message()
 
 disentangle the protocol from the server/client implementation
+
 derive server and client side protocols from an common base declaring run(), 
 processInput() and lostConnection()
+
 define and document the protocol somewhere...
 
 GoGridClient.java has to be cleaned up major league
+
 revamp protocol
+
 revamp message syntax
+
+find a way to use the transparency (and other properties) setting functions in
+all Shape3D or Sphere derived objects (i want multiple inheritance! )-:
+ie. Cursor, Grid/GridObject, Stone, Point, Handicap
 
 bug when setting into a field with no liberties left: the SETTING player is 
 cleared (at least sometimes)
+
 bug when player 0 disconnects
+
 when game starts (perhaps on other occasions before starting), the cursor is set
 to 0,0,0.
 

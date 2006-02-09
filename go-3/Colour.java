@@ -1,3 +1,4 @@
+
 class Colour extends GameBase {
     public static final int EMPTY = 0, 
     BLACK = 1,
@@ -18,4 +19,5 @@ class Colour extends GameBase {
     	default:    return "Undefined";
     	}
     }
+
 }

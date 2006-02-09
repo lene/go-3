@@ -8,19 +8,18 @@ import com.sun.j3d.utils.picking.*;
 import com.sun.j3d.utils.geometry.*;
 
 /**
- * Class:       IntersectInfoBehavior
- * 
- * Description: Used to respond to mouse pick and drag events
- *              in the 3D window. Displays information about the pick.
- *
- * Version:     1.0
- *
+ Used to respond to mouse pick and drag events in the 3D window. 
+ If Utility.DEBUG is set, displays information about the pick.
+ @author helge
  */
 public class IntersectInfoBehavior extends Behavior {
 	
 	public IntersectInfoBehavior(GridDisplay J,
-			Canvas3D canvas3D, BranchGroup branchGroup,
-			TransformGroup transformGroup) {
+			Canvas3D canvas3D, BranchGroup branchGroup) {
+		assert GameBase.precondition (J != null, "GridDisplay must exist!");		
+		assert GameBase.precondition (canvas3D != null, "Canvas3D must exist!");
+		assert GameBase.precondition (branchGroup != null, "BranchGroup must exist!");
+		
 		pickCanvas = new PickCanvas (canvas3D, branchGroup);
 		pickCanvas.setTolerance (PICK_TOLERANCE);
 		pickCanvas.setMode (PickCanvas.GEOMETRY_INTERSECT_INFO);
@@ -79,31 +78,14 @@ public class IntersectInfoBehavior extends Behavior {
 		wakeupOn (new WakeupOnAWTEvent(MouseEvent.MOUSE_PRESSED));
 	}
 	
-	private void createAppearances () {
-		redlook = new Appearance();
-		Color3f objColor = new Color3f(0.5f, 0.0f, 0.0f);
-		Color3f black = new Color3f(0.0f, 0.0f, 0.0f);
-		Color3f white = new Color3f(1.0f, 1.0f, 1.0f);
-		redlook.setMaterial(new Material(objColor, black, objColor, white, 50.0f));
-		redlook.setCapability (Appearance.ALLOW_MATERIAL_WRITE);
-		
-		greenlook = new Appearance();
-		objColor = new Color3f(0.0f, 0.8f, 0.0f);
-		greenlook.setMaterial(new Material(objColor, black, objColor, white, 50.0f));
-	}
 	
 	private void createSpheres (Group group) {
 		createAppearances ();
-
-		for (int i=0;i<2;i++) {
-			switch (i) {
-			case 0:
-				sph[i] = new Sphere(size*1.15f, redlook);
-				break;
-			case 1:
-				sph[i] = new Sphere(size*1.1f, greenlook);
-				break;
-			}
+		
+		sph[0] = new Sphere(PICKSPHERESIZE*1.15f, redlook);
+		sph[1] = new Sphere(PICKSPHERESIZE*1.1f, greenlook);
+		
+		for (int i = 0; i < 2; i++) {
 			sph[i].setPickable (false);
 			sphTrans[i] = new TransformGroup ();
 			sphTrans[i].setCapability (TransformGroup.ALLOW_TRANSFORM_READ);
@@ -115,6 +97,16 @@ public class IntersectInfoBehavior extends Behavior {
 		}
 	}
 	
+	private void createAppearances () {
+		redlook = new Appearance();
+		
+		redlook.setMaterial(new Material(red, black, red, white, SHININESS));
+		redlook.setCapability (Appearance.ALLOW_MATERIAL_WRITE);
+		
+		greenlook = new Appearance();
+		greenlook.setMaterial(new Material(green, black, green, white, SHININESS));
+	}
+
 	private void setDebugSpheres(Vector3d v) {
 		if (Utility.getDebugMode()) {
 			spht3.setTranslation (v);
@@ -122,17 +114,24 @@ public class IntersectInfoBehavior extends Behavior {
 		}		
 	}
 	
-	float size;
+	
+	GridDisplay J;
+
 	PickCanvas pickCanvas;
 	PickResult[] pickResult;
+	
 	Appearance redlook, greenlook;  
-	Node oldNode = null;
-	GeometryArray oldGeom = null;
 	TransformGroup[] sphTrans = new TransformGroup [6];
 	Sphere[] sph = new Sphere [6];
 	Transform3D spht3 = new Transform3D();
-	GridDisplay J;
 	
 	private static float PICK_TOLERANCE = 8.0f;
-	private static Color3f redColor = new Color3f (1.0f, 0.0f, 0.0f);
+
+	
+	private static Color3f red = new Color3f (0.5f, 0.0f, 0.0f);
+	private static Color3f green = new Color3f(0.0f, 0.8f, 0.0f);
+	private static Color3f black = new Color3f(0.0f, 0.0f, 0.0f);
+	private static Color3f white = new Color3f(1.0f, 1.0f, 1.0f);
+	private static float SHININESS = 50.f;
+	private static float PICKSPHERESIZE = 0.1f;
 }

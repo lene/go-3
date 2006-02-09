@@ -442,7 +442,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		setupMouseBehavior (objRoot, objControl, bs);
 		
 		IntersectInfoBehavior behavior =
-			new IntersectInfoBehavior (this, C, objRoot, objectParent);
+			new IntersectInfoBehavior (this, C, objRoot);
 		behavior.setSchedulingBounds (bs);
 		objRoot.addChild (behavior);
 		

@@ -1,14 +1,17 @@
 
 
 import javax.media.j3d.*;
-//import com.sun.j3d.utils.geometry.Primitive;
-//import com.sun.j3d.utils.geometry.Sphere;
-//import com.sun.j3d.utils.applet.MainFrame;
 import javax.vecmath.*;
 
+/** a base class for displaying the grid in 3 dimensions
+    TODO derive Point class (for pick points) from this
+    @author helge */
 abstract public class GridObject extends Shape3D {
 	
 	public GridObject (int s) {
+		assert GameBase.precondition ((s >= GameBase.MIN_GRID_SIZE && s <= GameBase.MAX_GRID_SIZE), 
+				"Board size must lie between "+GameBase.MIN_GRID_SIZE+" and "+GameBase.MAX_GRID_SIZE);
+		
 		setSize (s);
 		gGeometry = createGeometry ();
 		createAppearance ();
@@ -17,12 +20,13 @@ abstract public class GridObject extends Shape3D {
 	}
 	
 	public static void setSize (int s) {
+		assert GameBase.precondition ((s >= GameBase.MIN_GRID_SIZE && s <= GameBase.MAX_GRID_SIZE), 
+				"Board size must lie between "+GameBase.MIN_GRID_SIZE+" and "+GameBase.MAX_GRID_SIZE);
+
 		size = s;
 	}
 	
-	public static int getSize () {
-		return size;
-	}
+	public static int getSize () { return size;	}
 	
 	void transparencyUp () {
 		float transparency = gTransparency.getTransparency();

@@ -1,10 +1,7 @@
 
 import javax.media.j3d.*;
-//import com.sun.j3d.utils.universe.*;
 import com.sun.j3d.utils.geometry.Primitive;
 import com.sun.j3d.utils.geometry.Sphere;
-//import com.sun.j3d.utils.applet.MainFrame;
-//import java.awt.*;
 import javax.vecmath.*;
 
 
@@ -13,7 +10,6 @@ public class Cursor extends Sphere {
 	////////	CONSTANTS	////////
 	private static float RADIUS = 0.5f;
 	private static int NUM_SEGMENTS = 16;
-	private static float CURSOR_SHININESS = 20.f;
 	private static float CURSOR_LINEWIDTH = 2.f;
 	private static float CURSOR_TRANSPARENCY = 0.5f;
 	private static int DEFAULT_COLOUR = Colour.BLUE;
@@ -36,24 +32,22 @@ public class Cursor extends Sphere {
 	
 	
 	////////	PUBLIC METHODS	////////
-	public int getColour () {
-		return colour;
-	}
+	public int getColour () { return colour; }
 	
 	public void setColour (int c) {
-		assert GameBase.precondition ((c >= 0 && c < materials.length), 
-		"There are only "+materials.length+" colors defined. tried to choose color "+c);
+		assert GameBase.precondition ((c >= 0 && c < Materials.materials.length), 
+		"There are only "+Materials.materials.length+" colors defined. tried to choose color "+c);
 		
 		colour = c;
-		material = materials[c];
+		material = Materials.materials[c];
 		createAppearance ();
 
 		this.setAppearance (cAppearance);
 	}
 
 	
-	////////	PROTECTED METHODS	////////
-	protected void createAppearance (/* ... */) {
+	////////	PRIVATE METHODS	////////
+	private void createAppearance (/* ... */) {
 				
 		cAppearance.setMaterial (material);
 		
@@ -74,9 +68,12 @@ public class Cursor extends Sphere {
 		pa.setPolygonMode (PolygonAttributes.POLYGON_LINE);
 		cAppearance.setPolygonAttributes (pa);
 		
+		//	turn antialiasing on
 		LineAttributes la = new LineAttributes ();
 		la.setLineAntialiasingEnable(true);
+		//	set line width
 		la.setLineWidth (CURSOR_LINEWIDTH);
+		
 		cAppearance.setLineAttributes (la);		
 	}
 
@@ -90,44 +87,8 @@ public class Cursor extends Sphere {
 
 	////////	MEMBER VARIABLES	////////
 	private int colour = 0;
-	private Material material = materials[colour];
+	private Material material = Materials.materials[colour];
 	
 	protected Appearance cAppearance = new Appearance ();
 	protected TransparencyAttributes cTransparency;
-
-	
-	////////	MORE CONSTANTS		////////
-	private static Material[] materials = {
-		new Material (),				//	dummy entry because colours start at 1
-		new Material (					//  BLACK	//
-				new Color3f (0.05f, 0.05f, 0.05f),//  ambient
-				new Color3f (0,0,0),		//  emissive
-				new Color3f (0.1f, 0.1f, 0.1f),	//  diffuse
-				new Color3f (0.8f, 0.8f, 0.8f),	//  specular
-				CURSOR_SHININESS),				//  shininess
-		new Material (					//  WHITE	//
-				new Color3f (0.3f, 0.3f, 0.3f),	//  ambient
-				new Color3f (0,0,0),		//  emissive
-				new Color3f (0.8f, 0.8f, 0.8f),	//  diffuse
-				new Color3f (1.0f, 1.0f, 1.0f),	//  specular
-				CURSOR_SHININESS),				//  shininess
-		new Material (					//  RED		//
-				new Color3f (0.3f, 0.1f, 0.1f),	//  ambient
-				new Color3f (0,0,0),		//  emissive
-				new Color3f (0.8f, 0.1f, 0.1f),	//  diffuse
-				new Color3f (1.0f, 0.8f, 0.8f),	//  specular
-				CURSOR_SHININESS),				//  shininess
-		new Material (					//  GREEN	//
-				new Color3f (0.1f, 0.3f, 0.1f),	//  ambient
-				new Color3f (0,0,0),		//  emissive
-				new Color3f (0.1f, 0.8f, 0.1f),	//  diffuse
-				new Color3f (0.8f, 1.0f, 0.8f),	//  specular
-				CURSOR_SHININESS),				//  shininess
-		new Material (					//  BLUE	//
-				new Color3f (0.1f, 0.1f, 0.3f),	//  ambient
-				new Color3f (0,0,0),		//  emissive
-				new Color3f (0.1f, 0.1f, 0.8f),	//  diffuse
-				new Color3f (0.8f, 0.8f, 1.0f),	//  specular
-				CURSOR_SHININESS)				//  shininess
-	};
 }
