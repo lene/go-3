@@ -2,6 +2,7 @@
 //
 
 import javax.media.j3d.*;
+
 import com.sun.j3d.utils.geometry.Primitive;
 import com.sun.j3d.utils.geometry.Sphere;
 import javax.vecmath.*;
@@ -10,103 +11,66 @@ import javax.vecmath.*;
 
 
 public class Stone extends Sphere {
-    private static float radius = 0.4f;
+	////////	CONSTANTS	////////
+	private static float RADIUS = 0.4f;
 	private static int NUM_SEGMENTS = 32;
+	private static float STONE_TRANSPARENCY = 0.1f;
 
+	////////	C'TORS		////////
     public Stone () {
-	super (radius, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
-	material = materials[Colour.BLACK];
-	sAppearance = createAppearance ();
-	this.setAppearance (sAppearance);
+    	super (RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
+		setColour(Colour.BLACK);
+//		material = Materials.materials[Colour.BLACK];
+ //   	sAppearance = createAppearance ();
+  //  	this.setAppearance (sAppearance);
     }
 
     public Stone (int c) {
-	super (radius, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
-	color = c;
-	material = materials[color];
-	//	material.setCapability (Material.ALLOW_COMPONENT_READ);
-	sAppearance = createAppearance ();
-	this.setAppearance (sAppearance);
+    	super (RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
+    	colour = c;
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
+		setColour(c);
+/*		material = Materials.materials[colour];
+    	sAppearance = createAppearance ();
+    	this.setAppearance (sAppearance);
+*/    }
+
+	////////	PUBLIC METHODS	////////
+    public int getColour () { return colour; }
+
+    public void setColour (int c) {
+		assert GameBase.precondition ((c >= 0 && c < Materials.materials.length), 
+				"There are only "+Materials.materials.length+" colors defined. tried to choose color "+c);
+				
+		colour = c;
+		material = Materials.materials[c];
+    	sAppearance = createAppearance ();
+    	
+    	this.setAppearance (sAppearance);
     }
 
-    public int getColour () {
-	return color;
+    private Appearance createAppearance (/* ... */) {
+    	Appearance app = new Appearance();
+    	app.setMaterial (material);
+
+    	    PolygonAttributes pa = new PolygonAttributes ();
+    	    pa.setCullFace (PolygonAttributes.CULL_NONE);
+    	    //	    pa.setPolygonMode (PolygonAttributes.POLYGON_LINE);
+    	    app.setPolygonAttributes (pa);
+
+    	    TransparencyAttributes ta = new TransparencyAttributes (TransparencyAttributes.NICEST, 0.5f);
+    	    app.setTransparencyAttributes (ta);    	
+    	
+    	return app;
     }
 
-    public static void setSegments (int s) {
-	segments = s;
-	//  redraw spheres, repaint board
-    }
-
-    public static int getSegments () {
-	return segments;
-    }
-
-    private int color;
-    private Material material = materials[color];
-    private static int segments;
+    private int colour;
+    private Material material = Materials.materials[colour];
 
     private Appearance sAppearance;
 
-    private Appearance createAppearance (/* ... */) {
-	Appearance app = new Appearance ();
-
-	app.setMaterial (material);
-	/*	
-	ColoringAttributes ca = new ColoringAttributes ();
-	Color3f tmpColor = new Color3f ();
-	material.getAmbientColor (tmpColor);
-	ca.setColor (tmpColor);
-	app.setColoringAttributes (ca);
-	*/
-	if (false) {
-	    PolygonAttributes pa = new PolygonAttributes ();
-	    pa.setCullFace (PolygonAttributes.CULL_NONE);
-	    //	    pa.setPolygonMode (PolygonAttributes.POLYGON_LINE);
-	    app.setPolygonAttributes (pa);
-	}
-
-	if (false) {
-	    TransparencyAttributes ta = new TransparencyAttributes (TransparencyAttributes.NICEST, 0.5f);
-	    app.setTransparencyAttributes (ta);
-	}
-	
-	
-	return app;
-    }
-
-    private static Material[] materials = {
-	new Material (),				//  EMPTY	//
-	new Material (					//  BLACK	//
-		      new Color3f (0.05f, 0.05f, 0.05f),//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.1f, 0.1f, 0.1f),	//  diffuse
-		      new Color3f (0.8f, 0.8f, 0.8f),	//  specular
-		      20.f),				//  shininess
-	new Material (					//  WHITE	//
-		      new Color3f (0.3f, 0.3f, 0.3f),	//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.8f, 0.8f, 0.8f),	//  diffuse
-		      new Color3f (1.0f, 1.0f, 1.0f),	//  specular
-		      20.f),				//  shininess
-	new Material (					//  RED		//
-		      new Color3f (0.3f, 0.1f, 0.1f),	//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.8f, 0.1f, 0.1f),	//  diffuse
-		      new Color3f (1.0f, 0.8f, 0.8f),	//  specular
-		      20.f),				//  shininess
-	new Material (					//  GREEN	//
-		      new Color3f (0.1f, 0.3f, 0.1f),	//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.1f, 0.8f, 0.1f),	//  diffuse
-		      new Color3f (0.8f, 1.0f, 0.8f),	//  specular
-		      20.f),				//  shininess
-	new Material (					//  BLUE	//
-		      new Color3f (0.1f, 0.1f, 0.3f),	//  ambient
-		      new Color3f (0,0,0),		//  emissive
-		      new Color3f (0.1f, 0.1f, 0.8f),	//  diffuse
-		      new Color3f (0.8f, 0.8f, 1.0f),	//  specular
-		      20.f)				//  shininess
-    };
 }
 
