@@ -10,16 +10,14 @@ import javax.vecmath.*;
 
 import java.awt.*;
 import java.awt.event.*;
-// import java.applet.Applet;
 
-import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
 import javax.swing.JMenuItem;
 import javax.swing.JMenuBar;
 import javax.swing.JMenu;
 import javax.swing.KeyStroke;
-//import javax.swing.JFrame;
+
 import javax.swing.JApplet;
 
 import java.net.InetAddress;
@@ -28,9 +26,9 @@ import java.net.UnknownHostException;
 
 /**
  class GridDisplay represents the canvas on which the GoGrid and all actions
- are shown 
- 
- TO DO:
+ are shown<br>
+ <br>
+ TODO:
  <ul>
  <li>replace all occurences of <tt>size</tt> with <tt>getBoardSize ()</tt>
  <li>remove <tt>size</tt>, replace with <tt>GoGrid.getBoardSize ()</tt>
@@ -47,6 +45,11 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	public GridDisplay (int size, String hostname, int port, String username) {
 		
+		assert GameBase.precondition ((size >= GameBase.MIN_GRID_SIZE && size <= GameBase.MAX_GRID_SIZE), 
+				"Board size must lie between "+GameBase.MIN_GRID_SIZE+" and "+GameBase.MAX_GRID_SIZE);		
+		assert GameBase.precondition ((port >= 1024 && port < 65535), 
+				"Port must lie between 1024 and 65535");
+
 		Utility.setDebugMode (false);
 		
 		setHostname (hostname);
@@ -54,40 +57,17 @@ public class GridDisplay extends JApplet implements ActionListener {
 		
 		G = new GoGridClient (size, hostname, port, username, this);
 		
-		//  for some reason known only to the designers of Java3D, this is necessary
-		getContentPane ().setLayout (new BorderLayout());				
-		
-		JPopupMenu.setDefaultLightWeightPopupEnabled(false);
-		getContentPane ().add ("North", setupMenu ());
-		
-		//  create a Canvas3D to perform all subsequent drawing on
-		C = new Canvas3D (SimpleUniverse.getPreferredConfiguration());
-		getContentPane ().add ("Center", C);
-		U = new SimpleUniverse (C);
-		
-		// Create a simple scene and attach it to the virtual universe
-		BranchGroup scene = createSceneGraph (U);
-		
-		scene.compile ();
-		
-		//  create a SimpleUniverse with a reference to C
-		//  move the ViewPlatform back a bit
-		U.getViewingPlatform ().setNominalViewingTransform ();
-		
-		U.addBranchGraph (scene);
-		
+		setupDisplay();
 	}
 	
 	
 	/**
 	 sets a stone at the cursor position and move the cursor to that position
-	 if that position is already occupied, does nothing but repainting
+	 if that position is already occupied, does nothing
 	 */
 	void setStone () {
-		Utility.debug ("begin");
 		if (G.setStone ()) 
 			setCursor (xc (), yc (), zc ());
-		repaint ();						//  IS THIS STILL NECESSARY ?
 	}
 	
 	
@@ -98,6 +78,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param playerToStart player to start game
 	 */
 	void fakeGame (int num, int col) {
+		assert GameBase.precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
+				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
 		G.fakeGame (num, col);
 	}
 	
@@ -109,6 +91,11 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param z z position of cursor
 	 */
 	void setCursor (int x, int y, int z) {
+/*		assert GameBase.precondition (x >= 0 && x <= getBoardSize() &&
+				y >= 0 && y <= getBoardSize() &&
+				z >= 0 && z <= getBoardSize(),
+				"point to set cursor ["+x+", "+y+", "+z+"] must lie inside the board!");
+*/
 		G.setCursor (x, y, z);
 		Transform3D translate = new Transform3D ();		//  ISSUE: does it have to be new ()
 		translate.set (new Vector3f ((G.xc ()-1), (G.yc ()-1), (G.zc ()-1)));	//	   every time?
@@ -124,6 +111,12 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param p parent group
 	 */
 	void drawStone (int x, int y, int z, BranchGroup p) {
+		assert GameBase.precondition (x >= 0 && x <= getBoardSize() &&
+				y >= 0 && y <= getBoardSize() &&
+				z >= 0 && z <= getBoardSize(),
+				"point to draw stone ["+x+", "+y+", "+z+"] must lie inside the board!");
+		assert GameBase.precondition (p != null, "parent BranchGroup must exist!");
+
 		int col = G.getStone (x, y, z);
 		if (col != Colour.EMPTY) {
 			Stone stone = new Stone (col);
@@ -148,6 +141,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 to visually signal that.
 	 */
 	void activate () {
+		assert GameBase.precondition (!active, "Must be inactive to activate()!");
+
 		active = true;
 		greenCursor = new Cursor (Colour.GREEN);
 		cursor = greenCursor;
@@ -161,6 +156,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 red, to visually signal that.
 	 */
 	void deactivate () {
+		assert GameBase.precondition (active, "Must be active to deactivate()!");
+
 		active = false;
 		redCursor = new Cursor (Colour.RED);
 		cursor = redCursor;
@@ -175,12 +172,11 @@ public class GridDisplay extends JApplet implements ActionListener {
 		super.repaint ();
 	}
 	
-	
 	/**
 	 called from the pick behavior object, attempts to calculate the
 	 coordinates on the untransformed grid from the intersection coordinates
 	 (often fails). sets the cursor at the found point.<br>
-	 remaining issue:<br>
+	 TODO:<br>
 	 inverse transform is generally quite imprecise, the more the
 	 greater the user transform					     
 	 */
@@ -201,7 +197,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		}	
 	}
 	
-	
+	/** TODO a more graceful solution */
 	void exit () {
 		System.exit (0);
 	}
@@ -216,15 +212,16 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	void transparencyDown () { objGrid.transparencyDown(); }
 	
-	
 	/**
 	 output a received message
+	 TODO maintain a message/chat window instead of just popping up a Dialog.
 	 @param msg
 	 */
 	void message (String msg) {
 		System.out.println(msg);
 		JOptionPane.showMessageDialog(this, msg);		
 	}
+
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
 	//          PUBLIC SECTION ENDS                                           //
@@ -233,9 +230,40 @@ public class GridDisplay extends JApplet implements ActionListener {
 	
 	
 	/**
-	 changes the cursor for another.<br>
+	 all Java3D scene initialization stuff in one function 
+	 */
+	private void setupDisplay () {
+		//  for some reason known only to the designers of Java3D, this is necessary
+		getContentPane ().setLayout (new BorderLayout());				
+		
+		JPopupMenu.setDefaultLightWeightPopupEnabled(false);
+		getContentPane ().add ("North", setupMenu ());
+		
+		//  create a Canvas3D to perform all subsequent drawing on
+		C = new Canvas3D (SimpleUniverse.getPreferredConfiguration());
+		getContentPane ().add ("Center", C);
+		U = new SimpleUniverse (C);
+		
+		// Create a simple scene and attach it to the virtual universe
+		BranchGroup scene = createSceneGraph (U);
+		
+		scene.compile ();
+		
+		//  create a SimpleUniverse with a reference to C
+		//  move the ViewPlatform back a bit
+		U.getViewingPlatform ().setNominalViewingTransform ();
+		
+		U.addBranchGraph (scene);		
+	}
+
+	
+	/**
+	 changes the cursor for another.
 	 */
 	private void reinitCursor () {
+		assert GameBase.precondition (cursorBG != null, 
+				"Cursor BranchGroup must exist");
+
 		try {
 			cursorBG.detach ();
 			setupCursor (parentBranch);
@@ -252,6 +280,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @return the root of the scene graph
 	 */
 	private BranchGroup createSceneGraph (SimpleUniverse U) {
+		assert GameBase.precondition (U != null, "SimpleUniverse must exist");
+
 		BranchGroup objRoot = new BranchGroup ();		//  create the root of the branch graph
 		
 		setupLights (objRoot);					//  create lighting parameters
@@ -290,9 +320,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		parentBranch.setCapability (BranchGroup.ALLOW_CHILDREN_EXTEND);	//  and add children
 		parentBranch.setCapability (BranchGroup.ALLOW_DETACH);	//  enable quick deletion
 		objectParent.addChild (parentBranch);
-		
-		bs = new BoundingSphere ();				//  BoundingSphere contains whole scene
-		
+			
 		//  add objects:
 		objectParent.addChild (objGrid);			//  the grid
 		createHandicaps (objectParent);				//  the handicap markers
@@ -301,7 +329,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		cursor = blueCursor;
 		setupCursor (objRoot);					//  create the cursor
 		
-		if (false)						//  if a game is already loaded
+		if (false)						//  TODO: if a game is already loaded
 			drawBoard ();					//  draw the stones
 		
 		return objRoot;
@@ -312,7 +340,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 <li>loop over all positions on the grid and draw any present stones
 	 */
 	private void drawBoard () {
-		Utility.debug ("begin");
 		
 		//  clear the stones which are displayed now
 		try {
@@ -351,6 +378,11 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @return TransformGroup, ready to use
 	 */	
 	private TransformGroup translate (int x, int y, int z) {
+		assert GameBase.precondition (x >= 0 && x <= getBoardSize() &&
+				y >= 0 && y <= getBoardSize() &&
+				z >= 0 && z <= getBoardSize(),
+				"point to translate to ["+x+", "+y+", "+z+"] must lie inside the board!");
+		
 		Transform3D translate = new Transform3D ();
 		translate.set (new Vector3f (x-1, y-1, z-1));		//  set translation
 		TransformGroup objTranslate = new TransformGroup (translate);
@@ -363,27 +395,25 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param objRoot the scene's root node
 	 */
 	private void setupLights (BranchGroup objRoot) {
+		assert GameBase.precondition (objRoot != null, "objRoot must exist!");
+		assert GameBase.precondition (COLOR_DIRECTIONAL.length == DIRECTION_DIRECTIONAL.length, 
+				"Light definition suckage!");
+		
 		// Set up the ambient light
-		Color3f ambientColor = new Color3f(0.1f, 0.1f, 0.1f);
+		Color3f ambientColor = COLOR_AMBIENT;
 		AmbientLight ambientLightNode = new AmbientLight(ambientColor);
 		ambientLightNode.setInfluencingBounds(bounds);
 		objRoot.addChild(ambientLightNode);
 		
 		// Set up the directional lights
-		Color3f light1Color = new Color3f(1.0f, 1.0f, 0.9f);
-		Vector3f light1Direction  = new Vector3f(4.0f, -7.0f, -12.0f);
-		Color3f light2Color = new Color3f(0.3f, 0.3f, 0.4f);
-		Vector3f light2Direction  = new Vector3f(-6.0f, -2.0f, -1.0f);
-		
-		DirectionalLight light1
-		= new DirectionalLight(light1Color, light1Direction);
-		light1.setInfluencingBounds(bounds);
-		objRoot.addChild(light1);
-		
-		DirectionalLight light2
-		= new DirectionalLight(light2Color, light2Direction);
-		light2.setInfluencingBounds(bounds);
-		objRoot.addChild(light2);
+		for (int i = 0; i < COLOR_DIRECTIONAL.length; i++) {
+			Color3f lightColor = COLOR_DIRECTIONAL[i];
+			Vector3f lightDirection  = DIRECTION_DIRECTIONAL[i];
+			
+			DirectionalLight light = new DirectionalLight(lightColor, lightDirection);
+			light.setInfluencingBounds(bounds);
+			objRoot.addChild(light);
+		}		
 	}
 	
 	
@@ -397,6 +427,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param objRoot the scene's root node
 	 */
 	private TransformGroup setupBehavior (BranchGroup objRoot) {
+		assert GameBase.precondition (objRoot != null, "objRoot must exist!");
+
 		TransformGroup objControl = new TransformGroup ();
 		objControl.setCapability (TransformGroup.ALLOW_TRANSFORM_WRITE);
 		objControl.setCapability (TransformGroup.ALLOW_TRANSFORM_READ);
@@ -406,16 +438,28 @@ public class GridDisplay extends JApplet implements ActionListener {
 		SimpleBehavior myRotator = new SimpleBehavior (this, objControl);
 		myRotator.setSchedulingBounds (bs);
 		objRoot.addChild (myRotator);
+				
+		setupMouseBehavior (objRoot, objControl, bs);
 		
+		IntersectInfoBehavior behavior =
+			new IntersectInfoBehavior (this, C, objRoot, objectParent);
+		behavior.setSchedulingBounds (bs);
+		objRoot.addChild (behavior);
+		
+		return objControl;
+	}
+	
+	private void setupMouseBehavior (BranchGroup objRoot, 
+			TransformGroup objControl, BoundingSphere bs) {
 		MouseRotate myMouseRotate = new MouseRotate ();
 		myMouseRotate.setTransformGroup (objControl);
-		myMouseRotate.setFactor (0.010f, 0.010f);
+		myMouseRotate.setFactor (MOUSE_ROTATE_FACTOR, MOUSE_ROTATE_FACTOR);
 		myMouseRotate.setSchedulingBounds (bs);
 		objRoot.addChild (myMouseRotate);
 		
 		MouseTranslate myMouseTranslate = new MouseTranslate ();
 		myMouseTranslate.setTransformGroup (objControl);
-		myMouseTranslate.setFactor (0.010f, 0.010f);
+		myMouseTranslate.setFactor (MOUSE_TRANSLATE_FACTOR, MOUSE_TRANSLATE_FACTOR);
 		myMouseTranslate.setSchedulingBounds (bs);
 		objRoot.addChild (myMouseTranslate);
 		
@@ -423,23 +467,17 @@ public class GridDisplay extends JApplet implements ActionListener {
 		myMouseZoom.setTransformGroup (objControl);
 		// myMouseZoom.setFactor (factor);
 		myMouseZoom.setSchedulingBounds (bs);
-		objRoot.addChild (myMouseZoom);
-		
-		IntersectInfoBehavior behavior =
-			new IntersectInfoBehavior (this, C, objRoot, objectParent, 0.02f);
-		behavior.setSchedulingBounds (bs);
-		objRoot.addChild (behavior);
-		
-		return objControl;
+		objRoot.addChild (myMouseZoom);	
 	}
-	
 	
 	/** 
 	 translate the cursor and add it to the scene graph
 	 @param objRoot
 	 */
 	private void setupCursor (BranchGroup objRoot) {
-		cursorPos = translate (size/2, size/2, size/2);
+		assert GameBase.precondition (objRoot != null, "objRoot must exist!");
+
+		cursorPos = translate (size/2+1, size/2+1, size/2+1);
 		cursorPos.setCapability (TransformGroup.ALLOW_TRANSFORM_WRITE);
 		cursorPos.setCapability (TransformGroup.ALLOW_TRANSFORM_READ);
 		cursorBG = new BranchGroup ();
@@ -455,6 +493,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param parent
 	 */
 	private void createHandicaps (TransformGroup parent) {
+		assert GameBase.precondition (parent != null, "parent must exist!");
+		
 		int min = (size-1)/4+1,
 		step = (size+1)/4;
 		for (int x = min; x <= size-min+1; x += step) {
@@ -476,6 +516,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param parent
 	 */
 	private void createPickPoints (TransformGroup parent) {
+		assert GameBase.precondition (parent != null, "parent must exist!");
+
 		if (points == null) setupPoints ();
 		
 		for (int x = 1; x <= size; x++)
@@ -531,6 +573,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @return the added menu
 	 */
 	private JMenu addMenu (JMenuBar menuBar, String menuTitle, int mnemonic, String description) {
+		assert GameBase.precondition (menuBar != null, "Menu bar must exist!");
+
 		JMenu menu = new JMenu(menuTitle);
 		if (mnemonic != 0) 
 			menu.setMnemonic(mnemonic);
@@ -550,6 +594,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @return the added menu
 	 */
 	private void addMenuItem (JMenu menu, String itemTitle, int mnemonic, int actionMask, String description, boolean enabled) {
+		assert GameBase.precondition (menu != null, "Menu must exist!");
+
 		JMenuItem menuItem = new JMenuItem(itemTitle);
 		if (mnemonic != 0)
 			menuItem.setAccelerator(KeyStroke.getKeyStroke(mnemonic, actionMask));
@@ -677,7 +723,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	
 	/**
 	 implementation of actionPerformed for interface ActionListener
-	 
+	 TODO implement all menu points
 	 */    
 	public void actionPerformed(ActionEvent e) {
 		JMenuItem source = (JMenuItem)(e.getSource());
@@ -690,7 +736,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 			return;
 		}
 		
-		JOptionPane.showMessageDialog (this,
+		JOptionPane.showMessageDialog (this,	//	TODO unfunky major league 
 				text,
 				"Action Event",
 				JOptionPane.INFORMATION_MESSAGE );
@@ -704,8 +750,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	////////////////////////////////////////////////////////////////////////////
 	
 	String hostname = "localhost";
-	void setHostname (String hostname) { 
-		this.hostname = hostname; System.err.println ("Server host: "+hostname); }
+	void setHostname (String hostname) { this.hostname = hostname; }
 	String getHostname () { return hostname; }
 	
 	//  GoGrid related variables, getters and setters
@@ -714,135 +759,104 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	public int xc () { return G.xc (); }
 	/**
-	 @return cursor x position
+	 @return cursor y position
 	 */
 	public int yc () { return G.yc (); }
 	/**
-	 @return cursor x position
+	 @return cursor z position
 	 */
 	public int zc () { return G.zc (); }
 	
-	/**
-	 board size
-	 */
+	/**	 board size	- not yet variable in xyz	*/
 	private int size = 0;
 	/** 
 	 @return board size
 	 */
 	int getBoardSize () { return size; }
 	/**
-	 sets the board size
 	 @param s board size
 	 */
 	void setBoardSize (int s) { size = s; }
 	
-	/**
-	 current player's turn?
-	 */
+	/**	 current player's turn?	 */
 	private boolean active = false;
 	
-	//    int currentMove = 0, evaluatedMove = 0;
-	
-	/**
-	 i made this member package private, but honestly, i should make this 
-	 private and use getters and setters whenever i need access
-	 */
-	GoGrid G;
-	
+	/**  */
+	private GoGrid G;
+	GoGrid G() { return G; }
+	void G(GoGrid G) { this.G = G; }
+
 	
 	//  Java3D display related variables
 	
-	/**
-	 stores the geometry of the pick points: a single simple point
-	 */
+	/**  stores the geometry of the pick points: a single simple point	 */
 	private PointArray points = null;
 	
-	/**
-	 the geometry of the grid
-	 */
-//	private Shape3D objGrid = null;
+	/**	 the geometry of the grid	 */
 	private Grid objGrid = null;
-	/**
-	 transform belonging to the cursor
-	 */
+	/**	 transform belonging to the cursor	 */
 	private TransformGroup cursorPos;
-	/**
-	 BranchGroup as parent of the cursor
-	 */
+	/**	 BranchGroup as parent of the cursor	 */
 	private BranchGroup cursorBG;
-	/**
-	 TG for mouse and keyboard behaviors
-	 */
+	/**	 TG for mouse and keyboard behaviors	 */
 	private TransformGroup objControl;
-	/**
-	 transform node for the whole scene; first child of root node
-	 */
+	/**	 transform node for the whole scene; first child of root node	 */
 	private TransformGroup objTransform;
 	
-	/**
-	 the canvas on which we draw
-	 */
+	/**	 the canvas on which we draw	 */
 	private Canvas3D C;
-	/**
-	 our scene universe
-	 */
+	/**	 our scene universe	 */
 	private SimpleUniverse U;
 	
-	/**
-	 a bounding sphere containing the whole scene,used for the lights
-	 */
+	/**	 a bounding sphere containing the whole scene,used for the lights	 */
 	private BoundingSphere bounds = new BoundingSphere(new Point3d(0.0,0.0,0.0), 1000.0);
-	
-	/**
-	 a bounding sphere containing the whole scene,used for behaviors<br>
-	 WHAT IS THE DIFFERENCE TO <tt>bounds</tt>?
-	 */
-	private BoundingSphere bs;
-	
-	/**
-	 the TransformGroup which describes the transformation of the scene
-	 */
+		
+	/**	 the TransformGroup which describes the transformation of the scene	 */
 	private TransformGroup objectParent;
 	/**
 	 @return the TransformGroup which describes the transformation of the scene
 	 */
-	TransformGroup getObjectParent () {
-		return objectParent;
-	}
+	TransformGroup getObjectParent () {	return objectParent; }
 	
 	/**
 	 the BranchGroup under which all stones are stored<br>
-	 THIS IS A MISNOMER, FIND A BETTER NAME
+	 TODO THIS IS A MISNOMER, FIND A BETTER NAME
 	 */
 	private BranchGroup parentBranch;
 	/**
 	 @return the BranchGroup under which all stones are stored
 	 */
-	BranchGroup getParentBranch () {
-		return parentBranch;
-	}
+	BranchGroup getParentBranch () { return parentBranch; }
 	
-	/**
-	 duration of one rotation in animation mode in msecs
-	 */
-	private int rotationPeriod = 10000;
-	
-	/**
-	 the current cursor
-	 */
+	/**	 the current cursor	 */
 	private Cursor cursor;
-	/**
-	 the not-yet-enabled (pre-game start) cursor
-	 */
+
+	
+	////////////////////////////////////////////////////////////////////////////
+	//                                                                        //
+	//          CONSTANTS			      									  //
+	//                                                                        //
+	////////////////////////////////////////////////////////////////////////////	
+	
+	/**	 the not-yet-enabled (pre-game start) cursor	 */
 	private Cursor blueCursor = new Cursor (Colour.BLUE);
-	/**
-	 the inactive cursor
-	 */
+	/**	 the inactive cursor	 */
 	private Cursor redCursor = new Cursor (Colour.RED);
-	/**
-	 the active cursor
-	 */
+	/**	 the active cursor	 */
 	private Cursor greenCursor = new Cursor (Colour.GREEN);
+
+	static private Color3f COLOR_AMBIENT = new Color3f(0.1f, 0.1f, 0.1f);
+	static private Color3f COLOR_DIRECTIONAL[] = {
+		new Color3f(1.0f, 1.0f, 0.9f),
+		new Color3f(0.3f, 0.3f, 0.4f)
+	};
+	static private Vector3f DIRECTION_DIRECTIONAL[] = {
+		new Vector3f(4.0f, -7.0f, -12.0f),
+		new Vector3f(-6.0f, -2.0f, -1.0f)
+	};
+	
+	static private float MOUSE_ROTATE_FACTOR = 0.01f; 
+	static private float MOUSE_TRANSLATE_FACTOR = 0.01f; 
 	
 	
 	////////////////////////////////////////////////////////////////////////////
@@ -851,7 +865,12 @@ public class GridDisplay extends JApplet implements ActionListener {
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
 	
-	
+
+	/**	 number of moves to fake	 */
+	static int m = 0;
+
+	private static ConnectionData connectionData = new ConnectionData ();
+
 	/**
 	 print a message on how to call the program
 	 */
@@ -862,14 +881,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		    "                   [-h|--server-host serverhost]\n"+
 	      "                   [-p|--server-port serverport]\n");
 	}
-	
-	/**
-	 number of moves to fake
-	 */
-	static int m = 0;
-
-	private static ConnectionData connectionData = new ConnectionData ();
-	
+		
 	/**
 	 parse the command line and set appropriate options
 	 */

@@ -17,8 +17,8 @@ public class Grid extends GridObject {
 	
 	public Grid (int s) {
 		super (s);
-		assert precondition ((s >= MIN_GRID_SIZE && s <= MAX_GRID_SIZE), 
-				"Board size must lie between "+MIN_GRID_SIZE+" and "+MAX_GRID_SIZE);		
+		assert GameBase.precondition ((s >= GameBase.MIN_GRID_SIZE && s <= GameBase.MAX_GRID_SIZE), 
+				"Board size must lie between "+GameBase.MIN_GRID_SIZE+" and "+GameBase.MAX_GRID_SIZE);		
 	}
 	
 	//  TODO the index bounds must be changed to run from 1..size instead of 0..size-1!

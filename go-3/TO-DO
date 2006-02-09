@@ -29,6 +29,9 @@ revamp message syntax
 
 bug when setting into a field with no liberties left: the SETTING player is 
 cleared (at least sometimes)
+bug when player 0 disconnects
+when game starts (perhaps on other occasions before starting), the cursor is set
+to 0,0,0.
 
 --------------------------------------------------->	ALPHA RELEASE
 
