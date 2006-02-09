@@ -868,7 +868,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	static int m = 0;
 
-	static ConnectionData connectionData = new ConnectionData ();
+	private static ConnectionData connectionData = new ConnectionData ();
 	
 	/**
 	 parse the command line and set appropriate options

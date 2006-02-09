@@ -19,7 +19,8 @@ class hierarchy: derive a Server(Game) and a client class separately from GoGrid
 the Server defines the method nextPlayer(), the client message()
 
 disentangle the protocol from the server/client implementation
-derive server and client side protocols from an common base
+derive server and client side protocols from an common base declaring run(), 
+processInput() and lostConnection()
 define and document the protocol somewhere...
 
 GoGridClient.java has to be cleaned up major league

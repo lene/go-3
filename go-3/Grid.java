@@ -10,13 +10,18 @@ import javax.media.j3d.*;
 import javax.vecmath.*;
 //import java.applet.Applet;
 
+/** a class to create a Java3D <tt>Geometry</tt> representing the 3-dimensional
+ *  Go board.
+ */
 public class Grid extends GridObject {
 	
 	public Grid (int s) {
 		super (s);
+		assert precondition ((s >= MIN_GRID_SIZE && s <= MAX_GRID_SIZE), 
+				"Board size must lie between "+MIN_GRID_SIZE+" and "+MAX_GRID_SIZE);		
 	}
 	
-	//  the index bounds must be changed to run from 1..size instead of 0..size-1!
+	//  TODO the index bounds must be changed to run from 1..size instead of 0..size-1!
 	protected Geometry createGeometry (/* ... */) {
 		Point3f vertex[] = new Point3f[6*size*size];
 		for (int z = 0; z <= size; z++)                    //  draw  all  xy-planes

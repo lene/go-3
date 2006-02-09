@@ -426,7 +426,7 @@ class Game extends GoGrid {
 					activePlayer.getProtocol().startGame ();
 					updateBoard (activePlayer);
 					if (player.getID() == currentPlayer)
-						activePlayer.getOutStream().println ("ready");
+						activePlayer.getProtocol().awaitMove();
 				}
 				
 				Utility.debug ("Client "+(player.getID()+1)+" connected from "+
