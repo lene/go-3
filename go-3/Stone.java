@@ -11,16 +11,17 @@ import javax.vecmath.*;
 
 public class Stone extends Sphere {
     private static float radius = 0.4f;
+	private static int NUM_SEGMENTS = 32;
 
     public Stone () {
-	super (radius, Primitive.GENERATE_NORMALS, 16);
+	super (radius, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
 	material = materials[Colour.BLACK];
 	sAppearance = createAppearance ();
 	this.setAppearance (sAppearance);
     }
 
     public Stone (int c) {
-	super (radius, Primitive.GENERATE_NORMALS, 16);
+	super (radius, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
 	color = c;
 	material = materials[color];
 	//	material.setCapability (Material.ALLOW_COMPONENT_READ);

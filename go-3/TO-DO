@@ -15,6 +15,20 @@ settings dialog at startup:						(feature)
 	leave room for setting of handicaps, number of players,
 		load game, etc.
 
+class hierarchy: derive a Server(Game) and a client class separately from GoGrid
+the Server defines the method nextPlayer(), the client message()
+
+disentangle the protocol from the server/client implementation
+derive server and client side protocols from an common base
+define and document the protocol somewhere...
+
+GoGridClient.java has to be cleaned up major league
+revamp protocol
+revamp message syntax
+
+bug when setting into a field with no liberties left: the SETTING player is 
+cleared (at least sometimes)
+
 --------------------------------------------------->	ALPHA RELEASE
 
 	2) Beta-release
@@ -78,7 +92,7 @@ add a control window							(feature)
 		setting
 		chat & messages line
 		get & display liberties
-		visual depth 
+		visual depth?
 
 integrate display, control window and talk line into one frame		(hmm.. usability feat)
 

@@ -216,6 +216,15 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	void transparencyDown () { objGrid.transparencyDown(); }
 	
+	
+	/**
+	 output a received message
+	 @param msg
+	 */
+	void message (String msg) {
+		System.out.println(msg);
+		JOptionPane.showMessageDialog(this, msg);		
+	}
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
 	//          PUBLIC SECTION ENDS                                           //
