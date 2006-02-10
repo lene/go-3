@@ -135,6 +135,75 @@ class ClientProtocol extends GoGridProtocol {
 		
 		Utility.debug ("input sucks: "+input);
 	}
+
+	
+	////////////////////////////////////////////////////////////////////////////
+	//																		  //
+	//			ACTIONS AS DEFINED IN THE PROTOCOL							  //
+	//																		  //
+	////////////////////////////////////////////////////////////////////////////
+
+	protected void sendMessage (String input) {
+		Utility.bitch(new Throwable("Implement me!"));
+	}
+	
+	protected void logOff (String input) {
+		error ("command not yet implemented: "+input);
+	}
+
+	protected void sendBoard (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+	}
+	
+	protected void cursor (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+	}
+	
+	protected void liberties (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+	}
+	
+	protected void saveGame (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+	}
+	
+	protected void setAt (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert GameBase.precondition (awaitingMove(), "Must be on the move!");
+	}
+
+	protected void pass (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert GameBase.precondition (awaitingMove(), "Must be on the move!");
+	}
+
+	protected void setBoardSize (String input) {
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+	}
+
+	protected void setColour (String input) {
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+	}
+	
+	protected void setHandicap (String input) {
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+	}
+	
+	protected void setPlayers (String input) {
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+	}
+	
+	protected void loadGame (String input) {
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");		
+		error ("command not yet implemented: "+input);
+	}
+	
+	/** starts the game for all clients. requested explicitly by client. */
+	protected void startGame (String input) {
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+	}
+
+	////////////////////////////////////////////////////////////////////////////
 	
 	/** used to exchange data with the GoGridClient, which reads it */
 	protected int liberties = -1;

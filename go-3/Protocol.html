@@ -22,6 +22,7 @@ the requests.
       <td>task</td>
 
 
+      <td>command</td>
       <td>arguments</td>
 
       <td>remarks</td>
@@ -35,7 +36,7 @@ the requests.
 
     <tr style="font-weight: bold;">
 
-      <td colspan="5" rowspan="1">before login</td>
+      <td colspan="6" rowspan="1">before login</td>
       <td></td>
 
     </tr>
@@ -45,6 +46,7 @@ the requests.
       <td>connect</td>
 
 
+      <td></td>
       <td>-</td>
 
       <td>not part of the protocol</td>
@@ -61,6 +63,7 @@ the requests.
       <td>set username</td>
 
 
+      <td></td>
       <td>name</td>
 
       <td></td>
@@ -74,6 +77,7 @@ the requests.
 
     <tr>
       <td style="color: rgb(153, 153, 153);">send password</td>
+      <td></td>
       <td style="color: rgb(153, 153, 153);">password</td>
       <td style="color: rgb(153, 153, 153);"></td>
       <td style="color: rgb(153, 153, 153);">success</td>
@@ -82,7 +86,7 @@ the requests.
     </tr>
     <tr style="font-weight: bold;">
 
-      <td colspan="5" rowspan="1">before starting
+      <td colspan="6" rowspan="1">before starting
 the game</td>
       <td></td>
 
@@ -93,6 +97,7 @@ the game</td>
       <td>request game list</td>
 
 
+      <td>game list</td>
       <td>-</td>
 
       <td>list of currently started games</td>
@@ -106,6 +111,7 @@ the game</td>
 
     <tr>
       <td>request join game</td>
+      <td>join game</td>
       <td>game id | player id</td>
       <td>if accepted, starts game</td>
       <td>success</td>
@@ -113,6 +119,7 @@ the game</td>
       <td></td>
     </tr>
     <tr>
+      <td>set handicap</td>
       <td>set handicap</td>
       <td>number</td>
       <td>not possible after requesting to join a game or starting an own game</td>
@@ -122,6 +129,7 @@ the game</td>
     </tr>
     <tr>
       <td style="color: rgb(153, 153, 153);">set number of players</td>
+      <td>set players</td>
       <td style="color: rgb(153, 153, 153);">number</td>
       <td style="color: rgb(153, 153, 153);">will take a while before it is implemented</td>
       <td style="color: rgb(153, 153, 153);">-</td>
@@ -130,7 +138,8 @@ the game</td>
     </tr>
     <tr>
       <td style="color: rgb(153, 153, 153);">request saved game list</td>
-      <td style="color: rgb(153, 153, 153);"></td>
+      <td>saved game list</td>
+      <td style="color: rgb(153, 153, 153);">-</td>
       <td style="color: rgb(153, 153, 153);">returns all games in which current player took part</td>
       <td style="color: rgb(153, 153, 153);">saved game list</td>
       <td style="color: rgb(153, 153, 153);"></td>
@@ -138,6 +147,7 @@ the game</td>
     </tr>
     <tr>
       <td style="color: rgb(153, 153, 153);">load game</td>
+      <td></td>
       <td style="color: rgb(153, 153, 153);">game id</td>
       <td style="color: rgb(153, 153, 153);">starts a game after loading, waiting for other player to connect</td>
       <td style="color: rgb(153, 153, 153);">game (saved)</td>
@@ -149,6 +159,7 @@ the game</td>
       <td>start new game</td>
 
 
+      <td></td>
       <td>dimensions,&nbsp;colour</td>
 
       <td>sets board size and own colour</td>
@@ -164,7 +175,7 @@ the game</td>
 
 
     <tr>
-      <td colspan="5" rowspan="1"><span style="font-weight: bold;">after starting a new game</span></td>
+      <td colspan="6" rowspan="1"><span style="font-weight: bold;">after starting a new game</span></td>
       <td></td>
     </tr>
     <tr>
@@ -172,6 +183,7 @@ the game</td>
       <td>accept join game</td>
 
 
+      <td></td>
       <td>player name(?)</td>
 
       <td>automatically starts game (if number of players is reached)</td>
@@ -189,6 +201,7 @@ the game</td>
 
 
       <td></td>
+      <td></td>
 
       <td></td>
 
@@ -205,7 +218,7 @@ the game</td>
 
     <tr>
 
-      <td colspan="5" rowspan="1"><span style="font-weight: bold;">any time after connect</span></td>
+      <td colspan="6" rowspan="1"><span style="font-weight: bold;">any time after connect</span></td>
       <td></td>
 
     </tr>
@@ -215,6 +228,7 @@ the game</td>
       <td>send message</td>
 
 
+      <td>send message</td>
       <td>player id, message</td>
 
       <td></td>
@@ -231,6 +245,7 @@ the game</td>
       <td>broadcast message</td>
 
 
+      <td>broadcast message</td>
       <td>message</td>
 
       <td>will be sent to all players or to a global message board</td>
@@ -242,9 +257,18 @@ the game</td>
 
     </tr>
 
+    <tr>
+      <td>disconnect</td>
+      <td>log off</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
     <tr style="font-weight: bold;">
 
-      <td colspan="5" rowspan="1">any time during a
+      <td colspan="6" rowspan="1">any time during a
 game</td>
       <td></td>
 
@@ -255,6 +279,7 @@ game</td>
       <td>get liberties</td>
 
 
+      <td>liberies</td>
       <td>position</td>
 
       <td></td>
@@ -271,6 +296,7 @@ game</td>
       <td style="color: rgb(153, 153, 153);">save game</td>
 
 
+      <td>save game</td>
       <td style="color: rgb(153, 153, 153);">name</td>
 
       <td style="color: rgb(153, 153, 153);"></td>
@@ -287,6 +313,7 @@ game</td>
       <td style="color: rgb(153, 153, 153);">request take back move(s)</td>
 
 
+      <td>take back</td>
       <td style="color: rgb(153, 153, 153);"></td>
 
       <td style="color: rgb(153, 153, 153);"></td>
@@ -303,6 +330,7 @@ game</td>
       <td style="color: rgb(153, 153, 153);">accept take back move(s)</td>
 
 
+      <td>accept take back</td>
       <td style="color: rgb(153, 153, 153);"></td>
 
       <td style="color: rgb(153, 153, 153);"></td>
@@ -319,6 +347,7 @@ game</td>
       <td style="color: rgb(153, 153, 153);">request go back to a branch</td>
 
 
+      <td>goto branch</td>
       <td style="color: rgb(153, 153, 153);"></td>
 
       <td style="color: rgb(153, 153, 153);"></td>
@@ -335,6 +364,7 @@ game</td>
       <td style="color: rgb(153, 153, 153);">accept  go back to a branch</td>
 
 
+      <td>accept goto branch</td>
       <td style="color: rgb(153, 153, 153);"></td>
 
       <td style="color: rgb(153, 153, 153);"></td>
@@ -348,7 +378,7 @@ game</td>
 
     <tr>
 
-      <td colspan="6" rowspan="1"><span style="font-weight: bold;">during move</span></td>
+      <td colspan="7" rowspan="1"><span style="font-weight: bold;">during move</span></td>
 
 
 
@@ -362,6 +392,7 @@ game</td>
       <td>set</td>
 
 
+      <td></td>
       <td>position</td>
 
       <td></td>
@@ -378,6 +409,7 @@ game</td>
       <td>pass</td>
 
 
+      <td></td>
       <td>-</td>
 
       <td></td>
@@ -405,6 +437,7 @@ functions.
   <tbody>
     <tr style="font-weight: bold;">
       <td>task</td>
+      <td>command</td>
       <td>arguments</td>
       <td>remarks</td>
       <td>return</td>
@@ -412,10 +445,11 @@ functions.
       <td>impl.</td>
     </tr>
     <tr>
-      <td colspan="6" rowspan="1"><span style="font-weight: bold;">before login</span></td>
+      <td colspan="7" rowspan="1"><span style="font-weight: bold;">before login</span></td>
     </tr>
     <tr>
       <td>username ok/reject</td>
+      <td></td>
       <td>success / reason</td>
       <td></td>
       <td></td>
@@ -424,6 +458,7 @@ functions.
     </tr>
     <tr>
       <td style="color: rgb(153, 153, 153);">password ok/reject</td>
+      <td></td>
       <td style="color: rgb(153, 153, 153);">success / reason</td>
       <td style="color: rgb(153, 153, 153);"></td>
       <td style="color: rgb(153, 153, 153);"></td>
@@ -431,10 +466,11 @@ functions.
       <td></td>
     </tr>
     <tr>
-      <td colspan="6" rowspan="1"><span style="font-weight: bold;">after successful login</span></td>
+      <td colspan="7" rowspan="1"><span style="font-weight: bold;">after successful login</span></td>
     </tr>
     <tr>
       <td>game list receive</td>
+      <td></td>
       <td>game list</td>
       <td></td>
       <td></td>
@@ -443,6 +479,7 @@ functions.
     </tr>
     <tr>
       <td>saved game list </td>
+      <td></td>
       <td>saved game list</td>
       <td></td>
       <td></td>
@@ -451,6 +488,7 @@ functions.
     </tr>
     <tr>
       <td>message </td>
+      <td></td>
       <td>sender, message</td>
       <td></td>
       <td></td>
@@ -459,6 +497,7 @@ functions.
     </tr>
     <tr>
       <td>join game response</td>
+      <td></td>
       <td>success, game</td>
       <td></td>
       <td></td>
@@ -467,6 +506,7 @@ functions.
     </tr>
     <tr>
       <td>start/load game response</td>
+      <td></td>
       <td>success, game</td>
       <td></td>
       <td></td>
@@ -474,11 +514,21 @@ functions.
       <td></td>
     </tr>
     <tr>
-      <td colspan="6" rowspan="1"><span style="font-weight: bold;">during a game</span></td>
+      <td colspan="7" rowspan="1"><span style="font-weight: bold;">during a game</span></td>
     </tr>
     <tr>
       <td>receive game state</td>
+      <td>send board</td>
       <td>game</td>
+      <td></td>
+      <td></td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <td>receive cursor position</td>
+      <td>cursor</td>
+      <td>position</td>
       <td></td>
       <td></td>
       <td></td>
@@ -491,9 +541,11 @@ functions.
       <td></td>
       <td></td>
       <td></td>
+      <td></td>
     </tr>
     <tr>
       <td>game saved notification</td>
+      <td></td>
       <td>name of saved game</td>
       <td></td>
       <td></td>
@@ -507,9 +559,11 @@ functions.
       <td></td>
       <td></td>
       <td></td>
+      <td></td>
     </tr>
     <tr>
       <td>request to go to branch</td>
+      <td></td>
       <td></td>
       <td></td>
       <td></td>

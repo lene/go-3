@@ -47,120 +47,6 @@ class ServerProtocol extends GoGridProtocol {
 		}
 	}
 
-
-	/** parse a line from the server and call the corresponding action.		  */
-	public void processInput (String input) {
-		
-		Utility.debug ("\""+input+"\"");
-
-		//  requests which can be made at any time
-		
-		if (input.startsWith ("talk")) {
-			talk(input);
-			return;
-		}
-		
-		if (input.startsWith ("log off")) {
-			logoff(input);
-			return;
-		}
-		
-		//  requests which can be made only after game started
-		
-		if (gameStarted ()) {
-			
-			if (input.startsWith ("send board")) {
-				sendBoard (input);
-				return;
-			}
-			
-			if (input.startsWith ("cursor")) {
-				cursor (input);
-				return;
-			}
-			
-			if (input.startsWith ("liberties")) {
-				liberties (input);
-				return;
-			}
-			
-			if (input.startsWith ("save game")) {
-				saveGame(input);
-				return;
-			}
-			
-			//  requests which can be made only if player is on move
-			
-			if (awaitingMove()) {
-				
-				//  set a stone
-				if (input.startsWith ("set at")) {
-					setAt (input);
-					return;
-				}
-				
-				//  pass this move
-				if (input.startsWith ("pass")) {
-					pass (input);
-					return;
-				}
-			}
-			
-			//  requests which can be made only if player is NOT on move
-			
-			else {
-				//  stub for requests a client may make when not on move
-				if (input.startsWith ("")) {
-					return;
-				}
-			}
-		}                                       //  if (gameStarted ())
-		
-		//  requests which can be made only before game started
-		
-		else {
-			
-			//  request particular board size
-			if (input.startsWith ("set board size")) {
-				setBoardSize(input);
-				return;
-			}
-			
-			//  request a color
-			if (input.startsWith ("set color")) {
-				setColour (input);
-				return;
-			}
-			
-			//  request handicap
-			if (input.startsWith ("set handicap")) {
-				setHandicap (input);
-				return;
-			}
-			
-			//  request number of players
-			if (input.startsWith ("set players")) {
-				setPlayers(input);
-				return;
-			}
-			
-			//  load a game
-			if (input.startsWith ("load game")) {
-				loadGame(input);
-				return;
-			}
-			
-			// request game start
-			if (input.startsWith ("start game")) {
-				startGame(input);
-				return;
-			}
-			
-		}
-		
-		Utility.warning ("command invalid: "+input);
-	}
-
 	
 	////////////////////////////////////////////////////////////////////////////
 	//																		  //
@@ -168,7 +54,7 @@ class ServerProtocol extends GoGridProtocol {
 	//																		  //
 	////////////////////////////////////////////////////////////////////////////
 	
-	protected void talk (String input) {
+	protected void sendMessage (String input) {
 		int to;
 		String msg = Utility.getArgs (input, 3);
 		try {
@@ -180,7 +66,7 @@ class ServerProtocol extends GoGridProtocol {
 		server.sendMessage (to, ""+player+": "+msg);        //  send 'msg' to 'to'
 	}
 
-	protected void logoff (String input) {
+	protected void logOff (String input) {
 		error ("command not yet implemented: "+input);
 	}
 
