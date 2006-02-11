@@ -1,6 +1,8 @@
 
 /** contains some global constants, variables, and accessors needed by (almost)
- *  all classes. sort of a global base class. 
+ *  all classes. sort of a global base class. Some classes can't be derived from
+ *  it though, because they must be derived from Java3D classes. 
+ *  I want multiple inheritance!
  * @author helge
  */
 

@@ -6,8 +6,8 @@ import java.io.*;
  this class handles the input from the associated client and triggers the
  appropriate actions in the server
  */
-class ServerProtocol extends GoGridProtocol {	
-	ServerProtocol (ConnectedPlayer player, Game game) {
+class GameProtocol extends GoGridProtocol {	
+	GameProtocol (ConnectedPlayer player, Game game) {
 		super ();
 		
 		assert GameBase.precondition (player.isConnected(), "Player must be connected!");
@@ -20,33 +20,6 @@ class ServerProtocol extends GoGridProtocol {
 		this.out = player.getOutStream();
 	}
 	
-	/** the event loop: reads a line from server and handles it, forever.	  */
-	public void run () {
-		assert GameBase.precondition (server != null, "Game must exist!");
-
-		while (true) {								//	outer loop to catch disconnects
-			
-			while (true) {							//	inner loop over moves
-				String inputLine = null;
-				
-				try {
-					inputLine = in.readLine ();
-				} catch (IOException e) {
-					Utility.bitch (new Throwable ("error reading line from socket!"));
-					break;
-				}
-				if (inputLine == null) break;		//	lost connection
-				
-				Utility.debug ("player "+player+":  "+inputLine);
-				
-				processInput (inputLine);
-			}
-
-			//	we're here because we've lost connection to the client
-			lostConnection();
-		}
-	}
-
 	
 	////////////////////////////////////////////////////////////////////////////
 	//																		  //
@@ -373,15 +346,10 @@ class ServerProtocol extends GoGridProtocol {
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
 	
-//	protected ConnectedPlayer player = null;
 	protected Game server = null;	
-//	protected BufferedReader in = null;
-//	protected PrintWriter out = null;
 
 	protected boolean connected = false,
-	await_clients = false,
-	game_started = false,
-	awaiting_move = false;
+	await_clients = false;
 
 	private String boardContent = "";
 

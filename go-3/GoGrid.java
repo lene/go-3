@@ -75,7 +75,7 @@ abstract class GoGrid extends GameBase {
 	 @return success
 	 */    
 	abstract boolean setStone (int col, int x, int y, int z);
-	
+
 	/**
 	 gets the board in a state that is in sync with all other boards
 	 */

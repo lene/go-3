@@ -1,6 +1,11 @@
 
 import java.io.*;
+import java.util.LinkedList;
 
+/**  redeclaring the class Stack to avoid using old java.util.Stack */
+class Stack extends LinkedList<String> { 
+	public void push(String s) { addFirst (s); }
+}
 
 /**
  this class handles the input from the associated client and triggers the
@@ -12,7 +17,32 @@ abstract class GoGridProtocol extends Thread {
 	}
 	
 	/** the event loop: reads a line from server and handles it, forever.	  */
-	abstract public void run ();
+	final public void run () {
+		
+		while (true) {								//	outer loop to catch disconnects
+			
+			while (true) {
+				
+				String inputLine = new String ();
+				
+				try {
+					inputLine = in.readLine ();
+				} catch (IOException e) {
+					Utility.bitch (new Throwable ("error reading line from socket!"));
+					break;
+				}
+				if (inputLine == null) break;
+				
+				Utility.debug ("player "+player+":  "+inputLine);
+				
+				messages.push(inputLine);
+				
+				processInput (inputLine);
+			}
+			//	we're here because we've lost connection to the client
+			lostConnection();
+		}
+	}
 
 	/** parse a line of input and call the corresponding action.			  */
 	final void processInput (String input) {
@@ -34,11 +64,11 @@ abstract class GoGridProtocol extends Thread {
 			logOff(input); 			return;
 		}
 		//	transmit board to client
-		if (input.startsWith ("transmit board")) {		//	TODO: replace
+		if (input.startsWith ("transmit board")) {			//	TODO: replace
 			transmitBoard (input);	return;
 		}
 		//	alternative syntax
-		if (input.startsWith ("stones")) {		//	TODO: replace
+		if (input.startsWith ("stones")) {					//	TODO: replace
 			transmitBoard (input);	return;
 		}
 		//	set cursor 
@@ -46,15 +76,15 @@ abstract class GoGridProtocol extends Thread {
 			cursor (input);		return;
 		}
 		//	set setting state
-		if (input.startsWith ("ready")) {			//	TODO: implement
+		if (input.startsWith ("ready")) {					//	TODO: implement
 			activate (input);	return;
 		}
 		//	set setting state
-		if (input.startsWith ("ok")) {			//	TODO: implement
+		if (input.startsWith ("ok")) {						//	TODO: implement
 			deactivate (input);	return;
 		}
 		//	error message
-		if (input.startsWith ("error")) {			//	TODO: implement
+		if (input.startsWith ("error")) {					//	TODO: implement
 			error (input);	return;
 		}
 		
@@ -103,7 +133,7 @@ abstract class GoGridProtocol extends Thread {
 				setColour (input);		return;
 			}
 
-		}                                       //  if (!gameStarted ())
+		}                                       		//  if (!gameStarted ())
 		
 		//  requests which can be made only after game started
 
@@ -160,14 +190,12 @@ abstract class GoGridProtocol extends Thread {
 				}
 				
 				//  requests which can be made only if player is NOT on move
-				/*
 				else {
 					//  stub for requests a client may make when not on move
 					if (input.startsWith ("")) {
 						nyi(input);			return;
 					}
 				}
-				*/
 			}
 			
 		}
@@ -214,12 +242,7 @@ abstract class GoGridProtocol extends Thread {
 	
 	/** starts the game for all clients. requested explicitly by client. */
 	abstract protected void startGame (String input);
-	
-	protected void error (String e) {
-		Utility.warning (e);
-		out.println(e);                         //  send e to player
-	}
-	
+		
 	final protected void nyi (String input) {
 		Utility.bitch(new Throwable ("command not yet implemented: "+input));
 	}
@@ -230,49 +253,45 @@ abstract class GoGridProtocol extends Thread {
 	//																		  //
 	////////////////////////////////////////////////////////////////////////////
 	
-	protected void sendSize (int xsize, int ysize, int zsize) {
-		out.println ("size "+xsize+" "+ysize+" "+zsize);
-	}
-	
-	protected void startBoardTransmission () { 
-		boardContent = "stones "; }
-	protected void transmitStone (int col, int x, int y, int z) {
-		assert GameBase.precondition ((col >= 0 && col <= Colour.WHITE), 
-				"color must lie between 0 and "+Colour.name(Colour.WHITE));
+	protected void sendSize (int xsize, int ysize, int zsize) { }
 
-		boardContent += col+" "+x+" "+y+" "+z+" ";
+	protected void startBoardTransmission () {
+		Utility.bitch(new Throwable ("This method may only be used in the server Protocol!"));
+		System.exit(0);
+	}
+	protected void transmitStone (int col, int x, int y, int z) {
+		Utility.bitch(new Throwable ("This method may only be used in the server Protocol!"));
+		System.exit(0);
 	}
 	protected void sendBoard () { 
-		out.println (boardContent); }
-	
+		Utility.bitch(new Throwable ("This method may only be used in the server Protocol!"));
+		System.exit(0);
+	}
+
 	protected void ackUsername () {	
 		assert GameBase.precondition (!gameStarted(), "Game must not yet have started!");
-		out.println ("ok");	}
+	}
 	
 	protected void awaitMove () {
 		assert GameBase.precondition (gameStarted(), "Game must have started!");
-
-		Utility.debug ("player "+player+" ready");
-		awaiting_move = true;
-		out.println ("ready");		
 	}
 	
 	protected void setColour (int col) { 
 		assert GameBase.precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
 				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
-		
-		out.println ("color "+col); }
+	}
 
 	/** starts the game for the connected client. called by server.startGame() */
 	protected void startGame () {
 		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
-
-		game_started = true;
-		out.println ("start game");
 	}
 
 	protected void message (String m) {	out.println(m); }
 
+	protected void error (String e) {
+		Utility.warning (e);
+		out.println(e);                         //  send e to player
+	}
 
 	
 	////////////////////////////////////////////////////////////////////////////
@@ -283,13 +302,7 @@ abstract class GoGridProtocol extends Thread {
 	
 	abstract protected void lostConnection ();
 	
-	protected boolean gameStarted () { return game_started; }
-
-	protected boolean gameRunning () { return gameStarted(); }	//	TODO: implement
-
-	protected boolean awaitingMove() { return awaiting_move; }
-	
-	
+		
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
 	//          VARIABLES SECTION STARTS                                      //
@@ -300,10 +313,14 @@ abstract class GoGridProtocol extends Thread {
 	protected BufferedReader in = null;
 	protected PrintWriter out = null;
 
-	protected boolean connected = false,
-	await_clients = false,
-	game_started = false,
-	awaiting_move = false;
+	protected boolean game_started = false,
+					  awaiting_move = false;
+	protected boolean gameStarted () { return game_started; }
+	protected boolean gameRunning () { return gameStarted(); }	//	TODO: implement
+	protected boolean awaitingMove() { return awaiting_move; }
 
-	private String boardContent = "";
+	
+	/** sort of an anally retentive inclination of mine to keep all messages  */
+	protected final Stack messages = new Stack();
+	String lastMessage () { return messages.peek(); }
 }

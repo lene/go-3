@@ -24,7 +24,7 @@ CLIENT    = GridDisplay.java
 
 SERVER_SOURCES = Colour.java GoGrid.java GoGridProtocol.java GoGridServer.java \
 		 Player.java ConnectedPlayer.java GameBase.java Utility.java \
-		 Game.java ServerProtocol.java
+		 Game.java GameProtocol.java
 CLIENT_SOURCES = Colour.java Cursor.java ClientProtocol.java \
 		 ConnectedPlayer.java GameBase.java \
 		 Exchange.java GoGrid.java GoGridClient.java GoGridProtocol.java \

@@ -1,11 +1,5 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.LinkedList;
-
-/**  redeclaring the class Stack to avoid using old java.util.Stack */
-class Stack extends LinkedList<String> { 
-	public void push(String s) { addFirst (s); }
-}
 
 /**
  client side implementation of the GoGridProtocol.
@@ -47,9 +41,6 @@ class Stack extends LinkedList<String> {
 
 class ClientProtocol extends GoGridProtocol {
 	
-	BufferedReader in;
-	GoGridClient client;
-	
 	ClientProtocol (GoGridClient client, BufferedReader in) {
 		super ();
 		
@@ -59,29 +50,6 @@ class ClientProtocol extends GoGridProtocol {
 		this.client = client;
 		this.in = in;
 	}
-	
-	public void run () {
-		
-		while (true) {
-			
-			String inputLine = new String ();
-			
-			try {
-				inputLine = in.readLine ();
-			} catch (IOException e) {
-				Utility.bitch (new Throwable ("error reading line from socket!"));
-				break;
-			}
-			if (inputLine == null) break;
-			
-			messages.push(inputLine);
-			
-			processInput (inputLine);
-		}
-		Utility.warning ("null input - server terminated!");
-		lostConnection();
-	}
-	
 
 	
 	////////////////////////////////////////////////////////////////////////////
@@ -99,8 +67,34 @@ class ClientProtocol extends GoGridProtocol {
 	}
 
 	protected void transmitBoard (String input) {
-		//	TODO decouple client code from protocol syntax
-		client.updateBoard (input);
+//		client.updateBoard (input);
+//		if (true) return;
+		
+		assert GameBase.precondition (input.startsWith ("stones"),
+				"bad board description line: "+input);
+				
+		Utility.debug (input);
+		
+		for (int i = 0; 
+			 i < client.getBoardSize (0)*client.getBoardSize (1)*client.getBoardSize (2); i++) {
+			
+			try {
+				int color = Integer.parseInt (Utility.getArg (input, 2+i*4)),
+				xread = Integer.parseInt (Utility.getArg (input, 3+i*4)),
+				yread = Integer.parseInt (Utility.getArg (input, 4+i*4)),
+				zread = Integer.parseInt (Utility.getArg (input, 5+i*4));
+				
+				client.setStoneDirectly(color, xread, yread, zread);
+			} catch (NumberFormatException e) {
+				Utility.debug ("NumberFormatException: "+e.getMessage()+input);
+			}
+			catch (ArrayIndexOutOfBoundsException e) {
+				Utility.debug ("ArrayIndexOutOfBoundsException");
+			}
+		}
+		
+		client.repaint();
+		Utility.debug ("done");
 }
 	
 	protected void cursor (String input) {
@@ -204,11 +198,11 @@ class ClientProtocol extends GoGridProtocol {
 	}
 	
 	protected void lostConnection () {
+		Utility.warning ("null input - server terminated!");
 		// exit cleanly
 		System.exit (0);
 	}
 	
-	/** sort of an anally retentive inclination of mine to keep all messages  */
-	protected Stack messages = new Stack();
-	String lastMessage () { return messages.peek(); }
+	GoGridClient client;
+	
 }

@@ -102,8 +102,8 @@ class GoGridClient extends GoGrid {
 	 successful, and return success
 	 */
 	boolean setStone (int col, int x, int y, int z) {
-		assert precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
-				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
+		assert precondition ((col >= 0 && col <= Colour.WHITE), 
+				"color must lie between 0 and "+Colour.name(Colour.WHITE));
 		assert precondition (x >= 0 && x < MAX_GRID_SIZE &&
 				y >= 0 && y < MAX_GRID_SIZE &&
 				z >= 0 && z < MAX_GRID_SIZE,
@@ -116,11 +116,22 @@ class GoGridClient extends GoGrid {
 		return true;						//  TODO check for errors	
 	}
 	
+	void setStoneDirectly (int col, int x, int y, int z) {
+		assert precondition (col >= 0 && col <= Colour.WHITE, 
+				"Colour must be between 0 and "+Colour.WHITE);
+		try {
+			stones[x][y][z] = col;
+		} catch (ArrayIndexOutOfBoundsException e) {
+			Utility.debug ("ArrayIndexOutOfBoundsException");
+		}
+	}
 	
 	/**
 	 read the current board from server
 	 */
 	void updateBoard () {
+		//	make sure this function is never used.
+		assert false;
 		//	TODO decouple client code from protocol syntax
 
 		String input = new String ();
@@ -240,8 +251,8 @@ class GoGridClient extends GoGrid {
 			}
 		}
 		
-		if (parent != null) parent.repaint ();
-		if (Utility.getDebugMode ()) printGrid ();
+		repaint();
+
 		Utility.debug ("done");
 	}
 	
@@ -333,6 +344,7 @@ class GoGridClient extends GoGrid {
 	 */
 	protected void updateBoard (int xsize, int ysize, int zsize) {
 		//	TODO decouple client code from protocol syntax
+		assert false;
 		
 		Utility.debug (""+xsize+"x"+ysize+"x"+zsize+" box");
 		
@@ -380,6 +392,10 @@ class GoGridClient extends GoGrid {
 		Utility.debug ("done");
 	}
 		
+	void repaint () {
+		if (parent != null) parent.repaint ();
+		if (Utility.getDebugMode ()) printGrid ();
+	}
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
