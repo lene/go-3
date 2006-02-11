@@ -6,7 +6,7 @@
 
 class GameBase {
 	
-	static final String VERSION = "0.3.6";
+	static final String VERSION = "0.3.7";
 	static final String MAINTAINER = "Helge Preuss <helge.preuss@gmx.net>";
 
 	protected static final int DEFAULT_SERVER_PORT = 6666;

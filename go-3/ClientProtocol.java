@@ -1,6 +1,11 @@
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.Stack;
+import java.util.LinkedList;
+
+/**  redeclaring the class Stack to avoid using old java.util.Stack */
+class Stack extends LinkedList<String> { 
+	public void push(String s) { addFirst (s); }
+}
 
 /**
  client side implementation of the GoGridProtocol.
@@ -74,67 +79,9 @@ class ClientProtocol extends GoGridProtocol {
 			processInput (inputLine);
 		}
 		Utility.warning ("null input - server terminated!");
-		client.lostServerConnection ();
+		lostConnection();
 	}
 	
-	
-	/**
-	 read a command from the server and act on it
-	 @param input the command - redundant, could read lastMessage()
-	 */
-	void processInput (String input) {
-		
-		Utility.debug (input);
-		
-		if (input.startsWith ("start game")) {
-			client.startGame ();
-			return;
-		}
-		
-		if (input.startsWith ("ready")) {
-			client.activate ();
-			return;
-		}
-		
-		if (input.startsWith ("ok")) {
-			client.deactivate ();
-			defineStatus (true);
-			return;
-		}
-		
-		if (input.startsWith ("error")) {
-			defineStatus (false);
-			return;
-		}
-		
-		if (input.startsWith ("size")) {
-			//	TODO decouple client code from protocol syntax
-			client.setSize (input);
-			return;
-		}
-		
-		if (input.startsWith ("stones")) {
-			//	TODO decouple client code from protocol syntax
-			client.updateBoard (input);
-			return;
-		}
-		
-		if (input.startsWith ("message")) {
-			client.message (Utility.getArgs (input, 2));
-			return;
-		}
-		if (input.startsWith ("liberties")) {
-			try {
-				liberties = Integer.parseInt (Utility.getArg (input, 2));
-			} catch (NumberFormatException e) {
-				Utility.debug ("NumberFormatException: "+input);
-				liberties = -1;
-			} 
-			return;
-		}
-		
-		Utility.debug ("input sucks: "+input);
-	}
 
 	
 	////////////////////////////////////////////////////////////////////////////
@@ -144,23 +91,44 @@ class ClientProtocol extends GoGridProtocol {
 	////////////////////////////////////////////////////////////////////////////
 
 	protected void sendMessage (String input) {
-		Utility.bitch(new Throwable("Implement me!"));
+		client.message (Utility.getArgs (input, 2));
 	}
 	
 	protected void logOff (String input) {
-		error ("command not yet implemented: "+input);
+		nyi (input);
 	}
 
-	protected void sendBoard (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-	}
+	protected void transmitBoard (String input) {
+		//	TODO decouple client code from protocol syntax
+		client.updateBoard (input);
+}
 	
 	protected void cursor (String input) {
 		assert GameBase.precondition (gameStarted(), "Game must have started!");
 	}
-	
+
+	protected void activate (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+
+		client.activate ();
+	}
+
+	protected void deactivate (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+
+		client.deactivate ();
+		defineStatus (true);
+	}
+
 	protected void liberties (String input) {
 		assert GameBase.precondition (gameStarted(), "Game must have started!");
+
+		try {
+			liberties = Integer.parseInt (Utility.getArg (input, 2));
+		} catch (NumberFormatException e) {
+			Utility.debug ("NumberFormatException: "+input);
+			liberties = -1;
+		} 
 	}
 	
 	protected void saveGame (String input) {
@@ -179,6 +147,9 @@ class ClientProtocol extends GoGridProtocol {
 
 	protected void setBoardSize (String input) {
 		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+
+		//	TODO decouple client code from protocol syntax
+		client.setSize (input);
 	}
 
 	protected void setColour (String input) {
@@ -201,7 +172,15 @@ class ClientProtocol extends GoGridProtocol {
 	/** starts the game for all clients. requested explicitly by client. */
 	protected void startGame (String input) {
 		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		client.startGame ();
+		game_started = true;
 	}
+	
+	protected void error (String e) {
+		super.error(e);
+		defineStatus (false);
+	}
+
 
 	////////////////////////////////////////////////////////////////////////////
 	
@@ -225,10 +204,11 @@ class ClientProtocol extends GoGridProtocol {
 	}
 	
 	protected void lostConnection () {
-		Utility.bitch(new Throwable ("Implement me!"));
+		// exit cleanly
+		System.exit (0);
 	}
 	
 	/** sort of an anally retentive inclination of mine to keep all messages  */
-	protected Stack<String> messages = new Stack<String>();
+	protected Stack messages = new Stack();
 	String lastMessage () { return messages.peek(); }
 }

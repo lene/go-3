@@ -22,12 +22,9 @@ the Server defines the method nextPlayer(), the client message()
 
 disentangle the protocol from the server/client implementation
 
-derive server and client side protocols from an common base declaring run(), 
-processInput() and lostConnection()
+GoGridClient.java has to be cleaned up major league
 
 define and document the protocol somewhere...
-
-GoGridClient.java has to be cleaned up major league
 
 revamp protocol
 

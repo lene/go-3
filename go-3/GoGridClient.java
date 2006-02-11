@@ -189,7 +189,6 @@ class GoGridClient extends GoGrid {
 				"point to check must lie inside the board!");
 		
 		//	TODO decouple client code from protocol syntax
-//		ClientProtocol.liberties = -1;
 		out.println ("liberties "+x+" "+y+" "+z);	//	request liberties from server
 		while (clientProtocol.liberties == -1)		//  wait until server has replied
 			Utility.sleep (10);						//  sleep 10 msec
@@ -284,7 +283,7 @@ class GoGridClient extends GoGrid {
 			} catch (IOException e) {
 				Utility.warning ("GoGridClient.setupConnection (): Connect to "+serverHost+
 						" on port "+serverPort+" failed");
-				lostServerConnection ();		//	TODO decent error handling
+				System.exit(0);					//	TODO decent error handling
 			}
 			try {
 				out.println(username);
@@ -313,7 +312,7 @@ class GoGridClient extends GoGrid {
 				inputLine = in.readLine ();
 			} catch (IOException e) {
 				Utility.debug ("reading color failed");
-				lostServerConnection ();		//	TODO decent error handling
+				clientProtocol.lostConnection ();		//	TODO decent error handling
 			}
 			try {
 				currentPlayer = Integer.parseInt (Utility.getArg (inputLine, 2));
@@ -380,15 +379,7 @@ class GoGridClient extends GoGrid {
 		if (parent != null) parent.repaint ();
 		Utility.debug ("done");
 	}
-	
-	
-	/**
-	 exit cleanly
-	 */
-	protected void lostServerConnection () {
-		System.exit (0);
-	}
-	
+		
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //

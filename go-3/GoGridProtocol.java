@@ -15,7 +15,7 @@ abstract class GoGridProtocol extends Thread {
 	abstract public void run ();
 
 	/** parse a line of input and call the corresponding action.			  */
-	/* final */ void processInput (String input) {
+	final void processInput (String input) {
 		
 		Utility.debug ("\""+input+"\"");
 
@@ -32,6 +32,30 @@ abstract class GoGridProtocol extends Thread {
 		}
 		if (input.startsWith ("log off")) {
 			logOff(input); 			return;
+		}
+		//	transmit board to client
+		if (input.startsWith ("transmit board")) {		//	TODO: replace
+			transmitBoard (input);	return;
+		}
+		//	alternative syntax
+		if (input.startsWith ("stones")) {		//	TODO: replace
+			transmitBoard (input);	return;
+		}
+		//	set cursor 
+		if (input.startsWith ("cursor")) {
+			cursor (input);		return;
+		}
+		//	set setting state
+		if (input.startsWith ("ready")) {			//	TODO: implement
+			activate (input);	return;
+		}
+		//	set setting state
+		if (input.startsWith ("ok")) {			//	TODO: implement
+			deactivate (input);	return;
+		}
+		//	error message
+		if (input.startsWith ("error")) {			//	TODO: implement
+			error (input);	return;
 		}
 		
 		//  requests which can be made only before game started
@@ -70,11 +94,15 @@ abstract class GoGridProtocol extends Thread {
 			if (input.startsWith ("set board size")) {		//	TODO: replace
 				setBoardSize(input);	return;	
 			}
+			//	alternative syntax
+			if (input.startsWith ("size")) {				//	TODO: replace
+				setBoardSize (input);	return;
+			}
 			//  request a color
 			if (input.startsWith ("set color")) {			//	TODO: replace
 				setColour (input);		return;
 			}
-			
+
 		}                                       //  if (!gameStarted ())
 		
 		//  requests which can be made only after game started
@@ -91,18 +119,6 @@ abstract class GoGridProtocol extends Thread {
 				}
 			}
 			else {
-				//	transmit board to client
-				if (input.startsWith ("send board")) {		//	TODO: replace
-					sendBoard (input);	return;
-				}
-				//	set cursor 
-				if (input.startsWith ("cursor")) {
-					cursor (input);		return;
-				}
-				//	set setting state
-				if (input.startsWith ("ready")) {			//	TODO: implement
-					nyi (input);		return;
-				}
 				//	request/send liberties
 				if (input.startsWith ("liberties")) {
 					liberties (input);	return;
@@ -144,13 +160,14 @@ abstract class GoGridProtocol extends Thread {
 				}
 				
 				//  requests which can be made only if player is NOT on move
-				
+				/*
 				else {
 					//  stub for requests a client may make when not on move
 					if (input.startsWith ("")) {
 						nyi(input);			return;
 					}
 				}
+				*/
 			}
 			
 		}
@@ -169,10 +186,14 @@ abstract class GoGridProtocol extends Thread {
 
 	abstract protected void logOff (String input);
 
-	abstract protected void sendBoard (String input);
+	abstract protected void transmitBoard (String input);
 	
 	abstract protected void cursor (String input);
 	
+	abstract protected void activate (String input);
+
+	abstract protected void deactivate (String input);
+
 	abstract protected void liberties (String input);
 	
 	abstract protected void saveGame (String input);
@@ -194,6 +215,10 @@ abstract class GoGridProtocol extends Thread {
 	/** starts the game for all clients. requested explicitly by client. */
 	abstract protected void startGame (String input);
 	
+	protected void error (String e) {
+		Utility.warning (e);
+		out.println(e);                         //  send e to player
+	}
 	
 	final protected void nyi (String input) {
 		Utility.bitch(new Throwable ("command not yet implemented: "+input));
@@ -248,10 +273,6 @@ abstract class GoGridProtocol extends Thread {
 
 	protected void message (String m) {	out.println(m); }
 
-	protected void error (String e) {
-		Utility.warning (e);
-		out.println(e);                         //  send e to player
-	}
 
 	
 	////////////////////////////////////////////////////////////////////////////

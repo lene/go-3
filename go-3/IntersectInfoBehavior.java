@@ -133,5 +133,5 @@ public class IntersectInfoBehavior extends Behavior {
 	private static Color3f black = new Color3f(0.0f, 0.0f, 0.0f);
 	private static Color3f white = new Color3f(1.0f, 1.0f, 1.0f);
 	private static float SHININESS = 50.f;
-	private static float PICKSPHERESIZE = 0.1f;
+	private static float PICKSPHERESIZE = 0.02f;
 }

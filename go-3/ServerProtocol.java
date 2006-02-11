@@ -70,7 +70,7 @@ class ServerProtocol extends GoGridProtocol {
 		error ("command not yet implemented: "+input);
 	}
 
-	protected void sendBoard (String input) {
+	protected void transmitBoard (String input) {
 		assert GameBase.precondition (gameStarted(), "Game must have started!");
 		
 		server.updateBoard (player);                    //  send board to player		
@@ -95,6 +95,18 @@ class ServerProtocol extends GoGridProtocol {
 			return;
 		}
 		server.setCursor (player.getID(),  x, y, z);		
+	}
+
+	protected void activate (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+
+		nyi (input);
+	}
+
+	protected void deactivate (String input) {
+		assert GameBase.precondition (gameStarted(), "Game must have started!");
+
+		nyi (input);
 	}
 	
 	protected void liberties (String input) {
