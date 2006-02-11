@@ -400,8 +400,6 @@ class Game extends GoGrid {
 				//	if current player is not yet connected, we can continue:
 				player.setUsername(username);
 				player.setColour(player.getID());	//	the number of the initial Player object denotes its colour
-
-				players.add (player.getID(), player);
 			}
 			//	player reconnects after a disconnection
 			else if (username.equals(player.toString())) { 
@@ -459,6 +457,8 @@ class Game extends GoGrid {
 
 		//  start the created thread
 		player.getProtocol().start ();
+		
+		players.add (player);
 
 		if (currentPlayer > -1) {
 			player.getProtocol().startGame ();
