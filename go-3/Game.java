@@ -306,10 +306,7 @@ class Game extends GoGrid {
 				"Client Socket must not be null, else there is no Player connected");
 		assert precondition (!player.getUsername().equals(""), 
 				"Player who started the Game must have a user name!");
-		
-		//	TODO the first player to connect currently automatically plays Black
-		player.setColour(Colour.BLACK);
-		
+				
 		player.setProtocol(new GameProtocol (player, this));
 		
 		setColor (player);
@@ -323,6 +320,36 @@ class Game extends GoGrid {
 		players.add (player);
 		
 		assert postcondition (players.size() == 1, "players.size() must be 1!");
+	}
+
+	
+	void addPlayer (ConnectedPlayer player) {
+		
+		//  create a thread to handle communications with the client 
+		//  and add it to the thread list
+		player.setProtocol(new GameProtocol (player, this));
+
+		//	acknowledge player name
+//		player.getProtocol().ackUsername();
+
+		//  tell the client its color
+		setColor (player);
+		
+		//  send board size and board to client
+		updateBoard (player);
+
+		//  start the created thread
+		player.getProtocol().start ();
+		
+		players.add (player);
+
+		if (currentPlayer > -1) {
+			player.getProtocol().startGame ();
+			updateBoard (player);
+			if (player.getID() == currentPlayer)
+				player.getProtocol().awaitMove();
+		}
+	
 	}
 
 	/**
@@ -437,37 +464,11 @@ class Game extends GoGrid {
 			System.err.println (e.getMessage());
 			return false;										//	try it again, although there's not much hope.
 		}
+		player.out.println("ok");
+
 		return true;
 	}
-	
-	void addPlayer (ConnectedPlayer player) {
-		
-		//  create a thread to handle communications with the client 
-		//  and add it to the thread list
-		player.setProtocol(new GameProtocol (player, this));
 
-		//	acknowledge player name
-		player.getProtocol().ackUsername();
-
-		//  tell the client its color
-		setColor (player);
-		
-		//  send board size and board to client
-		updateBoard (player);
-
-		//  start the created thread
-		player.getProtocol().start ();
-		
-		players.add (player);
-
-		if (currentPlayer > -1) {
-			player.getProtocol().startGame ();
-			updateBoard (player);
-			if (player.getID() == currentPlayer)
-				player.getProtocol().awaitMove();
-		}
-		
-	}
 	/**
 	 update or change the color of a player 
 	 @param p the player
