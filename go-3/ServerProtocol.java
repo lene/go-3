@@ -6,8 +6,8 @@ import java.io.*;
  this class handles the input from the associated client and triggers the
  appropriate actions in the server
  */
-class GameProtocol extends GoGridProtocol {	
-	GameProtocol (ConnectedPlayer player, Game game) {
+class ServerProtocol extends GoGridProtocol {	
+	ServerProtocol (ConnectedPlayer player, Game game) {
 		super ();
 		
 		assert GameBase.precondition (player.isConnected(), "Player must be connected!");
@@ -46,118 +46,35 @@ class GameProtocol extends GoGridProtocol {
 	protected void transmitBoard (String input) {
 		assert GameBase.precondition (gameStarted(), "Game must have started!");
 		
-		server.updateBoard (player);                    //  send board to player		
+		nyi(input);		
 	}
 	
 	protected void cursor (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		
-		int x, y, z;
-		try {
-			x = Integer.parseInt (Utility.getArg (input, 2));
-			y = Integer.parseInt (Utility.getArg (input, 3));
-			z = Integer.parseInt (Utility.getArg (input, 4));
-		} catch (NumberFormatException e) {
-			Utility.warning (input);
-			return;
-		} catch (FieldNotPresentException e) {
-			Utility.warning (input);
-			return;
-		} catch (OutsideGridException e) {
-			Utility.warning (input);
-			return;
-		}
-		server.setCursor (player.getID(),  x, y, z);		
+		assert GameBase.precondition (false, "cursor() should not be used in this class!");
 	}
 
 	protected void activate (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-
-		nyi (input);
+		assert GameBase.precondition (false, "cursor() should not be used in this class!");
 	}
 
 	protected void deactivate (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-
-		nyi (input);
+		assert GameBase.precondition (false, "cursor() should not be used in this class!");
 	}
 	
 	protected void liberties (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		
-		int x, y, z;
-		try {
-			x = Integer.parseInt (Utility.getArg (input, 2));
-			y = Integer.parseInt (Utility.getArg (input, 3));
-			z = Integer.parseInt (Utility.getArg (input, 4));
-		} catch (NumberFormatException e) {
-			Utility.warning (input);
-			return;
-		} catch (FieldNotPresentException e) {
-			Utility.warning (input);
-			return;
-		} catch (OutsideGridException e) {
-			Utility.warning (input);
-			return;
-		}
-		int liberties = server.Liberty (x, y, z, player.getID(), false);
-		
-		out.println ("liberties "+liberties);
-		
-		//		error ("command not yet implemented: "+input);		
+		assert GameBase.precondition (false, "cursor() should not be used in this class!");
 	}
 	
 	protected void saveGame (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		
-		error ("command not yet implemented: "+input);		
+		assert GameBase.precondition (false, "cursor() should not be used in this class!");
 	}
 	
 	protected void setAt (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		assert GameBase.precondition (awaitingMove(), "Must be on the move!");
-
-		int x, y, z;
-		try {
-			x = Integer.parseInt (Utility.getArg (input, 3));
-			y = Integer.parseInt (Utility.getArg (input, 4));
-			z = Integer.parseInt (Utility.getArg (input, 5));
-		} catch (NumberFormatException e) {
-			Utility.warning ("NumberFormatException in "+input);
-			return;
-		} catch (FieldNotPresentException e) {
-			Utility.warning (input);
-			return;
-		} catch (OutsideGridException e) {
-			Utility.warning (input);
-			return;
-		}
-		
-		Utility.debug ("    setting player "+player+" at ("+x+", "+y+", "+z+")");
-		
-		//  try setting at (x, y, z)
-		boolean success = server.setStone (player.getID()+1, x, y, z);
-		if (success) {		                //  on success:
-			//			Utility.debug ("    ok");
-			out.println ("ok");
-			server.updateBoard ();                  //  send board to all players
-			awaiting_move = false;		        //  toggle state to 'not ready'
-			server.nextPlayer ();                   //  activate next player
-		}
-		else {                                      //  could not set:
-			out.println ("error");
-			//      send error message to player
-			error ("("+x+", "+y+", "+z+"): Position occupied!");
-		}
+		assert GameBase.precondition (false, "cursor() should not be used in this class!");
 	}
 
 	protected void pass (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		assert GameBase.precondition (awaitingMove(), "Must be on the move!");
-		
-		server.updateBoard (player);                //  send board to player
-		awaiting_move = false;		        //  toggle state to 'not ready'
-		server.nextPlayer ();                       //  activate next player
+		assert GameBase.precondition (false, "cursor() should not be used in this class!");
 	}
 
 	protected void setBoardSize (String input) {
@@ -206,15 +123,53 @@ class GameProtocol extends GoGridProtocol {
 	}
 	
 	protected void setHandicap (String input) {
-		assert GameBase.precondition (false, "setHandicap() should not be used in this class!");
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		
+		int h;
+		try {
+			h = Integer.parseInt (Utility.getArg (input, 3));
+		} catch (NumberFormatException e) {
+			Utility.warning (Utility.getArg (input, 3));
+			return;		    
+		}
+		if (h >= 2 && h <= GoGrid.MAX_HANDICAPS) {
+//			server.setHandicap (player.toInt(), h);		//  set handicaps
+			server.setHandicap (player, h);		//  set handicaps
+			server.sendMessage (-1,		        //  inform all players about handicap for player
+					"Player "+player+" has handicap "+player.getHandicap());
+			
+		} 
+		else {
+			Utility.warning (input);
+			error ("Number of handicaps must lie between 0 and "+GoGrid.MAX_HANDICAPS);
+		}
 	}
 	
 	protected void setPlayers (String input) {
-		assert GameBase.precondition (false, "setPlayers() should not be used in this class!");
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+
+		int p;
+		try {
+			p = Integer.parseInt (Utility.getArg (input, 3));
+		} catch (NumberFormatException e) {
+			Utility.warning (input);
+			return;		    
+		}
+		if (p >= 0 && p <= GoGrid.MAX_PLAYERS) {
+			server.setNumPlayers (p);                   //  set num players
+			server.sendMessage (-1,                     //  inform all players about new number of players
+					"number of players in now "+server.getNumPlayers ()); 
+		} 
+		else {
+			error ("Number of players must lie between 0 and "+GoGrid.MAX_PLAYERS);
+			Utility.warning (input);
+		}
 	}
 	
 	protected void loadGame (String input) {
-		assert GameBase.precondition (false, "loadGame() should not be used in this class!");
+		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		
+		error ("command not yet implemented: "+input);
 	}
 	
 	/** starts the game for all clients. requested explicitly by client. */
@@ -249,15 +204,7 @@ class GameProtocol extends GoGridProtocol {
 	protected void ackUsername () {	
 		assert GameBase.precondition (!gameStarted(), "Game must not yet have started!");
 		out.println ("ok");	}
-	
-	protected void awaitMove () {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-
-		Utility.debug ("player "+player+" ready");
-		awaiting_move = true;
-		out.println ("ready");		
-	}
-	
+		
 	protected void setColour (int col) { 
 		assert GameBase.precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
 				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));

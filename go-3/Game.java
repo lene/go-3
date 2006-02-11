@@ -24,7 +24,7 @@ class Game extends GoGrid {
 	 * @param serverSocket
 	 * @param clientSocket
 	 */
-	public Game (int size, Player player, 
+	public Game (int size, ConnectedPlayer player, 
 				 ServerSocket serverSocket, Socket clientSocket) {
 		
 		super (size);
@@ -45,12 +45,12 @@ class Game extends GoGrid {
 		setupBoard ();                  //  initialize board structure
 			
 		initPlayer (player, clientSocket);
-		
-		waitForConnections ();
-		
-		startGame ();
 	}
 	
+	void start() {
+		waitForConnections ();		
+		startGame ();
+	}
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
@@ -294,6 +294,36 @@ class Game extends GoGrid {
 	//          PROTECTED SECTION 		                                      //
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
+	
+	/**
+	 construct a ConnectedPlayer as first player and add it to the player list
+	 @param player a preexisting simple Player object
+	 @param clientSocket a socket from which the player attempts a connection
+	 @return the completely initialized ConnectedPlayer
+	 */
+	protected void initPlayer (ConnectedPlayer player, Socket clientSocket) {
+		assert precondition ((clientSocket != null), 
+				"Client Socket must not be null, else there is no Player connected");
+		assert precondition (!player.getUsername().equals(""), 
+				"Player who started the Game must have a user name!");
+		
+		//	TODO the first player to connect currently automatically plays Black
+		player.setColour(Colour.BLACK);
+		
+		player.setProtocol(new GameProtocol (player, this));
+		
+		setColor (player);
+		updateBoard (player);
+		
+		player.getProtocol().start ();
+		
+		Utility.debug("player "+player.getUsername()+" connected from "+
+				clientSocket.getInetAddress().getHostName());
+		
+		players.add (player);
+		
+		assert postcondition (players.size() == 1, "players.size() must be 1!");
+	}
 
 	/**
 	 set up 1 (one) client connection:
@@ -313,134 +343,131 @@ class Game extends GoGrid {
 				"Player must lie between 1 and "+numPlayers);
 		
 		Utility.debug ("waiting for player "+player.getID()
-				+(!player.getUsername().equals("")? 
-						" ["+player.getUsername ()+"]": 
-						"")+
+				+(!player.getUsername().equals("")?	" ["+player.getUsername ()+"]":	"")+
 				" to connect");
 		
 		ConnectedPlayer activePlayer;
 		
-		connect:
-			while (true) {					//	loop until connection succeeds
-				try {
-					//  (blocking) accept() a client, creating a client socket
-					Socket clientSocket = serverSocket.accept();
-
-					activePlayer = new ConnectedPlayer (player, clientSocket);
-					
-					//	read the player's name from in and set it in the Player object
-					//	or compare it if it's already set in the object
-					try {
-						String username = activePlayer.getInStream().readLine ();
-						if (!player.hasUsername()) {	//	new player connecting, player not yet set
-							//	check whether a player of name username is already connected
-							for (int i = 0; i < players.size(); i++) {
-								//	if so, reject this name:
-								//	EXCEPT if you are the player who has disconnected	[TODO]
-								if (players.get(i).getUsername().equals (username)) {
-									Utility.debug(username+" tried to connect, but is already connected!");
-									activePlayer.getOutStream().println(		//	no Protocol exists yet, complain manually
-											"go away, you're already connected!");
-									activePlayer.getClientSocket().close();
-
-									continue connect;		//	next connection attempt								
-								}
-							}
-							//	if current player is not yet connected, we can continue:
-							activePlayer.setUsername(username);
-							activePlayer.setColour(player.getID());	//	the number of the initial Player object denotes its colour
-
-							players.add (player.getID(), activePlayer);
-						}
-						//	player reconnects after a disconnection
-						else if (username.equals(player.toString())) { 
-							//	replace entry in player list with active player
-							activePlayer.setUsername(username);
-							for (int i = 0; i < players.size(); i++) {
-								if (players.get(i).getUsername().equals (username)) {
-									players.set(i, activePlayer);
-									break;
-								}
-							}
-							Utility.bitch(new Throwable("Didn't find the current Player in the list of " +
-									"active Players, even if its name matches! Fscking strange... " +
-									"I'm outta here!"));
-							System.exit(0);
-						}
-						//	we wait for a specific player to reconnect, but 
-						//	someone else connects
-						else {
-							Utility.debug(username+" tried to connect, but we want user "+
-									player+" to connect!");
-							activePlayer.getOutStream().println(				//	no Protocol exists yet, complain manually
-									"message go away, we want user "+player+" to connect!");
-							activePlayer.getClientSocket().close();
-							
-							continue connect;		//	next connection attempt
-						}
-						
-						//	if we reach  this point, we have a connected, accepted
-						//	player with a defined username.
-						Utility.debug(activePlayer.getUsername()+" connected from "
-								+activePlayer.getClientSocket().getInetAddress().getHostAddress());
-					} catch (IOException e) {
-						e.printStackTrace();
-						System.err.println (e.getMessage());
-						continue connect;										//	try it again, although there's not much hope.
-					}
-										
-					//  create a thread to handle communications with the client 
-					//  and add it to the thread list
-					activePlayer.setProtocol(
-							new GameProtocol (activePlayer, this));
-
-					//	acknowledge player name
-					activePlayer.getProtocol().ackUsername();
-
-					//  tell the client its color
-					setColor (activePlayer);
-					
-					//  send board size and board to client
-					updateBoard (activePlayer);
-
-					//  start the created thread
-					activePlayer.getProtocol().start ();
-					
-					//	if activePlayer == currentPlayer activePlayer.getProtocol().awaitMove()
-					
-				} catch (IOException e) {
-					Utility.bitch (new Throwable ("Accept failed: "+serverPort));
-					e.printStackTrace ();
-					System.err.println (e.getMessage());
-					continue connect;											//	try it again, although there's not much hope.
-				}
-				catch (ArrayIndexOutOfBoundsException e) {
-					Utility.bitch (new Throwable ("Couldn't create client socket: Player number"+
-							player.getID()+"out of range"));
-					e.printStackTrace ();
-					System.err.println (e.getMessage());
-					continue connect;											//	try it again, although there's not much hope.
-				}
+		while (true) {					//	loop until connection succeeds
+			try {
+				//  (blocking) accept() a client, creating a client socket
+				Socket clientSocket = serverSocket.accept();
 				
-				if (currentPlayer >= 0) {
-					activePlayer.getProtocol().startGame ();
-					updateBoard (activePlayer);
-					if (player.getID() == currentPlayer)
-						activePlayer.getProtocol().awaitMove();
-				}
+				activePlayer = new ConnectedPlayer (player, clientSocket);
 				
-				Utility.debug ("Client "+(player.getID()+1)+" connected from "+
-						activePlayer.getClientSocket().getInetAddress ().getHostAddress());
+				if (!readUsername(activePlayer)) continue;
 				
-				assert postcondition (players.contains(activePlayer), 
-						"Active player must be in the player list when finished!");
-				assert postcondition (players.get(player.getID()).isConnected(),
-						"Player "+player.getID()+" must be connected when finished!");
+				addPlayer (activePlayer);
 				
-				return;
+			} catch (IOException e) {
+				Utility.bitch (new Throwable ("Accept failed: "+serverPort));
+				e.printStackTrace ();
+				System.err.println (e.getMessage());
+				continue;	//	try it again, although there's not much hope.
 			}
+			
+			Utility.debug ("Client "+(player.getID()+1)+" connected from "+
+					activePlayer.getClientSocket().getInetAddress ().getHostAddress());
+			
+			assert postcondition (players.contains(activePlayer), 
+			"Active player must be in the player list when finished!");
+			assert postcondition (players.get(player.getID()).isConnected(),
+					"Player "+player.getID()+" must be connected when finished!");
+			
+			return;
+		}
 	}
 	
+/**	read the player's name from in and set it in the Player object	or compare 
+ 	it if it's already set in the object */
+	boolean readUsername (ConnectedPlayer player) {
+		try {
+			String username = player.getInStream().readLine ();
+			if (!player.hasUsername()) {	//	new player connecting, player not yet set
+				//	check whether a player of name username is already connected
+				for (int i = 0; i < players.size(); i++) {
+					//	if so, reject this name:
+					//	EXCEPT if you are the player who has disconnected	[TODO]
+					if (players.get(i).getUsername().equals (username)) {
+						Utility.debug(username+" tried to connect, but is already connected!");
+						player.getOutStream().println(		//	no Protocol exists yet, complain manually
+								"go away, you're already connected!");
+						player.getClientSocket().close();
+
+						return false;		//	next connection attempt								
+					}
+				}
+				//	if current player is not yet connected, we can continue:
+				player.setUsername(username);
+				player.setColour(player.getID());	//	the number of the initial Player object denotes its colour
+
+				players.add (player.getID(), player);
+			}
+			//	player reconnects after a disconnection
+			else if (username.equals(player.toString())) { 
+				//	replace entry in player list with active player
+				player.setUsername(username);
+				for (int i = 0; i < players.size(); i++) {
+					if (players.get(i).getUsername().equals (username)) {
+						players.set(i, player);
+						break;
+					}
+				}
+				Utility.bitch(new Throwable("Didn't find the current Player in the list of " +
+						"active Players, even if its name matches! Fscking strange... " +
+						"I'm outta here!"));
+				System.exit(0);
+			}
+			//	we wait for a specific player to reconnect, but 
+			//	someone else connects
+			else {
+				Utility.debug(username+" tried to connect, but we want user "+
+						player+" to connect!");
+				player.getOutStream().println(				//	no Protocol exists yet, complain manually
+						"message go away, we want user "+player+" to connect!");
+				player.getClientSocket().close();
+				
+				return false;		//	next connection attempt
+			}
+			
+			//	if we reach  this point, we have a connected, accepted
+			//	player with a defined username.
+			Utility.debug(player.getUsername()+" connected from "
+					+player.getClientSocket().getInetAddress().getHostAddress());
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.err.println (e.getMessage());
+			return false;										//	try it again, although there's not much hope.
+		}
+		return true;
+	}
+	
+	void addPlayer (ConnectedPlayer player) {
+		
+		//  create a thread to handle communications with the client 
+		//  and add it to the thread list
+		player.setProtocol(new GameProtocol (player, this));
+
+		//	acknowledge player name
+		player.getProtocol().ackUsername();
+
+		//  tell the client its color
+		setColor (player);
+		
+		//  send board size and board to client
+		updateBoard (player);
+
+		//  start the created thread
+		player.getProtocol().start ();
+
+		if (currentPlayer > -1) {
+			player.getProtocol().startGame ();
+			updateBoard (player);
+			if (player.getID() == currentPlayer)
+				player.getProtocol().awaitMove();
+		}
+		
+	}
 	/**
 	 update or change the color of a player 
 	 @param p the player
@@ -485,47 +512,6 @@ class Game extends GoGrid {
 
 		assert postcondition (player.getHandicap() <= MAX_HANDICAPS && player.getHandicap() >= 0,
 				"Handicaps must lie between 0 and "+MAX_HANDICAPS);
-	}
-	
-	/**
-	 construct a ConnectedPlayer as first player and add it to the player list
-	 @param player a preexisting simple Player object
-	 @param clientSocket a socket from which the player attempts a connection
-	 @return the completely initialized ConnectedPlayer
-	 */
-	protected void initPlayer (Player player, Socket clientSocket) {
-		assert precondition ((player.getID() >= 0 && player.getID() < MAX_PLAYERS), 
-				"Player ID ["+player.getID()+"] must be between 0 and "+MAX_PLAYERS);
-		assert precondition ((clientSocket != null), 
-				"Client Socket must not be null, else there is no Player connected");
-
-		ConnectedPlayer cp = new ConnectedPlayer (player, clientSocket);
-		String username = null;
-		try {
-			username = cp.getInStream().readLine ();
-
-			cp.setUsername (username);
-
-			cp.setColour(Colour.BLACK);
-
-			cp.setProtocol(new GameProtocol (cp, this));
-
-			cp.getProtocol().ackUsername();
-			setColor (cp);
-			updateBoard (cp);
-			
-			cp.getProtocol().start ();
-		} catch (IOException e) {
-			e.printStackTrace();
-			System.err.println (e.getMessage());
-			System.exit(0);
-		}
-		Utility.debug("player "+username+" connected from "+
-				clientSocket.getInetAddress().getHostName());
-		
-		players.add (cp);
-		
-		assert postcondition (players.size() == 1, "players.size() must be 1!");
 	}
 	
 	/**
