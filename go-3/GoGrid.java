@@ -118,7 +118,7 @@ abstract class GoGrid extends GameBase {
 	 </ul>
 	 */
 	void fakeGame (int numMoves, int playerToStart) {
-		assert precondition ((playerToStart >= 0 && playerToStart < numPlayers), 
+		assert precondition ((playerToStart >= 0 && playerToStart <= numPlayers), 
 				"starting player must be between 0 and "+numPlayers);
 
 		for (int i = playerToStart-1; i < numMoves+playerToStart-1; i++) {

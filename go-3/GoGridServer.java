@@ -30,35 +30,17 @@ class GoGridServer extends GameBase {
 		newGame();
 	}
 	
-	/**  accept one (1) client, and pass on to a Game object	 */ 
+	/**  accept two (2) clients, and pass on to a Game object. create a 
+	 *   GameThread from this and start it.	 */ 
 	void newGame () {	
-		//	wait for a client to connect
-		Socket clientSocket = null;
-		try {						
-			clientSocket = serverSocket.accept();
-		} catch (IOException e) {
-			Utility.bitch (new Throwable ("accept() failed:"+e.getMessage()));
-			System.exit(0);                                    //  die of resource starvation
-		}
 		
-		ConnectedPlayer player = new ConnectedPlayer (new Player (players.size()), clientSocket);
-		if (!readUsername (player)) return;
-		
-		//	TODO bad hack to determine the colour from the player ID
-		player.setColour(player.getID()%2+1);	
-		
-		players.put (player.getUsername(), player);
-		
-		Utility.debug(player.getUsername()+" connected from "
-				+player.getClientSocket().getInetAddress().getHostAddress());
-
 		games.put ("first game", 
-				new Game (getBoardSize(), player, serverSocket, clientSocket));
-	
-		if (false) {
-			games.get ("first game").start();
-		} 
-		else {
+				new Game (getBoardSize(), serverSocket));
+		
+		for (int i = 0; i < 2; i++) {
+			
+			//	wait for a client to connect
+			Socket clientSocket = null;
 			try {						
 				clientSocket = serverSocket.accept();
 			} catch (IOException e) {
@@ -66,7 +48,7 @@ class GoGridServer extends GameBase {
 				System.exit(0);                                    //  die of resource starvation
 			}
 			
-			player = new ConnectedPlayer (new Player (players.size()), clientSocket);
+			ConnectedPlayer player = new ConnectedPlayer (new Player (players.size()), clientSocket);
 			if (!readUsername (player)) return;
 			
 			//	TODO bad hack to determine the colour from the player ID
@@ -78,9 +60,14 @@ class GoGridServer extends GameBase {
 					+player.getClientSocket().getInetAddress().getHostAddress());
 			
 			games.get ("first game").addPlayer(player);
-			
-			games.get ("first game").startGame();
+
 		}
+		
+		GameThread gameThread = new GameThread(games.get ("first game"));
+		
+		gameThread.start();
+		
+		Utility.debug("GameThread started!");
 	}
 	
 	

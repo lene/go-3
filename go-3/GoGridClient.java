@@ -199,6 +199,10 @@ class GoGridClient extends GoGrid {
 				"point to check must lie inside the board!");
 		
 		//	TODO decouple client code from protocol syntax
+		//	TODO hey! this method of waiting for another thread to write the 
+		//	variable sucks! anybody who reads this will know i don't know shit 
+		//	about threads. there must be some method to lock and release it,
+		//	mutexes, or whatever. </rant>
 		out.println ("liberties "+x+" "+y+" "+z);	//	request liberties from server
 		while (clientProtocol.liberties == -1)		//  wait until server has replied
 			Utility.sleep (10);						//  sleep 10 msec

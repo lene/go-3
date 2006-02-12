@@ -24,8 +24,17 @@ class Game extends GoGrid {
 	 * @param serverSocket
 	 * @param clientSocket
 	 */
-	public Game (int size, ConnectedPlayer player, 
-				 ServerSocket serverSocket, Socket clientSocket) {
+	public Game(int size, ServerSocket serverSocket) {
+		super (size);
+		
+		Utility.setDebugMode (true);
+
+		this.serverSocket = serverSocket;
+
+		setupBoard ();                  //  initialize board structure
+	}
+	
+	public Game (int size, ConnectedPlayer player, ServerSocket serverSocket) {
 		
 		super (size);
 
@@ -35,18 +44,14 @@ class Game extends GoGrid {
 				"Player ID ["+player.getID()+"] must be between 0 and "+MAX_PLAYERS);
 		assert precondition ((serverSocket != null), 
 				"Server Socket must not be null, or nothing makes sense anymore");
-		assert precondition ((clientSocket != null), 
-				"Client Socket must not be null, else there is no Player connected");
 
 		Utility.setDebugMode (true);
 		
 		this.serverSocket = serverSocket;
-		this.clientSocket = clientSocket;
 				
 		setupBoard ();                  //  initialize board structure
 	
 		addPlayer(player);
-//		initPlayer (player, clientSocket);
 	}
 	
 	void start() {
@@ -231,8 +236,8 @@ class Game extends GoGrid {
 				z > 0 && z <= getBoardSize(2),
 				"point to check must lie inside the board!");
 
-		Utility.debug ("TODO: Fix Liberties()!\n" +
-				"Save the whole board and set EVERY visited grid place to OCCUPIED.");
+//		Utility.debug ("TODO: Fix Liberties()!\n" +
+//				"Save the whole board and set EVERY visited grid place to OCCUPIED.");
 		
 		
 		int S = stones[x][y][z];                         	//  save  current  color
@@ -313,7 +318,7 @@ class Game extends GoGrid {
 		player.getProtocol().start ();
 		
 		Utility.debug("player "+player.getUsername()+" connected from "+
-				clientSocket.getInetAddress().getHostName());
+				player.getClientSocket().getInetAddress().getHostName());
 
 		player.setID(players.size());
 		
