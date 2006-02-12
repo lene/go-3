@@ -44,8 +44,8 @@ class ClientProtocol extends GoGridProtocol {
 	ClientProtocol (GoGridClient client, BufferedReader in) {
 		super ();
 		
-		assert GameBase.precondition(client != null, "Client must exist");
-		assert GameBase.precondition(in != null, "Instream must exist");
+		assert precondition(client != null, "Client must exist");
+		assert precondition(in != null, "Instream must exist");
 		
 		this.client = client;
 		this.in = in;
@@ -70,7 +70,7 @@ class ClientProtocol extends GoGridProtocol {
 //		client.updateBoard (input);
 //		if (true) return;
 		
-		assert GameBase.precondition (input.startsWith ("stones"),
+		assert precondition (input.startsWith ("stones"),
 				"bad board description line: "+input);
 				
 		Utility.debug (input);
@@ -98,24 +98,24 @@ class ClientProtocol extends GoGridProtocol {
 }
 	
 	protected void cursor (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 	}
 
 	protected void activate (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 
 		client.activate ();
 	}
 
 	protected void deactivate (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 
 		client.deactivate ();
 		defineStatus (true);
 	}
 
 	protected void liberties (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 
 		try {
 			liberties = Integer.parseInt (Utility.getArg (input, 2));
@@ -126,46 +126,46 @@ class ClientProtocol extends GoGridProtocol {
 	}
 	
 	protected void saveGame (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 	}
 	
 	protected void setAt (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		assert GameBase.precondition (awaitingMove(), "Must be on the move!");
+		assert precondition (gameStarted(), "Game must have started!");
+		assert precondition (awaitingMove(), "Must be on the move!");
 	}
 
 	protected void pass (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		assert GameBase.precondition (awaitingMove(), "Must be on the move!");
+		assert precondition (gameStarted(), "Game must have started!");
+		assert precondition (awaitingMove(), "Must be on the move!");
 	}
 
 	protected void setBoardSize (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 
 		//	TODO decouple client code from protocol syntax
 		client.setSize (input);
 	}
 
 	protected void setColour (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 	}
 	
 	protected void setHandicap (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 	}
 	
 	protected void setPlayers (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 	}
 	
 	protected void loadGame (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");		
+		assert precondition (!gameStarted(), "Game must not have started yet!");		
 		error ("command not yet implemented: "+input);
 	}
 	
 	/** starts the game for all clients. requested explicitly by client. */
 	protected void startGame (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 		client.startGame ();
 		game_started = true;
 	}

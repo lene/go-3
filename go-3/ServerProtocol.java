@@ -1,20 +1,16 @@
 
 import java.io.*;
-
+import java.net.*;
 
 /**
  this class handles the input from the associated client and triggers the
  appropriate actions in the server
  */
 class ServerProtocol extends GoGridProtocol {	
-	ServerProtocol (ConnectedPlayer player, Game game) {
+	ServerProtocol (GoGridServer server, ConnectedPlayer player) {
 		super ();
 		
-		assert GameBase.precondition (player.isConnected(), "Player must be connected!");
-		assert GameBase.precondition (game != null, "Game must exist!");
-		
-		connected = true;
-		this.server = game;
+		this.server = server;
 		this.player = player;
 		this.in = player.getInStream();
 		this.out = player.getOutStream();
@@ -36,7 +32,7 @@ class ServerProtocol extends GoGridProtocol {
 			Utility.warning (input);
 			return;
 		}
-		server.sendMessage (to, ""+player+": "+msg);        //  send 'msg' to 'to'
+//		server.sendMessage (to, ""+player+": "+msg);        //  send 'msg' to 'to'
 	}
 
 	protected void logOff (String input) {
@@ -44,41 +40,41 @@ class ServerProtocol extends GoGridProtocol {
 	}
 
 	protected void transmitBoard (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 		
 		nyi(input);		
 	}
 	
 	protected void cursor (String input) {
-		assert GameBase.precondition (false, "cursor() should not be used in this class!");
+		assert precondition (false, "cursor() should not be used in this class!");
 	}
 
 	protected void activate (String input) {
-		assert GameBase.precondition (false, "cursor() should not be used in this class!");
+		assert precondition (false, "activate() should not be used in this class!");
 	}
 
 	protected void deactivate (String input) {
-		assert GameBase.precondition (false, "cursor() should not be used in this class!");
+		assert precondition (false, "deactivate() should not be used in this class!");
 	}
 	
 	protected void liberties (String input) {
-		assert GameBase.precondition (false, "cursor() should not be used in this class!");
+		assert precondition (false, "liberties() should not be used in this class!");
 	}
 	
 	protected void saveGame (String input) {
-		assert GameBase.precondition (false, "cursor() should not be used in this class!");
+		assert precondition (false, "saveGame() should not be used in this class!");
 	}
 	
 	protected void setAt (String input) {
-		assert GameBase.precondition (false, "cursor() should not be used in this class!");
+		assert precondition (false, "setAt() should not be used in this class!");
 	}
 
 	protected void pass (String input) {
-		assert GameBase.precondition (false, "cursor() should not be used in this class!");
+		assert precondition (false, "pass() should not be used in this class!");
 	}
 
 	protected void setBoardSize (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		int s;
 		try {
@@ -87,19 +83,11 @@ class ServerProtocol extends GoGridProtocol {
 			Utility.warning (input);
 			return;		    
 		}
-		if (s >= 3 && s <= GoGrid.MAX_GRID_SIZE /* && (s & 1) == 1 */ ) {
-			server.setBoardSize (s);		        //  set board size
-			server.sendMessage (-1,                     //  inform all players about new board size
-					"BoardSize is now "+s+"x"+s+"x"+s);
-		} 
-		else {
-			error ("Board size must lie between 3 and "+GoGrid.MAX_GRID_SIZE);
-			Utility.warning (input);
-		}
+		player.setWantedBoardSize(s);
 	}
 
 	protected void setColour (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		int c;
 		try {
@@ -108,22 +96,17 @@ class ServerProtocol extends GoGridProtocol {
 			Utility.warning (input);
 			return;
 		}
-		if (c < server.getNumPlayers ()) {
-//			if (server.setColor (player.toInt(), c)) {		//  set color, if not yet in use
-			if (server.setColor (player)) {		//  set color, if not yet in use
-				server.sendMessage (-1,		        //  inform all players about color change for player
-						"Player "+player+" now has color "+c);
-//				player = new Player (c);
-			}
+		if (c <= server.getNumPlayers ()) {
+			player.setColour(c);
 		}
 		else {
-			error ("Color must lie between 0 and "+(server.getNumPlayers ()-1)+" and not yet be used");
+			error ("Color must lie between 0 and "+(server.getNumPlayers ()));
 			Utility.warning (input);
 		}
 	}
 	
 	protected void setHandicap (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		int h;
 		try {
@@ -133,11 +116,7 @@ class ServerProtocol extends GoGridProtocol {
 			return;		    
 		}
 		if (h >= 2 && h <= GoGrid.MAX_HANDICAPS) {
-//			server.setHandicap (player.toInt(), h);		//  set handicaps
-			server.setHandicap (player, h);		//  set handicaps
-			server.sendMessage (-1,		        //  inform all players about handicap for player
-					"Player "+player+" has handicap "+player.getHandicap());
-			
+			player.setHandicap (h);		//  set handicaps
 		} 
 		else {
 			Utility.warning (input);
@@ -146,7 +125,7 @@ class ServerProtocol extends GoGridProtocol {
 	}
 	
 	protected void setPlayers (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 
 		int p;
 		try {
@@ -167,14 +146,14 @@ class ServerProtocol extends GoGridProtocol {
 	}
 	
 	protected void loadGame (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		error ("command not yet implemented: "+input);
 	}
 	
 	/** starts the game for all clients. requested explicitly by client. */
 	protected void startGame (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 
 		server.startGame ();
 	}
@@ -193,7 +172,7 @@ class ServerProtocol extends GoGridProtocol {
 	protected void startBoardTransmission () { 
 		boardContent = "stones "; }
 	protected void transmitStone (int col, int x, int y, int z) {
-		assert GameBase.precondition ((col >= 0 && col <= Colour.WHITE), 
+		assert precondition ((col >= 0 && col <= Colour.WHITE), 
 				"color must lie between 0 and "+Colour.name(Colour.WHITE));
 
 		boardContent += col+" "+x+" "+y+" "+z+" ";
@@ -202,18 +181,18 @@ class ServerProtocol extends GoGridProtocol {
 		out.println (boardContent); }
 	
 	protected void ackUsername () {	
-		assert GameBase.precondition (!gameStarted(), "Game must not yet have started!");
+		assert precondition (!gameStarted(), "Game must not yet have started!");
 		out.println ("ok");	}
 		
 	protected void setColour (int col) { 
-		assert GameBase.precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
+		assert precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
 				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
 		
 		out.println ("color "+col); }
 
 	/** starts the game for the connected client. called by server.startGame() */
 	protected void startGame () {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 
 		game_started = true;
 		out.println ("start game");
@@ -255,7 +234,7 @@ class ServerProtocol extends GoGridProtocol {
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
 	
-	protected Game server = null;	
+	protected GoGridServer server = null;	
 
 	protected boolean connected = false,
 	await_clients = false;

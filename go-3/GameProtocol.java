@@ -10,8 +10,8 @@ class GameProtocol extends GoGridProtocol {
 	GameProtocol (ConnectedPlayer player, Game game) {
 		super ();
 		
-		assert GameBase.precondition (player.isConnected(), "Player must be connected!");
-		assert GameBase.precondition (game != null, "Game must exist!");
+		assert precondition (player.isConnected(), "Player must be connected!");
+		assert precondition (game != null, "Game must exist!");
 		
 		connected = true;
 		this.server = game;
@@ -44,13 +44,13 @@ class GameProtocol extends GoGridProtocol {
 	}
 
 	protected void transmitBoard (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 		
 		server.updateBoard (player);                    //  send board to player		
 	}
 	
 	protected void cursor (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 		
 		int x, y, z;
 		try {
@@ -71,19 +71,19 @@ class GameProtocol extends GoGridProtocol {
 	}
 
 	protected void activate (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 
 		nyi (input);
 	}
 
 	protected void deactivate (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 
 		nyi (input);
 	}
 	
 	protected void liberties (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 		
 		int x, y, z;
 		try {
@@ -108,14 +108,14 @@ class GameProtocol extends GoGridProtocol {
 	}
 	
 	protected void saveGame (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 		
 		error ("command not yet implemented: "+input);		
 	}
 	
 	protected void setAt (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		assert GameBase.precondition (awaitingMove(), "Must be on the move!");
+		assert precondition (gameStarted(), "Game must have started!");
+		assert precondition (awaitingMove(), "Must be on the move!");
 
 		int x, y, z;
 		try {
@@ -152,8 +152,8 @@ class GameProtocol extends GoGridProtocol {
 	}
 
 	protected void pass (String input) {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
-		assert GameBase.precondition (awaitingMove(), "Must be on the move!");
+		assert precondition (gameStarted(), "Game must have started!");
+		assert precondition (awaitingMove(), "Must be on the move!");
 		
 		server.updateBoard (player);                //  send board to player
 		awaiting_move = false;		        //  toggle state to 'not ready'
@@ -161,7 +161,7 @@ class GameProtocol extends GoGridProtocol {
 	}
 
 	protected void setBoardSize (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		int s;
 		try {
@@ -182,7 +182,7 @@ class GameProtocol extends GoGridProtocol {
 	}
 
 	protected void setColour (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		int c;
 		try {
@@ -206,20 +206,20 @@ class GameProtocol extends GoGridProtocol {
 	}
 	
 	protected void setHandicap (String input) {
-		assert GameBase.precondition (false, "setHandicap() should not be used in this class!");
+		assert precondition (false, "setHandicap() should not be used in this class!");
 	}
 	
 	protected void setPlayers (String input) {
-		assert GameBase.precondition (false, "setPlayers() should not be used in this class!");
+		assert precondition (false, "setPlayers() should not be used in this class!");
 	}
 	
 	protected void loadGame (String input) {
-		assert GameBase.precondition (false, "loadGame() should not be used in this class!");
+		assert precondition (false, "loadGame() should not be used in this class!");
 	}
 	
 	/** starts the game for all clients. requested explicitly by client. */
 	protected void startGame (String input) {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 
 		server.startGame ();
 	}
@@ -238,7 +238,7 @@ class GameProtocol extends GoGridProtocol {
 	protected void startBoardTransmission () { 
 		boardContent = "stones "; }
 	protected void transmitStone (int col, int x, int y, int z) {
-		assert GameBase.precondition ((col >= 0 && col <= Colour.WHITE), 
+		assert precondition ((col >= 0 && col <= Colour.WHITE), 
 				"color must lie between 0 and "+Colour.name(Colour.WHITE));
 
 		boardContent += col+" "+x+" "+y+" "+z+" ";
@@ -247,11 +247,11 @@ class GameProtocol extends GoGridProtocol {
 		out.println (boardContent); }
 	
 	protected void ackUsername () {	
-		assert GameBase.precondition (!gameStarted(), "Game must not yet have started!");
+		assert precondition (!gameStarted(), "Game must not yet have started!");
 		out.println ("ok");	}
 	
 	protected void awaitMove () {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 
 		Utility.debug ("player "+player+" ready");
 		awaiting_move = true;
@@ -259,14 +259,14 @@ class GameProtocol extends GoGridProtocol {
 	}
 	
 	protected void setColour (int col) { 
-		assert GameBase.precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
+		assert precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
 				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
 		
 		out.println ("color "+col); }
 
 	/** starts the game for the connected client. called by server.startGame() */
 	protected void startGame () {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 
 		game_started = true;
 		out.println ("start game");

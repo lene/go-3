@@ -269,21 +269,21 @@ abstract class GoGridProtocol extends Thread {
 	}
 
 	protected void ackUsername () {	
-		assert GameBase.precondition (!gameStarted(), "Game must not yet have started!");
+		assert precondition (!gameStarted(), "Game must not yet have started!");
 	}
 	
 	protected void awaitMove () {
-		assert GameBase.precondition (gameStarted(), "Game must have started!");
+		assert precondition (gameStarted(), "Game must have started!");
 	}
 	
 	protected void setColour (int col) { 
-		assert GameBase.precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
+		assert precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
 				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
 	}
 
 	/** starts the game for the connected client. called by server.startGame() */
 	protected void startGame () {
-		assert GameBase.precondition (!gameStarted(), "Game must not have started yet!");
+		assert precondition (!gameStarted(), "Game must not have started yet!");
 	}
 
 	protected void message (String m) {	out.println(m); }
@@ -302,7 +302,16 @@ abstract class GoGridProtocol extends Thread {
 	
 	abstract protected void lostConnection ();
 	
-		
+	//	convenience functions making the GameBase functions accessible from this
+	//	class's descendants (which are NOT derived from GameBase)
+	final static boolean precondition (boolean test, String message) {
+		return GameBase.precondition(test, message);
+	}
+	final static boolean postcondition (boolean test, String message) {
+		return GameBase.postcondition(test, message);
+	}
+
+	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
 	//          VARIABLES SECTION STARTS                                      //

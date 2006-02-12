@@ -55,9 +55,19 @@ class Player extends GameBase {
 
 		this.colour = colour; }
 	
+	public int getWantedBoardSize() { return wantedBoardSize; }
+
+	public void setWantedBoardSize(int wantedBoardSize) {
+		assert precondition (wantedBoardSize >= 3 && wantedBoardSize <= GoGrid.MAX_GRID_SIZE,
+				"Board size must lie between 3 and "+GoGrid.MAX_GRID_SIZE);
+		this.wantedBoardSize = wantedBoardSize;
+	}
+
 	protected int id = -1;
 	protected String username = "";
+	protected boolean hasname = false;
 	protected int handicap = 0;
 	protected int colour = Colour.UNDEFINED;
-	protected boolean hasname = false;
+	protected int wantedBoardSize = 3;
+
 }

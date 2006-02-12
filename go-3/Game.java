@@ -295,12 +295,6 @@ class Game extends GoGrid {
 	//          OVERRIDDEN METHODS END                                        //
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////	
-	
-	////////////////////////////////////////////////////////////////////////////
-	//                                                                        //
-	//          PROTECTED SECTION 		                                      //
-	//                                                                        //
-	////////////////////////////////////////////////////////////////////////////
 
 	void addPlayer (ConnectedPlayer player) {
 		
@@ -308,6 +302,9 @@ class Game extends GoGrid {
 		//  and add it to the thread list
 		player.setProtocol(new GameProtocol (player, this));
 
+		//	check whether wanted color is already used
+		if (!checkColor (player)) return;		//	TODO better error handling
+		
 		//  tell the client its color
 		setColor (player);
 		
@@ -331,6 +328,24 @@ class Game extends GoGrid {
 				player.getProtocol().awaitMove();
 		}
 	
+	}
+		
+	////////////////////////////////////////////////////////////////////////////
+	//                                                                        //
+	//          PROTECTED SECTION 		                                      //
+	//                                                                        //
+	////////////////////////////////////////////////////////////////////////////
+
+	/** check the color of a connecting player is already used
+	 *  @param player ConnectedPlayer about to be added to the Game 
+	 */
+	protected boolean checkColor(ConnectedPlayer player) {
+		ListIterator<ConnectedPlayer> i = players.listIterator();
+		while (i.hasNext()) {
+			if(i.next().getColour() == player.getColour())
+				return false;
+		}
+		return true;
 	}
 
 	/**
@@ -385,7 +400,7 @@ class Game extends GoGrid {
 			return;
 		}
 	}
-	
+
 /**	read the player's name from in and set it in the Player object	or compare 
  	it if it's already set in the object */
 	boolean readUsername (ConnectedPlayer player) {
