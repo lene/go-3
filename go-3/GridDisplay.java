@@ -50,7 +50,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition ((port >= 1024 && port < 65535), 
 				"Port must lie between 1024 and 65535");
 
-		Utility.setDebugMode (false);
+		Utility.setDebugMode (true);
 		
 		setHostname (hostname);
 		setBoardSize (size);
@@ -91,14 +91,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param z z position of cursor
 	 */
 	void setCursor (int x, int y, int z) {
-/*		assert GameBase.precondition (x >= 0 && x <= getBoardSize() &&
-				y >= 0 && y <= getBoardSize() &&
-				z >= 0 && z <= getBoardSize(),
-				"point to set cursor ["+x+", "+y+", "+z+"] must lie inside the board!");
-*/
 		G.setCursor (x, y, z);
-		Transform3D translate = new Transform3D ();		//  ISSUE: does it have to be new ()
-		translate.set (new Vector3f ((G.xc ()-1), (G.yc ()-1), (G.zc ()-1)));	//	   every time?
+		Transform3D translate = new Transform3D ();
+		translate.set (new Vector3f ((G.xc ()-1), (G.yc ()-1), (G.zc ()-1)));
 		cursorPos.setTransform (translate);
 	}
 	

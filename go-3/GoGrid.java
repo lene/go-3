@@ -202,13 +202,13 @@ abstract class GoGrid extends GameBase {
 	 @return cursor x position
 	 */
 	int xc () { 
-		if (currentPlayer >= 0 && currentPlayer < numPlayers)
+		if (currentPlayer >= 0 && currentPlayer <= numPlayers)
 			return xc(currentPlayer); 
 		else 
 			return (getBoardSize(0)+1)/2;
 	}
 	int xc (int player) { 
-		assert precondition ((player >= 0 && player < numPlayers), 
+		assert precondition ((player >= 0 && player <= numPlayers), 
 				"player must be between 0 and "+numPlayers);
 		
 		return xc[player]; }
@@ -216,13 +216,13 @@ abstract class GoGrid extends GameBase {
 	 @return cursor y position
 	 */
 	int yc () {
-		if (currentPlayer >= 0 && currentPlayer < numPlayers)
+		if (currentPlayer >= 0 && currentPlayer <= numPlayers)
 		  return yc(currentPlayer); 
 		else 
 			return (getBoardSize(1)+1)/2;		
 	}
 	int yc (int player) { 
-		assert precondition ((player >= 0 && player < numPlayers), 
+		assert precondition ((player >= 0 && player <= numPlayers), 
 				"player must be between 0 and "+numPlayers);
 		
 		return yc[player]; }
@@ -230,13 +230,13 @@ abstract class GoGrid extends GameBase {
 	 @return cursor z position
 	 */
 	int zc () { 
-		if (currentPlayer >= 0 && currentPlayer < numPlayers)
+		if (currentPlayer >= 0 && currentPlayer <= numPlayers)
 			return zc(currentPlayer); 
 		else 
 			return (getBoardSize(2)+1)/2;
 	}
 	int zc (int player) { 
-		assert precondition ((player >= 0 && player < numPlayers), 
+		assert precondition ((player >= 0 && player <= numPlayers), 
 				"player must be between 0 and "+numPlayers);
 
 		return zc[player]; }
@@ -247,8 +247,8 @@ abstract class GoGrid extends GameBase {
 	 @param z cursor z position
 	 */
 	void setCursor (int x, int y, int z) {
-		assert precondition ((currentPlayer >= 0 && currentPlayer < numPlayers), 
-				"current player must be between 0 and "+numPlayers);
+		assert precondition ((currentPlayer >= 0 && currentPlayer <= numPlayers), 
+				"current player ["+currentPlayer+"] must be between 0 and "+numPlayers);
 
 		xc[currentPlayer] = Math.max (1, Math.min (getBoardSize(0), x));//  check for under- and overflow
 		yc[currentPlayer] = Math.max (1, Math.min (getBoardSize(1), y));
@@ -263,7 +263,7 @@ abstract class GoGrid extends GameBase {
 	 @param z cursor z position 
 	 */
 	void setCursor (int player, int x, int y, int z) {
-		assert precondition ((player >= 0 && player < numPlayers), 
+		assert precondition ((player >= 0 && player <= numPlayers), 
 				"player must be between 0 and "+numPlayers);
 
 		xc[player] = x; yc[player] = y; zc[player] = z;

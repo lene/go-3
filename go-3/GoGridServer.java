@@ -54,8 +54,36 @@ class GoGridServer extends GameBase {
 
 		games.put ("first game", 
 				new Game (getBoardSize(), player, serverSocket, clientSocket));
-		games.get ("first game").start();
+	
+		if (false) {
+			games.get ("first game").start();
+		} 
+		else {
+			try {						
+				clientSocket = serverSocket.accept();
+			} catch (IOException e) {
+				Utility.bitch (new Throwable ("accept() failed:"+e.getMessage()));
+				System.exit(0);                                    //  die of resource starvation
+			}
+			
+			player = new ConnectedPlayer (new Player (players.size()), clientSocket);
+			if (!readUsername (player)) return;
+			
+			//	TODO bad hack to determine the colour from the player ID
+			player.setColour(player.getID()%2+1);	
+			
+			players.put (player.getUsername(), player);
+			
+			Utility.debug(player.getUsername()+" connected from "
+					+player.getClientSocket().getInetAddress().getHostAddress());
+			
+			games.get ("first game").addPlayer(player);
+			
+			games.get ("first game").startGame();
+		}
 	}
+	
+	
 	
 	/**	read the player's name from in and set it in the Player object	or compare 
  	it if it's already set in the object */

@@ -1,7 +1,6 @@
 
 import java.net.*;
 import java.io.*;
-import java.util.Stack;
 
 /** basic implementation of a GoGrid client, which is controlled from and 
  * displays on the console.
@@ -84,8 +83,8 @@ class GoGridClient extends GoGrid {
 	 nothing<br>
 	 */
 	boolean setStone () {
-		assert precondition (currentPlayer >= 0 && currentPlayer < numPlayers, 
-				"player must be between 0 and "+numPlayers);
+		assert precondition (currentPlayer  >= Colour.BLACK && currentPlayer <= Colour.WHITE, 
+				"player ["+currentPlayer+"] must be between 0 and "+numPlayers);
 		return setStone (currentPlayer, xc (), yc (), zc ());
 	}
 	
@@ -102,7 +101,7 @@ class GoGridClient extends GoGrid {
 	 successful, and return success
 	 */
 	boolean setStone (int col, int x, int y, int z) {
-		assert precondition ((col >= 0 && col <= Colour.WHITE), 
+		assert precondition (currentPlayer >= Colour.BLACK && currentPlayer <= Colour.WHITE, 
 				"color must lie between 0 and "+Colour.name(Colour.WHITE));
 		assert precondition (x >= 0 && x < MAX_GRID_SIZE &&
 				y >= 0 && y < MAX_GRID_SIZE &&
@@ -344,7 +343,7 @@ class GoGridClient extends GoGrid {
 	 */
 	protected void updateBoard (int xsize, int ysize, int zsize) {
 		//	TODO decouple client code from protocol syntax
-		assert false;
+		assert false;	//	make sure this function is never called. yeah, i could delete it, but i don't dare yet.
 		
 		Utility.debug (""+xsize+"x"+ysize+"x"+zsize+" box");
 		

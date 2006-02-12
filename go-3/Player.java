@@ -33,6 +33,7 @@ class Player extends GameBase {
 	public String toString() { return getUsername (); }
 	
 	public int getID () { return id; }
+	public void setID (int id) { this.id = id; }
 	
 	public void setUsername (String username) {	
 		this.username = username;

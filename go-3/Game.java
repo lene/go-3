@@ -41,10 +41,12 @@ class Game extends GoGrid {
 		Utility.setDebugMode (true);
 		
 		this.serverSocket = serverSocket;
+		this.clientSocket = clientSocket;
 				
 		setupBoard ();                  //  initialize board structure
-			
-		initPlayer (player, clientSocket);
+	
+		addPlayer(player);
+//		initPlayer (player, clientSocket);
 	}
 	
 	void start() {
@@ -294,43 +296,12 @@ class Game extends GoGrid {
 	//          PROTECTED SECTION 		                                      //
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////
-	
-	/**
-	 construct a ConnectedPlayer as first player and add it to the player list
-	 @param player a preexisting simple Player object
-	 @param clientSocket a socket from which the player attempts a connection
-	 @return the completely initialized ConnectedPlayer
-	 */
-	protected void initPlayer (ConnectedPlayer player, Socket clientSocket) {
-		assert precondition ((clientSocket != null), 
-				"Client Socket must not be null, else there is no Player connected");
-		assert precondition (!player.getUsername().equals(""), 
-				"Player who started the Game must have a user name!");
-				
-		player.setProtocol(new GameProtocol (player, this));
-		
-		setColor (player);
-		updateBoard (player);
-		
-		player.getProtocol().start ();
-		
-		Utility.debug("player "+player.getUsername()+" connected from "+
-				clientSocket.getInetAddress().getHostName());
-		
-		players.add (player);
-		
-		assert postcondition (players.size() == 1, "players.size() must be 1!");
-	}
 
-	
 	void addPlayer (ConnectedPlayer player) {
 		
 		//  create a thread to handle communications with the client 
 		//  and add it to the thread list
 		player.setProtocol(new GameProtocol (player, this));
-
-		//	acknowledge player name
-//		player.getProtocol().ackUsername();
 
 		//  tell the client its color
 		setColor (player);
@@ -340,6 +311,11 @@ class Game extends GoGrid {
 
 		//  start the created thread
 		player.getProtocol().start ();
+		
+		Utility.debug("player "+player.getUsername()+" connected from "+
+				clientSocket.getInetAddress().getHostName());
+
+		player.setID(players.size());
 		
 		players.add (player);
 
@@ -671,7 +647,9 @@ class Game extends GoGrid {
 	 the <tt>ServerSocket</tt> on which we listen for connecting clients
 	 */
 	protected ServerSocket serverSocket = null;
-	
+
+	protected Socket clientSocket = null;
+
 	/**
 	 <tt>ConnectedPlayer</tt>s representing the participant - 
 	 */
