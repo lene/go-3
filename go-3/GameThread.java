@@ -12,6 +12,7 @@ class GameThread extends Thread {
 	}
 	
 	final public void run () {
+		assert GameBase.precondition(game != null, "game == null");
 		game.startGame();
 	}
 

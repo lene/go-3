@@ -43,21 +43,31 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param port the port the server listens on
 	 @param username the name under which the player shall be represented
 	 */
-	public GridDisplay (int size, String hostname, int port, String username) {
+	public GridDisplay (ConnectionData connection) {
 		
-		assert GameBase.precondition ((size >= GameBase.MIN_GRID_SIZE && size <= GameBase.MAX_GRID_SIZE), 
+		assert GameBase.precondition ((connection.getBoardSize() >= GameBase.MIN_GRID_SIZE && connection.getBoardSize() <= GameBase.MAX_GRID_SIZE), 
 				"Board size must lie between "+GameBase.MIN_GRID_SIZE+" and "+GameBase.MAX_GRID_SIZE);		
-		assert GameBase.precondition ((port >= 1024 && port < 65535), 
+		assert GameBase.precondition ((connection.getServerPort() >= 1024 && connection.getServerPort() < 65535), 
 				"Port must lie between 1024 and 65535");
 
 		Utility.setDebugMode (true);
 		
-		setHostname (hostname);
-		setBoardSize (size);
+		setHostname (connection.getServerHost());
+		setBoardSize (connection.getBoardSize());
 		
-		G = new GoGridClient (size, hostname, port, username, this);
-		
+		G = new GoGridClient (connection.getBoardSize(), 
+				connection.getServerHost(), connection.getServerPort(), 
+				connection.getUsername(), this);
+
 		setupDisplay();
+		
+		if (true) {												//	testing code
+			if (connection.getStartGame()) G.newGame();
+			else G.joinGame("first");
+		} 
+		else {
+			G.startGame();
+		}
 	}
 	
 	
@@ -777,9 +787,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 	private boolean active = false;
 	
 	/**  */
-	private GoGrid G;
+	private GoGridClient G;
 	GoGrid G() { return G; }
-	void G(GoGrid G) { this.G = G; }
+	void G(GoGridClient G) { this.G = G; }
 
 	
 	//  Java3D display related variables
@@ -939,9 +949,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		Utility.debug("Server host = "+connectionData.getServerHost());
 		Utility.debug("Username    = "+connectionData.getUsername());
 
-		GridDisplay game = new GridDisplay (connectionData.getBoardSize(), 
-				connectionData.getServerHost(), connectionData.getServerPort(), 
-				connectionData.getUsername());
+		GridDisplay game = new GridDisplay (connectionData);
 		Frame frame = new MainFrame (game, 600, 600);
 
 		for (int i = 0; i < m; i++) {

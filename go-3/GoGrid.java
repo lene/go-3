@@ -311,7 +311,7 @@ abstract class GoGrid extends GameBase {
 	 @param p current player
 	 */
 	void setCurrentPlayer (int p) { 
-		assert precondition ((p >= 0 && p < numPlayers), 
+		assert precondition ((p >= 0 && p <= numPlayers), 
 				"player must be between 0 and "+numPlayers);
 
 		currentPlayer = p; }

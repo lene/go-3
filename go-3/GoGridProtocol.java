@@ -18,18 +18,25 @@ abstract class GoGridProtocol extends Thread {
 	
 	/** the event loop: reads a line from server and handles it, forever.	  */
 	final public void run () {
+		Utility.debug("running");
 		
-		while (true) {								//	outer loop to catch disconnects
+		while (!stopMe) {					//	outer loop to catch disconnects
 			
-			while (true) {
+			while (!stopMe) {
 				
 				String inputLine = new String ();
 				
 				try {
+					while (!in.ready()) {
+						this.sleep(10);
+						if (stopMe) return;
+					}
 					inputLine = in.readLine ();
 				} catch (IOException e) {
 					Utility.bitch (new Throwable ("error reading line from socket!"));
 					break;
+				}
+				catch (InterruptedException e) {
 				}
 				if (inputLine == null) break;
 				
@@ -39,6 +46,8 @@ abstract class GoGridProtocol extends Thread {
 				
 				processInput (inputLine);
 			}
+			if (stopMe) return;
+			
 			//	we're here because we've lost connection to the client
 			lostConnection();
 		}
@@ -46,7 +55,9 @@ abstract class GoGridProtocol extends Thread {
 
 	/** parse a line of input and call the corresponding action.			  */
 	final void processInput (String input) {
-		
+
+		Utility.debug("started "+game_started+" running "+gameRunning()+" move "+awaiting_move);
+
 		Utility.debug ("\""+input+"\"");
 
 		//	requests to be made before the user is authenticated do not go here,
@@ -132,6 +143,10 @@ abstract class GoGridProtocol extends Thread {
 			if (input.startsWith ("set color")) {			//	TODO: replace
 				setColour (input);		return;
 			}
+			//  request a color
+			if (input.startsWith ("set color")) {			//	TODO: replace
+				setColour (input);		return;
+			}
 
 		}                                       		//  if (!gameStarted ())
 		
@@ -177,7 +192,7 @@ abstract class GoGridProtocol extends Thread {
 				
 				//  requests which can be made only if player is on move
 				
-				if (awaitingMove()) {
+//				if (awaitingMove()) {
 					
 					//  set a stone
 					if (input.startsWith ("set at")) {
@@ -187,20 +202,20 @@ abstract class GoGridProtocol extends Thread {
 					if (input.startsWith ("pass")) {
 						pass (input);		return;
 					}
-				}
+//				}
 				
 				//  requests which can be made only if player is NOT on move
-				else {
+//				else {
 					//  stub for requests a client may make when not on move
-					if (input.startsWith ("")) {
+					if (input.startsWith ("xxx")) {
 						nyi(input);			return;
-					}
+//					}
 				}
 			}
 			
 		}
 		
-		Utility.warning ("command invalid: "+input);
+		Utility.warning ("command invalid: "+input+" - started "+gameStarted()+", running "+gameRunning()+", move "+awaitingMove());
 	}
 
 	
@@ -324,8 +339,8 @@ abstract class GoGridProtocol extends Thread {
 	protected BufferedReader in = null;
 	protected PrintWriter out = null;
 
-	protected boolean game_started = false,
-					  awaiting_move = false;
+	protected boolean game_started,
+					  awaiting_move;
 	protected boolean gameStarted () { return game_started; }
 	protected boolean gameRunning () { return gameStarted(); }	//	TODO: implement
 	protected boolean awaitingMove() { return awaiting_move; }
@@ -334,4 +349,7 @@ abstract class GoGridProtocol extends Thread {
 	/** sort of an anally retentive inclination of mine to keep all messages  */
 	protected final Stack messages = new Stack();
 	String lastMessage () { return messages.peek(); }
+	
+	private boolean stopMe = false;
+	public void stop (boolean stop) { stopMe = stop; }
 }

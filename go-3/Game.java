@@ -72,17 +72,17 @@ class Game extends GoGrid {
 	void startGame () {
 		assert precondition (players.size() == numPlayers,
 				"There must be exactly "+numPlayers+" players connected.");
-		assert precondition (currentPlayer == -1, 
-				"currentPlayer ["+currentPlayer+"] must be initialized to -1");
 		
-		Utility.debug ("GoGridServer.startGame (): "+numPlayers+" Players");
+		Utility.debug ("GoGridServer.startGame (): "+numPlayers+" Players "+players);
 		
 		ListIterator<ConnectedPlayer> i = players.listIterator();
 		while (i.hasNext()) {
 			ConnectedPlayer player = i.next();
+			Utility.debug("Starting "+player);
 			updateBoard (player);
 			player.getProtocol().startGame ();
 		}
+		currentPlayer = -1;
 		nextPlayer ();                  //  currentPlayer initialized to -1 => start with player 0
 	}
 	
@@ -98,15 +98,15 @@ class Game extends GoGrid {
 		ConnectedPlayer player = players.get(currentPlayer);
 		Utility.debug ("current player is now "+player.toString());
 
-		if (player.isConnected()) {
+//		if (player.isConnected()) {
 			//	signal readiness to set to player
 			player.getProtocol().awaitMove ();
-		}
-		else {
-			Utility.bitch(new Throwable ("Sorry - the current player disconnected.\n" +
-					"Handling this condition is not yet implemented."));
-			System.exit(0);
-		}
+//		}
+//		else {
+//			Utility.bitch(new Throwable ("Sorry - the current player disconnected.\n" +
+//					"Handling this condition is not yet implemented."));
+//			System.exit(0);
+//		}
 	}
 	
 	/**
@@ -302,7 +302,10 @@ class Game extends GoGrid {
 		player.setProtocol(new GameProtocol (player, this));
 
 		//	check whether wanted color is already used
-		if (!checkColor (player)) return;		//	TODO better error handling
+		if (!checkColor (player)) { 
+			Utility.bitch(new Throwable ("check color failed"));
+			return;		//	TODO better error handling
+		}
 		
 		//  tell the client its color
 		setColor (player);
@@ -324,13 +327,16 @@ class Game extends GoGrid {
 		if (players.size() == numPlayers) {
 			new GameThread(this).start();
 			Utility.debug("GameThread started!");
-		}
-		
-		if (currentPlayer > -1) {
-			player.getProtocol().startGame ();
-			updateBoard (player);
-			if (player.getID() == currentPlayer)
-				player.getProtocol().awaitMove();
+
+//			startGame();
+			
+			ListIterator<ConnectedPlayer> i = players.listIterator();
+			while(i.hasNext()) {
+				ConnectedPlayer p = i.next();
+				updateBoard (p);
+				if (p.getColour() == currentPlayer)
+					p.getProtocol().awaitMove();
+			}
 		}
 	
 	}
@@ -345,6 +351,8 @@ class Game extends GoGrid {
 	 *  @param player ConnectedPlayer about to be added to the Game 
 	 */
 	protected boolean checkColor(ConnectedPlayer player) {
+		if (player.getColour() < Colour.BLACK || player.getColour() > Colour.WHITE)
+			return false;
 		ListIterator<ConnectedPlayer> i = players.listIterator();
 		while (i.hasNext()) {
 			if(i.next().getColour() == player.getColour())

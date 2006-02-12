@@ -1,4 +1,5 @@
 import java.io.BufferedReader;
+import java.io.PrintWriter;
 import java.io.IOException;
 
 /**
@@ -41,14 +42,16 @@ import java.io.IOException;
 
 class ClientProtocol extends GoGridProtocol {
 	
-	ClientProtocol (GoGridClient client, BufferedReader in) {
+	ClientProtocol (GoGridClient client, BufferedReader in, PrintWriter out) {
 		super ();
 		
 		assert precondition(client != null, "Client must exist");
 		assert precondition(in != null, "Instream must exist");
+		assert precondition(out != null, "Outstream must exist");
 		
 		this.client = client;
 		this.in = in;
+		this.out = out;
 	}
 
 	
@@ -141,15 +144,23 @@ class ClientProtocol extends GoGridProtocol {
 	}
 
 	protected void setBoardSize (String input) {
-		assert precondition (!gameStarted(), "Game must not have started yet!");
+//		assert precondition (!gameStarted(), "Game must not have started yet!");
 
 		//	TODO decouple client code from protocol syntax
-		client.setSize (input);
+		/*if (!gameStarted())*/	client.setSize (input);
 	}
 
 	protected void setColour (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
-		nyi(input);
+
+		int col = -1;
+		try {
+			col = Integer.parseInt (Utility.getArg (input, 3));
+		} catch (NumberFormatException e) {
+			Utility.debug ("NumberFormatException: "+e.getMessage()+input);
+		}
+		this.client.setCurrentPlayer(col);
+//		nyi(input);
 	}
 	
 	protected void setHandicap (String input) {
@@ -159,7 +170,21 @@ class ClientProtocol extends GoGridProtocol {
 
 	protected void joinGame (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
-		nyi(input);
+		System.out.println("join game "+input);
+		out.println("join game "+input);
+		
+		String response;
+		try { response = in.readLine(); }
+		catch (IOException e) { return; }
+		if(response.startsWith("size")) {
+			try { this.client.setBoardSize(Integer.parseInt (Utility.getArg (input, 2))); } 
+			catch (NumberFormatException e) { Utility.debug ("NumberFormatException: "+e.getMessage()+input); }
+		}
+		else {
+			Utility.bitch(new Throwable ("rejected: "+response));
+			stop(true);
+			System.exit(0);
+		}
 	}
 
 	protected void setPlayers (String input) {
@@ -186,6 +211,13 @@ class ClientProtocol extends GoGridProtocol {
 
 
 	////////////////////////////////////////////////////////////////////////////
+	
+	protected void startGame(int boardSize, int color, int handicaps, int numPlayers) {
+		assert precondition (in != null, "in == null");
+		assert precondition (out != null, "out == null");
+		System.out.println("start game "+boardSize+" "+color+" "+handicaps+" "+numPlayers);
+		out.println("start game "+boardSize+" "+color+" "+handicaps+" "+numPlayers);
+	}
 	
 	/** used to exchange data with the GoGridClient, which reads it */
 	protected int liberties = -1;

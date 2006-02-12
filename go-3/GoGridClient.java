@@ -27,14 +27,12 @@ class GoGridClient extends GoGrid {
 		GoGrid.setServerPort(p);
 		setupConnection (h, u);			//	connect with server
 		
-		readColor ();					//	blocks! TODO move into ClientProtocol
+		clientProtocol = new ClientProtocol (this, in, out);
+		clientProtocol.start ();		//	start reading from server
+
+//		readColor ();					//	blocks! TODO move into ClientProtocol
 		
 		setupBoard ();					//	initialize board structure
-		
-		clientProtocol = new ClientProtocol (this, in);
-		clientProtocol.start ();			//	start reading from server
-		
-		startGame ();					
 	}
 	
 	
@@ -47,7 +45,7 @@ class GoGridClient extends GoGrid {
 	
 	/**	 starts the game, i.e. makes setting possible						  */
 	void startGame () {
-		if (parent == null) {					//  no GUI present, use command line
+		if (parent == null) {				//  no GUI present, use command line
 			String input;			
 			BufferedReader keyboard = new BufferedReader (new InputStreamReader (System.in));
 			
@@ -68,7 +66,26 @@ class GoGridClient extends GoGrid {
 		}
 	}
 	
-	
+	/** signals that the client wants to start a new game */
+	void newGame() {
+		assert precondition (clientProtocol != null, "clientProtocol = null");
+
+		Utility.debug("");
+		
+		startGame();
+		Utility.debug("clientProtocol  "+clientProtocol);
+		clientProtocol.startGame(this.getBoardSize(), /*this.getCurrentPlayer()*/1, 
+				0, this.getNumPlayers());
+	}
+
+	void joinGame(String gamename) {
+		assert precondition (clientProtocol != null, "clientProtocol = null");
+
+		startGame();
+		Utility.debug("");
+		clientProtocol.joinGame(gamename);
+		
+	}
 	/**
 	 switches to next player
 	 */
@@ -310,6 +327,10 @@ class GoGridClient extends GoGrid {
 				}
 			} catch (IOException e) { 			//	TODO decent error handling
 			}
+			
+			assert postcondition (out != null, "out == null");
+			assert postcondition (in != null, "in == null");
+			
 			return;
 		}
 	}
@@ -324,6 +345,7 @@ class GoGridClient extends GoGrid {
 		while (!inputLine.startsWith ("color")) {
 			try {
 				inputLine = in.readLine ();
+				Utility.debug(inputLine);
 			} catch (IOException e) {
 				Utility.debug ("reading color failed");
 				clientProtocol.lostConnection ();		//	TODO decent error handling

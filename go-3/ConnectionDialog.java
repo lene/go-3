@@ -11,15 +11,18 @@
 */
 
 import java.awt.Frame;
+import java.awt.event.*;
+
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.JSlider;
 import javax.swing.JDialog;
+import javax.swing.JCheckBox;
 
 
-public class ConnectionDialog extends JDialog {
+public class ConnectionDialog extends JDialog implements ItemListener {
 
 	private JPanel contentPane = null;
 
@@ -32,6 +35,8 @@ public class ConnectionDialog extends JDialog {
 	private JLabel usernameLabel = null;
 	private JTextField usernameTextField = null;
 
+	private JCheckBox startGameCheckBox = null;
+	
 	private JLabel sizeLabel = null;
 	private JSlider sizeSlider = null;
 
@@ -73,6 +78,7 @@ public class ConnectionDialog extends JDialog {
 			contentPane.add(getJTextField2(), null);
 			contentPane.add(getJLabel3());
 			contentPane.add(getJTextField3(), null);
+			contentPane.add(getJCheckBox1(), null);
 			contentPane.add(getJLabel4(), null);
 			contentPane.add(getJSlider1());
 			
@@ -188,6 +194,33 @@ public class ConnectionDialog extends JDialog {
 	}
 
 	/**
+	 * Return the JCheckBox1 property value.
+	 * @return javax.swing.JTextField
+	 */
+	private javax.swing.JCheckBox getJCheckBox1() {
+		if (startGameCheckBox == null) {
+			startGameCheckBox = new javax.swing.JCheckBox();
+			startGameCheckBox.setName("JCheckBox1");
+			startGameCheckBox.setText("Start new game");
+			startGameCheckBox.setSelected(false);
+			startGameCheckBox.addItemListener(this);
+			startGameCheckBox.setToolTipText("If you want to start a new Game," +
+					" select this. If you want to join a game, leave it.");
+		}
+		return startGameCheckBox;
+	}
+
+    /** Listens to the check boxes. */
+    public void itemStateChanged(ItemEvent e) {
+    	Object source = e.getItemSelectable();
+    	if (source == startGameCheckBox) {
+    		connectionData.setStartGame(startGameCheckBox.isSelected());
+    		sizeLabel.setEnabled(startGameCheckBox.isSelected());
+    		sizeSlider.setEnabled(startGameCheckBox.isSelected());
+    	}
+    }
+    
+	/**
 	 * Return the JLabel2 property value.
 	 * @return javax.swing.JLabel
 	 */
@@ -265,7 +298,7 @@ public class ConnectionDialog extends JDialog {
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(true);
 		this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-		this.setSize(206, 217);
+		this.setSize(206, 240);
 		this.setTitle("Connect to Go Server");
 		this.setContentPane(getJContentPane());
 

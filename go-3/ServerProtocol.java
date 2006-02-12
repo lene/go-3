@@ -114,7 +114,22 @@ class ServerProtocol extends GoGridProtocol {
 	
 	protected void joinGame (String input) {
 		//TODO
+		Utility.debug(input);
+		
+		if (server.games.containsKey(Utility.getArg(input, 3))) {
+			out.println("size "+server.games.get(Utility.getArg(input, 3)).getBoardSize());
+			System.out.println("size "+server.games.get(Utility.getArg(input, 3)).getBoardSize());
+			server.games.get(Utility.getArg(input, 3)).addPlayer (player);
+			System.out.println("players: "+server.games.get(Utility.getArg(input, 3)).players);
+		}
+		else {															//	TODO
+			System.out.println("requested game does not exist! yuck!");
+			out.println("rejected");
+		}
+		//	terminate server protocol. game protocol must take over.
+		stop(true);
 	}
+	
 	protected void setPlayers (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
 
@@ -137,8 +152,28 @@ class ServerProtocol extends GoGridProtocol {
 	/** starts the game for all clients. requested explicitly by client. */
 	protected void startGame (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
-
-		server.startGame (player, player.getUsername()+" waiting");
+		Utility.debug(input);
+		
+		int s, c, h, p;
+		try {
+			s = Integer.parseInt (Utility.getArg (input, 3));
+			c = Integer.parseInt (Utility.getArg (input, 4));
+			h = Integer.parseInt (Utility.getArg (input, 5));
+			p = Integer.parseInt (Utility.getArg (input, 6));
+		} catch (NumberFormatException e) {
+			Utility.warning (input);
+			return;		    
+		}
+		player.setWantedBoardSize(s);
+		player.setColour(c);
+		player.setHandicap(h);
+		player.setWantedNumPlayers(p);
+		
+//		server.startGame (player, player.getUsername()+" waiting");
+		server.startGame (player, "first");
+		
+		//	terminate server protocol. game protocol must take over.
+		stop(true);
 	}
 	
 

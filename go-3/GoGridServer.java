@@ -30,14 +30,11 @@ class GoGridServer extends GameBase {
 		newGame();
 	}
 	
-	/**  accept two (2) clients, and pass on to a Game object. create a 
-	 *   GameThread from this and start it.	 */ 
+	/**  accept clients, and pass on to a Game object. create a GameThread from 
+	 * this and start it.	 */ 
 	void newGame () {	
-		
-		games.put ("first game", 
-				new Game (getBoardSize(), serverSocket));
-		
-		for (int i = 0; i < 2; i++) {
+				
+		while (true) {
 			
 			//	wait for a client to connect
 			Socket clientSocket = null;
@@ -58,17 +55,20 @@ class GoGridServer extends GameBase {
 			players.put (player.getUsername(), player);
 			
 			protocols.put(player, new ServerProtocol(this, player));
+			protocols.get(player).start();
 			
 			Utility.debug(player.getUsername()+" connected from "
 					+player.getClientSocket().getInetAddress().getHostAddress());
-			
-			games.get ("first game").addPlayer(player);
 
+			/*
+			if (games.isEmpty()) {
+				games.put ("first game", 
+						new Game (getBoardSize(), serverSocket));
+				games.get ("first game").addPlayer(player);
+			}
+			*/
 		}
 		
-//		GameThread gameThread = new GameThread(games.get ("first game"));
-//		gameThread.start();
-//		Utility.debug("GameThread started!");
 	}
 	
 	void startGame(ConnectedPlayer player, String key) {

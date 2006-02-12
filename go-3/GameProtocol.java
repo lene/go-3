@@ -225,7 +225,26 @@ class GameProtocol extends GoGridProtocol {
 	protected void startGame (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
 
-		server.startGame ();
+		//	TODO
+		assert precondition (!gameStarted(), "Game must not have started yet!");
+		Utility.debug(input);
+		
+		int s, c, h, p;
+		try {
+			s = Integer.parseInt (Utility.getArg (input, 3));
+			c = Integer.parseInt (Utility.getArg (input, 4));
+			h = Integer.parseInt (Utility.getArg (input, 5));
+			p = Integer.parseInt (Utility.getArg (input, 6));
+		} catch (NumberFormatException e) {
+			Utility.warning (input);
+			return;		    
+		}
+		player.setWantedBoardSize(s);
+		player.setColour(c);
+		player.setHandicap(h);
+		player.setWantedNumPlayers(p);
+		
+// TODO	server.startGame (player, player.getUsername()+" waiting");
 	}
 	
 
@@ -258,21 +277,23 @@ class GameProtocol extends GoGridProtocol {
 		assert precondition (gameStarted(), "Game must have started!");
 
 		Utility.debug ("player "+player+" ready");
+		game_started = true;
 		awaiting_move = true;
-		out.println ("ready");		
+		out.println ("ready");
 	}
 	
 	protected void setColour (int col) { 
 		assert precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
 				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
 		
-		out.println ("color "+col); }
+		out.println ("set color "+col); }
 
 	/** starts the game for the connected client. called by server.startGame() */
 	protected void startGame () {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
 
 		game_started = true;
+		Utility.debug("started "+gameStarted()+" running "+gameRunning()+" move "+awaitingMove());
 		out.println ("start game");
 	}
 
@@ -300,11 +321,6 @@ class GameProtocol extends GoGridProtocol {
 		}
 		server.connectWith (player);		
 	}
-		
-	protected boolean gameStarted () { return game_started; }
-
-	protected boolean awaitingMove() { return awaiting_move; }
-	
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
