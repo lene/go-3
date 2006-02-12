@@ -63,11 +63,20 @@ class Player extends GameBase {
 		this.wantedBoardSize = wantedBoardSize;
 	}
 
+	public int getWantedNumPlayers() { return wantedNumPlayers;	}
+
+	public void setWantedNumPlayers(int wantedNumPlayers) {
+		assert precondition (wantedNumPlayers == 2,
+				"Anything but two player games is not yet implemented!");
+		this.wantedNumPlayers = wantedNumPlayers;
+	}
+	
 	protected int id = -1;
 	protected String username = "";
 	protected boolean hasname = false;
 	protected int handicap = 0;
 	protected int colour = Colour.UNDEFINED;
 	protected int wantedBoardSize = 3;
+	protected int wantedNumPlayers = 2;
 
 }

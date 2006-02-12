@@ -215,8 +215,7 @@ class Game extends GoGrid {
 		assert precondition (player.getProtocol() != null, "Protocol must not be null");
 		player.getProtocol().message(message);
 	}
-	
-	
+		
 	/**
 	 return (a generally wrong, i.e. much too high, value for) the liberties
 	 which are left to the stone at the given position<br>
@@ -321,6 +320,12 @@ class Game extends GoGrid {
 		
 		players.add (player);
 
+		//	if all players have connected, start the game automatically
+		if (players.size() == numPlayers) {
+			new GameThread(this).start();
+			Utility.debug("GameThread started!");
+		}
+		
 		if (currentPlayer > -1) {
 			player.getProtocol().startGame ();
 			updateBoard (player);

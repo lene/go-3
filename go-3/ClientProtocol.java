@@ -127,6 +127,7 @@ class ClientProtocol extends GoGridProtocol {
 	
 	protected void saveGame (String input) {
 		assert precondition (gameStarted(), "Game must have started!");
+		nyi(input);
 	}
 	
 	protected void setAt (String input) {
@@ -148,19 +149,27 @@ class ClientProtocol extends GoGridProtocol {
 
 	protected void setColour (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
+		nyi(input);
 	}
 	
 	protected void setHandicap (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
+		nyi(input);
 	}
-	
+
+	protected void joinGame (String input) {
+		assert precondition (!gameStarted(), "Game must not have started yet!");
+		nyi(input);
+	}
+
 	protected void setPlayers (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
+		nyi(input);
 	}
 	
 	protected void loadGame (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");		
-		error ("command not yet implemented: "+input);
+		nyi(input);
 	}
 	
 	/** starts the game for all clients. requested explicitly by client. */

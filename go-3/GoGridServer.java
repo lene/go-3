@@ -48,13 +48,16 @@ class GoGridServer extends GameBase {
 				System.exit(0);                                    //  die of resource starvation
 			}
 			
-			ConnectedPlayer player = new ConnectedPlayer (new Player (players.size()), clientSocket);
+			ConnectedPlayer player = 
+				new ConnectedPlayer (new Player (players.size()), clientSocket);
 			if (!readUsername (player)) return;
 			
 			//	TODO bad hack to determine the colour from the player ID
 			player.setColour(player.getID()%2+1);	
 			
 			players.put (player.getUsername(), player);
+			
+			protocols.put(player, new ServerProtocol(this, player));
 			
 			Utility.debug(player.getUsername()+" connected from "
 					+player.getClientSocket().getInetAddress().getHostAddress());
@@ -63,15 +66,19 @@ class GoGridServer extends GameBase {
 
 		}
 		
-		GameThread gameThread = new GameThread(games.get ("first game"));
-		
-		gameThread.start();
-		
-		Utility.debug("GameThread started!");
+//		GameThread gameThread = new GameThread(games.get ("first game"));
+//		gameThread.start();
+//		Utility.debug("GameThread started!");
 	}
 	
-	
-	
+	void startGame(ConnectedPlayer player, String key) {
+		games.put (key, new Game (player.getWantedBoardSize(), serverSocket));
+		games.get (key).addPlayer(player);
+	}
+
+	void reconnect (ConnectedPlayer player) {
+		assert precondition (false, "Implement me!");					//	TODO	
+	}
 	/**	read the player's name from in and set it in the Player object	or compare 
  	it if it's already set in the object */
 	boolean readUsername (ConnectedPlayer player) {
@@ -107,6 +114,14 @@ class GoGridServer extends GameBase {
 		
 	/**	 <tt>ConnectedPlayer</tt>s representing the participants	 		  */
 	protected Map<String, ConnectedPlayer> players = new HashMap<String, ConnectedPlayer> ();
+	
+	/**	 store the <tt>ServerProtocol</tt>s associated with each <tt>ConnectedPlayer</tt>.<br>
+	 *   This is a little awkward. maybe it would be better to add a <tt>ServerProtocol</tt>
+	 *   field to <tt>ConnectedPlayer</tt>.<br>
+	 *   Also, TODO: Usage of a <tt>Map</tt> is not yet safe. Add <tt>equals()</tt>
+	 *   and <tt>hashcode()</tt> methods to <tt>ConnectedPlayer</tt>.
+	 */
+	protected Map<ConnectedPlayer, ServerProtocol> protocols = new HashMap<ConnectedPlayer, ServerProtocol>(); 
 
 	/**	list of current <tt>Game</tt>s										  */
 	protected Map<String, Game> games = new HashMap<String, Game> ();

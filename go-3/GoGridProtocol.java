@@ -98,7 +98,7 @@ abstract class GoGridProtocol extends Thread {
 			}
 			//	request join game
 			if (input.startsWith ("join game")) {			//	TODO: implement
-				nyi (input);			return;
+				joinGame(input);		return;
 			}
 			//  request handicap
 			if (input.startsWith ("set handicap")) {
@@ -234,6 +234,8 @@ abstract class GoGridProtocol extends Thread {
 
 	abstract protected void setColour (String input);
 	
+	abstract protected void joinGame (String input);
+
 	abstract protected void setHandicap (String input);
 	
 	abstract protected void setPlayers (String input);
