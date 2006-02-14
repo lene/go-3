@@ -169,6 +169,11 @@ class ClientProtocol extends GoGridProtocol {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
 		nyi(input);
 	}
+	
+	protected void gameList (String input) {
+		assert precondition (!gameStarted(), "Game must not have started yet!");
+		nyi(input);
+	}
 
 	protected void joinGame (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");

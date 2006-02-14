@@ -31,7 +31,7 @@ SERVER_SOURCES = Colour.java \
 CLIENT_SOURCES = Colour.java Materials.java \
 		 Cursor.java Stone.java GridObject.java Handicap.java Grid.java \
 		 Player.java ConnectedPlayer.java \
-		 ConnectionDialog.java \
+		 ConnectionDialog.java ChooseGameDialog.java \
 		 ClientProtocol.java GoGridProtocol.java \
 		 GameBase.java GoGrid.java GoGridClient.java \
 		 IntersectInfoBehavior.java SimpleBehavior.java \

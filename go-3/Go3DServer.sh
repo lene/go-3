@@ -1,6 +1,8 @@
 #!/bin/sh
 
 
+EXTRA_JVM_ARGS="-ea"
+
 function checkjvm () {
   # I hope Sun doesn't change the output of "java -version"!
 	VERSION=$(java -version 2>&1 | grep version | cut -d \" -f 2)
@@ -23,4 +25,4 @@ END_OF_BALK
 
 checkjvm
 
-java GoGridServer
+java ${EXTRA_JVM_ARGS} GoGridServer

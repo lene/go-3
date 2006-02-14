@@ -1,6 +1,7 @@
 
 import java.io.*;
 import java.net.*;
+import java.util.Iterator;
 
 /**
  this class handles the input from the associated client and triggers the
@@ -109,21 +110,36 @@ class ServerProtocol extends GoGridProtocol {
 		player.setHandicap (h);		//  set handicaps
 	}
 	
+	protected void gameList (String input) {
+		Utility.debug(input);
+		
+		Iterator<String> i = server.games.keySet().iterator();
+		while(i.hasNext()) {
+			String gameName = i.next(); 
+			out.println(gameName+" "
+					+server.games.get(gameName).getBoardSize()+" "
+					+server.players.size());
+			Utility.debug(gameName);
+		}
+		out.println("game list");
+		Utility.debug("game list");
+	}
+	
 	protected void joinGame (String input) {
-		//TODO
+
 		Utility.debug(input);
 		
 		if (server.games.containsKey(Utility.getArg(input, 3))) {
 			out.println("size "
 					+server.games.get(Utility.getArg(input, 3)).getBoardSize());
-			System.out.println("size "
+			Utility.debug("size "
 					+server.games.get(Utility.getArg(input, 3)).getBoardSize());
 			try { sleep (50); } catch (InterruptedException e) { }
  			server.games.get(Utility.getArg(input, 3)).addPlayer (player);
-			System.out.println("players: "+server.games.get(Utility.getArg(input, 3)).players);
+ 			Utility.debug("players: "+server.games.get(Utility.getArg(input, 3)).players);
 		}
 		else {															//	TODO
-			System.out.println("requested game does not exist! yuck!");
+			Utility.debug("requested game does not exist! yuck!");
 			out.println("rejected");
 		}
 		//	terminate server protocol. game protocol must take over.
@@ -169,8 +185,7 @@ class ServerProtocol extends GoGridProtocol {
 		player.setHandicap(h);
 		player.setWantedNumPlayers(p);
 		
-//		server.startGame (player, player.getUsername()+" waiting");
-		server.startGame (player, "first");
+		server.startGame (player, GameBase.DEFAULT_GAME);
 		
 		//	terminate server protocol. game protocol must take over.
 		stop(true);

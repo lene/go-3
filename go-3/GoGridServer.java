@@ -59,14 +59,6 @@ class GoGridServer extends GameBase {
 			
 			Utility.debug(player.getUsername()+" connected from "
 					+player.getClientSocket().getInetAddress().getHostAddress());
-
-			/*
-			if (games.isEmpty()) {
-				games.put ("first game", 
-						new Game (getBoardSize(), serverSocket));
-				games.get ("first game").addPlayer(player);
-			}
-			*/
 		}
 		
 	}

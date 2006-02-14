@@ -24,6 +24,7 @@ J3D_PATH=
 J3D_LIBPATH=
 # hack to choose the wanted j3d installation
 num_installed_j3d=2
+EXTRA_JVM_ARGS="-ea"
 
 
 function checkjvm () {
@@ -140,4 +141,4 @@ fi
 addtoclasspath j3dutils.jar 
 addtoclasspath vecmath.jar
 
-java -Djava.library.path=${J3D_LIBPATH} -cp ${CLASSPATH} Go3DClient $@ 
+java ${EXTRA_JVM_ARGS} -Djava.library.path=${J3D_LIBPATH} -cp ${CLASSPATH} Go3DClient $@ 

@@ -294,7 +294,7 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	 */
 	private void initialize() {
 
-		this.setName("JFrame1");
+		this.setName("Connection Dialog");
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(true);
 		this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);

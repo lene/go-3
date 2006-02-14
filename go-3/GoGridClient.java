@@ -30,9 +30,30 @@ class GoGridClient extends GoGrid {
 		clientProtocol = new ClientProtocol (this, in, out);
 		clientProtocol.start ();		//	start reading from server
 
-//		readColor ();					//	blocks! TODO move into ClientProtocol
-		
 		setupBoard ();					//	initialize board structure
+
+		assert postcondition (clientSocket != null, "clientSocket == null");
+		assert postcondition (out != null, "out == null");
+		assert postcondition (in != null, "in == null");
+	}
+	
+	public GoGridClient (int s, ConnectedPlayer player, GridDisplay parent) {
+		super (s);
+		
+		this.parent = parent;
+
+		clientSocket = player.getClientSocket();
+		in = player.getInStream();
+		out = player.getOutStream();
+		
+		clientProtocol = new ClientProtocol (this, in, out);
+		clientProtocol.start ();		//	start reading from server
+
+		setupBoard ();					//	initialize board structure
+
+		assert postcondition (clientSocket != null, "clientSocket == null");
+		assert postcondition (out != null, "out == null");
+		assert postcondition (in != null, "in == null");
 	}
 	
 	
@@ -328,6 +349,7 @@ class GoGridClient extends GoGrid {
 			} catch (IOException e) { 			//	TODO decent error handling
 			}
 			
+			assert postcondition (clientSocket != null, "clientSocket == null");
 			assert postcondition (out != null, "out == null");
 			assert postcondition (in != null, "in == null");
 			

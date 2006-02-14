@@ -105,7 +105,7 @@ abstract class GoGridProtocol extends Thread {
 			
 			//	get list of current games
 			if (input.startsWith ("game list")) {			//	TODO: implement
-				nyi(input); 			return;
+				gameList(input);		return;
 			}
 			//	request join game
 			if (input.startsWith ("join game")) {			//	TODO: implement
@@ -248,6 +248,8 @@ abstract class GoGridProtocol extends Thread {
 	abstract protected void setBoardSize (String input);
 
 	abstract protected void setColour (String input);
+	
+	abstract protected void gameList (String input);
 	
 	abstract protected void joinGame (String input);
 

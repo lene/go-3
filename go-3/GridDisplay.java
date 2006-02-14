@@ -61,15 +61,27 @@ public class GridDisplay extends JApplet implements ActionListener {
 
 		setupDisplay();
 		
-		if (true) {												//	testing code
 			if (connection.getStartGame()) G.newGame();
-			else G.joinGame("first");
-		} 
-		else {
-			G.startGame();
-		}
+			else G.joinGame(connection.getGame());
 	}
 	
+	public GridDisplay (ConnectionData connection, ConnectedPlayer player) {
+		
+		assert GameBase.precondition ((connection.getBoardSize() >= GameBase.MIN_GRID_SIZE && connection.getBoardSize() <= GameBase.MAX_GRID_SIZE), 
+				"Board size must lie between "+GameBase.MIN_GRID_SIZE+" and "+GameBase.MAX_GRID_SIZE);		
+		assert GameBase.precondition ((connection.getServerPort() >= 1024 && connection.getServerPort() < 65535), 
+				"Port must lie between 1024 and 65535");
+
+		Utility.setDebugMode (true);
+		
+		G = new GoGridClient (connection.getBoardSize(), player, this);
+
+		setBoardSize (connection.getBoardSize());
+		setupDisplay();
+		
+			if (connection.getStartGame()) G.newGame();
+			else G.joinGame(connection.getGame());
+	}
 	
 	/**
 	 sets a stone at the cursor position and move the cursor to that position
