@@ -6,6 +6,10 @@
 	1) Short-term
 	-------------
 
+implement read() and write() routines for the Protocols, which acknowledge the 
+read command by repeating it, and repeat the written command if it is not
+acknowledged
+
 1.6 user and installation documentation					(doc)
 
 startup scripts

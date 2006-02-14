@@ -8,7 +8,7 @@ ARCHIVE   = go3d.`date +%y%m%d`.tar.gz
 
 
 SERVER    = GoGridServer.java
-CLIENT    = GridDisplay.java
+CLIENT    = Go3DClient.java
 
 ########  files
 
@@ -37,8 +37,7 @@ CLIENT_SOURCES = Colour.java Materials.java \
 		 IntersectInfoBehavior.java SimpleBehavior.java \
 		 Exchange.java ConnectionData.java \
 		 Utility.java \
-		 GridDisplay.java
-UNUSED_SOURCES = SettingsDialog.java StartupDialog.java		
+		 GridDisplay.java Go3DClient.java
 
 
 ########  build rules

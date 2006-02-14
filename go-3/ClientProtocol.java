@@ -160,7 +160,9 @@ class ClientProtocol extends GoGridProtocol {
 			Utility.debug ("NumberFormatException: "+e.getMessage()+input);
 		}
 		this.client.setCurrentPlayer(col);
-//		nyi(input);
+
+		assert postcondition (this.client.getCurrentPlayer() == col, 
+				"setColour: should be "+col+", is "+this.client.getCurrentPlayer());
 	}
 	
 	protected void setHandicap (String input) {
@@ -170,20 +172,34 @@ class ClientProtocol extends GoGridProtocol {
 
 	protected void joinGame (String input) {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
-		System.out.println("join game "+input);
+		assert precondition (in != null, "in == null");
+		assert precondition (out != null, "out == null");
+
+		Utility.debug("join game "+input);
 		out.println("join game "+input);
-		
-		String response;
-		try { response = in.readLine(); }
-		catch (IOException e) { return; }
-		if(response.startsWith("size")) {
-			try { this.client.setBoardSize(Integer.parseInt (Utility.getArg (input, 2))); } 
-			catch (NumberFormatException e) { Utility.debug ("NumberFormatException: "+e.getMessage()+input); }
-		}
-		else {
-			Utility.bitch(new Throwable ("rejected: "+response));
-			stop(true);
-			System.exit(0);
+		while (true) {
+			String response = null;
+			try { response = in.readLine(); }
+			catch (IOException e) { 
+				Utility.debug(e.getMessage());
+				stop(true);
+				return;
+			}
+			if(response.startsWith("size")) {
+				try { 
+					this.client.setBoardSize(Integer.parseInt (Utility.getArg (response, 2))); 
+					return;
+				} 
+				catch (NumberFormatException e) { 
+					Utility.debug ("NumberFormatException: "+e.getMessage()+input); 
+					continue;
+				}
+			}
+			else {
+				Utility.bitch(new Throwable ("rejected: "+response));
+				stop(true);
+				System.exit(0);
+			}
 		}
 	}
 

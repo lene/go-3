@@ -77,9 +77,8 @@ class ServerProtocol extends GoGridProtocol {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		int s;
-		try {
-			s = Integer.parseInt (Utility.getArg (input, 4));
-		} catch (NumberFormatException e) {
+		try { s = Integer.parseInt (Utility.getArg (input, 4));	} 
+		catch (NumberFormatException e) {
 			Utility.warning (input);
 			return;		    
 		}
@@ -90,9 +89,8 @@ class ServerProtocol extends GoGridProtocol {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		int c;
-		try {
-			c = Integer.parseInt (Utility.getArg (input, 3));
-		} catch (NumberFormatException e) {
+		try { c = Integer.parseInt (Utility.getArg (input, 3));	} 
+		catch (NumberFormatException e) {
 			Utility.warning (input);
 			return;
 		}
@@ -103,9 +101,8 @@ class ServerProtocol extends GoGridProtocol {
 		assert precondition (!gameStarted(), "Game must not have started yet!");
 		
 		int h;
-		try {
-			h = Integer.parseInt (Utility.getArg (input, 3));
-		} catch (NumberFormatException e) {
+		try { h = Integer.parseInt (Utility.getArg (input, 3)); } 
+		catch (NumberFormatException e) {
 			Utility.warning (Utility.getArg (input, 3));
 			return;		    
 		}
@@ -117,9 +114,12 @@ class ServerProtocol extends GoGridProtocol {
 		Utility.debug(input);
 		
 		if (server.games.containsKey(Utility.getArg(input, 3))) {
-			out.println("size "+server.games.get(Utility.getArg(input, 3)).getBoardSize());
-			System.out.println("size "+server.games.get(Utility.getArg(input, 3)).getBoardSize());
-			server.games.get(Utility.getArg(input, 3)).addPlayer (player);
+			out.println("size "
+					+server.games.get(Utility.getArg(input, 3)).getBoardSize());
+			System.out.println("size "
+					+server.games.get(Utility.getArg(input, 3)).getBoardSize());
+			try { sleep (50); } catch (InterruptedException e) { }
+ 			server.games.get(Utility.getArg(input, 3)).addPlayer (player);
 			System.out.println("players: "+server.games.get(Utility.getArg(input, 3)).players);
 		}
 		else {															//	TODO

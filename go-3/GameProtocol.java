@@ -115,8 +115,9 @@ class GameProtocol extends GoGridProtocol {
 	
 	protected void setAt (String input) {
 		assert precondition (gameStarted(), "Game must have started!");
-		assert precondition (awaitingMove(), "Must be on the move!");
-
+//		assert precondition (awaitingMove(), "Must be on the move!");
+		if (!awaitingMove()) return;
+		
 		int x, y, z;
 		try {
 			x = Integer.parseInt (Utility.getArg (input, 3));
@@ -144,11 +145,11 @@ class GameProtocol extends GoGridProtocol {
 			awaiting_move = false;		        //  toggle state to 'not ready'
 			server.nextPlayer ();                   //  activate next player
 		}
-		else {                                      //  could not set:
-			out.println ("error");
-			//      send error message to player
-			error ("("+x+", "+y+", "+z+"): Position occupied!");
-		}
+//		else {                                      //  could not set:
+//			out.println ("error");
+//			//      send error message to player
+//			error ("("+x+", "+y+", "+z+"): Position occupied!");
+//		}
 	}
 
 	protected void pass (String input) {
