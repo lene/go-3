@@ -7,7 +7,7 @@ class Handicap extends GridObject {
 	
 	////////	CONSTANTS	////////
 	private static float RADIUS = 0.1f;
-	private static int NUM_SEGMENTS = 4;
+	private static int NUM_SEGMENTS = 8;
 
 	/** unneccessary parameters for backward compatibilit (TODO) */
 	public Handicap (int s, int x, int y, int z) {

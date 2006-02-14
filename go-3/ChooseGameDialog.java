@@ -54,7 +54,9 @@ public class ChooseGameDialog extends JDialog {
 				if (!input.startsWith("game list")) 
 					games.add(new GameData(input));
 			}
-		} catch (IOException e) { Utility.debug("IOException!"); }		//	TODO
+		} 
+		catch (IOException e) { Utility.debug("IOException!"); }		//	TODO
+		catch (NumberFormatException e) { Utility.debug("NumberFormatException!"); }
 	
 		return games;
 	}
@@ -165,7 +167,7 @@ public class ChooseGameDialog extends JDialog {
 	        listScroller = new JScrollPane(gameList);
 	        listScroller.setAlignmentX(LEFT_ALIGNMENT);
 	        
-	        new UpdateThread (5000).start();
+//	        new UpdateThread (5000).start();
 	    }
 		return listScroller;
 	}

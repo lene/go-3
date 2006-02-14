@@ -141,4 +141,6 @@ fi
 addtoclasspath j3dutils.jar 
 addtoclasspath vecmath.jar
 
+CLASSPATH=${CLASSPATH}:GoGrid.jar
+
 java ${EXTRA_JVM_ARGS} -Djava.library.path=${J3D_LIBPATH} -cp ${CLASSPATH} Go3DClient $@ 

@@ -74,6 +74,9 @@ archive:
 jar: all
 	jar cf GoGrid.jar *.class
 
+deploy: jar
+	scp -P 10022 GoGrid.jar hyperspace-travel.de:
+
 javadoc:	
 	javadoc -d JavaDoc -author -version -private -breakiterator *.java
 

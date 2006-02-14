@@ -14,6 +14,8 @@ advertising
 
 start server on hyperspace-travel.de
 
+GPL everywhere
+
   2) 0.4.x
   --------
 
@@ -34,6 +36,8 @@ bug when setting into a field with no liberties left: the SETTING player is
 cleared (at least sometimes)
 
 updating the game list when new ones connect 
+
+robust handling of disconnections (port scans!) in the server
 
 Cleanups:
 ---------

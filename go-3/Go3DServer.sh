@@ -25,4 +25,6 @@ END_OF_BALK
 
 checkjvm
 
-java ${EXTRA_JVM_ARGS} GoGridServer
+CLASSPATH=${CLASSPATH}:GoGrid.jar
+
+java ${EXTRA_JVM_ARGS}  -cp ${CLASSPATH} GoGridServer
