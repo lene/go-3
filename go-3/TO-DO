@@ -33,6 +33,8 @@ to 0,0,0.
 bug when setting into a field with no liberties left: the SETTING player is 
 cleared (at least sometimes)
 
+updating the game list when new ones connect 
+
 Cleanups:
 ---------
 

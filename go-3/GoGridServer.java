@@ -14,7 +14,7 @@ import java.util.HashMap;
 class GoGridServer extends GameBase {
 	
 	public GoGridServer () {
-		Utility.setDebugMode (true);
+		Utility.setDebugMode (DEBUG);
 	}
 	
 	/** set up server socket and start listening */

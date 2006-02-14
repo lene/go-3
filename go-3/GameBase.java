@@ -13,7 +13,7 @@ class GameBase {
 
 	protected static final int DEFAULT_SERVER_PORT = 6666;
 	
-	static final boolean DEBUG = false; 
+	static final boolean DEBUG = true; 
 	
 	/**
 	 the port on which the server listens for connections<br>

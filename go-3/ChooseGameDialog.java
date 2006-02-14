@@ -16,9 +16,20 @@ public class ChooseGameDialog extends JDialog {
 			size = Integer.parseInt (Utility.getArg (inputLine, 2));
 		}
 		public String toString() { 
-			return name+" ("+size+"x"+size+"x"+size+")"; }
+			return ""+name+"("+size+"x"+size+"x"+size+")"; }
 		public String getName() { return name; }
 		public int getSize() { return size;	}
+	}
+	
+	class UpdateThread extends Thread {
+		private int delay;
+		public UpdateThread(int d) { delay = d; }
+		public void run() {
+			while (!stopped) {
+				try { sleep (delay); } catch (InterruptedException e) { return; }
+				updateGameList();
+			}
+		}
 	}
 	
 	public ChooseGameDialog(ConnectedPlayer p, ConnectionData c) {
@@ -30,9 +41,9 @@ public class ChooseGameDialog extends JDialog {
 	}
 	
 
-	GameData[] gameData = {};
+	private GameData[] gameData = {};
 	
-	GameData[] getGames() {
+	ArrayList<GameData> getGames() {
 		player.out.println("game list");
 		ArrayList<GameData> games = new ArrayList<GameData>();
 		
@@ -40,14 +51,68 @@ public class ChooseGameDialog extends JDialog {
 			String input = "";
 			while (!input.startsWith("game list")) {
 				input = player.in.readLine();
-				Utility.debug (input);
 				if (!input.startsWith("game list")) 
 					games.add(new GameData(input));
 			}
 		} catch (IOException e) { Utility.debug("IOException!"); }		//	TODO
 	
-		gameData = games.toArray(gameData);
-		return gameData;
+		return games;
+	}
+	
+	GameData[] setGameList() {
+		gameData = getGames().toArray(gameData);
+		return gameData;		
+	}
+	
+	void updateGameList () {
+/* the sophisticated way to update the game list does not work.
+ * model.addElement() / model.remove() and subsequent 
+ * gameList.ensureIndexIsVisible(index) do not update the list (visibly).
+ * thus, i have to replace the whole list. that works, at least, but has the
+ * downside that the current selection gets lost. 
+ * alternative would be not to update at all. choose your poison.			  */
+		
+		ArrayList<GameData> tempData = getGames();
+		if (tempData.equals(gameData)) return;				//	nothing changed
+		
+		if (false) {
+		//	first check the current game list, whether there are games not yet in the ListModel
+		for (int i = 0; i < tempData.size(); i++) {
+			GameData current = tempData.get(i);
+			Utility.debug(current.toString());
+			if (!model.contains(current)) {
+				int index = gameList.getSelectedIndex(); //get selected index
+				Utility.debug(""+index);
+			    if (index == -1) { index = 0; }	 //no selection, insert at beginning
+			    else { index++; }                //add after the selected item
+				Utility.debug(""+index);
+//			    model.insertElementAt(current, index);
+			    model.addElement(current);
+			    gameList.setSelectedIndex(index);
+			    gameList.ensureIndexIsVisible(index);
+			}
+		}
+		
+		//	now check whether there are old data in the ListModel, which are not in the game list any more
+		for (int i = 0; i < model.getSize(); i++) {
+			GameData current = (GameData)model.getElementAt(i);
+			boolean found = false;
+			for (int j = 0; j < tempData.size(); j++) {
+				if (current.equals(tempData.get(j))) {
+					Utility.debug(current.toString());
+					found = true; break;
+				}
+			}
+			if (!found) {
+				model.remove(i);
+				gameList.ensureIndexIsVisible(model.getSize());
+			}
+		}
+		return;
+		}
+		else {
+			gameList.setListData(setGameList());
+		}
 	}
 
 	/**
@@ -86,22 +151,25 @@ public class ChooseGameDialog extends JDialog {
 		return gameListLabel;
 	}
 	
-
-//	private JList getJList1() {
 	private JScrollPane getJList1() {
 		if (gameList == null) {
-			gameList = new JList(getGames());
+			model = new DefaultListModel();
+			gameList = new JList(model);
 
 	        gameList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
 	        gameList.setLayoutOrientation(JList.VERTICAL);
 	        gameList.setVisibleRowCount(-1);
 
+	        gameList.setListData(setGameList());
+	        
 	        listScroller = new JScrollPane(gameList);
 	        listScroller.setAlignmentX(LEFT_ALIGNMENT);
+	        
+	        new UpdateThread (5000).start();
 	    }
-//		return gameList;
 		return listScroller;
 	}
+	
 	/**
 	 * Return the JButton1 property value.
 	 * @return javax.swing.JButton
@@ -122,6 +190,7 @@ public class ChooseGameDialog extends JDialog {
 									connectionData.setGame(gameData[index].getName());
 									connectionData.setBoardSize(gameData[index].getSize());
 									
+									stopped = true;
 									setVisible (false);
 								}
 							}
@@ -151,11 +220,14 @@ public class ChooseGameDialog extends JDialog {
 	private JPanel contentPane = null;
 
 	private JLabel gameListLabel = null;
+	DefaultListModel model = null;
 	private JList gameList = null;
 	private JScrollPane listScroller;
 	
 	private JButton connectButton = null;
 
+	private boolean stopped = false;
+	
 	public static void main(String[] args) {
 //		new ChooseGameDialog(new ConnectionData()).setVisible(true);
 	}

@@ -82,6 +82,7 @@ class Game extends GoGrid {
 			updateBoard (player);
 			player.getProtocol().startGame ();
 		}
+		started = true;
 		currentPlayer = -1;
 		nextPlayer ();                  //  currentPlayer initialized to -1 => start with player 0
 	}
@@ -707,6 +708,15 @@ class Game extends GoGrid {
 	 */
 	protected ArrayList<ConnectedPlayer> players = new ArrayList<ConnectedPlayer> ();
 	
+	private boolean started;
+
+	public boolean isStarted() {
+		return started;
+	}
+
+	public void setStarted(boolean started) {
+		this.started = started;
+	}
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
