@@ -185,7 +185,8 @@ class ServerProtocol extends GoGridProtocol {
 		player.setHandicap(h);
 		player.setWantedNumPlayers(p);
 		
-		server.startGame (player, GameBase.DEFAULT_GAME);
+//		server.startGame (player, GameBase.DEFAULT_GAME);
+		server.startGame (player, player.getUsername());
 		
 		//	terminate server protocol. game protocol must take over.
 		stop(true);

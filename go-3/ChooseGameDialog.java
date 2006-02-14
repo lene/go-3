@@ -15,7 +15,8 @@ public class ChooseGameDialog extends JDialog {
 			name = Utility.getArg (inputLine, 1);
 			size = Integer.parseInt (Utility.getArg (inputLine, 2));
 		}
-		public String toString() { return name; }
+		public String toString() { 
+			return name+" ("+size+"x"+size+"x"+size+")"; }
 		public String getName() { return name; }
 		public int getSize() { return size;	}
 	}
@@ -95,7 +96,7 @@ public class ChooseGameDialog extends JDialog {
 	        gameList.setVisibleRowCount(-1);
 
 	        JScrollPane listScroller = new JScrollPane(gameList);
-	        listScroller.setPreferredSize(new Dimension(250, 80));
+//	        listScroller.setPreferredSize(new Dimension(250, 80));
 	        listScroller.setAlignmentX(LEFT_ALIGNMENT);
 	    }
 		return gameList;
@@ -109,23 +110,22 @@ public class ChooseGameDialog extends JDialog {
 			connectButton = new javax.swing.JButton();
 			connectButton.setName("JButton1");
 			connectButton.setText("Connect to Server");
-			connectButton.addActionListener(new java.awt.event.ActionListener() {
-				public void actionPerformed(java.awt.event.ActionEvent e) {
-					if (e.getActionCommand().equals (connectButton.getText())) {
-						System.out.println("actionPerformed(): "+e.getActionCommand()); // TODO Auto-generated Event stub actionPerformed()
-						
-						int index = gameList.getSelectedIndex();
-						
-						Utility.debug(index+" "+gameData[index]);
-//						connectionData.setGame(GameBase.DEFAULT_GAME);
-						connectionData.setGame(gameData[index].getName());
-						connectionData.setBoardSize(gameData[index].getSize());
-						
-						setVisible (false);
-						
-					}
-				}
-			});
+			connectButton.addActionListener(
+					new java.awt.event.ActionListener() {
+						public void actionPerformed(java.awt.event.ActionEvent e) {
+							if (e.getActionCommand().equals (connectButton.getText())) {
+								int index = gameList.getSelectedIndex();
+								
+								if (index >= 0 && index < gameData.length) {
+									Utility.debug(index+" "+gameData[index]);
+									connectionData.setGame(gameData[index].getName());
+									connectionData.setBoardSize(gameData[index].getSize());
+									
+									setVisible (false);
+								}
+							}
+						}
+					});
 		}
 		return connectButton;
 	}
@@ -139,7 +139,7 @@ public class ChooseGameDialog extends JDialog {
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(true);
 		this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-		this.setSize(206, 240);
+		this.setSize(320, 240);
 		this.setTitle("Choose a Game");
 		this.setContentPane(getJContentPane());
 	}

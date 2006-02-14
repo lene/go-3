@@ -11,11 +11,7 @@ class Player extends GameBase {
 	/** basic player c'tor: give an ID
 	 *  @param i
 	 */
-	Player (int i) {
-		assert precondition ((i >= 0 && i < MAX_PLAYERS), 
-				"Player ID must be between 0 and "+MAX_PLAYERS);
-		this.id = i;
-	}
+	Player (int i) { this.id = i; }
 	
 	/** copy c'tor
 	 *  @param p

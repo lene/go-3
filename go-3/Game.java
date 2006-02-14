@@ -302,8 +302,8 @@ class Game extends GoGrid {
 		player.setProtocol(new GameProtocol (player, this));
 
 		//	check whether wanted color is already used
-		if (!checkColor (player)) { 
-			Utility.bitch(new Throwable ("check color failed"));
+		if (!checkColor (player, true)) { 
+			Utility.bitch(new Throwable ("check and assign color failed"));
 			return;		//	TODO better error handling
 		}
 		
@@ -348,19 +348,38 @@ class Game extends GoGrid {
 	////////////////////////////////////////////////////////////////////////////
 
 	/** check the color of a connecting player is already used
-	 *  @param player ConnectedPlayer about to be added to the Game 
+	 *  @param player ConnectedPlayer about to be added to the Game
+	 *  @param assign if true, assigns an unused color to the player 
 	 */
-	protected boolean checkColor(ConnectedPlayer player) {
+	protected boolean checkColor(ConnectedPlayer player, boolean assign) {
+		boolean ok = true;
+
 		if (player.getColour() < Colour.BLACK || player.getColour() > Colour.WHITE)
-			return false;
+			ok = false;
+		
+		if (ok) ok = checkColorOK(player.getColour());
+		
+		if (assign && !ok) {
+			for (int col = 1; col <= numPlayers; col++) {
+				if (checkColorOK(col)) {
+					player.setColour(col);
+					return true;
+				}
+			}
+		}
+		
+		return ok;
+	}
+
+	private boolean checkColorOK(int col) {
 		ListIterator<ConnectedPlayer> i = players.listIterator();
 		while (i.hasNext()) {
-			if(i.next().getColour() == player.getColour())
+			if(i.next().getColour() == col)
 				return false;
 		}
 		return true;
 	}
-
+	
 	/**
 	 set up 1 (one) client connection:
 	 <ul>
