@@ -56,8 +56,6 @@ abstract class GoGridProtocol extends Thread {
 	/** parse a line of input and call the corresponding action.			  */
 	final void processInput (String input) {
 
-		Utility.debug("started "+game_started+" running "+gameRunning()+" move "+awaiting_move);
-
 		Utility.debug ("\""+input+"\"");
 
 		//	requests to be made before the user is authenticated do not go here,
@@ -104,11 +102,11 @@ abstract class GoGridProtocol extends Thread {
 		if (!gameStarted ()) {
 			
 			//	get list of current games
-			if (input.startsWith ("game list")) {			//	TODO: implement
+			if (input.startsWith ("game list")) {
 				gameList(input);		return;
 			}
 			//	request join game
-			if (input.startsWith ("join game")) {			//	TODO: implement
+			if (input.startsWith ("join game")) {
 				joinGame(input);		return;
 			}
 			//  request handicap
@@ -143,11 +141,6 @@ abstract class GoGridProtocol extends Thread {
 			if (input.startsWith ("set color")) {			//	TODO: replace
 				setColour (input);		return;
 			}
-			//  request a color
-			if (input.startsWith ("set color")) {			//	TODO: replace
-				setColour (input);		return;
-			}
-
 		}                                       		//  if (!gameStarted ())
 		
 		//  requests which can be made only after game started

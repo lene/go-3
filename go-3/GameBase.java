@@ -13,8 +13,7 @@ class GameBase {
 
 	protected static final int DEFAULT_SERVER_PORT = 6666;
 	
-	//	kludge to have a default game while testing
-	protected static final String DEFAULT_GAME = "first";
+	static final boolean DEBUG = false; 
 	
 	/**
 	 the port on which the server listens for connections<br>

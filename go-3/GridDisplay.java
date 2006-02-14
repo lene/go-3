@@ -50,7 +50,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition ((connection.getServerPort() >= 1024 && connection.getServerPort() < 65535), 
 				"Port must lie between 1024 and 65535");
 
-		Utility.setDebugMode (true);
+		Utility.setDebugMode (GameBase.DEBUG);
 		
 		setHostname (connection.getServerHost());
 		setBoardSize (connection.getBoardSize());
@@ -72,7 +72,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition ((connection.getServerPort() >= 1024 && connection.getServerPort() < 65535), 
 				"Port must lie between 1024 and 65535");
 
-		Utility.setDebugMode (true);
+		Utility.setDebugMode (GameBase.DEBUG);
 		
 		G = new GoGridClient (connection.getBoardSize(), player, this);
 

@@ -13,8 +13,7 @@ import java.util.HashMap;
  */
 class GoGridServer extends GameBase {
 	
-	public GoGridServer (int size) {
-		setBoardSize (size);		
+	public GoGridServer () {
 		Utility.setDebugMode (true);
 	}
 	
@@ -122,21 +121,14 @@ class GoGridServer extends GameBase {
 	private static ConnectionData connectionData = new ConnectionData ();
 
 	protected static void help () {
-		System.out.println ("usage: java GridDisplay [-s|--board-size boardsize]\n"+
-	      "                   [-p|--server-port serverport]\n");
+		System.out.println ("usage: java GoGridServer" +
+				" [-p|--server-port serverport]\n");
 	}
 
 	protected static void parse (String [] args) {
 		
 		for (int i = 0; i < args.length; i++) {
-			if (args[i].equals("-s") || args[i].equals("--board-size")) {
-				try {
-					connectionData.setBoardSize(Integer.parseInt(args[++i]));
-				} catch (NumberFormatException e) {
-					help ();
-				}
-			}
-			else if (args[i].equals("-p") || args[i].equals("--server-port")) {
+			if (args[i].equals("-p") || args[i].equals("--server-port")) {
 				try {
 					connectionData.setServerPort(Integer.parseInt(args[++i]));
 				} catch (NumberFormatException e) {
@@ -163,11 +155,7 @@ class GoGridServer extends GameBase {
 		banner ();
 		parse (args);		
 		
-		int s = connectionData.getBoardSize();
-		
-		System.out.println ("Board size is "+s+"x"+s+"x"+s);
-		
-		GoGridServer server = new GoGridServer (s);
+		GoGridServer server = new GoGridServer ();
 		server.setServerPort(connectionData.getServerPort());
 		server.start();
 	}

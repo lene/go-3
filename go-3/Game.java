@@ -27,7 +27,7 @@ class Game extends GoGrid {
 	public Game(int size, ServerSocket serverSocket) {
 		super (size);
 		
-		Utility.setDebugMode (true);
+		Utility.setDebugMode (DEBUG);
 
 		this.serverSocket = serverSocket;
 
@@ -45,7 +45,7 @@ class Game extends GoGrid {
 		assert precondition ((serverSocket != null), 
 				"Server Socket must not be null, or nothing makes sense anymore");
 
-		Utility.setDebugMode (true);
+		Utility.setDebugMode (DEBUG);
 		
 		this.serverSocket = serverSocket;
 				

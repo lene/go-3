@@ -87,7 +87,8 @@ public class ChooseGameDialog extends JDialog {
 	}
 	
 
-	private JList getJList1() {
+//	private JList getJList1() {
+	private JScrollPane getJList1() {
 		if (gameList == null) {
 			gameList = new JList(getGames());
 
@@ -95,11 +96,11 @@ public class ChooseGameDialog extends JDialog {
 	        gameList.setLayoutOrientation(JList.VERTICAL);
 	        gameList.setVisibleRowCount(-1);
 
-	        JScrollPane listScroller = new JScrollPane(gameList);
-//	        listScroller.setPreferredSize(new Dimension(250, 80));
+	        listScroller = new JScrollPane(gameList);
 	        listScroller.setAlignmentX(LEFT_ALIGNMENT);
 	    }
-		return gameList;
+//		return gameList;
+		return listScroller;
 	}
 	/**
 	 * Return the JButton1 property value.
@@ -151,6 +152,7 @@ public class ChooseGameDialog extends JDialog {
 
 	private JLabel gameListLabel = null;
 	private JList gameList = null;
+	private JScrollPane listScroller;
 	
 	private JButton connectButton = null;
 

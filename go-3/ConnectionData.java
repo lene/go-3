@@ -23,7 +23,7 @@ class ConnectionData extends GameBase {
 	/**	 user id	 */
 	private String username = "";
 	/** game to connect to */
-	private String game = DEFAULT_GAME;
-	
+	private String game = "";
+	/** whether to start own game (or connect to a running one) */
 	private boolean startGame = false;
 }
