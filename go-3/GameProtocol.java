@@ -145,11 +145,6 @@ class GameProtocol extends GoGridProtocol {
 			awaiting_move = false;		        //  toggle state to 'not ready'
 			server.nextPlayer ();                   //  activate next player
 		}
-//		else {                                      //  could not set:
-//			out.println ("error");
-//			//      send error message to player
-//			error ("("+x+", "+y+", "+z+"): Position occupied!");
-//		}
 	}
 
 	protected void pass (String input) {
