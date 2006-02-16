@@ -39,6 +39,9 @@ updating the game list when new ones connect
 
 robust handling of disconnections (port scans!) in the server
 
+implementation as applets (interesting info:
+http://localhost/doc/eckel/TIEJ/TIEJv1.1.htm#_Toc39472942)
+
 Cleanups:
 ---------
 
@@ -89,6 +92,9 @@ display the captured stones in the background, along with their number
 
 command line for clients to manually type commands, needs an interface
 
+selector based socket monitoring instead a thread for everything (see 
+http://localhost/doc/eckel/TIEJ/TIEJv1.1.htm#_Toc39472944)
+
 
 
 Picking: 								(bugfix)
@@ -106,6 +112,8 @@ fix all remaining bugs
 	[xyz]set in J3DApp should show last move
 
 profile code and optimize hotspots
+
+RMI? (http://localhost/doc/eckel/TIEJ/TIEJv1.1.htm#_Toc39413375)
 
 
 	5) Mid-term

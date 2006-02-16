@@ -36,6 +36,9 @@ import java.net.UnknownHostException;
  */
 public class GridDisplay extends JApplet implements ActionListener {
 	
+	public GridDisplay (GoGridClient G) {
+		//	TODO implement me!
+	}
 	/**
 	 Constructor for known size of the grid and hostname of the server
 	 @param size the size of the grid

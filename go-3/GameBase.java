@@ -10,11 +10,15 @@ class GameBase {
 	
 	static final String VERSION = "0.4.0";
 	static final String MAINTAINER = "Helge Preuss <helge.preuss@gmx.net>";
+	static final boolean DEBUG = true; 
 
+	protected static final String DEFAULT_SERVER_HOST = (DEBUG? "localhost":
+														 "hyperspace.travel.de");
 	protected static final int DEFAULT_SERVER_PORT = 6666;
 	
-	static final boolean DEBUG = true; 
-	
+	protected static final int SERVER_MAX_PLAYERS = 100;
+	protected static final int SERVER_MAX_GAMES = SERVER_MAX_PLAYERS/2;
+
 	/**
 	 the port on which the server listens for connections<br>
 	 this is not an attribute belonging to a Go Grid, but as both server and

@@ -19,7 +19,7 @@ class ConnectionData extends GameBase {
 	public void setGame(String game) { this.game = game; }
 
 	/**	 server host */
-	private String serverHost = "localhost";
+	private String serverHost = DEFAULT_SERVER_HOST;
 	/**	 user id	 */
 	private String username = "";
 	/** game to connect to */

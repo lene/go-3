@@ -20,16 +20,18 @@ abstract class GoGridProtocol extends Thread {
 	final public void run () {
 		Utility.debug("running");
 		
-		while (!stopMe) {					//	outer loop to catch disconnects
+connect: while (!stopMe) {					//	outer loop to catch disconnects
 			
 			while (!stopMe) {
 				
 				String inputLine = new String ();
 				
 				try {
-					while (!in.ready()) {
+					while (!in.ready()) {	//	poll input
 						this.sleep(10);
-						if (stopMe) return;
+						if (stopMe) return;	//	if stop(boolean) is called, stop
+						if (!player.getClientSocket().isConnected())
+							continue connect;
 					}
 					inputLine = in.readLine ();
 				} catch (IOException e) {

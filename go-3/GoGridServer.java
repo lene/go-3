@@ -20,10 +20,10 @@ class GoGridServer extends GameBase {
 	/** set up server socket and start listening */
 	public void start () {
 		try {						
-			serverSocket = new ServerSocket(serverPort);	//  set up the server socket
-		} catch (IOException e) {
+			serverSocket = new ServerSocket(serverPort);//  set up the server socket
+		} catch (IOException e) {						//	TODO error handling
 			Utility.bitch (new Throwable ("Could not listen on port: "+serverPort));
-			System.exit(0);                                 //  die of resource starvation
+			System.exit(0);                             //  die of resource starvation
 		}
 
 		newGame();
@@ -39,14 +39,25 @@ class GoGridServer extends GameBase {
 			Socket clientSocket = null;
 			try {						
 				clientSocket = serverSocket.accept();
-			} catch (IOException e) {
+			} catch (IOException e) {					//	TODO error handling
 				Utility.bitch (new Throwable ("accept() failed:"+e.getMessage()));
-				System.exit(0);                                    //  die of resource starvation
+				System.exit(0);                         //  die of resource starvation
 			}
 			
 			ConnectedPlayer player = 
 				new ConnectedPlayer (new Player (players.size()), clientSocket);
-			if (!readUsername (player)) return;
+
+			if (players.size >= SERVER_MAX_PLAYERS) {
+				player.getOutStream().println("Maximum number of connections ("+
+						SERVER_MAX_PLAYERS+") reached. Cannot serve you. Sorry.");
+				clientSocket.close();
+				continue;
+			}
+
+			if (!readUsername (player)) {
+				clientSocket.close();				
+				continue;
+			}
 			
 			//	TODO bad hack to determine the colour from the player ID
 			player.setColour(player.getID()%2+1);	
