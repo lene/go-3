@@ -47,15 +47,15 @@ class GoGridServer extends GameBase {
 			ConnectedPlayer player = 
 				new ConnectedPlayer (new Player (players.size()), clientSocket);
 
-			if (players.size >= SERVER_MAX_PLAYERS) {
+			if (players.size() >= SERVER_MAX_PLAYERS) {
 				player.getOutStream().println("Maximum number of connections ("+
 						SERVER_MAX_PLAYERS+") reached. Cannot serve you. Sorry.");
-				clientSocket.close();
+				try { clientSocket.close(); } catch (IOException e) { }
 				continue;
 			}
 
 			if (!readUsername (player)) {
-				clientSocket.close();				
+				try { clientSocket.close(); } catch (IOException e) { }
 				continue;
 			}
 			

@@ -30,8 +30,9 @@ connect: while (!stopMe) {					//	outer loop to catch disconnects
 					while (!in.ready()) {	//	poll input
 						this.sleep(10);
 						if (stopMe) return;	//	if stop(boolean) is called, stop
-						if (!player.getClientSocket().isConnected())
-							continue connect;
+						if (player != null)							//	TODO 
+							if (!player.getClientSocket().isConnected())
+								continue connect;
 					}
 					inputLine = in.readLine ();
 				} catch (IOException e) {
