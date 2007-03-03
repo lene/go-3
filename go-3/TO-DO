@@ -1,7 +1,22 @@
 
-	TO DO LIST for go3d on 14 Feb 2006
+	TO DO LIST for go3d on 03 Mar 2007
 	==================================
 
+- ant-file
+  targets:
+  + build
+  + build jar
+  + run server
+  + run client
+  + run all
+  
+- configfile
+  + connection data
+  
+- cursor handling
+  + extra window displaying cursor coordinates
+  + switching off and on of axes -> line and plane cursor
+  + remove planes not in cursor plane from gogrid cube display
 
 	1) Short-term
 	-------------
