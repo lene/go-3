@@ -6,7 +6,9 @@
 # provided libj3dcore-ogl.so to the java.library.path. That way, you end up with
 # a command line to start up a Java3D application like 
 #   java -Djava.library.path=/opt/sun-java3d-bin/lib \
-#     -cp /usr/share/sun-java3d-bin/lib/vecmath.jar:/usr/share/sun-java3d-bin/lib/j3dutils.jar:/usr/share/sun-java3d-bin/lib/j3dcore.jar:. 
+#     -cp /usr/share/sun-java3d-bin/lib/vecmath.jar:\
+#		  /usr/share/sun-java3d-bin/lib/j3dutils.jar:\
+#		  /usr/share/sun-java3d-bin/lib/j3dcore.jar:.
 #     Go3DClient
 # To save you that, this script tries to guess the correct Java3D installation 
 # path. I have only tested it with the Sun Java3D distribution though.
@@ -15,8 +17,12 @@
 # discussed yet.
 
 
-set +xv
+set -xv
 
+CONFIG_DIR="${HOME}/.3D-Go/client"
+CONFIG_FILE="${CONFIG_DIR}/config"
+
+J3D_SEARCHROOT="/usr /opt"
 
 J3D_LOCATION=
 J3D_INSTALLATIONS=0
@@ -26,14 +32,39 @@ J3D_LIBPATH=
 num_installed_j3d=2
 EXTRA_JVM_ARGS="-ea"
 
+GOGRID_JARPATH=
+GOGRID_JARNAME=GoGrid.jar
 
+test -f "${CONFIG_FILE}" && . "${CONFIG_FILE}"
+
+if locate -h > /dev/null ; then 
+	LOCATE_COMMAND="locate"
+else 
+	LOCATE_COMMAND="find ${J3D_SEARCHROOT} -name"
+fi
+	
+#
+#   config ends.
+#
+
+#
+#   check whether installed JVM is at least version 1.5
+#
 function checkjvm () {
   # I hope Sun doesn't change the output of "java -version"!
 	VERSION=$(java -version 2>&1 | grep version | cut -d \" -f 2)
-	echo ${VERSION} | grep "1.5" > /dev/null 2>&1 || \
-	  nojava15
+	MAJOR=$(echo ${VERSION} | cut -d '.' -f 1)
+	MINOR=$(echo ${VERSION} | cut -d '.' -f 2)
+
+	test $MAJOR -gt 1 && return
+	test $MINOR -ge 5 && return
+
+	nojava15
 }
 
+#
+#   complain that java VM is too old
+#
 function nojava15 () {
   cat << END_OF_BALK
 You don't have Java 1.5 installed. This is needed for the 3D Go game to run.
@@ -47,6 +78,82 @@ END_OF_BALK
   java -version
 }
 
+#
+#	Search for a Java3D installation and set the variables J3D_PATH and
+#	J3D_LIBPATH acodingly. If they aren't yet, they will be written to the
+#	config file.
+#	If more than one instance of Java3D is found, check whether the variable
+#	num_installed_j3d is set. This variable picks the xth installation out of
+#	the list of installed Java3Ds (beginning with 1).
+#	If no Java3D is found, or if there are multiple instances without a
+#	num_installed_j3d defined, abort.
+#
+function checkj3d () {
+	test x${J3D_PATH} != x && return
+
+	J3D_LOCATION=$($LOCATE_COMMAND j3dcore.jar)
+	J3D_INSTALLATIONS=$(echo ${J3D_LOCATION} | wc -w)
+	
+	echo ${J3D_INSTALLATIONS} Java3D installation\(s\) found
+
+	if test ${J3D_INSTALLATIONS} -eq 0; then
+		noj3d
+	elif test ${J3D_INSTALLATIONS} -gt 1; then
+		echo ${CLASSPATH} | grep j3dcore.jar > /dev/null 2>&1 || \
+			test ${num_installed_j3d} || \
+				toomanyj3d
+	fi
+
+	if test ${num_installed_j3d}; then 
+		J3D_PATH=$(dirname $(echo ${J3D_LOCATION} | cut -d ' ' -f ${num_installed_j3d}))
+	else
+		J3D_PATH=$(dirname $(echo ${J3D_LOCATION} | cut -d ' ' -f 1))
+	fi
+	
+	J3D_LIBS=$($LOCATE_COMMAND libj3dcore-ogl.so)
+	J3D_INSTALLATIONS=$(echo ${J3D_LIBS} | wc -w)
+
+	if test ${J3D_INSTALLATIONS} -eq 0; then
+		noj3d
+	elif test ${J3D_INSTALLATIONS} -gt 1; then
+		test ${num_installed_j3d} || toomanyj3d
+	fi
+
+	if test ${num_installed_j3d}; then 
+		J3D_LIBPATH=$(dirname $(echo ${J3D_LIBS} | cut -d ' ' -f ${num_installed_j3d}))
+	else
+		J3D_LIBPATH=$(dirname $(echo ${J3D_LIBS} | cut -d ' ' -f 1))
+	fi
+
+	echo "J3D_PATH=${J3D_PATH}" >> "${CONFIG_FILE}"
+	echo "J3D_LIBPATH=${J3D_LIBPATH}" >> "${CONFIG_FILE}"
+}
+
+#
+#	find the GoGrid jar file and set the variable GOGRID_JARPATH. If it isn't 
+#	yet, it will be written to the config file.
+#
+function checkjar () {
+	test x${GOGRID_JARPATH} != x && test -f ${GOGRID_JARPATH} && return	
+
+	if test -f ./"${GOGRID_JARNAME}"; then
+		GOGRID_JARPATH="$(pwd)/${GOGRID_JARNAME}"
+	else 
+		GOGRID_JARPATH=$($LOCATE_COMMAND ${GOGRID_JARNAME})
+		GOGRID_INSTALLATIONS=$(echo ${GOGRID_JARPATH} | wc -w)
+		if test ${GOGRID_INSTALLATIONS} -eq 0; then
+			nogogrid
+		elif test ${GOGRID_INSTALLATIONS} -gt 1; then
+			toomanygogrid
+		fi
+	fi
+	
+	echo "GOGRID_JARPATH=${GOGRID_JARPATH}" >> "${CONFIG_FILE}"
+}
+
+#
+#	complain that Java3D is not installed
+#
 function noj3d() {
 	cat << END_OF_BALK
 Java3D is not installed on your system or could not be found.
@@ -90,28 +197,35 @@ END_OF_BALK2
 	exit 1
 }
 
-function checkj3d () {
-	test x${J3D_PATH} != x && return
-
-	J3D_LOCATION=$(locate j3dcore.jar)
-	J3D_INSTALLATIONS=$(echo ${J3D_LOCATION} | wc -w)
-	
-	echo ${J3D_INSTALLATIONS} Java3D installation\(s\) found
-
-	J3D_PATH=$(dirname $(echo ${J3D_LOCATION} | cut -d ' ' -f ${num_installed_j3d}))
-	J3D_LIBPATH=$(dirname $(locate libj3dcore-ogl.so))
-
-	if test ${J3D_INSTALLATIONS} -eq 0; then
-		noj3d
-	elif test ${J3D_INSTALLATIONS} -gt 1; then
-		echo ${CLASSPATH} | grep j3dcore.jar > /dev/null 2>&1 || \
-			toomanyj3d
-	fi
-}
-
 function j3dincomplete () {
 	echo "Java3D seems to be incompletely installed: ${1} is not present in"
 	echo ${J3D_PATH}
+	exit 1
+}
+
+function nogogrid () {
+	cat << END_OF_BALK3
+3D-Go is apparently incompletely installed on your system - the JAR file,
+${GOGRID_JARNAME}, could not be found.
+
+Please download a complete installation from 
+  http://sourceforge.net/project/showfiles.php?group_id=39112
+END_OF_BALK3
+
+	exit 1
+}
+
+function toomanygogrid () {
+	cat << END_OF_BALK4
+There is more than one instance of ${GOGRID_JARNAME} on your system. I can't 
+automatically determine which one to use.
+
+Please tell the startup script the path to the relevant ${GOGRID_JARNAME}, either
+by setting the environment variable GOGRID_JARPATH before calling the script,
+or by editing the config file, ${CONFIG_FILE} and adding a line like
+GOGRID_JARPATH=/path/to/correct/${GOGRID_JARNAME}
+END_OF_BALK4
+		
 	exit 1
 }
 
@@ -127,20 +241,22 @@ function addtoclasspath () {
   fi
 }
 
+mkdir -p "${CONFIG_DIR}"
+
 checkjvm
 
 checkj3d
 
-# check whether Java3D is in the CLASSPATH
-echo ${CLASSPATH} | grep j3dcore.jar > /dev/null 2>&1
+checkjar
 
-if test $? -ne 0; then
-	CLASSPATH=${CLASSPATH}:${J3D_PATH}/j3dcore.jar
-fi
+for jarfile in j3dcore.jar j3dutils.jar vecmath.jar; do
+	# check whether Java3D is in the CLASSPATH
+	echo ${CLASSPATH} | grep ${jarfile} > /dev/null 2>&1
+	if test $? -ne 0; then
+		CLASSPATH=${CLASSPATH}:${J3D_PATH}/${jarfile}
+	fi
+done
 
-addtoclasspath j3dutils.jar 
-addtoclasspath vecmath.jar
-
-CLASSPATH=${CLASSPATH}:GoGrid.jar
+CLASSPATH=${CLASSPATH}:${GOGRID_JARPATH}
 
 java ${EXTRA_JVM_ARGS} -Djava.library.path=${J3D_LIBPATH} -cp ${CLASSPATH} Go3DClient $@ 
