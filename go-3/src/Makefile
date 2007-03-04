@@ -51,10 +51,10 @@ help:
 	@echo "server	   -  compile the server"
 	@echo "client	   -  compile the client"
 	@echo "archive     -  pack the current sources into $(ARCHIVE)"
-	@echo "jar	   -  nyi"
+	@echo "jar	  	   -  nyi"
 	@echo "help        -  nyi"
 	@echo "javadoc	   -  generate javadoc documentation under directory JavaDoc"
-	@echo "listing	   -  generate PDF file for GoGrid classes"
+	@echo "listing	   -  generate PDF file for GoGrid source code"
 	@echo "clean       -  remove   backup  files  and  corefiles"
 	@echo "distclean   -  remove   all  meta- and  object  files"
 
@@ -91,5 +91,5 @@ client: $(CLIENT_SOURCES)
 all: server client
 
 listing:
-	$(A2PS) -o Thunen.ps -gE -l 110 *.java
-	ps2pdf13 Thunen.ps Thunen.pdf && rm Thunen.ps
+	$(A2PS) -o GoGrid.ps -gE -l 110 *.java
+	ps2pdf13 GoGrid.ps GoGrid.pdf && rm GoGrid.ps
