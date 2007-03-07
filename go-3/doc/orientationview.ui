@@ -1,0 +1,234 @@
+<ui version="4.0" >
+ <class>Form</class>
+ <widget class="QWidget" name="Form" >
+  <property name="geometry" >
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>330</width>
+    <height>271</height>
+   </rect>
+  </property>
+  <property name="windowTitle" >
+   <string>Form</string>
+  </property>
+  <widget class="QLabel" name="label_4" >
+   <property name="geometry" >
+    <rect>
+     <x>10</x>
+     <y>150</y>
+     <width>58</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>look_at x</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="horizontalSlider_4" >
+   <property name="geometry" >
+    <rect>
+     <x>80</x>
+     <y>150</y>
+     <width>160</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="orientation" >
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="doubleSpinBox" >
+   <property name="geometry" >
+    <rect>
+     <x>250</x>
+     <y>140</y>
+     <width>62</width>
+     <height>33</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_5" >
+   <property name="geometry" >
+    <rect>
+     <x>10</x>
+     <y>190</y>
+     <width>58</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>look_at y</string>
+   </property>
+  </widget>
+  <widget class="QSlider" name="horizontalSlider_5" >
+   <property name="geometry" >
+    <rect>
+     <x>80</x>
+     <y>190</y>
+     <width>160</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="orientation" >
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="doubleSpinBox_2" >
+   <property name="geometry" >
+    <rect>
+     <x>250</x>
+     <y>180</y>
+     <width>62</width>
+     <height>33</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QSlider" name="horizontalSlider_6" >
+   <property name="geometry" >
+    <rect>
+     <x>80</x>
+     <y>230</y>
+     <width>160</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="orientation" >
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QDoubleSpinBox" name="doubleSpinBox_3" >
+   <property name="geometry" >
+    <rect>
+     <x>250</x>
+     <y>220</y>
+     <width>62</width>
+     <height>33</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_6" >
+   <property name="geometry" >
+    <rect>
+     <x>10</x>
+     <y>230</y>
+     <width>58</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>look_at z</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_3" >
+   <property name="geometry" >
+    <rect>
+     <x>250</x>
+     <y>90</y>
+     <width>59</width>
+     <height>33</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox_2" >
+   <property name="geometry" >
+    <rect>
+     <x>250</x>
+     <y>50</y>
+     <width>59</width>
+     <height>33</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="spinBox" >
+   <property name="geometry" >
+    <rect>
+     <x>250</x>
+     <y>10</y>
+     <width>59</width>
+     <height>33</height>
+    </rect>
+   </property>
+  </widget>
+  <widget class="QSlider" name="horizontalSlider_2" >
+   <property name="geometry" >
+    <rect>
+     <x>80</x>
+     <y>60</y>
+     <width>160</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="orientation" >
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QSlider" name="horizontalSlider" >
+   <property name="geometry" >
+    <rect>
+     <x>80</x>
+     <y>20</y>
+     <width>160</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="orientation" >
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QSlider" name="horizontalSlider_3" >
+   <property name="geometry" >
+    <rect>
+     <x>80</x>
+     <y>90</y>
+     <width>160</width>
+     <height>24</height>
+    </rect>
+   </property>
+   <property name="orientation" >
+    <enum>Qt::Horizontal</enum>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label" >
+   <property name="geometry" >
+    <rect>
+     <x>10</x>
+     <y>20</y>
+     <width>58</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>rotx</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_2" >
+   <property name="geometry" >
+    <rect>
+     <x>10</x>
+     <y>60</y>
+     <width>58</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>roty</string>
+   </property>
+  </widget>
+  <widget class="QLabel" name="label_3" >
+   <property name="geometry" >
+    <rect>
+     <x>10</x>
+     <y>90</y>
+     <width>58</width>
+     <height>17</height>
+    </rect>
+   </property>
+   <property name="text" >
+    <string>rotz</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
