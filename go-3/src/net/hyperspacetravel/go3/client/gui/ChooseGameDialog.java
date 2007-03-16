@@ -126,6 +126,7 @@ public class ChooseGameDialog extends JDialog {
 		}
 	}
 
+	//	UI generation methods
 
 	/**
 	 * @return the tabbedPane
@@ -148,6 +149,8 @@ public class ChooseGameDialog extends JDialog {
 		return tabbedPane;
 	}
 
+	//	methods building the tabs
+	
 	private JPanel getPendingListContentPane() {
 		if (pendingListContentPane == null) {
 			pendingListContentPane = new JPanel();
@@ -164,6 +167,22 @@ public class ChooseGameDialog extends JDialog {
 		return pendingListContentPane;
 	}
 
+	private JPanel getNewGameContentPane() {
+		if (newGameContentPane == null) {
+			newGameContentPane = new JPanel();
+			newGameContentPane.setName("newGameContentPane");
+			newGameContentPane.setLayout(
+					new javax.swing.BoxLayout(newGameContentPane,
+							javax.swing.BoxLayout.Y_AXIS));
+
+			newGameContentPane.add(getNewGameLabel(), null);
+//			newGameContentPane.add(getPendingList(), null);
+//			
+//			newGameContentPane.add(getConnectButton());
+		}
+		return newGameContentPane;
+	}
+	
 	private JPanel getPlayersListContentPane() {
 		if (playersListContentPane == null) {
 			playersListContentPane = new JPanel();
@@ -196,68 +215,13 @@ public class ChooseGameDialog extends JDialog {
 		return gamesListContentPane;
 	}
 
-	private JPanel getNewGameContentPane() {
-		if (newGameContentPane == null) {
-			newGameContentPane = new JPanel();
-			newGameContentPane.setName("newGameContentPane");
-			newGameContentPane.setLayout(
-					new javax.swing.BoxLayout(newGameContentPane,
-							javax.swing.BoxLayout.Y_AXIS));
-
-			newGameContentPane.add(getNewGameLabel(), null);
-//			newGameContentPane.add(getPendingList(), null);
-//			
-//			newGameContentPane.add(getConnectButton());
-		}
-		return newGameContentPane;
-	}
-	/**
-	 * @return Returns the gamesListLabel.
-	 */
-	private JLabel getGamesListLabel() {
-		if (gamesListLabel == null) {
-			gamesListLabel = new javax.swing.JLabel();
-			gamesListLabel.setName("gamesListLabel");
-			gamesListLabel.setText("Choose a Game");
-			gamesListLabel.setToolTipText("The games in the list are currently " +
-					"running on the server. Choose one to watch.");
-		}
-		return gamesListLabel;
-	}
-
-	/**
-	 * @return Returns the newGameLabel.
-	 */
-	private JLabel getNewGameLabel() {
-		if (newGameLabel == null) {
-			newGameLabel = new javax.swing.JLabel();
-			newGameLabel.setName("newGameLabel");
-			newGameLabel.setText("Start a new Game");
-			newGameLabel.setToolTipText("Enter the size of the board you want " +
-					"to play on in this form.");
-		}
-		return newGameLabel;
-	}
-
-	/**
-	 * @return Returns the playersListLabel.
-	 */
-	private JLabel getPlayersListLabel() {
-		if (playersListLabel == null) {
-			playersListLabel = new javax.swing.JLabel();
-			playersListLabel.setName("playersListLabel");
-			playersListLabel.setText("Players currently connected");
-			playersListLabel.setToolTipText("These players are currently "+
-					"connected to the server. Choose one to propose a game.");
-		}
-		return playersListLabel;
-	}
-
+	//	methods building the "pending list" view
+	
 	/**
 	 * Return the pendingListLabel property value.
 	 * @return javax.swing.JLabel
 	 */
-	private javax.swing.JLabel getPendingListLabel() {
+	private JLabel getPendingListLabel() {
 		if (pendingListLabel == null) {
 			pendingListLabel = new javax.swing.JLabel();
 			pendingListLabel.setName("pendingListLabel");
@@ -268,7 +232,7 @@ public class ChooseGameDialog extends JDialog {
 		}
 		return pendingListLabel;
 	}
-	
+
 	private JScrollPane getPendingList() {
 		if (pendingList == null) {
 			model = new DefaultListModel();
@@ -289,10 +253,10 @@ public class ChooseGameDialog extends JDialog {
 	}
 	
 	/**
-	 * Return the JButton1 property value.
+	 * Return the connectButton property value.
 	 * @return javax.swing.JButton
 	 */
-	private javax.swing.JButton getConnectButton() {
+	private JButton getConnectButton() {
 		if (connectButton == null) {
 			connectButton = new javax.swing.JButton();
 			connectButton.setName("connectButton");
@@ -318,6 +282,56 @@ public class ChooseGameDialog extends JDialog {
 		return connectButton;
 	}
 
+	//	methods building the "new game" view
+
+	/**
+	 * @return Returns the newGameLabel.
+	 */
+	private JLabel getNewGameLabel() {
+		if (newGameLabel == null) {
+			newGameLabel = new javax.swing.JLabel();
+			newGameLabel.setName("newGameLabel");
+			newGameLabel.setText("Start a new Game");
+			newGameLabel.setToolTipText("Enter the size of the board you want " +
+					"to play on in this form.");
+		}
+		return newGameLabel;
+	}
+
+	//	methods building the "players list" view
+	
+	/**
+	 * @return Returns the playersListLabel.
+	 */
+	private JLabel getPlayersListLabel() {
+		if (playersListLabel == null) {
+			playersListLabel = new javax.swing.JLabel();
+			playersListLabel.setName("playersListLabel");
+			playersListLabel.setText("Players currently connected");
+			playersListLabel.setToolTipText("These players are currently "+
+					"connected to the server. Choose one to propose a game.");
+		}
+		return playersListLabel;
+	}
+
+	//	methods building the "games list" view
+
+	/**
+	 * @return Returns the gamesListLabel.
+	 */
+	private JLabel getGamesListLabel() {
+		if (gamesListLabel == null) {
+			gamesListLabel = new javax.swing.JLabel();
+			gamesListLabel.setName("gamesListLabel");
+			gamesListLabel.setText("Choose a Game");
+			gamesListLabel.setToolTipText("The games in the list are currently " +
+					"running on the server. Choose one to watch.");
+		}
+		return gamesListLabel;
+	}
+
+
+	
 	/**
 	 * This method initializes this
 	 * 
@@ -332,27 +346,35 @@ public class ChooseGameDialog extends JDialog {
 		this.setContentPane(getTabbedPane());
 	}
 	
-	private ConnectionData connectionData;
-	private ConnectedPlayer player;
 	
-	private JPanel pendingListContentPane = null;
-	private JPanel playersListContentPane = null;
-	private JPanel gamesListContentPane = null;
-	private JPanel newGameContentPane = null;
-	
+	//	root level container
 	private JTabbedPane tabbedPane = null;
 
+	//	containers inside tabs
+	private JPanel pendingListContentPane = null;
+	private JPanel newGameContentPane = null;
+	private JPanel playersListContentPane = null;
+	private JPanel gamesListContentPane = null;
+	
+	//	pending list elements
 	private JLabel pendingListLabel = null;
 	DefaultListModel model = null;
 	private JList pendingList = null;
 	private JScrollPane listScroller;
+	private JButton connectButton = null;
 	
-	private JLabel gamesListLabel = null;
+	//	new game elements
 	private JLabel newGameLabel = null;
+	
+	//	players list elements
 	private JLabel playersListLabel = null;
 	
-	
-	private JButton connectButton = null;
+	//	games list elements
+	private JLabel gamesListLabel = null;		
+
+	//	state members
+	private ConnectionData connectionData;
+	private ConnectedPlayer player;
 
 	private boolean stopped = false;
 	
