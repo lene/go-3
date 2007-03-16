@@ -17,6 +17,7 @@ import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
+import javax.swing.JComboBox;
 import javax.swing.JSlider;
 import javax.swing.JDialog;
 import javax.swing.JCheckBox;
@@ -35,7 +36,7 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	private JPanel contentPane = null;
 
 	private JLabel serverHostLabel = null;
-	private JTextField serverHostTextField = null;
+	private JComboBox serverHostComboBox = null;
 
 	private JLabel serverPortLabel = null;
 	private JTextField serverPortTextField = null;
@@ -81,7 +82,7 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 							javax.swing.BoxLayout.Y_AXIS));
 
 			contentPane.add(getJLabel1(), null);
-			contentPane.add(getJTextField1(), null);
+			contentPane.add(getJComboBox1(), null);
 			contentPane.add(getJLabel2());
 			contentPane.add(getJTextField2(), null);
 			contentPane.add(getJLabel3());
@@ -113,19 +114,27 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	 * Return the JTextField1 property value.
 	 * @return javax.swing.JTextField
 	 */
-	private javax.swing.JTextField getJTextField1() {
-		if (serverHostTextField == null) {
-			serverHostTextField = new javax.swing.JTextField();
-			serverHostTextField.setName("serverHostTextField");
-			serverHostTextField.setText(this.serverHost);
-			serverHostTextField.addKeyListener(new java.awt.event.KeyAdapter() {
+	private javax.swing.JComboBox getJComboBox1() {
+		if (serverHostComboBox == null) {
+			String[] presetHosts = { "localhost", "hyperspace-travel.de"};
+			serverHostComboBox = new javax.swing.JComboBox(presetHosts);
+			serverHostComboBox.setName("serverHostTextField");
+			serverHostComboBox.setEditable(true);
+			serverHostComboBox.addActionListener(
+				new java.awt.event.ActionListener() {
+					public void actionPerformed(java.awt.event.ActionEvent e) {
+				        JComboBox cb = (JComboBox)e.getSource();
+				        connectionData.setServerHost((String)cb.getSelectedItem());	
+				    }						
+				});
+			serverHostComboBox.addKeyListener(new java.awt.event.KeyAdapter() {
 				public void keyTyped(java.awt.event.KeyEvent e) {
-					connectionData.setServerHost(serverHostTextField.getText());					
+					connectionData.setServerHost((String)serverHostComboBox.getSelectedItem());					
 				}
 			});
-			serverHostTextField.setToolTipText("The address of the server.");
+			serverHostComboBox.setToolTipText("The address of the server.");
 		}
-		return serverHostTextField;
+		return serverHostComboBox;
 	}
 
 	/**
@@ -227,7 +236,7 @@ public class ConnectionDialog extends JDialog implements ItemListener {
     		sizeSlider.setEnabled(startGameCheckBox.isSelected());
     	}
     }
-    
+
 	/**
 	 * Return the JLabel2 property value.
 	 * @return javax.swing.JLabel

@@ -2,8 +2,8 @@
 <classpath>
 	<classpathentry excluding="net/hyperspacetravel/go3/client/gui/J3DApp.java|net/hyperspacetravel/go3/client/gui/CursorBehavior.java|net/hyperspacetravel/go3/client/gui/SettingsDialog.java|net/hyperspacetravel/go3/client/gui/StartupDialog.java" path="src" kind="src"/>
 	<classpathentry path="org.eclipse.jdt.launching.JRE_CONTAINER" kind="con"/>
-	<classpathentry path="/usr/share/sun-java3d-bin/lib/j3dcore.jar" kind="lib"/>
-	<classpathentry path="/usr/share/sun-java3d-bin/lib/j3dutils.jar" kind="lib"/>
-	<classpathentry path="/usr/share/sun-java3d-bin/lib/vecmath.jar" kind="lib"/>
+	<classpathentry path="/usr/share/sun-java3d-bin/lib/j3dcore.jar" exported="true" kind="lib"/>
+	<classpathentry path="/usr/share/sun-java3d-bin/lib/j3dutils.jar" exported="true" kind="lib"/>
+	<classpathentry path="/usr/share/sun-java3d-bin/lib/vecmath.jar" exported="true" kind="lib"/>
 	<classpathentry path="bin" kind="output"/>
 </classpath>
