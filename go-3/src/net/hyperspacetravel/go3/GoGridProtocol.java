@@ -65,7 +65,7 @@ connect: while (!stopMe) {					//	outer loop to catch disconnects
 	/** parse a line of input and call the corresponding action.			  */
 	final void processInput (String input) {
 
-		Utility.debug ("\""+input+"\"");
+		if (!input.startsWith ("game list")) Utility.debug ("\""+input+"\"");
 
 		//	requests to be made before the user is authenticated do not go here,
 		//	because the Protocol object is not yet established then.

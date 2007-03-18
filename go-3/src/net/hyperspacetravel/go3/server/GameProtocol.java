@@ -216,7 +216,7 @@ public class GameProtocol extends GoGridProtocol {
 	}
 
 	protected void gameList (String input) {
-		assert precondition (false, "joinGame() should not be used in this class!");
+//		assert precondition (false, "joinGame() should not be used in this class!");
 	}
 
 	protected void joinGame (String input) {

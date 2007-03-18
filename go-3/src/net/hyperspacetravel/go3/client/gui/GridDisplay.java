@@ -2,7 +2,6 @@ package net.hyperspacetravel.go3.client.gui;
 //
 
 import com.sun.j3d.utils.universe.*;
-import com.sun.j3d.utils.applet.MainFrame;
 import com.sun.j3d.utils.behaviors.mouse.*;
 import com.sun.j3d.utils.picking.PickTool;
 
@@ -26,11 +25,7 @@ import net.hyperspacetravel.go3.ConnectedPlayer;
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
 import net.hyperspacetravel.go3.GoGrid;
-import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.client.GoGridClient;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 
 /**
@@ -61,16 +56,14 @@ public class GridDisplay extends JApplet implements ActionListener {
 		
 		assert GameBase.precondition ((connection.getBoardSize() >= GameBase.MIN_GRID_SIZE && connection.getBoardSize() <= GameBase.MAX_GRID_SIZE), 
 				"Board size must lie between "+GameBase.MIN_GRID_SIZE+" and "+GameBase.MAX_GRID_SIZE);		
-		assert GameBase.precondition ((connection.getServerPort() >= 1024 && connection.getServerPort() < 65535), 
+		assert GameBase.precondition ((ConnectionData.getServerPort() >= 1024 && ConnectionData.getServerPort() < 65535), 
 				"Port must lie between 1024 and 65535");
 
-		Utility.setDebugMode (GameBase.DEBUG);
-		
 		setHostname (connection.getServerHost());
 		setBoardSize (connection.getBoardSize());
 		
 		G = new GoGridClient (connection.getBoardSize(), 
-				connection.getServerHost(), connection.getServerPort(), 
+				connection.getServerHost(), ConnectionData.getServerPort(), 
 				connection.getUsername(), this);
 
 		setupDisplay();
@@ -83,11 +76,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 		
 		assert GameBase.precondition ((connection.getBoardSize() >= GameBase.MIN_GRID_SIZE && connection.getBoardSize() <= GameBase.MAX_GRID_SIZE), 
 				"Board size must lie between "+GameBase.MIN_GRID_SIZE+" and "+GameBase.MAX_GRID_SIZE);		
-		assert GameBase.precondition ((connection.getServerPort() >= 1024 && connection.getServerPort() < 65535), 
+		assert GameBase.precondition ((ConnectionData.getServerPort() >= 1024 && ConnectionData.getServerPort() < 65535), 
 				"Port must lie between 1024 and 65535");
 
-		Utility.setDebugMode (GameBase.DEBUG);
-		
 		G = new GoGridClient (connection.getBoardSize(), player, this);
 
 		setBoardSize (connection.getBoardSize());
@@ -889,4 +880,5 @@ public class GridDisplay extends JApplet implements ActionListener {
 	static private float MOUSE_ROTATE_FACTOR = 0.01f; 
 	static private float MOUSE_TRANSLATE_FACTOR = 0.01f; 
 	
+	private static final long serialVersionUID = -8907188688640184834L;
 };

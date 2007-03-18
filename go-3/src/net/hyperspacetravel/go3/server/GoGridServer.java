@@ -21,9 +21,7 @@ import net.hyperspacetravel.go3.Utility;
  */
 class GoGridServer extends GameBase {
 	
-	public GoGridServer () {
-		Utility.setDebugMode (DEBUG);
-	}
+	public GoGridServer () { }
 	
 	/** set up server socket and start listening */
 	public void start () {
@@ -136,12 +134,10 @@ class GoGridServer extends GameBase {
 	/**	list of current <tt>Game</tt>s										  */
 	protected Map<String, Game> games = new HashMap<String, Game> ();
 	
-	/** auxiliary object to exchange data with ConnectionDialog				  */
-	private static ConnectionData connectionData = new ConnectionData ();
-
 	protected static void help () {
 		System.out.println ("usage: java GoGridServer" +
-				" [-p|--server-port serverport]\n");
+				" [-p|--server-port serverport]\n" +
+				" [--debug]\n");
 	}
 
 	protected static void parse (String [] args) {
@@ -149,10 +145,13 @@ class GoGridServer extends GameBase {
 		for (int i = 0; i < args.length; i++) {
 			if (args[i].equals("-p") || args[i].equals("--server-port")) {
 				try {
-					connectionData.setServerPort(Integer.parseInt(args[++i]));
+					ConnectionData.setServerPort(Integer.parseInt(args[++i]));
 				} catch (NumberFormatException e) {
 					help ();
 				}
+			}
+			if (args[i].equals("--debug")) {
+				Utility.setDebugMode(true);
 			}
 			else help();
 		}
@@ -175,7 +174,7 @@ class GoGridServer extends GameBase {
 		parse (args);		
 		
 		GoGridServer server = new GoGridServer ();
-		server.setServerPort(connectionData.getServerPort());
+		GoGridServer.setServerPort(ConnectionData.getServerPort());
 		server.start();
 	}
 }

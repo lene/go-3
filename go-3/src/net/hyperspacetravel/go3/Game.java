@@ -30,8 +30,6 @@ public class Game extends GoGrid {
 	 */
 	public Game(int size, ServerSocket serverSocket) {
 		super (size);
-		
-		Utility.setDebugMode (DEBUG);
 
 		this.serverSocket = serverSocket;
 
@@ -49,8 +47,6 @@ public class Game extends GoGrid {
 		assert precondition ((serverSocket != null), 
 				"Server Socket must not be null, or nothing makes sense anymore");
 
-		Utility.setDebugMode (DEBUG);
-		
 		this.serverSocket = serverSocket;
 				
 		setupBoard ();                  //  initialize board structure
@@ -103,6 +99,7 @@ public class Game extends GoGrid {
 		ConnectedPlayer player = players.get(currentPlayer);
 		Utility.debug ("current player is now "+player.toString());
 
+		//	TODO handle disconnected players
 //		if (player.isConnected()) {
 			//	signal readiness to set to player
 			player.getProtocol().awaitMove ();

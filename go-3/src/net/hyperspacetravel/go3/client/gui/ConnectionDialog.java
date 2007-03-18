@@ -11,23 +11,18 @@ package net.hyperspacetravel.go3.client.gui;
  @author helge
 */
 
-import java.awt.event.*;
-
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
 import javax.swing.JTextField;
 import javax.swing.JComboBox;
-import javax.swing.JSlider;
 import javax.swing.JDialog;
-import javax.swing.JCheckBox;
 import javax.swing.BoxLayout;
-import javax.swing.event.ChangeListener;
-import javax.swing.event.ChangeEvent;
 import javax.swing.WindowConstants;
 
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
+import net.hyperspacetravel.go3.Utility;
 
 public class ConnectionDialog extends JDialog {
 
@@ -209,7 +204,7 @@ public class ConnectionDialog extends JDialog {
 			connectButton.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
 					if (e.getActionCommand().equals (connectButton.getText())) {
-						System.out.println("actionPerformed(): "+e.getActionCommand()); // TODO Auto-generated Event stub actionPerformed()
+						Utility.debug("actionPerformed(): "+e.getActionCommand()); // TODO Auto-generated Event stub actionPerformed()
 						setVisible (false);
 						
 					}

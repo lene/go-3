@@ -31,9 +31,9 @@ public class Go3DClient {
 		try {
 			player.out.println(connectionData.getUsername());
 			String ack = player.in.readLine();
-			System.out.println(ack);
+			Utility.debug("Server answer to connection request: "+ack);
 			if (!ack.equals("ok")) {
-				Utility.debug(ack);
+				Utility.debug("Bad answer: "+ack);
 				System.exit(0); //	TODO decent error handling
 			}
 		} catch (IOException e) { //	TODO decent error handling
@@ -63,7 +63,8 @@ public class Go3DClient {
 						+ "                   [-m|--auto-moves automoves]\n"
 						+ "                   [-u|--user-id username]\n"
 						+ "                   [-h|--server-host serverhost]\n"
-						+ "                   [-p|--server-port serverport]\n");
+						+ "                   [-p|--server-port serverport]\n"
+						+ "                   [--debug]\n");
 	}
 
 	/**
@@ -106,6 +107,9 @@ public class Go3DClient {
 			}
 			if (args[i].equals("-u") || args[i].equals("--user-id")) {
 				connectionData.setUsername(args[++i]);
+			}
+			if (args[i].equals("--debug")) {
+				Utility.setDebugMode(true);
 			}
 		}
 	}

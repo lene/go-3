@@ -2,10 +2,6 @@ package net.hyperspacetravel.go3;
 
 
 public class Utility {
-
-	private static boolean DEBUG = true;
-	public static void setDebugMode (boolean debug) { DEBUG = debug; }
-	public static boolean getDebugMode () { return DEBUG; }
 	
 	public static String getArg (String input, int field) {
 		String [] fields = input.trim ().split ("\\s");         //  split input string at whitespace 
@@ -47,6 +43,7 @@ public class Utility {
 	}
 	
 	public static void warning (String w) { System.err.println ("warning: "+w); }
+	//	TODO: open a dialog window displaying the message
 	
 	
 	/**
@@ -67,6 +64,11 @@ public class Utility {
 					st[i].getClassName ()+"."+
 					st[i].getMethodName ()+" (), line "+
 					st[i].getLineNumber ());
+		//	TODO: open a dialog window displaying the message
 	}
+
+	private static boolean DEBUG = false;
+	public static void setDebugMode (boolean debug) { DEBUG = debug; }
+	public static boolean getDebugMode () { return DEBUG; }
 
 }

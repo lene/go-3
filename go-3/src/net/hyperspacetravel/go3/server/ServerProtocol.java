@@ -118,8 +118,9 @@ class ServerProtocol extends GoGridProtocol {
 	protected void gameList (String input) {
 		//	no debug output in this function, as it is called every second or so
 		//	from the client before it starts its game
-//		Utility.debug(input);
+		//  Utility.debug(input);
 		
+		out.println("game list ");	//	announce game list to follow
 		Iterator<String> i = server.games.keySet().iterator();
 		while(i.hasNext()) {
 			String gameName = i.next(); 
@@ -127,11 +128,10 @@ class ServerProtocol extends GoGridProtocol {
 				out.println(gameName+" "
 						+server.games.get(gameName).getBoardSize()+" "
 						+server.players.size());
-//				Utility.debug(gameName);
+				if (false) Utility.debug(gameName);
 			}
 		}
-		out.println("game list");
-//		Utility.debug("game list");
+		out.println("end game list");	//	conclude game list
 	}
 	
 	protected void joinGame (String input) {

@@ -11,10 +11,9 @@ public class GameBase {
 	
 	static protected final String VERSION = "0.4.0";
 	static protected final String MAINTAINER = "Helge Preuss <helge.preuss@gmx.net>";
-	static public final boolean DEBUG = true; 
+//	static public final boolean DEBUG = false; 
 
-	protected static final String DEFAULT_SERVER_HOST = (DEBUG? "localhost":
-														 "hyperspace.travel.de");
+	protected static final String DEFAULT_SERVER_HOST = "localhost";
 	protected static final int DEFAULT_SERVER_PORT = 6666;
 	
 	protected static final int SERVER_MAX_PLAYERS = 100;

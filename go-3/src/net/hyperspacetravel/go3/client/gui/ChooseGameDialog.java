@@ -10,7 +10,6 @@ import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.GameBase;
 
 
-import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.util.*;
 
@@ -56,11 +55,18 @@ public class ChooseGameDialog extends JDialog {
 		player.out.println("game list");
 		ArrayList<GameData> games = new ArrayList<GameData>();
 		
+		String input = "";
 		try {
-			String input = "";
-			while (!input.startsWith("game list")) {
+			player.in.mark(1024);
+			input = player.in.readLine();
+			if (!input.startsWith("game list")) {
+				player.in.reset();
+				return games;
+			}
+			input = "";
+			while (!input.startsWith("end game list")) {
 				input = player.in.readLine();
-				if (!input.startsWith("game list")) 
+				if (!input.startsWith("end game list")) 
 					games.add(new GameData(input));
 			}
 			Collections.sort(games);
@@ -405,7 +411,6 @@ public class ChooseGameDialog extends JDialog {
 	
 	//	new game elements
 	private JLabel newGameLabel = null;
-	private JCheckBox startGameCheckBox = null;
 	private JLabel sizeLabel = null;
 	private JSlider sizeSlider = null;
 	private JButton startButton = null;
@@ -428,7 +433,7 @@ public class ChooseGameDialog extends JDialog {
 	private boolean stopped = false;
 	
 	/**	milliseconds to wait between updates of the game list */
-	static final int UPDATE_PERIOD = 1000;
+	static final int UPDATE_PERIOD = 2000;
 	
 	private static final long serialVersionUID = 7199599938553022819L;
 
