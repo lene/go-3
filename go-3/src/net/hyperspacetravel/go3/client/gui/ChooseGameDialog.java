@@ -10,7 +10,7 @@ import net.hyperspacetravel.go3.Utility;
 
 import java.awt.event.ItemEvent;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.*;
 
 public class ChooseGameDialog extends JDialog {
 
@@ -19,7 +19,7 @@ public class ChooseGameDialog extends JDialog {
 	 */
 	private static final long serialVersionUID = 7199599938553022819L;
 
-	class GameData {
+	class GameData implements Comparable {
 		private String name;
 		private int size;
 		
@@ -31,6 +31,9 @@ public class ChooseGameDialog extends JDialog {
 			return ""+name+"("+size+"x"+size+"x"+size+")"; }
 		public String getName() { return name; }
 		public int getSize() { return size;	}
+		public int compareTo(Object arg0) {
+			return (toString().compareTo(arg0.toString()));
+		}
 	}
 	
 	class UpdateThread extends Thread {
@@ -66,6 +69,7 @@ public class ChooseGameDialog extends JDialog {
 				if (!input.startsWith("game list")) 
 					games.add(new GameData(input));
 			}
+			Collections.sort(games);
 		} 
 		catch (IOException e) { Utility.debug("IOException!"); }		//	TODO
 		catch (NumberFormatException e) { Utility.debug("NumberFormatException!"); }
@@ -79,54 +83,14 @@ public class ChooseGameDialog extends JDialog {
 	}
 	
 	void updateGameList () {
-/* the sophisticated way to update the game list does not work.
- * model.addElement() / model.remove() and subsequent 
- * pendingList.ensureIndexIsVisible(index) do not update the list (visibly).
- * thus, i have to replace the whole list. that works, at least, but has the
- * downside that the current selection gets lost. 
- * alternative would be not to update at all. choose your poison.			  */
-		
 		ArrayList<GameData> tempData = getGames();
 		if (tempData.equals(gameData)) return;				//	nothing changed
 		
-		if (false) {
-		//	first check the current game list, whether there are games not yet in the ListModel
-		for (int i = 0; i < tempData.size(); i++) {
-			GameData current = tempData.get(i);
-			Utility.debug(current.toString());
-			if (!model.contains(current)) {
-				int index = pendingList.getSelectedIndex(); //get selected index
-				Utility.debug(""+index);
-			    if (index == -1) { index = 0; }	 //no selection, insert at beginning
-			    else { index++; }                //add after the selected item
-				Utility.debug(""+index);
-//			    model.insertElementAt(current, index);
-			    model.addElement(current);
-			    pendingList.setSelectedIndex(index);
-			    pendingList.ensureIndexIsVisible(index);
-			}
-		}
-		
-		//	now check whether there are old data in the ListModel, which are not in the game list any more
-		for (int i = 0; i < model.getSize(); i++) {
-			GameData current = (GameData)model.getElementAt(i);
-			boolean found = false;
-			for (int j = 0; j < tempData.size(); j++) {
-				if (current.equals(tempData.get(j))) {
-					Utility.debug(current.toString());
-					found = true; break;
-				}
-			}
-			if (!found) {
-				model.remove(i);
-				pendingList.ensureIndexIsVisible(model.getSize());
-			}
-		}
-		return;
-		}
-		else {
-			pendingList.setListData(setGameList());
-		}
+		int index = pendingList.getSelectedIndex(); //get selected index
+		model.clear();
+		for (int i = 0; i < tempData.size(); i++) model.addElement(tempData.get(i));
+	    pendingList.setSelectedIndex(index);
+	    pendingList.ensureIndexIsVisible(index);
 	}
 
 	//	UI generation methods
@@ -240,18 +204,22 @@ public class ChooseGameDialog extends JDialog {
 	private JScrollPane getPendingList() {
 		if (pendingList == null) {
 			model = new DefaultListModel();
+			ArrayList<GameData> tempData = getGames();
+			for (int i = 0; i < tempData.size(); i++) {
+				model.addElement(tempData.get(i));
+			}
 			pendingList = new JList(model);
 
-	        pendingList.setSelectionMode(ListSelectionModel.SINGLE_INTERVAL_SELECTION);
+	        pendingList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 	        pendingList.setLayoutOrientation(JList.VERTICAL);
 	        pendingList.setVisibleRowCount(-1);
 
-	        pendingList.setListData(setGameList());
+//	        pendingList.setListData(setGameList());
 	        
 	        listScroller = new JScrollPane(pendingList);
 	        listScroller.setAlignmentX(LEFT_ALIGNMENT);
 	        
-//	        new UpdateThread (5000).start();
+	        new UpdateThread (5000).start();
 	    }
 		return listScroller;
 	}

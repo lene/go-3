@@ -28,8 +28,6 @@ import javax.swing.WindowConstants;
 
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
-//import net.hyperspacetravel.go3.Utility;
-
 
 public class ConnectionDialog extends JDialog {
 
@@ -46,24 +44,15 @@ public class ConnectionDialog extends JDialog {
 	private JLabel usernameLabel = null;
 	private JTextField usernameTextField = null;
 
-	private JCheckBox startGameCheckBox = null;
-	
-	private JLabel sizeLabel = null;
-	private JSlider sizeSlider = null;
-
 	private JButton connectButton = null;
 
-	private String serverHost = "";
 	private int serverPort = 6666;
 	private String username = "";
-	private int boardSize = 3;
 	private ConnectionData connectionData;
 	
 	public ConnectionDialog(ConnectionData c) {
 		super ();
 		this.connectionData = c;
-		this.boardSize = c.getBoardSize();
-		this.serverHost = c.getServerHost();
 		this.serverPort = ConnectionData.getServerPort();
 		this.username = c.getUsername();
 		

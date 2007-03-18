@@ -37,11 +37,12 @@ public class Utility {
 		if (DEBUG) {
 			Throwable t = new Throwable ();
 			StackTraceElement [] st = t.getStackTrace ();
-			System.out.println (
-					st[1].getClassName ()+"."+
-					st[1].getMethodName ()+" (), line "+
-					st[1].getLineNumber ()+": "+
-					d);
+			String message = st[1].getClassName ()+"."+
+				st[1].getMethodName ()+" (), line "+
+				st[1].getLineNumber ()+": "+
+				d; 
+			System.out.println (message);
+			//	TODO: open a dialog window displaying the message
 		}
 	}
 	
