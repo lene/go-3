@@ -28,7 +28,7 @@ import javax.swing.WindowConstants;
 
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
-import net.hyperspacetravel.go3.Utility;
+//import net.hyperspacetravel.go3.Utility;
 
 
 public class ConnectionDialog extends JDialog {
@@ -89,10 +89,6 @@ public class ConnectionDialog extends JDialog {
 			contentPane.add(getServerPortTextField(), null);
 			contentPane.add(getUsernameLabel());
 			contentPane.add(getUsernameTextField(), null);
-			contentPane.add(getStartGameCheckBox(), null);
-			contentPane.add(getBoardSizeLabel(), null);
-			contentPane.add(getBoardSizeSlider());
-			
 			contentPane.add(getConnectButton());
 		}
 		return contentPane;
@@ -213,80 +209,6 @@ public class ConnectionDialog extends JDialog {
 	}
 
 	/**
-	 * Return the startGameCheckBox property value.
-	 * @return JTextField
-	 */
-	private JCheckBox getStartGameCheckBox() {
-		if (startGameCheckBox == null) {
-			startGameCheckBox = new JCheckBox();
-			startGameCheckBox.setName("JCheckBox1");
-			startGameCheckBox.setText("Start new game");
-			startGameCheckBox.setSelected(false);
-			startGameCheckBox.addItemListener(new java.awt.event.ItemListener() {
-				public void itemStateChanged(ItemEvent e) {
-			    	Object source = e.getItemSelectable();
-			    	if (source == startGameCheckBox) {
-			    		connectionData.setStartGame(startGameCheckBox.isSelected());
-			    		sizeLabel.setEnabled(startGameCheckBox.isSelected());
-			    		sizeSlider.setEnabled(startGameCheckBox.isSelected());
-			    	}
-				}
-			});
-			startGameCheckBox.setToolTipText("If you want to start a new Game," +
-					" select this. If you want to join a game, leave it.");
-		}
-		return startGameCheckBox;
-	}
-
-	/**
-	 * Return the sizeLabel property value.
-	 * @return JLabel
-	 */
-	private JLabel getBoardSizeLabel() {
-		if (sizeLabel == null) {
-			sizeLabel = new JLabel();
-			sizeLabel.setName("JLabel4");
-			sizeLabel.setText("Board size: "+String.valueOf(this.boardSize)+"x"
-					+String.valueOf(this.boardSize)+"x"+String.valueOf(this.boardSize));
-			
-			sizeLabel.setToolTipText("The size of the board on which you want" +
-					" to play. This is not adjustable yet, you have to take" +
-					" whichever size the server offers you.");
-			sizeLabel.setEnabled (false);
-		}
-		return sizeLabel;
-	}
-
-	/**
-	 * Return the sizeSlider property value.
-	 * @return JSlider
-	 */
-	private JSlider getBoardSizeSlider() {
-		if (sizeSlider == null) {
-			sizeSlider = new JSlider();
-			sizeSlider.setName("JSlider1");
-			sizeSlider.setMinimum(3);
-			sizeSlider.setMaximum(25);
-			sizeSlider.setMinorTickSpacing(2);
-			sizeSlider.setValue(this.boardSize);
-			sizeSlider.addChangeListener(new ChangeListener() {
-				public void stateChanged(ChangeEvent e) {
-					String boardSizeString = String.valueOf(sizeSlider.getValue());
-					sizeLabel.setText("Board Size: "+boardSizeString+"x"
-							+boardSizeString+"x"+boardSizeString);
-					connectionData.setBoardSize(sizeSlider.getValue());
-				}
-			});
-			
-			sizeSlider.setToolTipText("The size of the board on which you want" +
-					" to play. This is not adjustable yet, you have to take" +
-					" whichever size the server offers you.");
-			sizeSlider.setEnabled(false);
-		}
-		return sizeSlider;
-	}
-
-	/**
 	 * Return the connectButton property value.
 	 * @return JButton
 	 */
@@ -317,7 +239,7 @@ public class ConnectionDialog extends JDialog {
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(true);
 		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		this.setSize(240, 240);
+		this.setSize(240, 170);
 		this.setTitle("Connect to Go Server");
 		this.setContentPane(getJContentPane());
 

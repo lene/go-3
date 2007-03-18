@@ -1,11 +1,14 @@
 package net.hyperspacetravel.go3.client.gui;
 
 import javax.swing.*;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 
 import net.hyperspacetravel.go3.ConnectedPlayer;
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.Utility;
 
+import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.util.ArrayList;
 
@@ -137,13 +140,13 @@ public class ChooseGameDialog extends JDialog {
 
 			tabbedPane.addTab("Pending Games", null, getPendingListContentPane(),
 					"The games in the list are currently running on the server. Choose one to watch.");
+			tabbedPane.addTab("New Game", null, getNewGameContentPane(),
+					"Enter the size of the board you want to play on in this form.");
 			if (false) {
 				tabbedPane.addTab("Connected Players", null, getPlayersListContentPane(),
 						"These players are currently connected to the server. Choose one to propose a game.");
 				tabbedPane.addTab("Started Games", null, getGamesListContentPane(),
 						"The games in the list are currently running on the server. Choose one to watch.");
-				tabbedPane.addTab("New Game", null, getNewGameContentPane(),
-						"Enter the size of the board you want to play on in this form.");
 			}
 		}
 		return tabbedPane;
@@ -176,9 +179,10 @@ public class ChooseGameDialog extends JDialog {
 							javax.swing.BoxLayout.Y_AXIS));
 
 			newGameContentPane.add(getNewGameLabel(), null);
-//			newGameContentPane.add(getPendingList(), null);
-//			
-//			newGameContentPane.add(getConnectButton());
+			newGameContentPane.add(getBoardSizeLabel(), null);
+			newGameContentPane.add(getBoardSizeSlider(), null);
+			
+			newGameContentPane.add(getStartButton());
 		}
 		return newGameContentPane;
 	}
@@ -298,6 +302,77 @@ public class ChooseGameDialog extends JDialog {
 		return newGameLabel;
 	}
 
+	/**
+	 * Return the sizeLabel property value.
+	 * @return JLabel
+	 */
+	private JLabel getBoardSizeLabel() {
+		if (sizeLabel == null) {
+			sizeLabel = new JLabel();
+			sizeLabel.setName("JLabel4");
+			sizeLabel.setText("Board size: "+String.valueOf(this.boardSize)+"x"
+					+String.valueOf(this.boardSize)+"x"+String.valueOf(this.boardSize));
+			
+			sizeLabel.setToolTipText("The size of the board on which you want" +
+					" to play. This is not adjustable yet, you have to take" +
+					" whichever size the server offers you.");
+			sizeLabel.setEnabled (true);
+		}
+		return sizeLabel;
+	}
+
+	/**
+	 * Return the sizeSlider property value.
+	 * @return JSlider
+	 */
+	private JSlider getBoardSizeSlider() {
+		if (sizeSlider == null) {
+			sizeSlider = new JSlider();
+			sizeSlider.setName("JSlider1");
+			sizeSlider.setMinimum(3);
+			sizeSlider.setMaximum(25);
+			sizeSlider.setMinorTickSpacing(2);
+			sizeSlider.setValue(this.boardSize);
+			sizeSlider.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent e) {
+					String boardSizeString = String.valueOf(sizeSlider.getValue());
+					sizeLabel.setText("Board Size: "+boardSizeString+"x"
+							+boardSizeString+"x"+boardSizeString);
+					connectionData.setBoardSize(sizeSlider.getValue());
+				}
+			});
+			
+			sizeSlider.setToolTipText("The size of the board on which you want" +
+					" to play. This is not adjustable yet, you have to take" +
+					" whichever size the server offers you.");
+			sizeSlider.setEnabled(true);
+		}
+		return sizeSlider;
+	}
+	
+	/**
+	 * Return the connectButton property value.
+	 * @return JButton
+	 */
+	private JButton getStartButton() {
+		if (startButton == null) {
+			startButton = new JButton();
+			startButton.setName("startButton");
+			startButton.setText("Start Game");
+			startButton.addActionListener(new java.awt.event.ActionListener() {
+				public void actionPerformed(java.awt.event.ActionEvent e) {
+					if (e.getActionCommand().equals (startButton.getText())) {
+						System.out.println("actionPerformed(): "+e.getActionCommand()); // TODO Auto-generated Event stub actionPerformed()
+			    		connectionData.setStartGame(true);
+						setVisible (false);
+						
+					}
+				}
+			});
+		}
+		return startButton;
+	}
+	
 	//	methods building the "players list" view
 	
 	/**
@@ -365,6 +440,10 @@ public class ChooseGameDialog extends JDialog {
 	
 	//	new game elements
 	private JLabel newGameLabel = null;
+	private JCheckBox startGameCheckBox = null;
+	private JLabel sizeLabel = null;
+	private JSlider sizeSlider = null;
+	private JButton startButton = null;
 	
 	//	players list elements
 	private JLabel playersListLabel = null;
@@ -375,6 +454,8 @@ public class ChooseGameDialog extends JDialog {
 	//	state members
 	private ConnectionData connectionData;
 	private ConnectedPlayer player;
+
+	private int boardSize = 3;
 
 	private boolean stopped = false;
 	
