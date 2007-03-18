@@ -21,16 +21,18 @@ import javax.swing.JComboBox;
 import javax.swing.JSlider;
 import javax.swing.JDialog;
 import javax.swing.JCheckBox;
+import javax.swing.BoxLayout;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ChangeEvent;
+import javax.swing.WindowConstants;
 
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
+import net.hyperspacetravel.go3.Utility;
 
 
-public class ConnectionDialog extends JDialog implements ItemListener {
+public class ConnectionDialog extends JDialog {
 
-	/**
-	 * 
-	 */
 	private static final long serialVersionUID = 7388416474815978781L;
 
 	private JPanel contentPane = null;
@@ -70,39 +72,39 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 
 
 	/**
-	 * Return the JFrameContentPane property value.
-	 * @return javax.swing.JPanel
+	 * Return the contentPane property value.
+	 * @return JPanel
 	 */
 	private JPanel getJContentPane() {
 		if (contentPane == null) {
 			contentPane = new JPanel();
 			contentPane.setName("contentPane");
 			contentPane.setLayout(
-					new javax.swing.BoxLayout(contentPane,
-							javax.swing.BoxLayout.Y_AXIS));
+					new BoxLayout(contentPane,
+							BoxLayout.Y_AXIS));
 
-			contentPane.add(getJLabel1(), null);
-			contentPane.add(getJComboBox1(), null);
-			contentPane.add(getJLabel2());
-			contentPane.add(getJTextField2(), null);
-			contentPane.add(getJLabel3());
-			contentPane.add(getJTextField3(), null);
-			contentPane.add(getJCheckBox1(), null);
-			contentPane.add(getJLabel4(), null);
-			contentPane.add(getJSlider1());
+			contentPane.add(getServerHostLabel(), null);
+			contentPane.add(getServerHostComboBox(), null);
+			contentPane.add(getServerPortLabel());
+			contentPane.add(getServerPortTextField(), null);
+			contentPane.add(getUsernameLabel());
+			contentPane.add(getUsernameTextField(), null);
+			contentPane.add(getStartGameCheckBox(), null);
+			contentPane.add(getBoardSizeLabel(), null);
+			contentPane.add(getBoardSizeSlider());
 			
-			contentPane.add(getJButton1());
+			contentPane.add(getConnectButton());
 		}
 		return contentPane;
 	}
 
 	/**
-	 * Return the JLabel1 property value.
-	 * @return javax.swing.JLabel
+	 * Return the serverHostLabel property value.
+	 * @return JLabel
 	 */
-	private javax.swing.JLabel getJLabel1() {
+	private JLabel getServerHostLabel() {
 		if (serverHostLabel == null) {
-			serverHostLabel = new javax.swing.JLabel();
+			serverHostLabel = new JLabel();
 			serverHostLabel.setName("serverHostLabel");
 			serverHostLabel.setText("Server Host");
 			serverHostLabel.setToolTipText("The address of the server.");
@@ -111,13 +113,13 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	}
 	
 	/**
-	 * Return the JTextField1 property value.
-	 * @return javax.swing.JTextField
+	 * Return the serverHostComboBox property value.
+	 * @return JComboBox
 	 */
-	private javax.swing.JComboBox getJComboBox1() {
+	private JComboBox getServerHostComboBox() {
 		if (serverHostComboBox == null) {
 			String[] presetHosts = { "localhost", "hyperspace-travel.de"};
-			serverHostComboBox = new javax.swing.JComboBox(presetHosts);
+			serverHostComboBox = new JComboBox(presetHosts);
 			serverHostComboBox.setName("serverHostTextField");
 			serverHostComboBox.setEditable(true);
 			serverHostComboBox.addActionListener(
@@ -138,12 +140,12 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	}
 
 	/**
-	 * Return the JLabel2 property value.
-	 * @return javax.swing.JLabel
+	 * Return the serverPortLabel property value.
+	 * @return JLabel
 	 */
-	private javax.swing.JLabel getJLabel2() {
+	private JLabel getServerPortLabel() {
 		if (serverPortLabel == null) {
-			serverPortLabel = new javax.swing.JLabel();
+			serverPortLabel = new JLabel();
 			serverPortLabel.setName("serverPortLabel");
 			serverPortLabel.setText("Server Port");
 			serverPortLabel.setToolTipText("The port on which the " +
@@ -153,12 +155,12 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	}
 
 	/**
-	 * Return the JTextField2 property value.
-	 * @return javax.swing.JTextField
+	 * Return the serverPortTextField property value.
+	 * @return JTextField
 	 */
-	private javax.swing.JTextField getJTextField2() {
+	private JTextField getServerPortTextField() {
 		if (serverPortTextField == null) {
-			serverPortTextField = new javax.swing.JTextField();
+			serverPortTextField = new JTextField();
 			serverPortTextField.setName("JTextField2");
 			serverPortTextField.setText(String.valueOf(this.serverPort));
 			serverPortTextField.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -174,12 +176,12 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	}
 
 	/**
-	 * Return the JLabel3 property value.
-	 * @return javax.swing.JLabel
+	 * Return the usernameLabel property value.
+	 * @return JLabel
 	 */
-	private javax.swing.JLabel getJLabel3() {
+	private JLabel getUsernameLabel() {
 		if (usernameLabel == null) {
-			usernameLabel = new javax.swing.JLabel();
+			usernameLabel = new JLabel();
 			usernameLabel.setName("JLabel3");
 			usernameLabel.setText("Username");
 			usernameLabel.setToolTipText("Enter the name under which you want" +
@@ -190,12 +192,12 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	}
 
 	/**
-	 * Return the JTextField3 property value.
-	 * @return javax.swing.JTextField
+	 * Return the usernameTextField property value.
+	 * @return JTextField
 	 */
-	private javax.swing.JTextField getJTextField3() {
+	private JTextField getUsernameTextField() {
 		if (usernameTextField == null) {
-			usernameTextField = new javax.swing.JTextField();
+			usernameTextField = new JTextField();
 			usernameTextField.setName("JTextField3");
 			usernameTextField.setText(this.username);
 			usernameTextField.addKeyListener(new java.awt.event.KeyAdapter() {
@@ -211,39 +213,38 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	}
 
 	/**
-	 * Return the JCheckBox1 property value.
-	 * @return javax.swing.JTextField
+	 * Return the startGameCheckBox property value.
+	 * @return JTextField
 	 */
-	private javax.swing.JCheckBox getJCheckBox1() {
+	private JCheckBox getStartGameCheckBox() {
 		if (startGameCheckBox == null) {
-			startGameCheckBox = new javax.swing.JCheckBox();
+			startGameCheckBox = new JCheckBox();
 			startGameCheckBox.setName("JCheckBox1");
 			startGameCheckBox.setText("Start new game");
 			startGameCheckBox.setSelected(false);
-			startGameCheckBox.addItemListener(this);
+			startGameCheckBox.addItemListener(new java.awt.event.ItemListener() {
+				public void itemStateChanged(ItemEvent e) {
+			    	Object source = e.getItemSelectable();
+			    	if (source == startGameCheckBox) {
+			    		connectionData.setStartGame(startGameCheckBox.isSelected());
+			    		sizeLabel.setEnabled(startGameCheckBox.isSelected());
+			    		sizeSlider.setEnabled(startGameCheckBox.isSelected());
+			    	}
+				}
+			});
 			startGameCheckBox.setToolTipText("If you want to start a new Game," +
 					" select this. If you want to join a game, leave it.");
 		}
 		return startGameCheckBox;
 	}
 
-    /** Listens to the check boxes. */
-    public void itemStateChanged(ItemEvent e) {
-    	Object source = e.getItemSelectable();
-    	if (source == startGameCheckBox) {
-    		connectionData.setStartGame(startGameCheckBox.isSelected());
-    		sizeLabel.setEnabled(startGameCheckBox.isSelected());
-    		sizeSlider.setEnabled(startGameCheckBox.isSelected());
-    	}
-    }
-
 	/**
-	 * Return the JLabel2 property value.
-	 * @return javax.swing.JLabel
+	 * Return the sizeLabel property value.
+	 * @return JLabel
 	 */
-	private javax.swing.JLabel getJLabel4() {
+	private JLabel getBoardSizeLabel() {
 		if (sizeLabel == null) {
-			sizeLabel = new javax.swing.JLabel();
+			sizeLabel = new JLabel();
 			sizeLabel.setName("JLabel4");
 			sizeLabel.setText("Board size: "+String.valueOf(this.boardSize)+"x"
 					+String.valueOf(this.boardSize)+"x"+String.valueOf(this.boardSize));
@@ -255,20 +256,21 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 		}
 		return sizeLabel;
 	}
+
 	/**
-	 * Return the JSlider1 property value.
-	 * @return javax.swing.JSlider
+	 * Return the sizeSlider property value.
+	 * @return JSlider
 	 */
-	private javax.swing.JSlider getJSlider1() {
+	private JSlider getBoardSizeSlider() {
 		if (sizeSlider == null) {
-			sizeSlider = new javax.swing.JSlider();
+			sizeSlider = new JSlider();
 			sizeSlider.setName("JSlider1");
 			sizeSlider.setMinimum(3);
 			sizeSlider.setMaximum(25);
 			sizeSlider.setMinorTickSpacing(2);
 			sizeSlider.setValue(this.boardSize);
-			sizeSlider.addChangeListener(new javax.swing.event.ChangeListener() {
-				public void stateChanged(javax.swing.event.ChangeEvent e) {
+			sizeSlider.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent e) {
 					String boardSizeString = String.valueOf(sizeSlider.getValue());
 					sizeLabel.setText("Board Size: "+boardSizeString+"x"
 							+boardSizeString+"x"+boardSizeString);
@@ -285,13 +287,13 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 	}
 
 	/**
-	 * Return the JButton1 property value.
-	 * @return javax.swing.JButton
+	 * Return the connectButton property value.
+	 * @return JButton
 	 */
-	private javax.swing.JButton getJButton1() {
+	private JButton getConnectButton() {
 		if (connectButton == null) {
-			connectButton = new javax.swing.JButton();
-			connectButton.setName("JButton1");
+			connectButton = new JButton();
+			connectButton.setName("connectButton");
 			connectButton.setText("Connect to Server");
 			connectButton.addActionListener(new java.awt.event.ActionListener() {
 				public void actionPerformed(java.awt.event.ActionEvent e) {
@@ -314,8 +316,8 @@ public class ConnectionDialog extends JDialog implements ItemListener {
 		this.setName("Connection Dialog");
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(true);
-		this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-		this.setSize(206, 240);
+		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		this.setSize(240, 240);
 		this.setTitle("Connect to Go Server");
 		this.setContentPane(getJContentPane());
 
