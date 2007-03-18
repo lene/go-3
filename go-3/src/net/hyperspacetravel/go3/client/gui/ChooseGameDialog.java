@@ -7,17 +7,14 @@ import javax.swing.event.ChangeListener;
 import net.hyperspacetravel.go3.ConnectedPlayer;
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.Utility;
+import net.hyperspacetravel.go3.GameBase;
+
 
 import java.awt.event.ItemEvent;
 import java.io.IOException;
 import java.util.*;
 
 public class ChooseGameDialog extends JDialog {
-
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 7199599938553022819L;
 
 	class GameData implements Comparable {
 		private String name;
@@ -54,10 +51,7 @@ public class ChooseGameDialog extends JDialog {
 		
 		initialize();
 	}
-	
-
-	private GameData[] gameData = {};
-	
+		
 	ArrayList<GameData> getGames() {
 		player.out.println("game list");
 		ArrayList<GameData> games = new ArrayList<GameData>();
@@ -208,18 +202,16 @@ public class ChooseGameDialog extends JDialog {
 			for (int i = 0; i < tempData.size(); i++) {
 				model.addElement(tempData.get(i));
 			}
+			
 			pendingList = new JList(model);
-
 	        pendingList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 	        pendingList.setLayoutOrientation(JList.VERTICAL);
 	        pendingList.setVisibleRowCount(-1);
-
-//	        pendingList.setListData(setGameList());
 	        
 	        listScroller = new JScrollPane(pendingList);
 	        listScroller.setAlignmentX(LEFT_ALIGNMENT);
 	        
-	        new UpdateThread (5000).start();
+	        new UpdateThread (UPDATE_PERIOD).start();
 	    }
 		return listScroller;
 	}
@@ -238,9 +230,8 @@ public class ChooseGameDialog extends JDialog {
 					public void actionPerformed(java.awt.event.ActionEvent e) {
 						if (e.getActionCommand().equals (connectButton.getText())) {
 							int index = pendingList.getSelectedIndex();
-							
+							setGameList();
 							if (index >= 0 && index < gameData.length) {
-								Utility.debug(index+" "+gameData[index]);
 								connectionData.setGame(gameData[index].getName());
 								connectionData.setBoardSize(gameData[index].getSize());
 								
@@ -277,7 +268,7 @@ public class ChooseGameDialog extends JDialog {
 	private JLabel getBoardSizeLabel() {
 		if (sizeLabel == null) {
 			sizeLabel = new JLabel();
-			sizeLabel.setName("JLabel4");
+			sizeLabel.setName("sizeLabel");
 			sizeLabel.setText("Board size: "+String.valueOf(this.boardSize)+"x"
 					+String.valueOf(this.boardSize)+"x"+String.valueOf(this.boardSize));
 			
@@ -296,9 +287,9 @@ public class ChooseGameDialog extends JDialog {
 	private JSlider getBoardSizeSlider() {
 		if (sizeSlider == null) {
 			sizeSlider = new JSlider();
-			sizeSlider.setName("JSlider1");
-			sizeSlider.setMinimum(3);
-			sizeSlider.setMaximum(25);
+			sizeSlider.setName("sizeSlider");
+			sizeSlider.setMinimum(GameBase.MIN_GRID_SIZE);
+			sizeSlider.setMaximum(GameBase.MAX_GRID_SIZE);
 			sizeSlider.setMinorTickSpacing(2);
 			sizeSlider.setValue(this.boardSize);
 			sizeSlider.addChangeListener(new ChangeListener() {
@@ -390,6 +381,12 @@ public class ChooseGameDialog extends JDialog {
 	}
 	
 	
+	////////////////////////////////////////////////////////////////////////////
+	//                                                                        //
+	//          VARIABLES SECTION STARTS                                      //
+	//                                                                        //
+	////////////////////////////////////////////////////////////////////////////	
+		
 	//	root level container
 	private JTabbedPane tabbedPane = null;
 
@@ -423,12 +420,20 @@ public class ChooseGameDialog extends JDialog {
 	private ConnectionData connectionData;
 	private ConnectedPlayer player;
 
+	private GameData[] gameData = {};
+
 	private int boardSize = 3;
 
+	/**	whether dialog has been stopped => game has begun */
 	private boolean stopped = false;
 	
-	public static void main(String[] args) {
+	/**	milliseconds to wait between updates of the game list */
+	static final int UPDATE_PERIOD = 1000;
+	
+	private static final long serialVersionUID = 7199599938553022819L;
+
+//	public static void main(String[] args) {
 //		new ChooseGameDialog(new ConnectionData()).setVisible(true);
-	}
+//	}
 
 }  //  @jve:decl-index=0:visual-constraint="10,10"
