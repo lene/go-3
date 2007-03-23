@@ -1,11 +1,14 @@
+The location of the To-Do for go-3 has changed. It is currently at 
+http://www.hyperspace-travel.de/blog/category/go-3-todo 
+
+The Tasks in this file may be outdated. I do not maintain this file any more.
+I am still keeping it for reference.
 
 	TO DO LIST for go3d on 03 Mar 2007
 	==================================
 
 - ant-file
   targets:
-  + build
-  + build jar
   + run server
   + run client
   + run all
@@ -20,8 +23,6 @@
 
 	1) Short-term
 	-------------
-
-make a jar and upload it to SourceForge
 
 user, installation and protocol documentation
 

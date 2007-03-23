@@ -118,7 +118,7 @@ class SimpleBehavior extends Behavior {
 							rotateX.rotX (angleX);
 							rotateY.rotY (angleY);
 							rotateX.mul(rotateY);
-							targetTG.setTransform (rotateX);
+							J.setTransform (rotateX);
 						}
 					}
 				}

@@ -1,0 +1,32 @@
+0.4.2
+-----
+
+- Sanitized the login process - the first dialog only to log on to the server, 
+  the second contains tabs for listing available games and starting a new one
+- updating the list of available games works
+- refactoring the mentioned dialogs to have cleaner code
+- added ant file, build instructions etc.
+
+0.4.1
+-----
+
+- optimized startup script to correctly detect JVM version, 
+  Java3D installation and g3d installation
+
+- created a config file structure
+
+- refactored source to use package structure:
+  net.hyperspacetravel.go3
+  net.hyperspacetravel.go3.server
+  net.hyperspacetravel.go3.client
+  net.hyperspacetravel.go3.client.gui
+
+0.4.0
+-----
+
+This is the first public release. Its state is early alpha.
+
+It has a couple of known bugs and probably many unknown.
+
+This is the first version containing a multi-game server, so I decided to 
+release it.

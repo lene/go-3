@@ -9,7 +9,7 @@
 	
 	<target name="jar" depends="compile">
 		
-		<delete file="../GoGrid.jar"/>
+		<delete file="../bin/GoGrid.jar"/>
 		<delete file="../bin/MANIFEST.MF"/>
 
 		<tstamp>
@@ -22,9 +22,9 @@
 			<attribute name="Built-Date" value="${TODAY}"/>
 		</manifest>
 		
-		<jar destfile="../GoGrid.jar"
+		<jar destfile="../bin/GoGrid.jar"
 			 basedir="../bin"
-			 includes="**/*.class"
+			 includes="**/*.class *.sh"
 			 manifest="../bin/MANIFEST.MF"
 			 />
 
@@ -38,5 +38,18 @@
 	</target>
 	  
 	<target name="buildGoGrid" depends="compile,jar,cleanup" />
+	
+	<target name="distribution" depends="jar">
+		<tar basedir="../bin"
+			 destfile="../GoGrid-jar.tar.bz2" 
+			 compression="bzip2"
+			 includes="GoGrid.jar Go3DServer.sh Go3DClient.sh"
+			/>
+		<tar basedir=".."
+			 destfile="../GoGrid-src.tar.bz2" 
+			 compression="bzip2"
+			 includes="src/** ant/* doc/*ml"
+			/>
+	</target>
 
 </project>

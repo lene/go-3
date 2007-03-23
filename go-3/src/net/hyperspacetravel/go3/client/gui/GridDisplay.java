@@ -10,6 +10,8 @@ import javax.vecmath.*;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.util.ArrayList;
+import java.util.Iterator;
 
 import javax.swing.JOptionPane;
 import javax.swing.JPopupMenu;
@@ -25,7 +27,9 @@ import net.hyperspacetravel.go3.ConnectedPlayer;
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
 import net.hyperspacetravel.go3.GoGrid;
+import net.hyperspacetravel.go3.client.CursorListener;
 import net.hyperspacetravel.go3.client.GoGridClient;
+import net.hyperspacetravel.go3.client.TransformListener;
 
 
 /**
@@ -122,8 +126,28 @@ public class GridDisplay extends JApplet implements ActionListener {
 		Transform3D translate = new Transform3D ();
 		translate.set (new Vector3f ((G.xc ()-1), (G.yc ()-1), (G.zc ()-1)));
 		cursorPos.setTransform (translate);
+		//	inform listening views
+		CursorListener listener = null;
+		Iterator<CursorListener> i = cursorListeners.iterator();
+		while(i.hasNext()) {
+			listener = i.next();
+			listener.notifyCursor(x, y, z);
+		}
 	}
 	
+	/**	
+	 sets the transform (rotation, translation)
+	 @param rotate the Transform3D
+	 */
+	void setTransform(Transform3D rotate) {
+		objControl.setTransform(rotate);
+		//	inform listening views
+		Iterator<TransformListener> i = transformListeners.iterator();
+		while(i.hasNext()) {
+			TransformListener listener = i.next();
+			listener.notifyTransform(rotate);
+		}
+	}
 	
 	/**
 	 draws a stone at a given position
@@ -267,7 +291,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		U = new SimpleUniverse (C);
 		
 		// Create a simple scene and attach it to the virtual universe
-		BranchGroup scene = createSceneGraph (U);
+		scene = createSceneGraph (U);
 		
 		scene.compile ();
 		
@@ -758,6 +782,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 			return;
 		}
 		
+		System.out.println("Action Event");
 		JOptionPane.showMessageDialog (this,	//	TODO unfunky major league 
 				text,
 				"Action Event",
@@ -818,6 +843,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	private Grid objGrid = null;
 	/**	 transform belonging to the cursor	 */
 	private TransformGroup cursorPos;
+	/**	 the root of the displayed gogrid	*/
+	private BranchGroup scene;
 	/**	 BranchGroup as parent of the cursor	 */
 	private BranchGroup cursorBG;
 	/**	 TG for mouse and keyboard behaviors	 */
@@ -853,8 +880,17 @@ public class GridDisplay extends JApplet implements ActionListener {
 	/**	 the current cursor	 */
 	private Cursor cursor;
 
+	private ArrayList<CursorListener> cursorListeners = new ArrayList<CursorListener> ();
+	public void addCursorListener(CursorListener cursorListener) {
+		cursorListeners.add(cursorListener);
+	}
 	
-	////////////////////////////////////////////////////////////////////////////
+	private ArrayList<TransformListener> transformListeners = new ArrayList<TransformListener> ();
+	public void addTransformListener(TransformListener transformListener) {
+		transformListeners.add(transformListener);
+	}
+	
+ 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
 	//          CONSTANTS			      									  //
 	//                                                                        //

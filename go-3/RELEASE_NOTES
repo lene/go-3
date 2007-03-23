@@ -1,0 +1,14 @@
+0.4.2
+-----
+
+Very short installation instructions
+====================================
+
+# tar jxf GoGrid-${VERSION}-jar.tar.bz2
+
+Very short running instructions
+===============================
+
+# ./Go3DServer.sh &
+# ./Go3DClient.sh &
+# # etc.

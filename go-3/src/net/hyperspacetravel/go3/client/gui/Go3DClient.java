@@ -10,6 +10,8 @@ import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
 import net.hyperspacetravel.go3.Player;
 import net.hyperspacetravel.go3.Utility;
+import net.hyperspacetravel.go3.client.SimpleCursorListener;
+import net.hyperspacetravel.go3.client.SimpleTransformListener;
 
 import com.sun.j3d.utils.applet.MainFrame;
 
@@ -143,6 +145,10 @@ public class Go3DClient {
 		} else {
 			game = new GridDisplay(connectionData);
 		}
+		
+		if (Utility.getDebugMode()) game.addCursorListener(new SimpleCursorListener());
+		if (Utility.getDebugMode()) game.addTransformListener(new SimpleTransformListener());
+		
 		Frame frame = new MainFrame(game, 600, 600);
 
 		if (false) {
