@@ -1,0 +1,42 @@
+<project default="buildGoGrid">
+	<target name="compile">
+		<javac srcdir="../src"
+         destdir="../bin"
+         classpath="jarfile"
+         debug="on"
+	/>
+	</target>
+	
+	<target name="jar" depends="compile">
+		
+		<delete file="../GoGrid.jar"/>
+		<delete file="../bin/MANIFEST.MF"/>
+
+		<tstamp>
+			<format property="TODAY" pattern="yyyy-MM-dd hh:mm:ss" />
+		</tstamp>
+		
+		<manifest file="../bin/MANIFEST.MF">
+			<attribute name="Built-By" value="${user.name}"/>
+			<attribute name="Main-Class" value="net.hyperspacetravel.go3.server.GoGridServer"/>
+			<attribute name="Built-Date" value="${TODAY}"/>
+		</manifest>
+		
+		<jar destfile="../GoGrid.jar"
+			 basedir="../bin"
+			 includes="**/*.class"
+			 manifest="../bin/MANIFEST.MF"
+			 />
+
+	</target>
+	
+	<target name="cleanup">
+		<delete>
+			<fileset dir="../bin" includes="**/*.class"/>
+			<fileset file="../bin/MANIFEST.MF"/>
+		</delete>  
+	</target>
+	  
+	<target name="buildGoGrid" depends="compile,jar,cleanup" />
+
+</project>
