@@ -1,0 +1,21 @@
+Very short build and installation instructions
+==============================================
+
+1) Run from precompiled jar
+---------------------------
+
+# tar jxf GoGrid-${VERSION}-jar.tar.bz2
+
+2) Build from source
+--------------------
+
+# tar jxf GoGrid-${VERSION}-src.tar.bz2
+# cd ant
+# ant
+
+Very short running instructions
+===============================
+
+# ./Go3DServer.sh &
+# ./Go3DClient.sh &
+# # etc.
