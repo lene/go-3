@@ -16,6 +16,7 @@ import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
+import net.hyperspacetravel.go3.GoGrid;
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
 import net.hyperspacetravel.go3.Utility;
@@ -34,17 +35,10 @@ public class CursorDialog extends JDialog implements CursorListener {
 		// TODO Auto-generated method stub
 
 	}
-	private JPanel contentPane = null;
-
-	private JLabel cursorXLabel = null;
-	private JComboBox cursorXComboBox = null;
-	private JSlider cursorXSlider = null;
-	private JCheckBox cursorCheckBox = null;
 	
-
-	private JButton connectButton = null;
-
-	public CursorDialog() {		
+	
+	public CursorDialog(GoGrid _grid) {
+		this.grid = _grid; 
 		initialize();
 	}
 
@@ -63,14 +57,15 @@ public class CursorDialog extends JDialog implements CursorListener {
 
 			contentPane.add(getCursorXLabel(), null);
 			contentPane.add(getCursorXComboBox(), null);
-			contentPane.add(getServerPortLabel());
-			contentPane.add(getServerPortTextField(), null);
-			contentPane.add(getUsernameLabel());
-			contentPane.add(getUsernameTextField(), null);
+
 			contentPane.add(getConnectButton());
 		}
 		return contentPane;
 	}
+
+	////////////////////////////////////////////////////////////////////////////
+	//	X coordinate
+	////////////////////////////////////////////////////////////////////////////
 
 	/**
 	 * Return the cursorXLabel property value.
@@ -80,8 +75,8 @@ public class CursorDialog extends JDialog implements CursorListener {
 		if (cursorXLabel == null) {
 			cursorXLabel = new JLabel();
 			cursorXLabel.setName("cursorXLabel");
-			cursorXLabel.setText("Server Host");
-			cursorXLabel.setToolTipText("The address of the server.");
+			cursorXLabel.setText("x");
+			cursorXLabel.setToolTipText("X coordinate of the cursor");
 		}
 		return cursorXLabel;
 	}
@@ -90,26 +85,24 @@ public class CursorDialog extends JDialog implements CursorListener {
 	 * Return the cursorXSlider property value.
 	 * @return JSlider
 	 */
-	private JSlider getcursorXSlider() {
+	private JSlider getCursorXSlider() {
 		if (cursorXSlider == null) {
 			cursorXSlider = new JSlider();
 			cursorXSlider.setName("cursorXSlider");
-			cursorXSlider.setMinimum(GameBase.MIN_GRID_SIZE);
-			cursorXSlider.setMaximum(GameBase.MAX_GRID_SIZE);
-			cursorXSlider.setMinorTickSpacing(2);
-			cursorXSlider.setValue(this.boardSize);
+			cursorXSlider.setMinimum(1);
+			cursorXSlider.setMaximum(this.grid.getBoardSize());
+			cursorXSlider.setMinorTickSpacing(1);
+			cursorXSlider.setValue((this.grid.getBoardSize()+1)/2);
 			cursorXSlider.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent e) {
-					String boardSizeString = String.valueOf(cursorXSlider.getValue());
-					sizeLabel.setText("Board Size: "+boardSizeString+"x"
-							+boardSizeString+"x"+boardSizeString);
-					connectionData.setBoardSize(cursorXSlider.getValue());
+					grid.setCursor(cursorXSlider.getValue(), 
+										cursorYSlider.getValue(), 
+										cursorZSlider.getValue());
+					cursorXComboBox.setValue(cursorXSlider.getValue());
 				}
 			});
 			
-			cursorXSlider.setToolTipText("The size of the board on which you want" +
-					" to play. This is not adjustable yet, you have to take" +
-					" whichever size the server offers you.");
+			cursorXSlider.setToolTipText("X coordinate of the cursor");
 			cursorXSlider.setEnabled(true);
 		}
 		return cursorXSlider;
@@ -121,27 +114,219 @@ public class CursorDialog extends JDialog implements CursorListener {
 	 */
 	private JComboBox getCursorXComboBox() {
 		if (cursorXComboBox == null) {
-			String[] presetHosts = { "localhost", "hyperspace-travel.de"};
-			cursorXComboBox = new JComboBox(presetHosts);
-			cursorXComboBox.setName("serverHostTextField");
+			cursorXComboBox = new JComboBox();
+			cursorXComboBox.setName("cursorXComboBox");
 			cursorXComboBox.setEditable(true);
 			cursorXComboBox.addActionListener(
 				new java.awt.event.ActionListener() {
 					public void actionPerformed(java.awt.event.ActionEvent e) {
 				        JComboBox cb = (JComboBox)e.getSource();
-				        connectionData.setServerHost((String)cb.getSelectedItem());	
+				        cursorXSlider.setValue((Integer)cb.getSelectedItem());
 				    }						
 				});
 			cursorXComboBox.addKeyListener(new java.awt.event.KeyAdapter() {
 				public void keyTyped(java.awt.event.KeyEvent e) {
-					connectionData.setServerHost((String)cursorXComboBox.getSelectedItem());					
+			        JComboBox cb = (JComboBox)e.getSource();
+			        cursorXSlider.setValue((Integer)cb.getSelectedItem());
 				}
 			});
-			cursorXComboBox.setToolTipText("The address of the server.");
+			cursorXComboBox.setToolTipText("X coordinate of the cursor");
 		}
 		return cursorXComboBox;
 	}
 
+	private JCheckBox getCursorXCheckBox() {
+		if (cursorXCheckBox == null) {
+			cursorXCheckBox = new JCheckBox();
+			cursorXCheckBox.setName("cursorXCheckBox");
+			cursorXCheckBox.addActionListener(
+				new java.awt.event.ActionListener() {
+					public void actionPerformed(java.awt.event.ActionEvent e) {
+							//	TODO
+						}						
+				});
+			cursorXCheckBox.setToolTipText("Enable X coordinate of the cursor");
+		}
+		return cursorXCheckBox;		
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	//	Y coordinate
+	////////////////////////////////////////////////////////////////////////////
+	
+	/**
+	 * Return the cursorYLabel property value.
+	 * @return JLabel
+	 */
+	private JLabel getCursorYLabel() {
+		if (cursorYLabel == null) {
+			cursorYLabel = new JLabel();
+			cursorYLabel.setName("cursorYLabel");
+			cursorYLabel.setText("y");
+			cursorYLabel.setToolTipText("Y coordinate of the cursor");
+		}
+		return cursorYLabel;
+	}
+	
+	/**
+	 * Return the cursorYSlider property value.
+	 * @return JSlider
+	 */
+	private JSlider getCursorYSlider() {
+		if (cursorYSlider == null) {
+			cursorYSlider = new JSlider();
+			cursorYSlider.setName("cursorYSlider");
+			cursorYSlider.setMinimum(1);
+			cursorYSlider.setMaximum(this.grid.getBoardSize());
+			cursorYSlider.setMinorTickSpacing(1);
+			cursorYSlider.setValue((this.grid.getBoardSize()+1)/2);
+			cursorYSlider.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent e) {
+					grid.setCursor(cursorXSlider.getValue(), 
+								   cursorYSlider.getValue(), 
+								   cursorZSlider.getValue());
+					cursorYComboBox.setValue(cursorYSlider.getValue());
+				}
+			});
+			
+			cursorYSlider.setToolTipText("Y coordinate of the cursor");
+			cursorYSlider.setEnabled(true);
+		}
+		return cursorYSlider;
+	}
+	
+	/**
+	 * Return the cursorYComboBox property value.
+	 * @return JComboBox
+	 */
+	private JComboBox getCursorYComboBox() {
+		if (cursorYComboBox == null) {
+			cursorYComboBox = new JComboBox();
+			cursorYComboBox.setName("cursorYComboBox");
+			cursorYComboBox.setEditable(true);
+			cursorYComboBox.addActionListener(
+				new java.awt.event.ActionListener() {
+					public void actionPerformed(java.awt.event.ActionEvent e) {
+				        JComboBox cb = (JComboBox)e.getSource();
+				        cursorYSlider.setValue((Integer)cb.getSelectedItem());
+				    }						
+				});
+			cursorYComboBox.addKeyListener(new java.awt.event.KeyAdapter() {
+				public void keyTyped(java.awt.event.KeyEvent e) {
+			        JComboBox cb = (JComboBox)e.getSource();
+			        cursorYSlider.setValue((Integer)cb.getSelectedItem());
+				}
+			});
+			cursorYComboBox.setToolTipText("Y coordinate of the cursor");
+		}
+		return cursorYComboBox;
+	}
+
+	private JCheckBox getCursorYCheckBox() {
+		if (cursorYCheckBox == null) {
+			cursorYCheckBox = new JCheckBox();
+			cursorYCheckBox.setName("cursorYCheckBox");
+			cursorYCheckBox.addActionListener(
+				new java.awt.event.ActionListener() {
+					public void actionPerformed(java.awt.event.ActionEvent e) {
+							//	TODO
+						}						
+				});
+			cursorYCheckBox.setToolTipText("Enable Y coordinate of the cursor");
+		}
+		return cursorYCheckBox;		
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	//	Z coordinate
+	////////////////////////////////////////////////////////////////////////////
+	
+	/**
+	 * Return the cursorZLabel property value.
+	 * @return JLabel
+	 */
+	private JLabel getCursorZLabel() {
+		if (cursorZLabel == null) {
+			cursorZLabel = new JLabel();
+			cursorZLabel.setName("cursorZLabel");
+			cursorZLabel.setText("z");
+			cursorZLabel.setToolTipText("Z coordinate of the cursor");
+		}
+		return cursorZLabel;
+	}
+	
+	/**
+	 * Return the cursorZSlider property value.
+	 * @return JSlider
+	 */
+	private JSlider getCursorZSlider() {
+		if (cursorZSlider == null) {
+			cursorZSlider = new JSlider();
+			cursorZSlider.setName("cursorZSlider");
+			cursorZSlider.setMinimum(1);
+			cursorZSlider.setMaximum(this.grid.getBoardSize());
+			cursorZSlider.setMinorTickSpacing(1);
+			cursorZSlider.setValue((this.grid.getBoardSize()+1)/2);
+			cursorZSlider.addChangeListener(new ChangeListener() {
+				public void stateChanged(ChangeEvent e) {
+					grid.setCursor(cursorXSlider.getValue(), 
+								   cursorYSlider.getValue(), 
+								   cursorZSlider.getValue());
+					cursorZComboBox.setValue(cursorZSlider.getValue());
+				}
+			});
+			
+			cursorZSlider.setToolTipText("Z coordinate of the cursor");
+			cursorZSlider.setEnabled(true);
+		}
+		return cursorZSlider;
+	}
+	
+	/**
+	 * Return the cursorZComboBox property value.
+	 * @return JComboBox
+	 */
+	private JComboBox getCursorZComboBox() {
+		if (cursorZComboBox == null) {
+			cursorZComboBox = new JComboBox();
+			cursorZComboBox.setName("cursorZComboBox");
+			cursorZComboBox.setEditable(true);
+			cursorZComboBox.addActionListener(
+				new java.awt.event.ActionListener() {
+					public void actionPerformed(java.awt.event.ActionEvent e) {
+				        JComboBox cb = (JComboBox)e.getSource();
+				        cursorZSlider.setValue((Integer)cb.getSelectedItem());
+				    }						
+				});
+			cursorZComboBox.addKeyListener(new java.awt.event.KeyAdapter() {
+				public void keyTyped(java.awt.event.KeyEvent e) {
+			        JComboBox cb = (JComboBox)e.getSource();
+			        cursorZSlider.setValue((Integer)cb.getSelectedItem());
+				}
+			});
+			cursorZComboBox.setToolTipText("Z coordinate of the cursor");
+		}
+		return cursorZComboBox;
+	}
+
+	private JCheckBox getCursorZCheckBox() {
+		if (cursorZCheckBox == null) {
+			cursorZCheckBox = new JCheckBox();
+			cursorZCheckBox.setName("cursorZCheckBox");
+			cursorZCheckBox.addActionListener(
+				new java.awt.event.ActionListener() {
+					public void actionPerformed(java.awt.event.ActionEvent e) {
+							//	TODO
+						}						
+				});
+			cursorZCheckBox.setToolTipText("Enable Z coordinate of the cursor");
+		}
+		return cursorZCheckBox;		
+	}
+
+	////////////////////////////////////////////////////////////////////////////
+	//	other elements
+	////////////////////////////////////////////////////////////////////////////
 
 	/**
 	 * Return the connectButton property value.
@@ -182,6 +367,28 @@ public class CursorDialog extends JDialog implements CursorListener {
 	static public void main (String args[]) {
 		new ConnectionDialog (new ConnectionData ()).setVisible(true);
 	}
+
+	private JPanel contentPane = null;
+
+	private JLabel cursorXLabel = null;
+	private JComboBox cursorXComboBox = null;
+	private JSlider cursorXSlider = null;
+	private JCheckBox cursorXCheckBox = null;
+	
+	private JLabel cursorYLabel = null;
+	private JComboBox cursorYComboBox = null;
+	private JSlider cursorYSlider = null;
+	private JCheckBox cursorYCheckBox = null;
+	
+	private JLabel cursorZLabel = null;
+	private JComboBox cursorZComboBox = null;
+	private JSlider cursorZSlider = null;
+	private JCheckBox cursorZCheckBox = null;
+	
+	private JButton connectButton = null;
+
+	
+	private GoGrid grid;
 
 	/**														 */
 	private static final long serialVersionUID = 1590600506585137608L;
