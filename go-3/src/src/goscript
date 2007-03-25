@@ -1,7 +1,0 @@
-#!/bin/sh
-# script to start a go³ server and two clients
-nohup ./gogrid -server $@ &
-sleep 5
-nohup ./gogrid -client &
-sleep 1
-nohup ./gogrid -client &
