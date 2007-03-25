@@ -3,22 +3,23 @@
  */
 package net.hyperspacetravel.go3.client.gui;
 
+import java.awt.Frame;
+
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
-import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
-import javax.swing.JTextField;
+import javax.swing.JSpinner;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
 import net.hyperspacetravel.go3.GoGrid;
-import net.hyperspacetravel.go3.ConnectionData;
-import net.hyperspacetravel.go3.GameBase;
 import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.client.CursorListener;
 
@@ -37,7 +38,8 @@ public class CursorDialog extends JDialog implements CursorListener {
 	}
 	
 	
-	public CursorDialog(GoGrid _grid) {
+	public CursorDialog(GoGrid _grid, Frame frame) {
+		super(frame);
 		this.grid = _grid; 
 		initialize();
 	}
@@ -55,10 +57,11 @@ public class CursorDialog extends JDialog implements CursorListener {
 					new BoxLayout(contentPane,
 							BoxLayout.Y_AXIS));
 
-			contentPane.add(getCursorXLabel(), null);
-			contentPane.add(getCursorXComboBox(), null);
+			contentPane.add(getCursorXPanel(), null);
+			contentPane.add(getCursorYPanel(), null);
+			contentPane.add(getCursorZPanel(), null);
 
-			contentPane.add(getConnectButton());
+//			contentPane.add(getConnectButton());
 		}
 		return contentPane;
 	}
@@ -66,6 +69,23 @@ public class CursorDialog extends JDialog implements CursorListener {
 	////////////////////////////////////////////////////////////////////////////
 	//	X coordinate
 	////////////////////////////////////////////////////////////////////////////
+
+	private JPanel getCursorXPanel() {
+		if (cursorXPanel == null) {
+			cursorXPanel = new JPanel();
+			cursorXPanel.setName("cursorXPanel");
+			cursorXPanel.setLayout(
+					new BoxLayout(cursorXPanel,
+							BoxLayout.X_AXIS));
+
+			cursorXPanel.add(getCursorXLabel(), null);
+			cursorXPanel.add(getCursorXSlider(), null);
+			cursorXPanel.add(getCursorXSpinner(), null);
+			cursorXPanel.add(getCursorXCheckBox(), null);
+		}
+		
+		return cursorXPanel;
+	}
 
 	/**
 	 * Return the cursorXLabel property value.
@@ -98,7 +118,7 @@ public class CursorDialog extends JDialog implements CursorListener {
 					grid.setCursor(cursorXSlider.getValue(), 
 										cursorYSlider.getValue(), 
 										cursorZSlider.getValue());
-					cursorXComboBox.setValue(cursorXSlider.getValue());
+					cursorXSpinner.setValue(cursorXSlider.getValue());
 				}
 			});
 			
@@ -109,30 +129,38 @@ public class CursorDialog extends JDialog implements CursorListener {
 	}
 	
 	/**
-	 * Return the cursorXComboBox property value.
+	 * Return the cursorXSpinner property value.
 	 * @return JComboBox
 	 */
-	private JComboBox getCursorXComboBox() {
-		if (cursorXComboBox == null) {
-			cursorXComboBox = new JComboBox();
-			cursorXComboBox.setName("cursorXComboBox");
-			cursorXComboBox.setEditable(true);
-			cursorXComboBox.addActionListener(
-				new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent e) {
-				        JComboBox cb = (JComboBox)e.getSource();
-				        cursorXSlider.setValue((Integer)cb.getSelectedItem());
-				    }						
+	private JSpinner getCursorXSpinner() {
+		if (cursorXSpinner == null) {
+	        SpinnerModel model =
+                new SpinnerNumberModel((this.grid.getBoardSize()+1)/2, 			//	initial value
+                                       1, this.grid.getBoardSize(), 1);			//	min, max, step
+
+
+			cursorXSpinner = new JSpinner(model);
+			cursorXSpinner.setName("cursorXSpinner");
+			cursorXSpinner.addChangeListener(
+				new ChangeListener() {
+					public void stateChanged(ChangeEvent arg0) {
+						SpinnerModel model = cursorXSpinner.getModel();
+				        if (model instanceof SpinnerNumberModel) {
+				        	cursorXSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
+				        }
+					}						
 				});
-			cursorXComboBox.addKeyListener(new java.awt.event.KeyAdapter() {
+			cursorXSpinner.addKeyListener(new java.awt.event.KeyAdapter() {
 				public void keyTyped(java.awt.event.KeyEvent e) {
-			        JComboBox cb = (JComboBox)e.getSource();
-			        cursorXSlider.setValue((Integer)cb.getSelectedItem());
+					SpinnerModel model = cursorXSpinner.getModel();
+			        if (model instanceof SpinnerNumberModel) {
+			        	cursorXSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
+			        }
 				}
 			});
-			cursorXComboBox.setToolTipText("X coordinate of the cursor");
+			cursorXSpinner.setToolTipText("X coordinate of the cursor");
 		}
-		return cursorXComboBox;
+		return cursorXSpinner;
 	}
 
 	private JCheckBox getCursorXCheckBox() {
@@ -154,6 +182,23 @@ public class CursorDialog extends JDialog implements CursorListener {
 	//	Y coordinate
 	////////////////////////////////////////////////////////////////////////////
 	
+	private JPanel getCursorYPanel() {
+		if (cursorYPanel == null) {
+			cursorYPanel = new JPanel();
+			cursorYPanel.setName("cursorYPanel");
+			cursorYPanel.setLayout(
+					new BoxLayout(cursorYPanel,
+							BoxLayout.X_AXIS));
+
+			cursorYPanel.add(getCursorYLabel(), null);
+			cursorYPanel.add(getCursorYSlider(), null);
+			cursorYPanel.add(getCursorYSpinner(), null);
+			cursorYPanel.add(getCursorYCheckBox(), null);
+		}
+		
+		return cursorYPanel;
+	}
+
 	/**
 	 * Return the cursorYLabel property value.
 	 * @return JLabel
@@ -185,7 +230,7 @@ public class CursorDialog extends JDialog implements CursorListener {
 					grid.setCursor(cursorXSlider.getValue(), 
 								   cursorYSlider.getValue(), 
 								   cursorZSlider.getValue());
-					cursorYComboBox.setValue(cursorYSlider.getValue());
+					cursorYSpinner.setValue(cursorYSlider.getValue());
 				}
 			});
 			
@@ -196,30 +241,38 @@ public class CursorDialog extends JDialog implements CursorListener {
 	}
 	
 	/**
-	 * Return the cursorYComboBox property value.
+	 * Return the cursorYSpinner property value.
 	 * @return JComboBox
 	 */
-	private JComboBox getCursorYComboBox() {
-		if (cursorYComboBox == null) {
-			cursorYComboBox = new JComboBox();
-			cursorYComboBox.setName("cursorYComboBox");
-			cursorYComboBox.setEditable(true);
-			cursorYComboBox.addActionListener(
-				new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent e) {
-				        JComboBox cb = (JComboBox)e.getSource();
-				        cursorYSlider.setValue((Integer)cb.getSelectedItem());
-				    }						
+	private JSpinner getCursorYSpinner() {
+		if (cursorYSpinner == null) {
+	        SpinnerModel model =
+                new SpinnerNumberModel((this.grid.getBoardSize()+1)/2, 			//	initial value
+                                       1, this.grid.getBoardSize(), 1);			//	min, max, step
+
+
+			cursorYSpinner = new JSpinner(model);
+			cursorYSpinner.setName("cursorYSpinner");
+			cursorYSpinner.addChangeListener(
+				new ChangeListener() {
+					public void stateChanged(ChangeEvent arg0) {
+						SpinnerModel model = cursorYSpinner.getModel();
+				        if (model instanceof SpinnerNumberModel) {
+				        	cursorYSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
+				        }
+					}						
 				});
-			cursorYComboBox.addKeyListener(new java.awt.event.KeyAdapter() {
+			cursorYSpinner.addKeyListener(new java.awt.event.KeyAdapter() {
 				public void keyTyped(java.awt.event.KeyEvent e) {
-			        JComboBox cb = (JComboBox)e.getSource();
-			        cursorYSlider.setValue((Integer)cb.getSelectedItem());
+					SpinnerModel model = cursorYSpinner.getModel();
+			        if (model instanceof SpinnerNumberModel) {
+			        	cursorYSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
+			        }
 				}
 			});
-			cursorYComboBox.setToolTipText("Y coordinate of the cursor");
+			cursorYSpinner.setToolTipText("Y coordinate of the cursor");
 		}
-		return cursorYComboBox;
+		return cursorYSpinner;
 	}
 
 	private JCheckBox getCursorYCheckBox() {
@@ -240,7 +293,24 @@ public class CursorDialog extends JDialog implements CursorListener {
 	////////////////////////////////////////////////////////////////////////////
 	//	Z coordinate
 	////////////////////////////////////////////////////////////////////////////
-	
+
+	private JPanel getCursorZPanel() {
+		if (cursorZPanel == null) {
+			cursorZPanel = new JPanel();
+			cursorZPanel.setName("cursorZPanel");
+			cursorZPanel.setLayout(
+					new BoxLayout(cursorZPanel,
+							BoxLayout.X_AXIS));
+
+			cursorZPanel.add(getCursorZLabel(), null);
+			cursorZPanel.add(getCursorZSlider(), null);
+			cursorZPanel.add(getCursorZSpinner(), null);
+			cursorZPanel.add(getCursorZCheckBox(), null);
+		}
+		
+		return cursorZPanel;
+	}
+
 	/**
 	 * Return the cursorZLabel property value.
 	 * @return JLabel
@@ -272,7 +342,7 @@ public class CursorDialog extends JDialog implements CursorListener {
 					grid.setCursor(cursorXSlider.getValue(), 
 								   cursorYSlider.getValue(), 
 								   cursorZSlider.getValue());
-					cursorZComboBox.setValue(cursorZSlider.getValue());
+					cursorZSpinner.setValue(cursorZSlider.getValue());
 				}
 			});
 			
@@ -283,30 +353,38 @@ public class CursorDialog extends JDialog implements CursorListener {
 	}
 	
 	/**
-	 * Return the cursorZComboBox property value.
+	 * Return the cursorZSpinner property value.
 	 * @return JComboBox
 	 */
-	private JComboBox getCursorZComboBox() {
-		if (cursorZComboBox == null) {
-			cursorZComboBox = new JComboBox();
-			cursorZComboBox.setName("cursorZComboBox");
-			cursorZComboBox.setEditable(true);
-			cursorZComboBox.addActionListener(
-				new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent e) {
-				        JComboBox cb = (JComboBox)e.getSource();
-				        cursorZSlider.setValue((Integer)cb.getSelectedItem());
-				    }						
+	private JSpinner getCursorZSpinner() {
+		if (cursorZSpinner == null) {
+	        SpinnerModel model =
+                new SpinnerNumberModel((this.grid.getBoardSize()+1)/2, 			//	initial value
+                                       1, this.grid.getBoardSize(), 1);			//	min, max, step
+
+
+			cursorZSpinner = new JSpinner(model);
+			cursorZSpinner.setName("cursorZSpinner");
+			cursorZSpinner.addChangeListener(
+				new ChangeListener() {
+					public void stateChanged(ChangeEvent arg0) {
+						SpinnerModel model = cursorZSpinner.getModel();
+				        if (model instanceof SpinnerNumberModel) {
+				        	cursorZSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
+				        }
+					}						
 				});
-			cursorZComboBox.addKeyListener(new java.awt.event.KeyAdapter() {
+			cursorZSpinner.addKeyListener(new java.awt.event.KeyAdapter() {
 				public void keyTyped(java.awt.event.KeyEvent e) {
-			        JComboBox cb = (JComboBox)e.getSource();
-			        cursorZSlider.setValue((Integer)cb.getSelectedItem());
+					SpinnerModel model = cursorZSpinner.getModel();
+			        if (model instanceof SpinnerNumberModel) {
+			        	cursorZSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
+			        }
 				}
 			});
-			cursorZComboBox.setToolTipText("Z coordinate of the cursor");
+			cursorZSpinner.setToolTipText("Z coordinate of the cursor");
 		}
-		return cursorZComboBox;
+		return cursorZSpinner;
 	}
 
 	private JCheckBox getCursorZCheckBox() {
@@ -354,34 +432,35 @@ public class CursorDialog extends JDialog implements CursorListener {
 	 * Initialize the class.
 	 */
 	private void initialize() {
-
-		this.setName("Connection Dialog");
+		System.out.println("CursorDialog.initialize()");
+		this.setName("Cursor controls");
 		this.setForeground(java.awt.SystemColor.textHighlight);
-		this.setModal(true);
+//		this.setModal(false);
 		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		this.setSize(240, 170);
-		this.setTitle("Connect to Go Server");
+		this.setTitle("Cursor controls");
 		this.setContentPane(getJContentPane());
-
-	}
-	static public void main (String args[]) {
-		new ConnectionDialog (new ConnectionData ()).setVisible(true);
+		this.setVisible(true);
 	}
 
+	
 	private JPanel contentPane = null;
 
+	private JPanel cursorXPanel = null;
 	private JLabel cursorXLabel = null;
-	private JComboBox cursorXComboBox = null;
+	private JSpinner cursorXSpinner = null;
 	private JSlider cursorXSlider = null;
 	private JCheckBox cursorXCheckBox = null;
 	
+	private JPanel cursorYPanel = null;
 	private JLabel cursorYLabel = null;
-	private JComboBox cursorYComboBox = null;
+	private JSpinner cursorYSpinner = null;
 	private JSlider cursorYSlider = null;
 	private JCheckBox cursorYCheckBox = null;
 	
+	private JPanel cursorZPanel = null;
 	private JLabel cursorZLabel = null;
-	private JComboBox cursorZComboBox = null;
+	private JSpinner cursorZSpinner = null;
 	private JSlider cursorZSlider = null;
 	private JCheckBox cursorZCheckBox = null;
 	

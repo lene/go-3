@@ -150,6 +150,7 @@ public class Go3DClient {
 		if (Utility.getDebugMode()) game.addTransformListener(new SimpleTransformListener());
 		
 		Frame frame = new MainFrame(game, 600, 600);
+		game.addCursorListener(new CursorDialog(game.getGrid(), frame));
 
 		if (false) {
 			for (int i = 0; i < m; i++) {

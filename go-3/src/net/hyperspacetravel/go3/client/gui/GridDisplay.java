@@ -66,14 +66,14 @@ public class GridDisplay extends JApplet implements ActionListener {
 		setHostname (connection.getServerHost());
 		setBoardSize (connection.getBoardSize());
 		
-		G = new GoGridClient (connection.getBoardSize(), 
+		grid = new GoGridClient (connection.getBoardSize(), 
 				connection.getServerHost(), ConnectionData.getServerPort(), 
 				connection.getUsername(), this);
 
 		setupDisplay();
 		
-			if (connection.getStartGame()) G.newGame();
-			else G.joinGame(connection.getGame());
+			if (connection.getStartGame()) grid.newGame();
+			else grid.joinGame(connection.getGame());
 	}
 	
 	public GridDisplay (ConnectionData connection, ConnectedPlayer player) {
@@ -83,13 +83,13 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition ((ConnectionData.getServerPort() >= 1024 && ConnectionData.getServerPort() < 65535), 
 				"Port must lie between 1024 and 65535");
 
-		G = new GoGridClient (connection.getBoardSize(), player, this);
+		grid = new GoGridClient (connection.getBoardSize(), player, this);
 
 		setBoardSize (connection.getBoardSize());
 		setupDisplay();
 		
-			if (connection.getStartGame()) G.newGame();
-			else G.joinGame(connection.getGame());
+			if (connection.getStartGame()) grid.newGame();
+			else grid.joinGame(connection.getGame());
 	}
 	
 	/**
@@ -97,7 +97,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 if that position is already occupied, does nothing
 	 */
 	void setStone () {
-		if (G.setStone ()) 
+		if (grid.setStone ()) 
 			setCursor (xc (), yc (), zc ());
 	}
 	
@@ -111,7 +111,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	void fakeGame (int num, int col) {
 		assert GameBase.precondition ((col >= Colour.BLACK && col <= Colour.WHITE), 
 				"color must lie between "+Colour.name(Colour.BLACK)+" and "+Colour.name(Colour.WHITE));
-		G.fakeGame (num, col);
+		grid.fakeGame (num, col);
 	}
 	
 	
@@ -122,9 +122,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param z z position of cursor
 	 */
 	void setCursor (int x, int y, int z) {
-		G.setCursor (x, y, z);
+		grid.setCursor (x, y, z);
 		Transform3D translate = new Transform3D ();
-		translate.set (new Vector3f ((G.xc ()-1), (G.yc ()-1), (G.zc ()-1)));
+		translate.set (new Vector3f ((grid.xc ()-1), (grid.yc ()-1), (grid.zc ()-1)));
 		cursorPos.setTransform (translate);
 		//	inform listening views
 		CursorListener listener = null;
@@ -163,7 +163,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 				"point to draw stone ["+x+", "+y+", "+z+"] must lie inside the board!");
 		assert GameBase.precondition (p != null, "parent BranchGroup must exist!");
 
-		int col = G.getStone (x, y, z);
+		int col = grid.getStone (x, y, z);
 		if (col != Colour.EMPTY) {
 			Stone stone = new Stone (col);
 			//	    stone.setPickable (false);
@@ -407,7 +407,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 					//  the exception is caught in the inner loop so we can
 					//  continue if anything goes wrong; ineffective but secure
 					try {
-						if (G.getStone (x, y, z) != 0) {
+						if (grid.getStone (x, y, z) != 0) {
 							drawStone (x, y, z, parentBranch);
 						} }
 					catch (NullPointerException e) { }
@@ -597,7 +597,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @return number of liberties
 	 */
 	private int Liberty (int x, int y, int z, int current, boolean shortCut) {
-		return G.Liberty (x, y, z,  current, shortCut);
+		return grid.Liberty (x, y, z,  current, shortCut);
 	}
 	
 	/**
@@ -605,7 +605,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	void Liberty () {
 		JOptionPane.showMessageDialog (this,
-				new Integer (Liberty (xc (), yc (), zc (), G.getCurrentPlayer (), false)),
+				new Integer (Liberty (xc (), yc (), zc (), grid.getCurrentPlayer (), false)),
 				"Liberties at...",
 				JOptionPane.INFORMATION_MESSAGE );
 	}
@@ -804,15 +804,15 @@ public class GridDisplay extends JApplet implements ActionListener {
 	/**
 	 @return cursor x position
 	 */
-	public int xc () { return G.xc (); }
+	public int xc () { return grid.xc (); }
 	/**
 	 @return cursor y position
 	 */
-	public int yc () { return G.yc (); }
+	public int yc () { return grid.yc (); }
 	/**
 	 @return cursor z position
 	 */
-	public int zc () { return G.zc (); }
+	public int zc () { return grid.zc (); }
 	
 	/**	 board size	- not yet variable in xyz	*/
 	private int size = 0;
@@ -829,9 +829,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 	private boolean active = false;
 	
 	/**  */
-	private GoGridClient G;
-	GoGrid G() { return G; }
-	void G(GoGridClient G) { this.G = G; }
+	private GoGridClient grid;
+	GoGrid getGrid() { return grid; }
+	void setGrid(GoGridClient G) { this.grid = G; }
 
 	
 	//  Java3D display related variables
