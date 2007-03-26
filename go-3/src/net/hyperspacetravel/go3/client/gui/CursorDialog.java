@@ -18,7 +18,9 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+import java.awt.event.KeyAdapter;
 
+import java.util.ArrayList;
 import net.hyperspacetravel.go3.GoGrid;
 import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.client.CursorListener;
@@ -29,21 +31,82 @@ import net.hyperspacetravel.go3.client.CursorListener;
  */
 public class CursorDialog extends JDialog implements CursorListener {
 
+	class IndexedChangeListener implements ChangeListener {
+		IndexedChangeListener(int i) {
+			this.index = i;
+		}
+		
+		public void stateChanged(ChangeEvent arg0) {
+			
+		}
+		
+		protected int index = 0;
+	}
+	
+	class IndexedSliderChangeListener extends IndexedChangeListener {
+		
+		IndexedSliderChangeListener(int i) { super(i); }
+		
+		public void stateChanged(ChangeEvent arg0) {
+			grid.setCursor(cursorSlider.get(0).getValue(), 
+						   cursorSlider.get(1).getValue(), 
+						   cursorSlider.get(2).getValue());
+			cursorSpinner.get(index).setValue(cursorSlider.get(index).getValue());
+		}
+		
+	}
+	
+	class IndexedSpinnerChangeListener extends IndexedChangeListener {
+
+		IndexedSpinnerChangeListener(int i) { super(i);	}
+		
+		public void stateChanged(ChangeEvent arg0) {
+			SpinnerModel model = cursorSpinner.get(index).getModel();
+	        if (model instanceof SpinnerNumberModel) {
+	        	cursorSlider.get(index).setValue(((SpinnerNumberModel)model).getNumber().intValue());
+	        }
+		}						
+	}
+
+	class IndexedSpinnerKeyAdapter extends KeyAdapter {
+
+		IndexedSpinnerKeyAdapter(int i) {
+			this.index = i;
+		}
+		
+		public void keyTyped(java.awt.event.KeyEvent e) {
+			SpinnerModel model = cursorSpinner.get(index).getModel();
+	        if (model instanceof SpinnerNumberModel) {
+	        	cursorSlider.get(index).setValue(((SpinnerNumberModel)model).getNumber().intValue());
+	        }
+		}
+		
+		int index = 0;
+	}
+
+	public CursorDialog(GridDisplay _grid, Frame frame) {
+		super(frame);
+		this.grid = _grid;
+		this.cursorPanel = new ArrayList<JPanel>(3);
+		this.cursorLabel = new ArrayList<JLabel>(3);
+		this.cursorSpinner = new ArrayList<JSpinner>(3);
+		this.cursorSlider = new ArrayList<JSlider>(3);
+		this.cursorCheckBox = new ArrayList<JCheckBox>(3);
+		initialize();
+	}
+
 	/* (non-Javadoc)
 	 * @see net.hyperspacetravel.go3.client.CursorListener#notifyCursor(int, int, int)
 	 */
 	public void notifyCursor(int x, int y, int z) {
-		// TODO Auto-generated method stub
-
+		cursorSpinner.get(0).setValue(x);
+		cursorSlider.get(0).setValue(x);
+		cursorSpinner.get(1).setValue(y);
+		cursorSlider.get(1).setValue(y);
+		cursorSpinner.get(2).setValue(z);
+		cursorSlider.get(2).setValue(z);
 	}
 	
-	
-	public CursorDialog(GoGrid _grid, Frame frame) {
-		super(frame);
-		this.grid = _grid; 
-		initialize();
-	}
-
 
 	/**
 	 * Return the contentPane property value.
@@ -57,9 +120,9 @@ public class CursorDialog extends JDialog implements CursorListener {
 					new BoxLayout(contentPane,
 							BoxLayout.Y_AXIS));
 
-			contentPane.add(getCursorXPanel(), null);
-			contentPane.add(getCursorYPanel(), null);
-			contentPane.add(getCursorZPanel(), null);
+			contentPane.add(getCursorPanel(0, "x"), null);
+			contentPane.add(getCursorPanel(1, "y"), null);
+			contentPane.add(getCursorPanel(2, "z"), null);
 
 //			contentPane.add(getConnectButton());
 		}
@@ -67,339 +130,93 @@ public class CursorDialog extends JDialog implements CursorListener {
 	}
 
 	////////////////////////////////////////////////////////////////////////////
-	//	X coordinate
+	//	array version
 	////////////////////////////////////////////////////////////////////////////
 
-	private JPanel getCursorXPanel() {
-		if (cursorXPanel == null) {
-			cursorXPanel = new JPanel();
-			cursorXPanel.setName("cursorXPanel");
-			cursorXPanel.setLayout(
-					new BoxLayout(cursorXPanel,
+	private JPanel getCursorPanel(int index, String name) {
+		if (cursorPanel.size() <= index || cursorPanel.get(index) == null) {
+			cursorPanel.add(index, new JPanel());
+			cursorPanel.get(index).setName("cursor"+name.toUpperCase()+"Panel");
+			cursorPanel.get(index).setLayout(
+					new BoxLayout(cursorPanel.get(index),
 							BoxLayout.X_AXIS));
 
-			cursorXPanel.add(getCursorXLabel(), null);
-			cursorXPanel.add(getCursorXSlider(), null);
-			cursorXPanel.add(getCursorXSpinner(), null);
-			cursorXPanel.add(getCursorXCheckBox(), null);
-		}
+			cursorPanel.get(index).add(getCursorLabel(index, name), null);
+			cursorPanel.get(index).add(getCursorSlider(index, name), null);
+			cursorPanel.get(index).add(getCursorSpinner(index, name), null);
+			cursorPanel.get(index).add(getCursorCheckBox(index, name), null);
+		} else { System.out.println("cursorPanel["+String.valueOf(index)+"] was not null"); }
 		
-		return cursorXPanel;
+		return cursorPanel.get(index);
 	}
-
+	
 	/**
 	 * Return the cursorXLabel property value.
 	 * @return JLabel
 	 */
-	private JLabel getCursorXLabel() {
-		if (cursorXLabel == null) {
-			cursorXLabel = new JLabel();
-			cursorXLabel.setName("cursorXLabel");
-			cursorXLabel.setText("x");
-			cursorXLabel.setToolTipText("X coordinate of the cursor");
+	private JLabel getCursorLabel(int index, String name) {
+		if (cursorLabel.size() <= index || cursorLabel.get(index) == null) {
+			cursorLabel.add(index, new JLabel());
+			cursorLabel.get(index).setName("cursor"+name.toUpperCase()+"Label");
+			cursorLabel.get(index).setText(name);
+			cursorLabel.get(index).setToolTipText(name.toUpperCase()+" coordinate of the cursor");
 		}
-		return cursorXLabel;
+		return cursorLabel.get(index);
 	}
 	
 	/**
 	 * Return the cursorXSlider property value.
 	 * @return JSlider
 	 */
-	private JSlider getCursorXSlider() {
-		if (cursorXSlider == null) {
-			cursorXSlider = new JSlider();
-			cursorXSlider.setName("cursorXSlider");
-			cursorXSlider.setMinimum(1);
-			cursorXSlider.setMaximum(this.grid.getBoardSize());
-			cursorXSlider.setMinorTickSpacing(1);
-			cursorXSlider.setValue((this.grid.getBoardSize()+1)/2);
-			cursorXSlider.addChangeListener(new ChangeListener() {
-				public void stateChanged(ChangeEvent e) {
-					grid.setCursor(cursorXSlider.getValue(), 
-										cursorYSlider.getValue(), 
-										cursorZSlider.getValue());
-					cursorXSpinner.setValue(cursorXSlider.getValue());
-				}
-			});
-			
-			cursorXSlider.setToolTipText("X coordinate of the cursor");
-			cursorXSlider.setEnabled(true);
+	private JSlider getCursorSlider(int index, String name) {
+		if (cursorSlider.size() <= index || cursorSlider.get(index) == null) {
+			cursorSlider.add(index, new JSlider());
+			cursorSlider.get(index).setName("cursor"+name.toUpperCase()+"Slider");
+			cursorSlider.get(index).setMinimum(1);
+			cursorSlider.get(index).setMaximum(this.grid.getBoardSize());
+			cursorSlider.get(index).setMinorTickSpacing(1);
+			cursorSlider.get(index).setValue((this.grid.getBoardSize()+1)/2);
+			cursorSlider.get(index).setPaintTicks(true);
+			cursorSlider.get(index).setPaintLabels(true);
+			cursorSlider.get(index).addChangeListener(new IndexedSliderChangeListener(index));			
+			cursorSlider.get(index).setToolTipText(name.toUpperCase()+" coordinate of the cursor");
+			cursorSlider.get(index).setEnabled(true);
 		}
-		return cursorXSlider;
+		return cursorSlider.get(index);
 	}
 	
 	/**
 	 * Return the cursorXSpinner property value.
 	 * @return JComboBox
 	 */
-	private JSpinner getCursorXSpinner() {
-		if (cursorXSpinner == null) {
+	private JSpinner getCursorSpinner(int index, String name) {
+		if (cursorSpinner.size() <= index || cursorSpinner.get(index) == null) {
 	        SpinnerModel model =
                 new SpinnerNumberModel((this.grid.getBoardSize()+1)/2, 			//	initial value
                                        1, this.grid.getBoardSize(), 1);			//	min, max, step
 
-
-			cursorXSpinner = new JSpinner(model);
-			cursorXSpinner.setName("cursorXSpinner");
-			cursorXSpinner.addChangeListener(
-				new ChangeListener() {
-					public void stateChanged(ChangeEvent arg0) {
-						SpinnerModel model = cursorXSpinner.getModel();
-				        if (model instanceof SpinnerNumberModel) {
-				        	cursorXSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
-				        }
-					}						
-				});
-			cursorXSpinner.addKeyListener(new java.awt.event.KeyAdapter() {
-				public void keyTyped(java.awt.event.KeyEvent e) {
-					SpinnerModel model = cursorXSpinner.getModel();
-			        if (model instanceof SpinnerNumberModel) {
-			        	cursorXSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
-			        }
-				}
-			});
-			cursorXSpinner.setToolTipText("X coordinate of the cursor");
+			cursorSpinner.add(index, new JSpinner(model));
+			cursorSpinner.get(index).setName("cursor"+name.toUpperCase()+"Spinner");
+			cursorSpinner.get(index).addChangeListener(new IndexedSpinnerChangeListener(index));
+			cursorSpinner.get(index).addKeyListener(new IndexedSpinnerKeyAdapter(index));
+			cursorSpinner.get(index).setToolTipText(name.toUpperCase()+" coordinate of the cursor");
 		}
-		return cursorXSpinner;
+		return cursorSpinner.get(index);
 	}
 
-	private JCheckBox getCursorXCheckBox() {
-		if (cursorXCheckBox == null) {
-			cursorXCheckBox = new JCheckBox();
-			cursorXCheckBox.setName("cursorXCheckBox");
-			cursorXCheckBox.addActionListener(
+	private JCheckBox getCursorCheckBox(int index, String name) {
+		if (cursorCheckBox.size() <= index || cursorCheckBox.get(index) == null) {
+			cursorCheckBox.add(index, new JCheckBox());
+			cursorCheckBox.get(index).setName("cursor"+name.toUpperCase()+"CheckBox");
+			cursorCheckBox.get(index).addActionListener(
 				new java.awt.event.ActionListener() {
 					public void actionPerformed(java.awt.event.ActionEvent e) {
 							//	TODO
 						}						
 				});
-			cursorXCheckBox.setToolTipText("Enable X coordinate of the cursor");
+			cursorCheckBox.get(index).setToolTipText("Enable "+name.toUpperCase()+" coordinate of the cursor");
 		}
-		return cursorXCheckBox;		
-	}
-
-	////////////////////////////////////////////////////////////////////////////
-	//	Y coordinate
-	////////////////////////////////////////////////////////////////////////////
-	
-	private JPanel getCursorYPanel() {
-		if (cursorYPanel == null) {
-			cursorYPanel = new JPanel();
-			cursorYPanel.setName("cursorYPanel");
-			cursorYPanel.setLayout(
-					new BoxLayout(cursorYPanel,
-							BoxLayout.X_AXIS));
-
-			cursorYPanel.add(getCursorYLabel(), null);
-			cursorYPanel.add(getCursorYSlider(), null);
-			cursorYPanel.add(getCursorYSpinner(), null);
-			cursorYPanel.add(getCursorYCheckBox(), null);
-		}
-		
-		return cursorYPanel;
-	}
-
-	/**
-	 * Return the cursorYLabel property value.
-	 * @return JLabel
-	 */
-	private JLabel getCursorYLabel() {
-		if (cursorYLabel == null) {
-			cursorYLabel = new JLabel();
-			cursorYLabel.setName("cursorYLabel");
-			cursorYLabel.setText("y");
-			cursorYLabel.setToolTipText("Y coordinate of the cursor");
-		}
-		return cursorYLabel;
-	}
-	
-	/**
-	 * Return the cursorYSlider property value.
-	 * @return JSlider
-	 */
-	private JSlider getCursorYSlider() {
-		if (cursorYSlider == null) {
-			cursorYSlider = new JSlider();
-			cursorYSlider.setName("cursorYSlider");
-			cursorYSlider.setMinimum(1);
-			cursorYSlider.setMaximum(this.grid.getBoardSize());
-			cursorYSlider.setMinorTickSpacing(1);
-			cursorYSlider.setValue((this.grid.getBoardSize()+1)/2);
-			cursorYSlider.addChangeListener(new ChangeListener() {
-				public void stateChanged(ChangeEvent e) {
-					grid.setCursor(cursorXSlider.getValue(), 
-								   cursorYSlider.getValue(), 
-								   cursorZSlider.getValue());
-					cursorYSpinner.setValue(cursorYSlider.getValue());
-				}
-			});
-			
-			cursorYSlider.setToolTipText("Y coordinate of the cursor");
-			cursorYSlider.setEnabled(true);
-		}
-		return cursorYSlider;
-	}
-	
-	/**
-	 * Return the cursorYSpinner property value.
-	 * @return JComboBox
-	 */
-	private JSpinner getCursorYSpinner() {
-		if (cursorYSpinner == null) {
-	        SpinnerModel model =
-                new SpinnerNumberModel((this.grid.getBoardSize()+1)/2, 			//	initial value
-                                       1, this.grid.getBoardSize(), 1);			//	min, max, step
-
-
-			cursorYSpinner = new JSpinner(model);
-			cursorYSpinner.setName("cursorYSpinner");
-			cursorYSpinner.addChangeListener(
-				new ChangeListener() {
-					public void stateChanged(ChangeEvent arg0) {
-						SpinnerModel model = cursorYSpinner.getModel();
-				        if (model instanceof SpinnerNumberModel) {
-				        	cursorYSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
-				        }
-					}						
-				});
-			cursorYSpinner.addKeyListener(new java.awt.event.KeyAdapter() {
-				public void keyTyped(java.awt.event.KeyEvent e) {
-					SpinnerModel model = cursorYSpinner.getModel();
-			        if (model instanceof SpinnerNumberModel) {
-			        	cursorYSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
-			        }
-				}
-			});
-			cursorYSpinner.setToolTipText("Y coordinate of the cursor");
-		}
-		return cursorYSpinner;
-	}
-
-	private JCheckBox getCursorYCheckBox() {
-		if (cursorYCheckBox == null) {
-			cursorYCheckBox = new JCheckBox();
-			cursorYCheckBox.setName("cursorYCheckBox");
-			cursorYCheckBox.addActionListener(
-				new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent e) {
-							//	TODO
-						}						
-				});
-			cursorYCheckBox.setToolTipText("Enable Y coordinate of the cursor");
-		}
-		return cursorYCheckBox;		
-	}
-
-	////////////////////////////////////////////////////////////////////////////
-	//	Z coordinate
-	////////////////////////////////////////////////////////////////////////////
-
-	private JPanel getCursorZPanel() {
-		if (cursorZPanel == null) {
-			cursorZPanel = new JPanel();
-			cursorZPanel.setName("cursorZPanel");
-			cursorZPanel.setLayout(
-					new BoxLayout(cursorZPanel,
-							BoxLayout.X_AXIS));
-
-			cursorZPanel.add(getCursorZLabel(), null);
-			cursorZPanel.add(getCursorZSlider(), null);
-			cursorZPanel.add(getCursorZSpinner(), null);
-			cursorZPanel.add(getCursorZCheckBox(), null);
-		}
-		
-		return cursorZPanel;
-	}
-
-	/**
-	 * Return the cursorZLabel property value.
-	 * @return JLabel
-	 */
-	private JLabel getCursorZLabel() {
-		if (cursorZLabel == null) {
-			cursorZLabel = new JLabel();
-			cursorZLabel.setName("cursorZLabel");
-			cursorZLabel.setText("z");
-			cursorZLabel.setToolTipText("Z coordinate of the cursor");
-		}
-		return cursorZLabel;
-	}
-	
-	/**
-	 * Return the cursorZSlider property value.
-	 * @return JSlider
-	 */
-	private JSlider getCursorZSlider() {
-		if (cursorZSlider == null) {
-			cursorZSlider = new JSlider();
-			cursorZSlider.setName("cursorZSlider");
-			cursorZSlider.setMinimum(1);
-			cursorZSlider.setMaximum(this.grid.getBoardSize());
-			cursorZSlider.setMinorTickSpacing(1);
-			cursorZSlider.setValue((this.grid.getBoardSize()+1)/2);
-			cursorZSlider.addChangeListener(new ChangeListener() {
-				public void stateChanged(ChangeEvent e) {
-					grid.setCursor(cursorXSlider.getValue(), 
-								   cursorYSlider.getValue(), 
-								   cursorZSlider.getValue());
-					cursorZSpinner.setValue(cursorZSlider.getValue());
-				}
-			});
-			
-			cursorZSlider.setToolTipText("Z coordinate of the cursor");
-			cursorZSlider.setEnabled(true);
-		}
-		return cursorZSlider;
-	}
-	
-	/**
-	 * Return the cursorZSpinner property value.
-	 * @return JComboBox
-	 */
-	private JSpinner getCursorZSpinner() {
-		if (cursorZSpinner == null) {
-	        SpinnerModel model =
-                new SpinnerNumberModel((this.grid.getBoardSize()+1)/2, 			//	initial value
-                                       1, this.grid.getBoardSize(), 1);			//	min, max, step
-
-
-			cursorZSpinner = new JSpinner(model);
-			cursorZSpinner.setName("cursorZSpinner");
-			cursorZSpinner.addChangeListener(
-				new ChangeListener() {
-					public void stateChanged(ChangeEvent arg0) {
-						SpinnerModel model = cursorZSpinner.getModel();
-				        if (model instanceof SpinnerNumberModel) {
-				        	cursorZSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
-				        }
-					}						
-				});
-			cursorZSpinner.addKeyListener(new java.awt.event.KeyAdapter() {
-				public void keyTyped(java.awt.event.KeyEvent e) {
-					SpinnerModel model = cursorZSpinner.getModel();
-			        if (model instanceof SpinnerNumberModel) {
-			        	cursorZSlider.setValue(((SpinnerNumberModel)model).getNumber().intValue());
-			        }
-				}
-			});
-			cursorZSpinner.setToolTipText("Z coordinate of the cursor");
-		}
-		return cursorZSpinner;
-	}
-
-	private JCheckBox getCursorZCheckBox() {
-		if (cursorZCheckBox == null) {
-			cursorZCheckBox = new JCheckBox();
-			cursorZCheckBox.setName("cursorZCheckBox");
-			cursorZCheckBox.addActionListener(
-				new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent e) {
-							//	TODO
-						}						
-				});
-			cursorZCheckBox.setToolTipText("Enable Z coordinate of the cursor");
-		}
-		return cursorZCheckBox;		
+		return cursorCheckBox.get(index);		
 	}
 
 	////////////////////////////////////////////////////////////////////////////
@@ -432,12 +249,11 @@ public class CursorDialog extends JDialog implements CursorListener {
 	 * Initialize the class.
 	 */
 	private void initialize() {
-		System.out.println("CursorDialog.initialize()");
 		this.setName("Cursor controls");
 		this.setForeground(java.awt.SystemColor.textHighlight);
-//		this.setModal(false);
+		this.setModal(false);
 		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		this.setSize(240, 170);
+		this.setSize(240, 110);
 		this.setTitle("Cursor controls");
 		this.setContentPane(getJContentPane());
 		this.setVisible(true);
@@ -446,28 +262,16 @@ public class CursorDialog extends JDialog implements CursorListener {
 	
 	private JPanel contentPane = null;
 
-	private JPanel cursorXPanel = null;
-	private JLabel cursorXLabel = null;
-	private JSpinner cursorXSpinner = null;
-	private JSlider cursorXSlider = null;
-	private JCheckBox cursorXCheckBox = null;
-	
-	private JPanel cursorYPanel = null;
-	private JLabel cursorYLabel = null;
-	private JSpinner cursorYSpinner = null;
-	private JSlider cursorYSlider = null;
-	private JCheckBox cursorYCheckBox = null;
-	
-	private JPanel cursorZPanel = null;
-	private JLabel cursorZLabel = null;
-	private JSpinner cursorZSpinner = null;
-	private JSlider cursorZSlider = null;
-	private JCheckBox cursorZCheckBox = null;
+	private ArrayList<JPanel> cursorPanel = null;
+	private ArrayList<JLabel> cursorLabel = null;
+	private ArrayList<JSpinner> cursorSpinner = null;
+	private ArrayList<JSlider> cursorSlider = null;
+	private ArrayList<JCheckBox>cursorCheckBox = null;
 	
 	private JButton connectButton = null;
 
 	
-	private GoGrid grid;
+	private GridDisplay grid;
 
 	/**														 */
 	private static final long serialVersionUID = 1590600506585137608L;

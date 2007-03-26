@@ -9,7 +9,7 @@ package net.hyperspacetravel.go3;
 
 public class GameBase {
 	
-	static protected final String VERSION = "0.4.0";
+	static protected final String VERSION = "0.4.3";
 	static protected final String MAINTAINER = "Helge Preuss <helge.preuss@gmx.net>";
 //	static public final boolean DEBUG = false; 
 
