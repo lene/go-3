@@ -11,6 +11,12 @@ package net.hyperspacetravel.go3.client.gui;
  @author helge
 */
 
+import java.awt.SystemColor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
+
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -26,25 +32,6 @@ import net.hyperspacetravel.go3.Utility;
 
 public class ConnectionDialog extends JDialog {
 
-	private static final long serialVersionUID = 7388416474815978781L;
-
-	private JPanel contentPane = null;
-
-	private JLabel serverHostLabel = null;
-	private JComboBox serverHostComboBox = null;
-
-	private JLabel serverPortLabel = null;
-	private JTextField serverPortTextField = null;
-
-	private JLabel usernameLabel = null;
-	private JTextField usernameTextField = null;
-
-	private JButton connectButton = null;
-
-	private int serverPort = 6666;
-	private String username = "";
-	private ConnectionData connectionData;
-	
 	public ConnectionDialog(ConnectionData c) {
 		super ();
 		this.connectionData = c;
@@ -103,14 +90,13 @@ public class ConnectionDialog extends JDialog {
 			serverHostComboBox.setName("serverHostTextField");
 			serverHostComboBox.setEditable(true);
 			serverHostComboBox.addActionListener(
-				new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent e) {
-				        JComboBox cb = (JComboBox)e.getSource();
-				        connectionData.setServerHost((String)cb.getSelectedItem());	
+				new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+				        connectionData.setServerHost((String)serverHostComboBox.getSelectedItem());	
 				    }						
 				});
-			serverHostComboBox.addKeyListener(new java.awt.event.KeyAdapter() {
-				public void keyTyped(java.awt.event.KeyEvent e) {
+			serverHostComboBox.addKeyListener(new KeyAdapter() {
+				public void keyTyped(KeyEvent e) {
 					connectionData.setServerHost((String)serverHostComboBox.getSelectedItem());					
 				}
 			});
@@ -143,8 +129,8 @@ public class ConnectionDialog extends JDialog {
 			serverPortTextField = new JTextField();
 			serverPortTextField.setName("JTextField2");
 			serverPortTextField.setText(String.valueOf(this.serverPort));
-			serverPortTextField.addKeyListener(new java.awt.event.KeyAdapter() {
-				public void keyTyped(java.awt.event.KeyEvent e) {
+			serverPortTextField.addKeyListener(new KeyAdapter() {
+				public void keyTyped(KeyEvent e) {
 					GameBase.setServerPort(Integer.valueOf(serverPortTextField.getText()).intValue());					
 				}
 			});
@@ -180,8 +166,8 @@ public class ConnectionDialog extends JDialog {
 			usernameTextField = new JTextField();
 			usernameTextField.setName("JTextField3");
 			usernameTextField.setText(this.username);
-			usernameTextField.addKeyListener(new java.awt.event.KeyAdapter() {
-				public void keyTyped(java.awt.event.KeyEvent e) {
+			usernameTextField.addKeyListener(new KeyAdapter() {
+				public void keyTyped(KeyEvent e) {
 					connectionData.setUsername(usernameTextField.getText());					
 				}
 			});
@@ -201,8 +187,8 @@ public class ConnectionDialog extends JDialog {
 			connectButton = new JButton();
 			connectButton.setName("connectButton");
 			connectButton.setText("Connect to Server");
-			connectButton.addActionListener(new java.awt.event.ActionListener() {
-				public void actionPerformed(java.awt.event.ActionEvent e) {
+			connectButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
 					if (e.getActionCommand().equals (connectButton.getText())) {
 						Utility.debug("actionPerformed(): "+e.getActionCommand()); // TODO Auto-generated Event stub actionPerformed()
 						setVisible (false);
@@ -220,7 +206,7 @@ public class ConnectionDialog extends JDialog {
 	private void initialize() {
 
 		this.setName("Connection Dialog");
-		this.setForeground(java.awt.SystemColor.textHighlight);
+		this.setForeground(SystemColor.textHighlight);
 		this.setModal(true);
 		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		this.setSize(240, 170);
@@ -230,4 +216,24 @@ public class ConnectionDialog extends JDialog {
 	static public void main (String args[]) {
 		new ConnectionDialog (new ConnectionData ()).setVisible(true);
 	}
+
+	private static final long serialVersionUID = 7388416474815978781L;
+
+	private JPanel contentPane = null;
+
+	private JLabel serverHostLabel = null;
+	private JComboBox serverHostComboBox = null;
+
+	private JLabel serverPortLabel = null;
+	private JTextField serverPortTextField = null;
+
+	private JLabel usernameLabel = null;
+	private JTextField usernameTextField = null;
+
+	private JButton connectButton = null;
+
+	private int serverPort = 6666;
+	private String username = "";
+	private ConnectionData connectionData;
+	
 }  //  @jve:decl-index=0:visual-constraint="10,10"

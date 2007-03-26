@@ -10,6 +10,9 @@ import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.GameBase;
 
 
+import java.awt.SystemColor;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.*;
 
@@ -123,13 +126,13 @@ public class ChooseGameDialog extends JDialog {
 			pendingListContentPane = new JPanel();
 			pendingListContentPane.setName("pendingListContentPane");
 			pendingListContentPane.setLayout(
-					new javax.swing.BoxLayout(pendingListContentPane,
-							javax.swing.BoxLayout.Y_AXIS));
+					new BoxLayout(pendingListContentPane,
+							BoxLayout.Y_AXIS));
 
 			pendingListContentPane.add(getPendingListLabel(), null);
 			pendingListContentPane.add(getPendingList(), null);
 			
-			pendingListContentPane.add(getConnectButton());
+			pendingListContentPane.add(getJoinGameButton());
 		}
 		return pendingListContentPane;
 	}
@@ -139,8 +142,8 @@ public class ChooseGameDialog extends JDialog {
 			newGameContentPane = new JPanel();
 			newGameContentPane.setName("newGameContentPane");
 			newGameContentPane.setLayout(
-					new javax.swing.BoxLayout(newGameContentPane,
-							javax.swing.BoxLayout.Y_AXIS));
+					new BoxLayout(newGameContentPane,
+							BoxLayout.Y_AXIS));
 
 			newGameContentPane.add(getNewGameLabel(), null);
 			newGameContentPane.add(getBoardSizeLabel(), null);
@@ -156,8 +159,8 @@ public class ChooseGameDialog extends JDialog {
 			playersListContentPane = new JPanel();
 			playersListContentPane.setName("playersListContentPane");
 			playersListContentPane.setLayout(
-					new javax.swing.BoxLayout(playersListContentPane,
-							javax.swing.BoxLayout.Y_AXIS));
+					new BoxLayout(playersListContentPane,
+							BoxLayout.Y_AXIS));
 
 			playersListContentPane.add(getPlayersListLabel(), null);
 //			playersListContentPane.add(getPendingList(), null);
@@ -172,8 +175,8 @@ public class ChooseGameDialog extends JDialog {
 			gamesListContentPane = new JPanel();
 			gamesListContentPane.setName("gamesListContentPane");
 			gamesListContentPane.setLayout(
-					new javax.swing.BoxLayout(gamesListContentPane,
-							javax.swing.BoxLayout.Y_AXIS));
+					new BoxLayout(gamesListContentPane,
+							BoxLayout.Y_AXIS));
 
 			gamesListContentPane.add(getGamesListLabel(), null);
 //			gamesListContentPane.add(getPendingList(), null);
@@ -191,7 +194,7 @@ public class ChooseGameDialog extends JDialog {
 	 */
 	private JLabel getPendingListLabel() {
 		if (pendingListLabel == null) {
-			pendingListLabel = new javax.swing.JLabel();
+			pendingListLabel = new JLabel();
 			pendingListLabel.setName("pendingListLabel");
 			pendingListLabel.setText("Choose a Game");
 			pendingListLabel.setToolTipText("The games in the list are currently " +
@@ -223,18 +226,18 @@ public class ChooseGameDialog extends JDialog {
 	}
 	
 	/**
-	 * Return the connectButton property value.
+	 * Return the joinGameButton property value.
 	 * @return javax.swing.JButton
 	 */
-	private JButton getConnectButton() {
-		if (connectButton == null) {
-			connectButton = new javax.swing.JButton();
-			connectButton.setName("connectButton");
-			connectButton.setText("Connect to Server");
-			connectButton.addActionListener(
-				new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent e) {
-						if (e.getActionCommand().equals (connectButton.getText())) {
+	private JButton getJoinGameButton() {
+		if (joinGameButton == null) {
+			joinGameButton = new javax.swing.JButton();
+			joinGameButton.setName("joinGameButton");
+			joinGameButton.setText("Join this game");
+			joinGameButton.addActionListener(
+				new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						if (e.getActionCommand().equals (joinGameButton.getText())) {
 							int index = pendingList.getSelectedIndex();
 							setGameList();
 							if (index >= 0 && index < gameData.length) {
@@ -248,7 +251,7 @@ public class ChooseGameDialog extends JDialog {
 					}
 				});
 		}
-		return connectButton;
+		return joinGameButton;
 	}
 
 	//	methods building the "new game" view
@@ -258,7 +261,7 @@ public class ChooseGameDialog extends JDialog {
 	 */
 	private JLabel getNewGameLabel() {
 		if (newGameLabel == null) {
-			newGameLabel = new javax.swing.JLabel();
+			newGameLabel = new JLabel();
 			newGameLabel.setName("newGameLabel");
 			newGameLabel.setText("Start a new Game");
 			newGameLabel.setToolTipText("Enter the size of the board you want " +
@@ -316,7 +319,7 @@ public class ChooseGameDialog extends JDialog {
 	}
 	
 	/**
-	 * Return the connectButton property value.
+	 * Return the joinGameButton property value.
 	 * @return JButton
 	 */
 	private JButton getStartButton() {
@@ -324,8 +327,8 @@ public class ChooseGameDialog extends JDialog {
 			startButton = new JButton();
 			startButton.setName("startButton");
 			startButton.setText("Start Game");
-			startButton.addActionListener(new java.awt.event.ActionListener() {
-				public void actionPerformed(java.awt.event.ActionEvent e) {
+			startButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
 					if (e.getActionCommand().equals (startButton.getText())) {
 						System.out.println("actionPerformed(): "+e.getActionCommand()); // TODO Auto-generated Event stub actionPerformed()
 			    		connectionData.setStartGame(true);
@@ -345,7 +348,7 @@ public class ChooseGameDialog extends JDialog {
 	 */
 	private JLabel getPlayersListLabel() {
 		if (playersListLabel == null) {
-			playersListLabel = new javax.swing.JLabel();
+			playersListLabel = new JLabel();
 			playersListLabel.setName("playersListLabel");
 			playersListLabel.setText("Players currently connected");
 			playersListLabel.setToolTipText("These players are currently "+
@@ -361,7 +364,7 @@ public class ChooseGameDialog extends JDialog {
 	 */
 	private JLabel getGamesListLabel() {
 		if (gamesListLabel == null) {
-			gamesListLabel = new javax.swing.JLabel();
+			gamesListLabel = new JLabel();
 			gamesListLabel.setName("gamesListLabel");
 			gamesListLabel.setText("Choose a Game");
 			gamesListLabel.setToolTipText("The games in the list are currently " +
@@ -378,9 +381,9 @@ public class ChooseGameDialog extends JDialog {
 	 */
 	private void initialize() {
         this.setName("Game Chooser Dialog");
-		this.setForeground(java.awt.SystemColor.textHighlight);
+		this.setForeground(SystemColor.textHighlight);
 		this.setModal(true);
-		this.setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		this.setSize(480, 300);
 		this.setTitle("Choose a Game");
 		this.setContentPane(getTabbedPane());
@@ -407,7 +410,7 @@ public class ChooseGameDialog extends JDialog {
 	DefaultListModel model = null;
 	private JList pendingList = null;
 	private JScrollPane listScroller;
-	private JButton connectButton = null;
+	private JButton joinGameButton = null;
 	
 	//	new game elements
 	private JLabel newGameLabel = null;
