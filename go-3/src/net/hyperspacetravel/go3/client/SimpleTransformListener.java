@@ -57,8 +57,4 @@ R = (Rx*Ry)*Rz
 		
 		return new Vector3d(Math.toDegrees(rx), Math.toDegrees(ry), Math.toDegrees(rz));
 	}
-	
-	protected double rad2deg() {
-		return 0.;
-	}
 }

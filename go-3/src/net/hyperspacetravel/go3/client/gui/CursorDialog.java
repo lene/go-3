@@ -18,6 +18,7 @@ import javax.swing.SpinnerNumberModel;
 import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
+
 import java.awt.event.KeyAdapter;
 
 import java.util.ArrayList;
@@ -30,7 +31,7 @@ import net.hyperspacetravel.go3.client.CursorListener;
  *
  */
 public class CursorDialog extends JDialog implements CursorListener {
-
+	
 	class IndexedChangeListener implements ChangeListener {
 		IndexedChangeListener(int i) {
 			this.index = i;

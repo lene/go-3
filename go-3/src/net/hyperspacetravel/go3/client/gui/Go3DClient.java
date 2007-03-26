@@ -177,6 +177,7 @@ public class Go3DClient {
 		
 		Frame frame = new MainFrame(game, 600, 600);
 		game.addCursorListener(new CursorDialog(game, frame));
+		game.addTransformListener(new NavigationDialog(game, frame));
 
 		if (false) {
 			for (int i = 0; i < m; i++) {
