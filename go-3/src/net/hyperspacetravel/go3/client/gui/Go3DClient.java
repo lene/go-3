@@ -4,6 +4,8 @@ import java.awt.Frame;
 import java.net.*;
 import java.io.*;
 
+import javax.swing.JOptionPane;
+
 import net.hyperspacetravel.go3.Colour;
 import net.hyperspacetravel.go3.ConnectedPlayer;
 import net.hyperspacetravel.go3.ConnectionData;
@@ -15,8 +17,16 @@ import net.hyperspacetravel.go3.client.SimpleTransformListener;
 
 import com.sun.j3d.utils.applet.MainFrame;
 
-public class Go3DClient {
+class CantConnectException extends IllegalArgumentException {
+	private static final long serialVersionUID = 5949335483927136880L;		
+}
 
+class AlreadyConnectedException extends IllegalArgumentException {
+	private static final long serialVersionUID = 5949335483927136880L;		
+}
+
+public class Go3DClient {
+	
 	static protected ConnectedPlayer setupConnection() {
 
 		ConnectedPlayer player = null;
@@ -28,7 +38,7 @@ public class Go3DClient {
 			Utility.warning("GoGridClient.setupConnection (): Connect to "
 					+ connectionData.getServerHost() + " on port "
 					+ GameBase.getServerPort() + " failed");
-			System.exit(0); //	TODO decent error handling
+			throw new CantConnectException();
 		}
 		try {
 			player.out.println(connectionData.getUsername());
@@ -36,7 +46,7 @@ public class Go3DClient {
 			Utility.debug("Server answer to connection request: "+ack);
 			if (!ack.equals("ok")) {
 				Utility.debug("Bad answer: "+ack);
-				System.exit(0); //	TODO decent error handling
+				throw new AlreadyConnectedException();
 			}
 		} catch (IOException e) { //	TODO decent error handling
 		} catch (NullPointerException e) { //	TODO decent error handling
@@ -123,27 +133,43 @@ public class Go3DClient {
 	public static void main(String[] args) {
 		parse(args);
 
-		ConnectionDialog conn = new ConnectionDialog(connectionData);
-		conn.setVisible(true);
-
-		Utility.debug("Board size  = " + connectionData.getBoardSize());
-		Utility.debug("Pre-moves   = " + m);
-		Utility.debug("Server port = " + GameBase.getServerPort());
-		Utility.debug("Server host = " + connectionData.getServerHost());
-		Utility.debug("Username    = " + connectionData.getUsername());
-
 		GridDisplay game = null;
-		if (!connectionData.getStartGame()) {
-			ConnectedPlayer p = setupConnection();
 
-			ChooseGameDialog choose = new ChooseGameDialog(p, connectionData);
-			choose.setVisible(true);
+		while (game == null) {
+			try {
+				ConnectionDialog conn = new ConnectionDialog(connectionData);
+				conn.setVisible(true);
 
-			Utility.debug("Chosen game = " + connectionData.getGame());
+				Utility.debug("Pre-moves   = " + m);
+				Utility.debug("Server port = " + GameBase.getServerPort());
+				Utility.debug("Server host = " + connectionData.getServerHost());
+				Utility.debug("Username    = " + connectionData.getUsername());
 
-			game = new GridDisplay(connectionData, p);
-		} else {
-			game = new GridDisplay(connectionData);
+				if (!connectionData.getStartGame()) {
+					ConnectedPlayer p = setupConnection();
+
+					ChooseGameDialog choose = new ChooseGameDialog(p, connectionData);
+					choose.setVisible(true);
+
+					Utility.debug("Chosen game = " + connectionData.getGame());
+
+					game = new GridDisplay(connectionData, p);
+				} else {
+					game = new GridDisplay(connectionData);
+				}
+			} catch (CantConnectException e) {
+				JOptionPane.showMessageDialog(null, "There is no Go³ server listening on host \""+connectionData.getServerHost()+
+						"\" on port "+GameBase.getServerPort()+".\n" +
+						"Please check your connection settings and try again.");
+			} catch (AlreadyConnectedException e) {
+				JOptionPane.showMessageDialog(null, "A user called \""+connectionData.getUsername()+"\" is already connected.\n" +
+						"Each user can have only one connection currently.\n" +
+						"Please choose a different user name.");
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(null, "An unidentifiable Error occured.\n" +
+						"I am terminating. Sorry.");
+				System.exit(1);
+			}
 		}
 		
 		if (Utility.getDebugMode()) game.addCursorListener(new SimpleCursorListener());

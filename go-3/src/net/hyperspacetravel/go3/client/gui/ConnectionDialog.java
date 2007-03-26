@@ -226,7 +226,6 @@ public class ConnectionDialog extends JDialog {
 		this.setSize(240, 170);
 		this.setTitle("Connect to Go Server");
 		this.setContentPane(getJContentPane());
-
 	}
 	static public void main (String args[]) {
 		new ConnectionDialog (new ConnectionData ()).setVisible(true);
