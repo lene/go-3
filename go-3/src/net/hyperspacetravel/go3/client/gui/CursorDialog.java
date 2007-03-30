@@ -4,6 +4,7 @@
 package net.hyperspacetravel.go3.client.gui;
 
 import java.awt.Frame;
+import java.awt.event.KeyAdapter;
 
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
@@ -19,10 +20,8 @@ import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import java.awt.event.KeyAdapter;
-
 import java.util.ArrayList;
-import net.hyperspacetravel.go3.GoGrid;
+
 import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.client.CursorListener;
 

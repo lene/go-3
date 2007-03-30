@@ -165,10 +165,20 @@ public class Go3DClient {
 				JOptionPane.showMessageDialog(null, "A user called \""+connectionData.getUsername()+"\" is already connected.\n" +
 						"Each user can have only one connection currently.\n" +
 						"Please choose a different user name.");
-			} catch (Exception e) {
-				JOptionPane.showMessageDialog(null, "An unidentifiable Error occured.\n" +
-						"I am terminating. Sorry.");
+			} catch(UnsatisfiedLinkError e) {
+				JOptionPane.showMessageDialog(null, "An unrecoverable Error occured: " +
+						e.getMessage()+"\n\n"+
+						"Apparently you haven't set up the Java3D extension correctly.\n" +
+						"You must supply the path to the j3dcore-ogl library on the \n" +
+						"command line like this:\n\n" +
+						"    java -Djava.library.path=${J3D_LIBPATH} -cp ${CLASSPATH}\n" +
+						"         net.hyperspacetravel.go3.client.gui.Go3DClient\n\n" +
+						"I cannot guess the correct path. I'll have to terminate. Sorry.");
 				System.exit(1);
+			} catch (Exception e) {
+				JOptionPane.showMessageDialog(null, "An unrecoverable Error occured: " +
+						e.getMessage()+"\n"+
+					"I have to terminate. Sorry.");System.exit(1);
 			}
 		}
 		
@@ -177,7 +187,7 @@ public class Go3DClient {
 		
 		Frame frame = new MainFrame(game, 600, 600);
 		game.addCursorListener(new CursorDialog(game, frame));
-		game.addTransformListener(new NavigationDialog(game, frame));
+		if (Utility.getDebugMode()) game.addTransformListener(new NavigationDialog(game, frame));
 
 		if (false) {
 			for (int i = 0; i < m; i++) {

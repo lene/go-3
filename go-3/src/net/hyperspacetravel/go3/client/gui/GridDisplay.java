@@ -135,12 +135,17 @@ public class GridDisplay extends JApplet implements ActionListener {
 		}
 	}
 	
+	void setTransform(Transform3D rotate, boolean notify) {
+		objControl.setTransform(rotate);
+	}
+	
 	/**	
 	 sets the transform (rotation, translation)
 	 @param rotate the Transform3D
 	 */
 	void setTransform(Transform3D rotate) {
 		objControl.setTransform(rotate);
+		
 		//	inform listening views
 		Iterator<TransformListener> i = transformListeners.iterator();
 		while(i.hasNext()) {

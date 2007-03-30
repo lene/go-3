@@ -12,28 +12,19 @@ import java.util.ArrayList;
 
 import javax.media.j3d.Transform3D;
 import javax.swing.BoxLayout;
-import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSlider;
-import javax.swing.JSpinner;
 import javax.swing.JTextField;
-import javax.swing.SpinnerModel;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import javax.vecmath.Matrix3d;
 import javax.vecmath.Vector3d;
 
-import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.client.TransformListener;
-import net.hyperspacetravel.go3.client.gui.CursorDialog.IndexedChangeListener;
-import net.hyperspacetravel.go3.client.gui.CursorDialog.IndexedSliderChangeListener;
-import net.hyperspacetravel.go3.client.gui.CursorDialog.IndexedSpinnerChangeListener;
-import net.hyperspacetravel.go3.client.gui.CursorDialog.IndexedSpinnerKeyAdapter;
 
 /**
  * @author helge
@@ -46,10 +37,13 @@ public class NavigationDialog extends JDialog implements TransformListener {
 		IndexedSliderChangeListener(int i) { this.index = i; }
 		
 		public void stateChanged(ChangeEvent arg0) {
-			grid.setCursor(navigationSlider.get(0).getValue(), 
-						   navigationSlider.get(1).getValue(), 
-						   navigationSlider.get(2).getValue());
 			navigationTextField.get(index).setText(String.valueOf(navigationSlider.get(index).getValue()));
+
+			Matrix3d rot = new Matrix3d();
+			rot.rotX(Math.toRadians(navigationSlider.get(0).getValue()));
+			rot.rotY(Math.toRadians(navigationSlider.get(1).getValue()));
+			rot.rotZ(Math.toRadians(navigationSlider.get(2).getValue()));
+			grid.setTransform(new Transform3D(rot, new Vector3d(0., 0., 0.), 1.));
 		}
 		
 		protected int index = 0;
@@ -64,7 +58,13 @@ public class NavigationDialog extends JDialog implements TransformListener {
 		public void actionPerformed(ActionEvent arg0) {
 	        navigationSlider.get(index).setValue(
 	        		Double.valueOf(navigationTextField.get(index).getText()).intValue());
-		}						
+
+	        Matrix3d rot = new Matrix3d();
+			rot.rotX(Math.toRadians(navigationSlider.get(0).getValue()));
+			rot.rotY(Math.toRadians(navigationSlider.get(1).getValue()));
+			rot.rotZ(Math.toRadians(navigationSlider.get(2).getValue()));
+			grid.setTransform(new Transform3D(rot, new Vector3d(0., 0., 0.), 1.));
+		}				
 		protected int index = 0;
 	}
 
@@ -91,14 +91,15 @@ public class NavigationDialog extends JDialog implements TransformListener {
 		transform.get(rot);
 		transform.get(trans);
 		Vector3d rotAngles = this.rotationAngles(rot);
-		navigationTextField.get(0).setText(Double.valueOf(rotAngles.x).toString());
-		navigationSlider.get(0).setValue(Double.valueOf(rotAngles.x).intValue());
-		navigationTextField.get(1).setText(Double.valueOf(rotAngles.y).toString());
-		navigationSlider.get(1).setValue(Double.valueOf(rotAngles.y).intValue());
-		navigationTextField.get(2).setText(Double.valueOf(rotAngles.z).toString());
-		navigationSlider.get(2).setValue(Double.valueOf(rotAngles.z).intValue());
+		navigationTextField.get(0).setText(toText(rotAngles.x));
+		navigationSlider.get(0).setValue(toInt(rotAngles.x));
+		navigationTextField.get(1).setText(toText(rotAngles.y));
+		navigationSlider.get(1).setValue(toInt(rotAngles.y));
+		navigationTextField.get(2).setText(toText(rotAngles.z));
+		navigationSlider.get(2).setValue(toInt(rotAngles.z));
+		grid.setTransform(new Transform3D(rot, trans, 1.), false);
 	}
-	
+		
 	public NavigationDialog(GridDisplay _grid, Frame frame) {
 		super(frame);
 		this.grid = _grid;
@@ -266,6 +267,17 @@ R = (Rx*Ry)*Rz
 		return new Vector3d(Math.toDegrees(rx), Math.toDegrees(ry), Math.toDegrees(rz));
 	}
 
+	static private int toInt(double number) { return toDouble(number).intValue(); }
+	
+	static private String toText(double number) { return toDouble(number).toString(); }
+
+	static private Double toDouble(double number) {
+		Double num = Double.valueOf(number);
+		if (num.isNaN() || num.isInfinite()) num = new Double(0);
+		return num;
+	}
+	
+	
 	private JPanel contentPane = null;
 
 	private ArrayList<JPanel> navigationPanel = null;
