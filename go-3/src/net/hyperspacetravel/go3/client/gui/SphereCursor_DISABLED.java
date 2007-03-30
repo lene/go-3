@@ -1,30 +1,40 @@
-/**
- * 
- */
 package net.hyperspacetravel.go3.client.gui;
 
-import javax.media.j3d.Appearance;
-import javax.media.j3d.ColoringAttributes;
-import javax.media.j3d.LineAttributes;
-import javax.media.j3d.Material;
-import javax.media.j3d.PolygonAttributes;
-import javax.media.j3d.TransparencyAttributes;
-import javax.vecmath.Color3f;
+import javax.media.j3d.*;
+import com.sun.j3d.utils.geometry.Primitive;
+import com.sun.j3d.utils.geometry.Sphere;
+import javax.vecmath.*;
 
 import net.hyperspacetravel.go3.Colour;
 import net.hyperspacetravel.go3.GameBase;
 
-import com.sun.j3d.utils.geometry.Primitive;
 
-/**
- * @author helge
- *
- */
-abstract class Cursor2 extends Primitive {
+public class SphereCursor_DISABLED extends Sphere {
+	
+	////////	CONSTANTS	////////
+	private static float RADIUS = 0.5f;
+	private static int NUM_SEGMENTS = 16;
 	protected static float CURSOR_LINEWIDTH = 2.f;
 	protected static float CURSOR_TRANSPARENCY = 0.5f;
 	protected static int DEFAULT_COLOUR = Colour.BLUE;
-
+	
+	////////	C'TORS		////////
+	/** default constructor: creates a cursor of default color */
+	public SphereCursor_DISABLED () {
+		super (RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
+		setColour (DEFAULT_COLOUR);
+	}
+	
+	public SphereCursor_DISABLED (int c) {
+		super (RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
+		this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
+		setColour (c);
+	}
+	
+	
 	////////	PUBLIC METHODS	////////
 	public int getColour () { return colour; }
 	
@@ -41,7 +51,7 @@ abstract class Cursor2 extends Primitive {
 
 	
 	////////	PRIVATE METHODS	////////
-	protected void createAppearance (/* ... */) {
+	private void createAppearance (/* ... */) {
 				
 		cAppearance.setMaterial (material);
 		
@@ -78,11 +88,11 @@ abstract class Cursor2 extends Primitive {
 		cAppearance.setTransparencyAttributes (cTransparency);		
 	}
 
+
 	////////	MEMBER VARIABLES	////////
-	protected int colour = 0;
-	protected Material material = Materials.materials[colour];
+	private int colour = 0;
+	private Material material = Materials.materials[colour];
 	
 	protected Appearance cAppearance = new Appearance ();
 	protected TransparencyAttributes cTransparency;
-
 }
