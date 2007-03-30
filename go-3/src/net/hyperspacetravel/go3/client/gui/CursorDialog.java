@@ -3,9 +3,13 @@
  */
 package net.hyperspacetravel.go3.client.gui;
 
+import java.awt.Dimension;
 import java.awt.Frame;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 
+import javax.swing.Box;
 import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -52,6 +56,7 @@ public class CursorDialog extends JDialog implements CursorListener {
 						   cursorSlider.get(1).getValue(), 
 						   cursorSlider.get(2).getValue());
 			cursorSpinner.get(index).setValue(cursorSlider.get(index).getValue());
+			libertiesDisplay.setText("");
 		}
 		
 	}
@@ -64,6 +69,7 @@ public class CursorDialog extends JDialog implements CursorListener {
 			SpinnerModel model = cursorSpinner.get(index).getModel();
 	        if (model instanceof SpinnerNumberModel) {
 	        	cursorSlider.get(index).setValue(((SpinnerNumberModel)model).getNumber().intValue());
+	    		libertiesDisplay.setText("");
 	        }
 		}						
 	}
@@ -78,20 +84,21 @@ public class CursorDialog extends JDialog implements CursorListener {
 			SpinnerModel model = cursorSpinner.get(index).getModel();
 	        if (model instanceof SpinnerNumberModel) {
 	        	cursorSlider.get(index).setValue(((SpinnerNumberModel)model).getNumber().intValue());
+	    		libertiesDisplay.setText("");
 	        }
 		}
 		
 		int index = 0;
 	}
 
+	public CursorDialog(GridDisplay _grid) {
+		this.grid = _grid;
+		initialize();
+	}
+
 	public CursorDialog(GridDisplay _grid, Frame frame) {
 		super(frame);
 		this.grid = _grid;
-		this.cursorPanel = new ArrayList<JPanel>(3);
-		this.cursorLabel = new ArrayList<JLabel>(3);
-		this.cursorSpinner = new ArrayList<JSpinner>(3);
-		this.cursorSlider = new ArrayList<JSlider>(3);
-		this.cursorCheckBox = new ArrayList<JCheckBox>(3);
 		initialize();
 	}
 
@@ -105,8 +112,15 @@ public class CursorDialog extends JDialog implements CursorListener {
 		cursorSlider.get(1).setValue(y);
 		cursorSpinner.get(2).setValue(z);
 		cursorSlider.get(2).setValue(z);
+		libertiesDisplay.setText("");
 	}
 	
+	/* (non-Javadoc)
+	 * @see net.hyperspacetravel.go3.client.CursorListener#activate(boolean)
+	 */
+	public void activate(boolean state) {
+		setButton.setEnabled(state);
+	}
 
 	/**
 	 * Return the contentPane property value.
@@ -124,13 +138,15 @@ public class CursorDialog extends JDialog implements CursorListener {
 			contentPane.add(getCursorPanel(1, "y"), null);
 			contentPane.add(getCursorPanel(2, "z"), null);
 
-//			contentPane.add(getConnectButton());
+			contentPane.add(getLibertiesPanel(), null);
+			
+			contentPane.add(getSetButton());
 		}
 		return contentPane;
 	}
 
 	////////////////////////////////////////////////////////////////////////////
-	//	array version
+	//	cursor controls
 	////////////////////////////////////////////////////////////////////////////
 
 	private JPanel getCursorPanel(int index, String name) {
@@ -209,8 +225,8 @@ public class CursorDialog extends JDialog implements CursorListener {
 			cursorCheckBox.add(index, new JCheckBox());
 			cursorCheckBox.get(index).setName("cursor"+name.toUpperCase()+"CheckBox");
 			cursorCheckBox.get(index).addActionListener(
-				new java.awt.event.ActionListener() {
-					public void actionPerformed(java.awt.event.ActionEvent e) {
+				new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
 							//	TODO
 						}						
 				});
@@ -223,37 +239,104 @@ public class CursorDialog extends JDialog implements CursorListener {
 	//	other elements
 	////////////////////////////////////////////////////////////////////////////
 
+	private JPanel getLibertiesPanel() {
+		if (libertiesPanel == null) {
+			libertiesPanel = new JPanel();
+			libertiesPanel.setName("libertiesPanel");
+			libertiesPanel.setLayout(
+					new BoxLayout(libertiesPanel,
+							BoxLayout.X_AXIS));
+
+			libertiesPanel.add(getLibertiesLabel(), null);
+			libertiesPanel.add(Box.createHorizontalGlue());
+			libertiesPanel.add(getLibertiesButton(), null);
+			libertiesPanel.add(Box.createHorizontalGlue());
+			libertiesPanel.add(getLibertiesDisplay(), null);
+		}
+		
+		return libertiesPanel;
+	}
+
+	public JLabel getLibertiesLabel() {
+		if (libertiesLabel == null) {
+			libertiesLabel = new JLabel();
+			libertiesLabel.setName("libertiesLabel");
+			libertiesLabel.setText("Liberties:");
+			libertiesLabel.setToolTipText("Display liberties at current cursor position");
+		}
+		return libertiesLabel;
+	}
+
+	public JButton getLibertiesButton() {
+		if (libertiesButton == null) {
+			libertiesButton = new JButton();
+			libertiesButton.setName("libertiesButton");
+			libertiesButton.setText("Show");
+			libertiesButton.setToolTipText("Display liberties at current cursor position");
+			libertiesButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					if (e.getActionCommand().equals (libertiesButton.getText())) {
+						Integer liberties = grid.Liberty(cursorSlider.get(0).getValue(),
+														 cursorSlider.get(1).getValue(),
+														 cursorSlider.get(2).getValue(),
+														 grid.getCurrentPlayer(),
+														 false);
+						libertiesDisplay.setText(liberties.toString());
+					}
+				}
+			});
+
+		}
+		return libertiesButton;
+	}
+
+	public JLabel getLibertiesDisplay() {
+		if (libertiesDisplay == null) {
+			libertiesDisplay = new JLabel();
+			libertiesDisplay.setName("libertiesDisplay");
+			libertiesDisplay.setText("");
+			libertiesDisplay.setToolTipText("Liberties at current cursor position");
+			libertiesDisplay.setMinimumSize(new Dimension(40, 16));
+		}
+		return libertiesDisplay;
+	}
+	
 	/**
-	 * Return the connectButton property value.
+	 * Return the setButton property value.
 	 * @return JButton
 	 */
-	private JButton getConnectButton() {
-		if (connectButton == null) {
-			connectButton = new JButton();
-			connectButton.setName("connectButton");
-			connectButton.setText("Connect to Server");
-			connectButton.addActionListener(new java.awt.event.ActionListener() {
-				public void actionPerformed(java.awt.event.ActionEvent e) {
-					if (e.getActionCommand().equals (connectButton.getText())) {
-						Utility.debug("actionPerformed(): "+e.getActionCommand()); // TODO Auto-generated Event stub actionPerformed()
-						setVisible (false);
-						
+	private JButton getSetButton() {
+		if (setButton == null) {
+			setButton = new JButton();
+			setButton.setName("setButton");
+			setButton.setText("Set");
+			setButton.setToolTipText("Set stone at current cursor position");
+			setButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					if (e.getActionCommand().equals (setButton.getText())) {
+						grid.setStone();
 					}
 				}
 			});
 		}
-		return connectButton;
+		return setButton;
 	}
 
 	/**
 	 * Initialize the class.
 	 */
 	private void initialize() {
+		this.cursorPanel = new ArrayList<JPanel>(3);
+		this.cursorLabel = new ArrayList<JLabel>(3);
+		this.cursorSpinner = new ArrayList<JSpinner>(3);
+		this.cursorSlider = new ArrayList<JSlider>(3);
+		this.cursorCheckBox = new ArrayList<JCheckBox>(3);
+
 		this.setName("Cursor controls");
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(false);
 		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-		this.setSize(240, 110);
+		this.setSize(240, 160);
 		this.setTitle("Cursor controls");
 		this.setContentPane(getJContentPane());
 		this.setVisible(true);
@@ -268,11 +351,18 @@ public class CursorDialog extends JDialog implements CursorListener {
 	private ArrayList<JSlider> cursorSlider = null;
 	private ArrayList<JCheckBox>cursorCheckBox = null;
 	
-	private JButton connectButton = null;
+	private JPanel libertiesPanel = null;
+	private JLabel libertiesLabel = null;
+	private JButton libertiesButton = null;
+	private JLabel libertiesDisplay = null;
+
+	private JButton setButton = null;
 
 	
 	private GridDisplay grid;
 
 	/**														 */
 	private static final long serialVersionUID = 1590600506585137608L;
+
+
 }

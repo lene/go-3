@@ -5,6 +5,8 @@ import java.net.*;
 import java.io.*;
 
 import javax.swing.JOptionPane;
+import javax.swing.JInternalFrame;
+import javax.swing.JDesktopPane;
 
 import net.hyperspacetravel.go3.Colour;
 import net.hyperspacetravel.go3.ConnectedPlayer;
@@ -182,10 +184,9 @@ public class Go3DClient {
 			}
 		}
 		
-		if (Utility.getDebugMode()) game.addCursorListener(new SimpleCursorListener());
-		if (Utility.getDebugMode()) game.addTransformListener(new SimpleTransformListener());
-		
+//		JDesktopPane frame = new JDesktopPane();
 		Frame frame = new MainFrame(game, 600, 600);
+		
 		game.addCursorListener(new CursorDialog(game, frame));
 		if (Utility.getDebugMode()) game.addTransformListener(new NavigationDialog(game, frame));
 

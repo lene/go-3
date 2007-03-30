@@ -249,10 +249,18 @@ public class GoGridClient extends GoGrid {
 		//	about threads. there must be some method to lock and release it,
 		//	mutexes, or whatever. </rant>
 		out.println ("liberties "+x+" "+y+" "+z);	//	request liberties from server
-		while (clientProtocol.liberties == -1)		//  wait until server has replied
-			Utility.sleep (10);						//  sleep 10 msec
+		int waittime = 0;
+		while (clientProtocol.liberties == -1 && waittime < WAIT_MAX_DURATION) {		//  wait until server has replied
+			Utility.sleep (WAIT_INTERVAL);						//  sleep 10 msec
+			waittime += WAIT_INTERVAL;
+		}
+		if (waittime >= WAIT_MAX_DURATION) return 0;
+		
 		return clientProtocol.liberties();
 	}
+	
+	private static int WAIT_INTERVAL = 10;			//	ms
+	private static int WAIT_MAX_DURATION = 1000;	//	ms
 	
 	void setSize (String input) {
 		//	TODO decouple client code from protocol syntax

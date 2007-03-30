@@ -100,14 +100,14 @@ public class NavigationDialog extends JDialog implements TransformListener {
 		grid.setTransform(new Transform3D(rot, trans, 1.), false);
 	}
 		
+	public NavigationDialog(GridDisplay _grid) {
+		this.grid = _grid;
+		initialize();
+	}
+
 	public NavigationDialog(GridDisplay _grid, Frame frame) {
 		super(frame);
 		this.grid = _grid;
-		this.navigationPanel = new ArrayList<JPanel>(3);
-		this.navigationLabel = new ArrayList<JLabel>(3);
-		this.navigationTextField = new ArrayList<JTextField>(3);
-		this.navigationSlider = new ArrayList<JSlider>(3);
-		this.navigationCheckBox = new ArrayList<JCheckBox>(3);
 		initialize();
 	}
 
@@ -226,6 +226,12 @@ public class NavigationDialog extends JDialog implements TransformListener {
 	 * Initialize the class.
 	 */
 	private void initialize() {
+		this.navigationPanel = new ArrayList<JPanel>(3);
+		this.navigationLabel = new ArrayList<JLabel>(3);
+		this.navigationTextField = new ArrayList<JTextField>(3);
+		this.navigationSlider = new ArrayList<JSlider>(3);
+		this.navigationCheckBox = new ArrayList<JCheckBox>(3);
+
 		this.setName("Navigation controls");
 		this.setForeground(SystemColor.textHighlight);
 		this.setModal(false);

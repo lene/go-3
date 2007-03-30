@@ -126,6 +126,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		Transform3D translate = new Transform3D ();
 		translate.set (new Vector3f ((grid.xc ()-1), (grid.yc ()-1), (grid.zc ()-1)));
 		cursorPos.setTransform (translate);
+
 		//	inform listening views
 		CursorListener listener = null;
 		Iterator<CursorListener> i = cursorListeners.iterator();
@@ -198,6 +199,13 @@ public class GridDisplay extends JApplet implements ActionListener {
 		greenCursor = new Cursor (Colour.GREEN);
 		cursor = greenCursor;
 		reinitCursor ();
+		//	inform listening views
+		CursorListener listener = null;
+		Iterator<CursorListener> i = cursorListeners.iterator();
+		while(i.hasNext()) {
+			listener = i.next();
+			listener.activate(true);
+		}
 	}
 	
 	
@@ -213,6 +221,13 @@ public class GridDisplay extends JApplet implements ActionListener {
 		redCursor = new Cursor (Colour.RED);
 		cursor = redCursor;
 		reinitCursor ();
+		//	inform listening views
+		CursorListener listener = null;
+		Iterator<CursorListener> i = cursorListeners.iterator();
+		while(i.hasNext()) {
+			listener = i.next();
+			listener.activate(false);
+		}
 	}
 	
 	
@@ -601,7 +616,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param shortCut 
 	 @return number of liberties
 	 */
-	private int Liberty (int x, int y, int z, int current, boolean shortCut) {
+	int Liberty (int x, int y, int z, int current, boolean shortCut) {
 		return grid.Liberty (x, y, z,  current, shortCut);
 	}
 	
@@ -610,9 +625,13 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	void Liberty () {
 		JOptionPane.showMessageDialog (this,
-				new Integer (Liberty (xc (), yc (), zc (), grid.getCurrentPlayer (), false)),
+				new Integer (Liberty (xc (), yc (), zc (), getCurrentPlayer (), false)),
 				"Liberties at...",
 				JOptionPane.INFORMATION_MESSAGE );
+	}
+	
+	int getCurrentPlayer() {
+		return grid.getCurrentPlayer();
 	}
 	
 	/** 

@@ -17,4 +17,13 @@ public class SimpleCursorListener implements CursorListener {
 		System.out.println("SimpleCursorListener::notifyCursor("+x+", "+y+", "+z+")");
 	}
 
+	/* (non-Javadoc)
+	 * @see net.hyperspacetravel.go3.client.CursorListener#activate(boolean)
+	 */
+	public void activate(boolean state) {
+		System.out.println("SimpleCursorListener::activate("+(state? "true": "false")+")");
+		
+	}
+	
+
 }
