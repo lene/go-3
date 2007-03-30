@@ -123,6 +123,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	void setCursor (int x, int y, int z) {
 		grid.setCursor (x, y, z);
+		
+		setCursorForm(x, y, z);
+		
 		Transform3D translate = new Transform3D ();
 		translate.set (new Vector3f ((grid.xc ()-1), (grid.yc ()-1), (grid.zc ()-1)));
 		cursorPos.setTransform (translate);
@@ -133,6 +136,18 @@ public class GridDisplay extends JApplet implements ActionListener {
 		while(i.hasNext()) {
 			listener = i.next();
 			listener.notifyCursor(x, y, z);
+		}
+	}
+	
+	private void setCursorForm(int x, int y, int z) {
+		if (x+y+z >= 3) {
+			//	spherical cursor
+		} else if (x+y+z == 2) {
+			//	line cursor
+		} else if (x+y+z == 1) {
+			//	area cursor
+		} else {
+			//	no cursor
 		}
 	}
 	
@@ -196,7 +211,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition (!active, "Must be inactive to activate()!");
 
 		active = true;
-		greenCursor = new Cursor (Colour.GREEN);
+		greenCursor = new SphereCursor2 (Colour.GREEN);
 		cursor = greenCursor;
 		reinitCursor ();
 		//	inform listening views
@@ -218,7 +233,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition (active, "Must be active to deactivate()!");
 
 		active = false;
-		redCursor = new Cursor (Colour.RED);
+		redCursor = new SphereCursor2 (Colour.RED);
 		cursor = redCursor;
 		reinitCursor ();
 		//	inform listening views
@@ -328,7 +343,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	private void reinitCursor () {
 		assert GameBase.precondition (cursorBG != null, 
-				"Cursor BranchGroup must exist");
+				"SphereCursor BranchGroup must exist");
 
 		try {
 			cursorBG.detach ();
@@ -702,22 +717,22 @@ public class GridDisplay extends JApplet implements ActionListener {
 		
 		menu = addMenu (menuBar, "Navigation", KeyEvent.VK_N, 
 		"Rotating and moving the board");
-		addMenuItem (menu, "Cursor down one in x", 
+		addMenuItem (menu, "SphereCursor down one in x", 
 				KeyEvent.VK_X, 0, 
 				"Decrease X Coordinate of cursor by 1", false);
-		addMenuItem (menu, "Cursor up one in x", 
+		addMenuItem (menu, "SphereCursor up one in x", 
 				KeyEvent.VK_X, ActionEvent.SHIFT_MASK, 
 				"Increase X Coordinate of cursor by 1", false);
-		addMenuItem (menu, "Cursor down one in y", 
+		addMenuItem (menu, "SphereCursor down one in y", 
 				KeyEvent.VK_Y, 0, 
 				"Decrease Y Coordinate of cursor by 1", false);
-		addMenuItem (menu, "Cursor up one in y", 
+		addMenuItem (menu, "SphereCursor up one in y", 
 				KeyEvent.VK_Y, ActionEvent.SHIFT_MASK, 
 				"Increase Y Coordinate of cursor by 1", false);
-		addMenuItem (menu, "Cursor down one in z", 
+		addMenuItem (menu, "SphereCursor down one in z", 
 				KeyEvent.VK_Z, 0, 
 				"Decrease Z Coordinate of cursor by 1", false);
-		addMenuItem (menu, "Cursor up one in z", 
+		addMenuItem (menu, "SphereCursor up one in z", 
 				KeyEvent.VK_Z, ActionEvent.SHIFT_MASK, 
 				"Increase Z Coordinate of cursor by 1", false);
 		menu.addSeparator ();
@@ -902,7 +917,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	BranchGroup getParentBranch () { return parentBranch; }
 	
 	/**	 the current cursor	 */
-	private Cursor cursor;
+	private SphereCursor2 cursor;
 
 	private ArrayList<CursorListener> cursorListeners = new ArrayList<CursorListener> ();
 	public void addCursorListener(CursorListener cursorListener) {
@@ -921,11 +936,11 @@ public class GridDisplay extends JApplet implements ActionListener {
 	////////////////////////////////////////////////////////////////////////////	
 	
 	/**	 the not-yet-enabled (pre-game start) cursor	 */
-	private Cursor blueCursor = new Cursor (Colour.BLUE);
+	private SphereCursor2 blueCursor = new SphereCursor2 (Colour.BLUE);
 	/**	 the inactive cursor	 */
-	private Cursor redCursor = new Cursor (Colour.RED);
+	private SphereCursor2 redCursor = new SphereCursor2 (Colour.RED);
 	/**	 the active cursor	 */
-	private Cursor greenCursor = new Cursor (Colour.GREEN);
+	private SphereCursor2 greenCursor = new SphereCursor2 (Colour.GREEN);
 
 	static private Color3f COLOR_AMBIENT = new Color3f(0.1f, 0.1f, 0.1f);
 	static private Color3f COLOR_DIRECTIONAL[] = {

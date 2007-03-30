@@ -332,12 +332,12 @@ public class CursorDialog extends JDialog implements CursorListener {
 		this.cursorSlider = new ArrayList<JSlider>(3);
 		this.cursorCheckBox = new ArrayList<JCheckBox>(3);
 
-		this.setName("Cursor controls");
+		this.setName("SphereCursor controls");
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(false);
 		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		this.setSize(240, 160);
-		this.setTitle("Cursor controls");
+		this.setTitle("SphereCursor controls");
 		this.setContentPane(getJContentPane());
 		this.setVisible(true);
 	}

@@ -1,3 +1,15 @@
+0.4.3
+-----
+
+- handling of various errors:
+  - no server running on provided host/port
+  - user of same name already connected
+  - Java3D not installed or not found
+- added a CursorDialog which displays the cursor coordinates and allows an
+  additional method to set stones and display a grid place's liberties.
+- added a NavigationDialog too, but it's still buggy and is opened only in debug
+  mode.
+
 0.4.2
 -----
 

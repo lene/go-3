@@ -9,25 +9,25 @@ import net.hyperspacetravel.go3.Colour;
 import net.hyperspacetravel.go3.GameBase;
 
 
-public class Cursor extends Sphere {
+public class SphereCursor extends Sphere {
 	
 	////////	CONSTANTS	////////
 	private static float RADIUS = 0.5f;
 	private static int NUM_SEGMENTS = 16;
-	private static float CURSOR_LINEWIDTH = 2.f;
-	private static float CURSOR_TRANSPARENCY = 0.5f;
-	private static int DEFAULT_COLOUR = Colour.BLUE;
+	protected static float CURSOR_LINEWIDTH = 2.f;
+	protected static float CURSOR_TRANSPARENCY = 0.5f;
+	protected static int DEFAULT_COLOUR = Colour.BLUE;
 	
 	////////	C'TORS		////////
 	/** default constructor: creates a cursor of default color */
-	public Cursor () {
+	public SphereCursor () {
 		super (RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
 		this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
 		this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
 		setColour (DEFAULT_COLOUR);
 	}
 	
-	public Cursor (int c) {
+	public SphereCursor (int c) {
 		super (RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS);
 		this.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
 		this.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
