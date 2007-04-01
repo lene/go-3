@@ -207,22 +207,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 		}
 	}
 
-	//	TODO: make Colour a real type, not just an int typedef
-	void setCursorColour(int col) {
-/*		if (col == Colour.GREEN) {
-			greenCursor = new SphereCursor (Colour.GREEN);
-			cursor = greenCursor;
-		} else if (col == Colour.RED) {
-			redCursor = new SphereCursor (Colour.RED);
-			cursor = redCursor;
-		}Colour
-*/
-/*		cursor = new SphereCursor(col);
-		reinitCursor ();
-*/
-		cursor.setColour(col);
-	}
-	
 	/**
 	 this function is called from the GoGridClient, when it is my turn.
 	 enables me to set a stone, and changes the color of the cursor to green,
@@ -232,7 +216,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition (!active, "Must be inactive to activate()!");
 		
 		active = true;
-		setCursorColour(Colour.GREEN);
+		cursor.setColour(Colour.GREEN);
 		//	inform listening views
 		CursorListener listener = null;
 		Iterator<CursorListener> i = cursorListeners.iterator();
@@ -252,7 +236,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition (active, "Must be active to deactivate()!");
 
 		active = false;
-		setCursorColour(Colour.RED);
+		cursor.setColour(Colour.RED);
 
 		//	inform listening views
 		CursorListener listener = null;
@@ -353,22 +337,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 		U.getViewingPlatform ().setNominalViewingTransform ();
 		
 		U.addBranchGraph (scene);		
-	}
-
-	/**
-	 changes the cursor for another.
-	 */
-	private void reinitCursor () {
-		assert GameBase.precondition (cursorBG != null, 
-				"Cursor BranchGroup must exist");
-
-		try {
-			cursorBG.detach ();
-			setupCursor (parentBranch);
-			setCursor (xc (), yc (), zc ());
-			
-			repaint ();
-		} catch (NullPointerException e) { }
 	}
 		
 	/** create the scene graph containing lights, behaviors, transforms and
@@ -945,13 +913,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 	//                                                                        //
 	////////////////////////////////////////////////////////////////////////////	
 	
-	/**	 the not-yet-enabled (pre-game start) cursor	 */
-	private SphereCursor blueCursor = new SphereCursor (Colour.BLUE);
-	/**	 the inactive cursor	 */
-//	private SphereCursor redCursor = new SphereCursor (Colour.RED);
-	/**	 the active cursor	 */
-//	private SphereCursor greenCursor = new SphereCursor (Colour.GREEN);
-
 	static private Color3f COLOR_AMBIENT = new Color3f(0.1f, 0.1f, 0.1f);
 	static private Color3f COLOR_DIRECTIONAL[] = {
 		new Color3f(1.0f, 1.0f, 0.9f),

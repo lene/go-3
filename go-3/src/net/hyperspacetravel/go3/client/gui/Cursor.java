@@ -34,7 +34,6 @@ abstract class Cursor extends Primitive {
 				(c >= 0 && c < Materials.materials.length), 
 				"There are only "+Materials.materials.length+" colors defined. tried to choose color "+c);
 		
-		System.out.println("SphereCursor.setColour("+c+")");
 		colour = c;
 		this.material = Materials.materials[c];
 		this.material.setCapability(Material.ALLOW_COMPONENT_READ);
