@@ -36,28 +36,37 @@ abstract class Cursor extends Primitive {
 		
 		System.out.println("SphereCursor.setColour("+c+")");
 		colour = c;
-		material = Materials.materials[c];
-		createAppearance ();
+		this.material = Materials.materials[c];
+		this.material.setCapability(Material.ALLOW_COMPONENT_READ);
+		
+		this.createAppearance ();
 
-		setAppearance (cAppearance);
+		this.setAppearance (cAppearance);
 	}
 	
 	////////	PRIVATE METHODS	////////
 	protected void initChildObject(Primitive _object, int c) {
 		this.object = _object;
-		this.object.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
 		this.object.setCapability (Shape3D.ALLOW_APPEARANCE_WRITE);
+		this.object.setCapability (Shape3D.ALLOW_APPEARANCE_OVERRIDE_WRITE);
+		this.cAppearance.setCapability(Appearance.ALLOW_MATERIAL_WRITE);
+		this.cAppearance.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_READ);
+		this.cAppearance.setCapability(Appearance.ALLOW_COLORING_ATTRIBUTES_WRITE);
+		this.cAppearance.setCapability(Appearance.ALLOW_POLYGON_ATTRIBUTES_WRITE);
+		this.cAppearance.setCapability(Appearance.ALLOW_LINE_ATTRIBUTES_WRITE);
+		this.cAppearance.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_WRITE);
 		this.setColour (c);
 		addChild(this.object);		
 	}
 
 	protected void createAppearance (/* ... */) {
-				
 		cAppearance.setMaterial (material);
 		
 		Color3f tmpColor = new Color3f ();
 		material.getAmbientColor (tmpColor);
 		ColoringAttributes ca = new ColoringAttributes ();
+		ca.setCapability(ColoringAttributes.ALLOW_COLOR_WRITE);
+        ca.setCapability(ColoringAttributes.ALLOW_COLOR_READ);
 		ca.setColor (tmpColor);
 		cAppearance.setColoringAttributes (ca);
 
@@ -109,8 +118,7 @@ abstract class Cursor extends Primitive {
 	 */
 	@Override
 	public void setAppearance(Appearance arg0) {
-		object.setAppearance(arg0);
-		
+		object.setAppearance(arg0);		
 	}
 
 	////////	MEMBER VARIABLES	////////

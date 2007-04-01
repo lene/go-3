@@ -423,7 +423,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		createHandicaps (objectParent);				//  the handicap markers
 		createPickPoints (objectParent);			//  points as aid for picking
 		
-		cursor = blueCursor;
+		cursor = new SphereCursor(Colour.BLUE);
 		setupCursor (objRoot);					//  create the cursor
 		
 		if (false)						//  TODO: if a game is already loaded
