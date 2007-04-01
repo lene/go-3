@@ -72,8 +72,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 
 		setupDisplay();
 		
-			if (connection.getStartGame()) grid.newGame();
-			else grid.joinGame(connection.getGame());
+		if (connection.getStartGame()) grid.newGame();
+		else grid.joinGame(connection.getGame());
 	}
 	
 	public GridDisplay (ConnectionData connection, ConnectedPlayer player) {
@@ -142,10 +142,16 @@ public class GridDisplay extends JApplet implements ActionListener {
 	private void setCursorForm(int x, int y, int z) {
 		if (x+y+z >= 3) {
 			//	spherical cursor
+			if (!(cursor instanceof SphereCursor))
+				cursor = new SphereCursor(active? Colour.GREEN: Colour.RED);
 		} else if (x+y+z == 2) {
 			//	line cursor
+			if (!(cursor instanceof LineCursor))
+				cursor = new LineCursor(active? Colour.GREEN: Colour.RED);
 		} else if (x+y+z == 1) {
 			//	area cursor
+			if (!(cursor instanceof PlaneCursor))
+				cursor = new PlaneCursor(active? Colour.GREEN: Colour.RED);
 		} else {
 			//	no cursor
 		}
@@ -200,7 +206,22 @@ public class GridDisplay extends JApplet implements ActionListener {
 			setCursor (x, y, z);
 		}
 	}
-	
+
+	//	TODO: make Colour a real type, not just an int typedef
+	void setCursorColour(int col) {
+/*		if (col == Colour.GREEN) {
+			greenCursor = new SphereCursor (Colour.GREEN);
+			cursor = greenCursor;
+		} else if (col == Colour.RED) {
+			redCursor = new SphereCursor (Colour.RED);
+			cursor = redCursor;
+		}Colour
+*/
+/*		cursor = new SphereCursor(col);
+		reinitCursor ();
+*/
+		cursor.setColour(col);
+	}
 	
 	/**
 	 this function is called from the GoGridClient, when it is my turn.
@@ -209,11 +230,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	public void activate () {
 		assert GameBase.precondition (!active, "Must be inactive to activate()!");
-
+		
 		active = true;
-		greenCursor = new SphereCursor (Colour.GREEN);
-		cursor = greenCursor;
-		reinitCursor ();
+		setCursorColour(Colour.GREEN);
 		//	inform listening views
 		CursorListener listener = null;
 		Iterator<CursorListener> i = cursorListeners.iterator();
@@ -233,9 +252,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 		assert GameBase.precondition (active, "Must be active to deactivate()!");
 
 		active = false;
-		redCursor = new SphereCursor (Colour.RED);
-		cursor = redCursor;
-		reinitCursor ();
+		setCursorColour(Colour.RED);
+
 		//	inform listening views
 		CursorListener listener = null;
 		Iterator<CursorListener> i = cursorListeners.iterator();
@@ -337,7 +355,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 		U.addBranchGraph (scene);		
 	}
 
-	
 	/**
 	 changes the cursor for another.
 	 */
@@ -353,8 +370,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 			repaint ();
 		} catch (NullPointerException e) { }
 	}
-	
-	
+		
 	/** create the scene graph containing lights, behaviors, transforms and
 	 objects.
 	 @param U the SimpleUniverse to act upon
@@ -448,8 +464,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 					catch (NullPointerException e) { }
 				}
 	}
-	
-	
+		
 	/**
 	 create a translation TransformGroup to set an object at a given position
 	 on the grid
@@ -469,8 +484,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 		TransformGroup objTranslate = new TransformGroup (translate);
 		return objTranslate;
 	}
-	
-	
+		
 	/**
 	 set up the lighting of the scene
 	 @param objRoot the scene's root node
@@ -496,8 +510,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 			objRoot.addChild(light);
 		}		
 	}
-	
-	
+		
 	/** 
 	 set up the interaction behaviors:
 	 <ul>
@@ -568,7 +581,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 		objectParent.addChild (cursorBG);
 	}
 	
-	
 	/** 
 	 create the geometry of the handicap markers and add it to the scene graph
 	 @param parent
@@ -591,7 +603,6 @@ public class GridDisplay extends JApplet implements ActionListener {
 		}
 	}
 	
-	
 	/**
 	 create the geometry of the pick points and add it to the scene graph
 	 @param parent
@@ -612,8 +623,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 					objTranslate.addChild (s);
 				}
 	}
-	
-	
+		
 	/**
 	 create the geometry of the pick points: a point
 	 */
@@ -917,7 +927,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	BranchGroup getParentBranch () { return parentBranch; }
 	
 	/**	 the current cursor	 */
-	private SphereCursor cursor;
+	private Cursor cursor;
 
 	private ArrayList<CursorListener> cursorListeners = new ArrayList<CursorListener> ();
 	public void addCursorListener(CursorListener cursorListener) {
@@ -938,9 +948,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 	/**	 the not-yet-enabled (pre-game start) cursor	 */
 	private SphereCursor blueCursor = new SphereCursor (Colour.BLUE);
 	/**	 the inactive cursor	 */
-	private SphereCursor redCursor = new SphereCursor (Colour.RED);
+//	private SphereCursor redCursor = new SphereCursor (Colour.RED);
 	/**	 the active cursor	 */
-	private SphereCursor greenCursor = new SphereCursor (Colour.GREEN);
+//	private SphereCursor greenCursor = new SphereCursor (Colour.GREEN);
 
 	static private Color3f COLOR_AMBIENT = new Color3f(0.1f, 0.1f, 0.1f);
 	static private Color3f COLOR_DIRECTIONAL[] = {
