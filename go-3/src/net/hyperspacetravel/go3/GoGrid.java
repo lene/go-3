@@ -251,9 +251,9 @@ public abstract class GoGrid extends GameBase {
 		assert precondition ((currentPlayer >= 0 && currentPlayer <= numPlayers), 
 				"current player ["+currentPlayer+"] must be between 0 and "+numPlayers);
 		try {
-			xc[currentPlayer] = Math.max (1, Math.min (getBoardSize(0), x));//  check for under- and overflow
-			yc[currentPlayer] = Math.max (1, Math.min (getBoardSize(1), y));
-			zc[currentPlayer] = Math.max (1, Math.min (getBoardSize(2), z));
+			xc[currentPlayer] = Math.max (0, Math.min (getBoardSize(0), x));//  check for under- and overflow
+			yc[currentPlayer] = Math.max (0, Math.min (getBoardSize(1), y));
+			zc[currentPlayer] = Math.max (0, Math.min (getBoardSize(2), z));
 		} catch (ArrayIndexOutOfBoundsException e) {
 			Utility.debug("game not yet started!");
 		}
@@ -300,6 +300,9 @@ public abstract class GoGrid extends GameBase {
 		xc = new int[numPlayers+1];
 		yc = new int[numPlayers+1];
 		zc = new int[numPlayers+1];
+		for(int i = 0; i <= numPlayers; i++) {
+			xc[i] = yc[i] = zc[i] = (getBoardSize(0)+1)/2;
+		}
 	}
 	
 	

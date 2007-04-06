@@ -9,8 +9,8 @@ import com.sun.j3d.utils.geometry.Sphere;
 public class PointCursor extends Cursor {
 	
 	////////	CONSTANTS	////////
-	private static float RADIUS = 0.5f;
-	private static int NUM_SEGMENTS = 16;
+	private  float RADIUS = 0.5f;
+	private  int NUM_SEGMENTS = 16;
 	
 	////////	C'TORS		////////
 	/** default constructor: creates a cursor of default color */

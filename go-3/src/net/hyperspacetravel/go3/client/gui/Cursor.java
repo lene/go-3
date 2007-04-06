@@ -22,9 +22,9 @@ import com.sun.j3d.utils.geometry.Primitive;
  *
  */
 abstract class Cursor extends Primitive {
-	protected static float CURSOR_LINEWIDTH = 2.f;
-	protected static float CURSOR_TRANSPARENCY = 0.5f;
-	protected static int DEFAULT_COLOUR = Colour.BLUE;
+	protected  float CURSOR_LINEWIDTH = 2.f;
+	protected  float CURSOR_TRANSPARENCY = 0.5f;
+	protected  int DEFAULT_COLOUR = Colour.BLUE;
 
 	////////	PUBLIC METHODS	////////
 	public int getColour () { return colour; }

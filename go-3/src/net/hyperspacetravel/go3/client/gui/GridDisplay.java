@@ -27,6 +27,7 @@ import net.hyperspacetravel.go3.ConnectedPlayer;
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
 import net.hyperspacetravel.go3.GoGrid;
+import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.client.CursorListener;
 import net.hyperspacetravel.go3.client.GoGridClient;
 import net.hyperspacetravel.go3.client.TransformListener;
@@ -152,7 +153,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	}
 	
 	private void setCursorForm(int x, int y, int z) {
-		System.out.println("setCursorForm("+x+y+z+")");
+		Utility.debug("setCursorForm("+x+", "+y+", "+z+")");
 		if (x > 0 && y > 0 && z > 0) {
 			//	spherical cursor
 			if (!(cursor instanceof PointCursor)) {

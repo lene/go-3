@@ -7,7 +7,11 @@ import java.awt.Dimension;
 import java.awt.Frame;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.ItemListener;
+import java.awt.event.ItemEvent;
 import java.awt.event.KeyAdapter;
+
+import java.util.ArrayList;
 
 import javax.swing.Box;
 import javax.swing.BoxLayout;
@@ -24,9 +28,6 @@ import javax.swing.WindowConstants;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 
-import java.util.ArrayList;
-
-import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.client.CursorListener;
 
 /**
@@ -52,11 +53,12 @@ public class CursorDialog extends JDialog implements CursorListener {
 		IndexedSliderChangeListener(int i) { super(i); }
 		
 		public void stateChanged(ChangeEvent arg0) {
-			grid.setCursor(cursorSlider.get(0).getValue(), 
-						   cursorSlider.get(1).getValue(), 
-						   cursorSlider.get(2).getValue());
+			grid.setCursor(coordinateEnabled[0] ? cursorSlider.get(0).getValue(): 0, 
+						   coordinateEnabled[1] ? cursorSlider.get(1).getValue(): 0, 
+						   coordinateEnabled[2] ? cursorSlider.get(2).getValue(): 0);
 			cursorSpinner.get(index).setValue(cursorSlider.get(index).getValue());
 			libertiesDisplay.setText("");
+			savedValue[index] = cursorSlider.get(index).getValue();
 		}
 		
 	}
@@ -91,6 +93,34 @@ public class CursorDialog extends JDialog implements CursorListener {
 		int index = 0;
 	}
 
+	class IndexedCheckboxItemListener implements ItemListener {
+
+		IndexedCheckboxItemListener(int i) {
+			this.index = i;
+		}
+
+		public void itemStateChanged(ItemEvent e) {
+			if (cursorCheckBox.get(index).isSelected()) {
+				cursorSlider.get(index).setValue(savedValue[index]);
+				coordinateEnabled[index] = true;
+				cursorSlider.get(index).setEnabled(true);
+				cursorSpinner.get(index).setEnabled(true);
+			} else {
+				savedValue[index] = cursorSlider.get(index).getValue();
+				coordinateEnabled[index] = false;
+				cursorSlider.get(index).setEnabled(false);
+				cursorSpinner.get(index).setEnabled(false);
+			}
+			
+			grid.setCursor(coordinateEnabled[0] ? cursorSlider.get(0).getValue() : 0,
+						   coordinateEnabled[1] ? cursorSlider.get(1).getValue() : 0,
+						   coordinateEnabled[2] ? cursorSlider.get(2).getValue() : 0);
+			libertiesDisplay.setText("");
+		}
+
+		int index = 0;
+	}
+	
 	public CursorDialog(GridDisplay _grid) {
 		this.grid = _grid;
 		initialize();
@@ -106,12 +136,18 @@ public class CursorDialog extends JDialog implements CursorListener {
 	 * @see net.hyperspacetravel.go3.client.CursorListener#notifyCursor(int, int, int)
 	 */
 	public void notifyCursor(int x, int y, int z) {
-		cursorSpinner.get(0).setValue(x);
-		cursorSlider.get(0).setValue(x);
+		if (coordinateEnabled[0]) {
+			cursorSpinner.get(0).setValue(x);
+			cursorSlider.get(0).setValue(x);
+		}
+		if (coordinateEnabled[1]) {
 		cursorSpinner.get(1).setValue(y);
 		cursorSlider.get(1).setValue(y);
+		}
+		if (coordinateEnabled[2]) {
 		cursorSpinner.get(2).setValue(z);
 		cursorSlider.get(2).setValue(z);
+		}
 		libertiesDisplay.setText("");
 	}
 	
@@ -224,13 +260,11 @@ public class CursorDialog extends JDialog implements CursorListener {
 		if (cursorCheckBox.size() <= index || cursorCheckBox.get(index) == null) {
 			cursorCheckBox.add(index, new JCheckBox());
 			cursorCheckBox.get(index).setName("cursor"+name.toUpperCase()+"CheckBox");
-			cursorCheckBox.get(index).addActionListener(
-				new ActionListener() {
-					public void actionPerformed(ActionEvent e) {
-							//	TODO
-						}						
-				});
+			cursorCheckBox.get(index).setSelected(true);
+			cursorCheckBox.get(index).addItemListener(new IndexedCheckboxItemListener(index));
+				
 			cursorCheckBox.get(index).setToolTipText("Enable "+name.toUpperCase()+" coordinate of the cursor");
+					
 		}
 		return cursorCheckBox.get(index);		
 	}
@@ -331,7 +365,11 @@ public class CursorDialog extends JDialog implements CursorListener {
 		this.cursorSpinner = new ArrayList<JSpinner>(3);
 		this.cursorSlider = new ArrayList<JSlider>(3);
 		this.cursorCheckBox = new ArrayList<JCheckBox>(3);
-
+		for (int i = 0; i < 3; i++) {
+			savedValue[i] = (this.grid.getBoardSize()+1)/2;
+			coordinateEnabled[i] = true;
+		}
+			
 		this.setName("Cursor controls");
 		this.setForeground(java.awt.SystemColor.textHighlight);
 		this.setModal(false);
@@ -349,7 +387,9 @@ public class CursorDialog extends JDialog implements CursorListener {
 	private ArrayList<JLabel> cursorLabel = null;
 	private ArrayList<JSpinner> cursorSpinner = null;
 	private ArrayList<JSlider> cursorSlider = null;
-	private ArrayList<JCheckBox>cursorCheckBox = null;
+	private ArrayList<JCheckBox> cursorCheckBox = null;
+	private boolean[] coordinateEnabled = new boolean [3];
+	private int savedValue[] = new int[3];
 	
 	private JPanel libertiesPanel = null;
 	private JLabel libertiesLabel = null;

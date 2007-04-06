@@ -37,6 +37,13 @@ public class Utility {
 				st[1].getMethodName ()+" (), line "+
 				st[1].getLineNumber ()+": "+
 				d; 
+			if (false) 
+				for (int i = 2; i < st.length; i++) 
+					message += "    from "+
+							   st[i].getClassName ()+"."+
+							   st[i].getMethodName ()+" (), line "+
+							   st[i].getLineNumber ();
+
 			System.out.println (message);
 			//	TODO: open a dialog window displaying the message
 		}
