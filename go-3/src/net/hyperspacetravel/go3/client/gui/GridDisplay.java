@@ -73,7 +73,11 @@ public class GridDisplay extends JApplet implements ActionListener {
 		setupDisplay();
 		
 		if (connection.getStartGame()) grid.newGame();
-		else grid.joinGame(connection.getGame());
+		else {
+			//	TODO: ask if accept player
+			grid.joinGame(connection.getGame());
+			this.isStarted = true;
+		}
 	}
 	
 	public GridDisplay (ConnectionData connection, ConnectedPlayer player) {
@@ -89,7 +93,11 @@ public class GridDisplay extends JApplet implements ActionListener {
 		setupDisplay();
 		
 			if (connection.getStartGame()) grid.newGame();
-			else grid.joinGame(connection.getGame());
+			else {
+				//	TODO: ask if accept player
+				grid.joinGame(connection.getGame());
+				this.isStarted = true;
+			}
 	}
 	
 	/**
@@ -122,6 +130,10 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 @param z z position of cursor
 	 */
 	void setCursor (int x, int y, int z) {
+		assert GameBase.precondition (x >= 0, "x must be >= 0!");
+		assert GameBase.precondition (y >= 0, "y must be >= 0!");
+		assert GameBase.precondition (z >= 0, "z must be >= 0!");
+
 		grid.setCursor (x, y, z);
 		
 		setCursorForm(x, y, z);
@@ -140,18 +152,33 @@ public class GridDisplay extends JApplet implements ActionListener {
 	}
 	
 	private void setCursorForm(int x, int y, int z) {
-		if (x+y+z >= 3) {
+		System.out.println("setCursorForm("+x+y+z+")");
+		if (x > 0 && y > 0 && z > 0) {
 			//	spherical cursor
-			if (!(cursor instanceof SphereCursor))
-				cursor = new SphereCursor(active? Colour.GREEN: Colour.RED);
-		} else if (x+y+z == 2) {
+			if (!(cursor instanceof PointCursor)) {
+				cursor = new PointCursor(isStarted? 
+											(active? Colour.GREEN: Colour.RED):
+												Colour.BLUE);
+				setupCursor(x,y,z);
+			}
+		} else if ((x > 0 && y > 0) || (x > 0 && z > 0) || (y > 0 && z > 0)) {
 			//	line cursor
-			if (!(cursor instanceof LineCursor))
-				cursor = new LineCursor(active? Colour.GREEN: Colour.RED);
-		} else if (x+y+z == 1) {
+			if (!(cursor instanceof LineCursor)) {
+				cursor = new LineCursor(size,
+										x, y, z,
+										isStarted? 
+											(active? Colour.GREEN: Colour.RED):
+												Colour.BLUE);
+				setupCursor(x,y,z);
+			}
+		} else if (x > 0 || y > 0 || z > 0) {
 			//	area cursor
-			if (!(cursor instanceof PlaneCursor))
-				cursor = new PlaneCursor(active? Colour.GREEN: Colour.RED);
+			if (!(cursor instanceof PlaneCursor)) {
+				cursor = new PlaneCursor(isStarted? 
+											(active? Colour.GREEN: Colour.RED):
+												Colour.BLUE);
+				setupCursor(x,y,z);
+			}
 		} else {
 			//	no cursor
 		}
@@ -214,7 +241,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	public void activate () {
 		assert GameBase.precondition (!active, "Must be inactive to activate()!");
-		
+
+		isStarted = true;
 		active = true;
 		cursor.setColour(Colour.GREEN);
 		//	inform listening views
@@ -235,6 +263,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	public void deactivate () {
 		assert GameBase.precondition (active, "Must be active to deactivate()!");
 
+		isStarted = true;
 		active = false;
 		cursor.setColour(Colour.RED);
 
@@ -391,8 +420,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 		createHandicaps (objectParent);				//  the handicap markers
 		createPickPoints (objectParent);			//  points as aid for picking
 		
-		cursor = new SphereCursor(Colour.BLUE);
-		setupCursor (objRoot);					//  create the cursor
+		cursor = new PointCursor(Colour.BLUE);
+		setupCursor(objRoot);					//  create the cursor
 		
 		if (false)						//  TODO: if a game is already loaded
 			drawBoard ();					//  draw the stones
@@ -538,10 +567,16 @@ public class GridDisplay extends JApplet implements ActionListener {
 	 */
 	private void setupCursor (BranchGroup objRoot) {
 		assert GameBase.precondition (objRoot != null, "objRoot must exist!");
-
-		cursorPos = translate (size/2+1, size/2+1, size/2+1);
+		setupCursor(size/2+1, size/2+1, size/2+1);
+	}
+	
+	private void setupCursor(int x, int y, int z) {
+		cursorPos = translate (x, y, z);
 		cursorPos.setCapability (TransformGroup.ALLOW_TRANSFORM_WRITE);
 		cursorPos.setCapability (TransformGroup.ALLOW_TRANSFORM_READ);
+		if (cursorBG != null) {
+			this.objectParent.removeChild(cursorBG);
+		}
 		cursorBG = new BranchGroup ();
 		cursorBG.setCapability (BranchGroup.ALLOW_DETACH);
 		cursorPos.addChild (cursor);
@@ -906,6 +941,8 @@ public class GridDisplay extends JApplet implements ActionListener {
 	public void addTransformListener(TransformListener transformListener) {
 		transformListeners.add(transformListener);
 	}
+	
+	private boolean isStarted = false;
 	
  	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //

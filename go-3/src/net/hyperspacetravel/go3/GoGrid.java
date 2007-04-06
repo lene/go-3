@@ -250,10 +250,13 @@ public abstract class GoGrid extends GameBase {
 	public void setCursor (int x, int y, int z) {
 		assert precondition ((currentPlayer >= 0 && currentPlayer <= numPlayers), 
 				"current player ["+currentPlayer+"] must be between 0 and "+numPlayers);
-
-		xc[currentPlayer] = Math.max (1, Math.min (getBoardSize(0), x));//  check for under- and overflow
-		yc[currentPlayer] = Math.max (1, Math.min (getBoardSize(1), y));
-		zc[currentPlayer] = Math.max (1, Math.min (getBoardSize(2), z));
+		try {
+			xc[currentPlayer] = Math.max (1, Math.min (getBoardSize(0), x));//  check for under- and overflow
+			yc[currentPlayer] = Math.max (1, Math.min (getBoardSize(1), y));
+			zc[currentPlayer] = Math.max (1, Math.min (getBoardSize(2), z));
+		} catch (ArrayIndexOutOfBoundsException e) {
+			Utility.debug("game not yet started!");
+		}
 	}
 	/**
 	 set cursor position for a certain player without checking for over- and

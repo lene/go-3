@@ -36,7 +36,8 @@ abstract class Cursor extends Primitive {
 		
 		colour = c;
 		this.material = Materials.materials[c];
-		this.material.setCapability(Material.ALLOW_COMPONENT_READ);
+		if (!this.material.isCompiled() && !this.material.isLive())
+			this.material.setCapability(Material.ALLOW_COMPONENT_READ);
 		
 		this.createAppearance ();
 
@@ -55,7 +56,7 @@ abstract class Cursor extends Primitive {
 		this.cAppearance.setCapability(Appearance.ALLOW_LINE_ATTRIBUTES_WRITE);
 		this.cAppearance.setCapability(Appearance.ALLOW_TRANSPARENCY_ATTRIBUTES_WRITE);
 		this.setColour (c);
-		addChild(this.object);		
+		addChild(this.object);	
 	}
 
 	protected void createAppearance (/* ... */) {

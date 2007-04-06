@@ -6,7 +6,7 @@ import com.sun.j3d.utils.geometry.Primitive;
 import com.sun.j3d.utils.geometry.Sphere;
 
 
-public class SphereCursor extends Cursor {
+public class PointCursor extends Cursor {
 	
 	////////	CONSTANTS	////////
 	private static float RADIUS = 0.5f;
@@ -14,7 +14,7 @@ public class SphereCursor extends Cursor {
 	
 	////////	C'TORS		////////
 	/** default constructor: creates a cursor of default color */
-	public SphereCursor () {
+	public PointCursor () {
 		initChildObject(new Sphere(RADIUS, 
 								   Primitive.GENERATE_NORMALS|Primitive.ENABLE_APPEARANCE_MODIFY, 
 								   NUM_SEGMENTS),
@@ -22,7 +22,7 @@ public class SphereCursor extends Cursor {
 		object.getShape(Sphere.BODY).setCapability(Shape3D.ALLOW_APPEARANCE_WRITE);
 	}
 	
-	public SphereCursor (int c) {
+	public PointCursor (int c) {
 		initChildObject(new Sphere(RADIUS, Primitive.GENERATE_NORMALS, NUM_SEGMENTS),
 				c);
 		object.getShape(Sphere.BODY).setCapability(Shape3D.ALLOW_APPEARANCE_WRITE);
