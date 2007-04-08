@@ -175,7 +175,9 @@ public class GridDisplay extends JApplet implements ActionListener {
 		} else if (x > 0 || y > 0 || z > 0) {
 			//	area cursor
 			if (!(cursor instanceof PlaneCursor)) {
-				cursor = new PlaneCursor(isStarted? 
+				cursor = new PlaneCursor(size,
+										 x, y, z,
+										 isStarted? 
 											(active? Colour.GREEN: Colour.RED):
 												Colour.BLUE);
 				setupCursor(x,y,z);
