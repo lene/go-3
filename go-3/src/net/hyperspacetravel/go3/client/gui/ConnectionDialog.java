@@ -168,7 +168,7 @@ public class ConnectionDialog extends JDialog {
 			usernameTextField.setText(this.username);
 			usernameTextField.addKeyListener(new KeyAdapter() {
 				public void keyTyped(KeyEvent e) {
-					connectionData.setUsername(usernameTextField.getText());					
+					connectionData.setUsername(usernameTextField.getText()+e.getKeyChar());					
 				}
 			});
 			usernameTextField.setToolTipText("Enter the name under which you want" +

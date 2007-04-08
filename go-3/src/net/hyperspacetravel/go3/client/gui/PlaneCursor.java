@@ -21,7 +21,6 @@ public class PlaneCursor extends Cursor {
 	class CursorPlane extends Primitive {
 
 		public CursorPlane(int plane, int size) {
-			System.out.println("CursorPlane("+plane+", "+size+")");
 			Point3f vertex[] = new Point3f[4*size];
 			
 			for (int x = 0; x < size; x++) {
@@ -46,7 +45,6 @@ public class PlaneCursor extends Cursor {
 						 				   (plane == 0? x: (plane == 2? size-1: 0)), 
 						 				   (plane == 1? x: (plane == 0? size-1: 0)));
 			}
-			System.out.println("vertex[]: "+vertex);
 			
 			line = new LineArray (vertex.length, GeometryArray.COORDINATES);
 			line.setCoordinates (0, vertex);
@@ -73,8 +71,6 @@ public class PlaneCursor extends Cursor {
 
 		public void setAppearance(Appearance arg0) {
 			lineShape.setAppearance(arg0);			
-			System.out.println(lineShape.getAppearance().getLineAttributes().getLineWidth());
-			System.out.println(lineShape.getAppearance().getLineAttributes().getLineAntialiasingEnable());
 		}
 		
 		private LineArray line;

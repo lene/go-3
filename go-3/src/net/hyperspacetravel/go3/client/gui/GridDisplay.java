@@ -153,7 +153,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 	}
 	
 	private void setCursorForm(int x, int y, int z) {
-		Utility.debug("setCursorForm("+x+", "+y+", "+z+")");
+
 		if (x > 0 && y > 0 && z > 0) {
 			//	spherical cursor
 			if (!(cursor instanceof PointCursor)) {
@@ -162,6 +162,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 												Colour.BLUE);
 				setupCursor(x,y,z);
 			}
+
 		} else if ((x > 0 && y > 0) || (x > 0 && z > 0) || (y > 0 && z > 0)) {
 			//	line cursor
 			if (!(cursor instanceof LineCursor)) {
@@ -172,6 +173,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 												Colour.BLUE);
 				setupCursor(x,y,z);
 			}
+		
 		} else if (x > 0 || y > 0 || z > 0) {
 			//	area cursor
 			if (!(cursor instanceof PlaneCursor)) {
@@ -182,6 +184,7 @@ public class GridDisplay extends JApplet implements ActionListener {
 												Colour.BLUE);
 				setupCursor(x,y,z);
 			}
+		
 		} else {
 			//	no cursor
 		}
