@@ -1,12 +1,15 @@
 package net.hyperspacetravel.go3.client.gui;
 
 import java.awt.Frame;
-import java.net.*;
-import java.io.*;
 
+import java.io.IOException;
+
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+import javax.swing.JDialog;
 import javax.swing.JOptionPane;
-import javax.swing.JInternalFrame;
-import javax.swing.JDesktopPane;
 
 import net.hyperspacetravel.go3.Colour;
 import net.hyperspacetravel.go3.ConnectedPlayer;
@@ -14,21 +17,19 @@ import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
 import net.hyperspacetravel.go3.Player;
 import net.hyperspacetravel.go3.Utility;
-import net.hyperspacetravel.go3.client.SimpleCursorListener;
-import net.hyperspacetravel.go3.client.SimpleTransformListener;
 
 import com.sun.j3d.utils.applet.MainFrame;
 
 class CantConnectException extends IllegalArgumentException {
-	private static final long serialVersionUID = 5949335483927136880L;		
+	private static final long serialVersionUID = 5949335483927136880L;
 }
 
 class AlreadyConnectedException extends IllegalArgumentException {
-	private static final long serialVersionUID = 5949335483927136880L;		
+	private static final long serialVersionUID = 5949335483927136880L;
 }
 
 public class Go3DClient {
-	
+
 	static protected ConnectedPlayer setupConnection() {
 
 		ConnectedPlayer player = null;
@@ -45,31 +46,31 @@ public class Go3DClient {
 		try {
 			player.out.println(connectionData.getUsername());
 			String ack = player.in.readLine();
-			Utility.debug("Server answer to connection request: "+ack);
+			Utility.debug("Server answer to connection request: " + ack);
 			if (!ack.equals("ok")) {
-				Utility.debug("Bad answer: "+ack);
+				Utility.debug("Bad answer: " + ack);
 				throw new AlreadyConnectedException();
 			}
-		} catch (IOException e) { //	TODO decent error handling
-		} catch (NullPointerException e) { //	TODO decent error handling
+		} catch (IOException e) { // TODO decent error handling
+		} catch (NullPointerException e) { // TODO decent error handling
 		}
 
 		return player;
 	}
 
-	////////////////////////////////////////////////////////////////////////////
-	//                                                                        //
-	//          STATIC SECTION STARTS                                         //
-	//                                                                        //
-	////////////////////////////////////////////////////////////////////////////
+	// //////////////////////////////////////////////////////////////////////////
+	// //
+	// STATIC SECTION STARTS //
+	// //
+	// //////////////////////////////////////////////////////////////////////////
 
-	/**	 number of moves to fake	 */
+	/** number of moves to fake */
 	static int m = 0;
 
 	private static ConnectionData connectionData = new ConnectionData();
 
 	/**
-	 print a message on how to call the program
+	 * print a message on how to call the program
 	 */
 	protected static void help() {
 		System.out
@@ -82,7 +83,7 @@ public class Go3DClient {
 	}
 
 	/**
-	 parse the command line and set appropriate options
+	 * parse the command line and set appropriate options
 	 */
 	protected static void parse(String[] args) {
 
@@ -129,13 +130,14 @@ public class Go3DClient {
 	}
 
 	/**
-	 main method; allows this class to be run as an application as well as an
-	 applet
+	 * main method; allows this class to be run as an application as well as an
+	 * applet
 	 */
 	public static void main(String[] args) {
 		parse(args);
 
 		GridDisplay game = null;
+		JDialog ChatWindow = null;
 
 		while (game == null) {
 			try {
@@ -144,51 +146,73 @@ public class Go3DClient {
 
 				Utility.debug("Pre-moves   = " + m);
 				Utility.debug("Server port = " + GameBase.getServerPort());
-				Utility.debug("Server host = " + connectionData.getServerHost());
+				Utility
+						.debug("Server host = "
+								+ connectionData.getServerHost());
 				Utility.debug("Username    = " + connectionData.getUsername());
 
-				if (!connectionData.getStartGame()) {
-					ConnectedPlayer p = setupConnection();
+				ConnectedPlayer p = setupConnection();
 
-					ChooseGameDialog choose = new ChooseGameDialog(p, connectionData);
-					choose.setVisible(true);
-
-					Utility.debug("Chosen game = " + connectionData.getGame());
-
-					game = new GridDisplay(connectionData, p);
-				} else {
-					game = new GridDisplay(connectionData);
+				if (Utility.getDebugMode()) {
+					if (ChatWindow == null) ChatWindow = new ChatWindow();
+					ChatWindow.setVisible(true);
 				}
+				
+				ChooseGameDialog choose = new ChooseGameDialog(p, connectionData);
+
+				while (connectionData.getGame() == "" && connectionData.getStartGame() == false) {
+					Utility.sleep(100);
+				}
+				game = new GridDisplay(connectionData, p);
 			} catch (CantConnectException e) {
-				JOptionPane.showMessageDialog(null, "There is no Go³ server listening on host \""+connectionData.getServerHost()+
-						"\" on port "+GameBase.getServerPort()+".\n" +
-						"Please check your connection settings and try again.");
+				JOptionPane
+						.showMessageDialog(
+								null,
+								"There is no Go³ server listening on host \""
+										+ connectionData.getServerHost()
+										+ "\" on port "
+										+ GameBase.getServerPort()
+										+ ".\n"
+										+ "Please check your connection settings and try again.");
 			} catch (AlreadyConnectedException e) {
-				JOptionPane.showMessageDialog(null, "A user called \""+connectionData.getUsername()+"\" is already connected.\n" +
-						"Each user can have only one connection currently.\n" +
-						"Please choose a different user name.");
-			} catch(UnsatisfiedLinkError e) {
-				JOptionPane.showMessageDialog(null, "An unrecoverable Error occured: " +
-						e.getMessage()+"\n\n"+
-						"Apparently you haven't set up the Java3D extension correctly.\n" +
-						"You must supply the path to the j3dcore-ogl library on the \n" +
-						"command line like this:\n\n" +
-						"    java -Djava.library.path=${J3D_LIBPATH} -cp ${CLASSPATH}\n" +
-						"         net.hyperspacetravel.go3.client.gui.Go3DClient\n\n" +
-						"I cannot guess the correct path. I'll have to terminate. Sorry.");
+				JOptionPane.showMessageDialog(null, "A user called \""
+						+ connectionData.getUsername()
+						+ "\" is already connected.\n"
+						+ "Each user can have only one connection currently.\n"
+						+ "Please choose a different user name.");
+			} catch (UnsatisfiedLinkError e) {
+				JOptionPane
+						.showMessageDialog(
+								null,
+								"An unrecoverable Error occured: "
+										+ e.getMessage()
+										+ "\n\n"
+										+ "Apparently you haven't set up the Java3D extension correctly.\n"
+										+ "You must supply the path to the j3dcore-ogl library on the \n"
+										+ "command line like this:\n\n"
+										+ "    java -Djava.library.path=${J3D_LIBPATH} -cp ${CLASSPATH}\n"
+										+ "         net.hyperspacetravel.go3.client.gui.Go3DClient\n\n"
+										+ "On Gentoo Linux, for example, you can use:\n\n"
+										+ "    java -Djava.library.path=$(java-config -i sun-java3d-bin)\n"
+										+ "         -cp $(java-config -p sun-java3d-bin)\n"
+										+ "         net.hyperspacetravel.go3.client.gui.Go3DClient\n\n"
+										+ "I cannot guess the correct path on my own. I'll have to terminate.\n"
+										+ "Sorry.");
 				System.exit(1);
 			} catch (Exception e) {
-				JOptionPane.showMessageDialog(null, "An unrecoverable Error occured: " +
-						e.getMessage()+"\n"+
-					"I have to terminate. Sorry.");System.exit(1);
+				JOptionPane.showMessageDialog(null,
+						"An unrecoverable Error occured: " + e.getMessage()
+								+ "\n" + "I have to terminate. Sorry.");
+				System.exit(1);
 			}
 		}
-		
-//		JDesktopPane frame = new JDesktopPane();
+
+		// JDesktopPane frame = new JDesktopPane();
 		Frame frame = new MainFrame(game, 600, 600);
-		
+
 		game.addCursorListener(new CursorDialog(game, frame));
-		if (Utility.getDebugMode()) game.addTransformListener(new NavigationDialog(game, frame));
+		if (Utility.getDebugMode())
+			game.addTransformListener(new NavigationDialog(game, frame));
 
 		if (false) {
 			for (int i = 0; i < m; i++) {

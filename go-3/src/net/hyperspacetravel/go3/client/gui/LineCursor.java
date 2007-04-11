@@ -17,7 +17,6 @@ public class LineCursor extends Cursor {
 	class CursorLine extends Primitive {
 
 		public CursorLine(int axis, int length) {
-			System.out.println("CursorLine("+axis+", "+length+")");
 			Point3f vertex[] = new Point3f[2];
 			vertex[0] = new Point3f (0, 0, 0);
 			vertex[1] = new Point3f ((axis == 0? length-1: 0),
@@ -39,19 +38,11 @@ public class LineCursor extends Cursor {
 			this.addChild(cursorPos);
 		}
 		
-		public Shape3D getShape(int arg0) {
-			return lineShape;
-		}
+		public Shape3D getShape(int arg0) {	return lineShape; }
 
-		public Appearance getAppearance(int arg0) {
-			return lineShape.getAppearance();
-		}
+		public Appearance getAppearance(int arg0) { return lineShape.getAppearance(); }
 
-		public void setAppearance(Appearance arg0) {
-			lineShape.setAppearance(arg0);			
-			System.out.println(lineShape.getAppearance().getLineAttributes().getLineWidth());
-			System.out.println(lineShape.getAppearance().getLineAttributes().getLineAntialiasingEnable());
-		}
+		public void setAppearance(Appearance arg0) { lineShape.setAppearance(arg0); }
 		
 		private LineArray line;
 		private Shape3D lineShape;

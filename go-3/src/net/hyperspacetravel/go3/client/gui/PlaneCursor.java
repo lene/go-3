@@ -24,26 +24,18 @@ public class PlaneCursor extends Cursor {
 			Point3f vertex[] = new Point3f[4*size];
 			
 			for (int x = 0; x < size; x++) {
-				/* x: 	0,0,x -> 0, size, x
-				 * 		0,x,0 -> 0, x, size
-				 *  y:	x,0,0 -> x, size, 0
-				 *  	0,0,x -> size, 0, x
-				 *  z:	0,x,0 -> size, x, 0
-				 *  	x,0,0 -> x, size, 0
-				 */
-				
 				vertex[4*x+0] = new Point3f ((plane == 1? x: 0), 
-										   (plane == 2? x: 0), 
-										   (plane == 0? x: 0));
+										   	 (plane == 2? x: 0), 
+										   	 (plane == 0? x: 0));
 				vertex[4*x+1] = new Point3f ((plane == 1? x: (plane == 2? size-1: 0)),
-										   (plane == 2? x: (plane == 0? size-1: 0)), 
-										   (plane == 0? x: (plane == 1? size-1: 0)));
+										   	 (plane == 2? x: (plane == 0? size-1: 0)), 
+										   	 (plane == 0? x: (plane == 1? size-1: 0)));
 				vertex[4*x+2] = new Point3f ((plane == 2? x: 0),
-						 				   (plane == 0? x: 0), 
-						 				   (plane == 1? x: 0));
+						 				   	 (plane == 0? x: 0), 
+						 				   	 (plane == 1? x: 0));
 				vertex[4*x+3] = new Point3f ((plane == 2? x: (plane == 1? size-1: 0)),
-						 				   (plane == 0? x: (plane == 2? size-1: 0)), 
-						 				   (plane == 1? x: (plane == 0? size-1: 0)));
+						 				   	 (plane == 0? x: (plane == 2? size-1: 0)), 
+						 				   	 (plane == 1? x: (plane == 0? size-1: 0)));
 			}
 			
 			line = new LineArray (vertex.length, GeometryArray.COORDINATES);
@@ -61,17 +53,11 @@ public class PlaneCursor extends Cursor {
 			this.addChild(cursorPos);
 		}
 		
-		public Shape3D getShape(int arg0) {
-			return lineShape;
-		}
+		public Shape3D getShape(int arg0) { return lineShape; }
 
-		public Appearance getAppearance(int arg0) {
-			return lineShape.getAppearance();
-		}
+		public Appearance getAppearance(int arg0) { return lineShape.getAppearance(); }
 
-		public void setAppearance(Appearance arg0) {
-			lineShape.setAppearance(arg0);			
-		}
+		public void setAppearance(Appearance arg0) { lineShape.setAppearance(arg0); }
 		
 		private LineArray line;
 		private Shape3D lineShape;

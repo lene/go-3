@@ -278,8 +278,8 @@ public class ChooseGameDialog extends JDialog {
 		if (sizeLabel == null) {
 			sizeLabel = new JLabel();
 			sizeLabel.setName("sizeLabel");
-			sizeLabel.setText("Board size: "+String.valueOf(this.boardSize)+"x"
-					+String.valueOf(this.boardSize)+"x"+String.valueOf(this.boardSize));
+			sizeLabel.setText("Board size: "+String.valueOf(this.DEFAULT_BOARDSIZE)+"x"
+					+String.valueOf(this.DEFAULT_BOARDSIZE)+"x"+String.valueOf(this.DEFAULT_BOARDSIZE));
 			
 			sizeLabel.setToolTipText("The size of the board on which you want" +
 					" to play. This is not adjustable yet, you have to take" +
@@ -300,7 +300,7 @@ public class ChooseGameDialog extends JDialog {
 			sizeSlider.setMinimum(GameBase.MIN_GRID_SIZE);
 			sizeSlider.setMaximum(GameBase.MAX_GRID_SIZE);
 			sizeSlider.setMinorTickSpacing(2);
-			sizeSlider.setValue(this.boardSize);
+			sizeSlider.setValue(this.DEFAULT_BOARDSIZE);
 			sizeSlider.addChangeListener(new ChangeListener() {
 				public void stateChanged(ChangeEvent e) {
 					String boardSizeString = String.valueOf(sizeSlider.getValue());
@@ -318,10 +318,8 @@ public class ChooseGameDialog extends JDialog {
 		return sizeSlider;
 	}
 	
-	/**
-	 * Return the joinGameButton property value.
-	 * @return JButton
-	 */
+	/**	Return the joinGameButton property value.
+	 * @return JButton	 */
 	private JButton getStartButton() {
 		if (startButton == null) {
 			startButton = new JButton();
@@ -343,9 +341,7 @@ public class ChooseGameDialog extends JDialog {
 	
 	//	methods building the "players list" view
 	
-	/**
-	 * @return Returns the playersListLabel.
-	 */
+	/**	@return Returns the playersListLabel.	 */
 	private JLabel getPlayersListLabel() {
 		if (playersListLabel == null) {
 			playersListLabel = new JLabel();
@@ -359,9 +355,7 @@ public class ChooseGameDialog extends JDialog {
 
 	//	methods building the "games list" view
 
-	/**
-	 * @return Returns the gamesListLabel.
-	 */
+	/**	@return Returns the gamesListLabel.	 */
 	private JLabel getGamesListLabel() {
 		if (gamesListLabel == null) {
 			gamesListLabel = new JLabel();
@@ -372,21 +366,17 @@ public class ChooseGameDialog extends JDialog {
 		}
 		return gamesListLabel;
 	}
-
-
 	
-	/**
-	 * This method initializes this
-	 * 
-	 */
+	/**	This method initializes this */
 	private void initialize() {
         this.setName("Game Chooser Dialog");
 		this.setForeground(SystemColor.textHighlight);
-		this.setModal(true);
+		this.setModal(false);
 		this.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 		this.setSize(480, 300);
 		this.setTitle("Choose a Game");
 		this.setContentPane(getTabbedPane());
+		this.setVisible(true);
 	}
 	
 	
@@ -430,7 +420,7 @@ public class ChooseGameDialog extends JDialog {
 
 	private GameData[] gameData = {};
 
-	private int boardSize = 3;
+	private int DEFAULT_BOARDSIZE = 3;
 
 	/**	whether dialog has been stopped => game has begun */
 	private boolean stopped = false;

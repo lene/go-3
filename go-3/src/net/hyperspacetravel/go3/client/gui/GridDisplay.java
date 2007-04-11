@@ -1,36 +1,53 @@
 package net.hyperspacetravel.go3.client.gui;
 //
 
-import com.sun.j3d.utils.universe.*;
-import com.sun.j3d.utils.behaviors.mouse.*;
-import com.sun.j3d.utils.picking.PickTool;
+import java.awt.BorderLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 
-import javax.media.j3d.*;
-import javax.vecmath.*;
-
-import java.awt.*;
-import java.awt.event.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 
-import javax.swing.JOptionPane;
-import javax.swing.JPopupMenu;
-import javax.swing.JMenuItem;
-import javax.swing.JMenuBar;
-import javax.swing.JMenu;
-import javax.swing.KeyStroke;
+import javax.media.j3d.AmbientLight;
+import javax.media.j3d.BoundingSphere;
+import javax.media.j3d.BranchGroup;
+import javax.media.j3d.Canvas3D;
+import javax.media.j3d.DirectionalLight;
+import javax.media.j3d.GeometryArray;
+import javax.media.j3d.PointArray;
+import javax.media.j3d.Shape3D;
+import javax.media.j3d.Transform3D;
+import javax.media.j3d.TransformGroup;
 
 import javax.swing.JApplet;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
+import javax.swing.KeyStroke;
+
+import javax.vecmath.Color3f;
+import javax.vecmath.Point3d;
+import javax.vecmath.Point3f;
+import javax.vecmath.Vector3d;
+import javax.vecmath.Vector3f;
 
 import net.hyperspacetravel.go3.Colour;
 import net.hyperspacetravel.go3.ConnectedPlayer;
 import net.hyperspacetravel.go3.ConnectionData;
 import net.hyperspacetravel.go3.GameBase;
 import net.hyperspacetravel.go3.GoGrid;
-import net.hyperspacetravel.go3.Utility;
 import net.hyperspacetravel.go3.client.CursorListener;
 import net.hyperspacetravel.go3.client.GoGridClient;
 import net.hyperspacetravel.go3.client.TransformListener;
+
+import com.sun.j3d.utils.behaviors.mouse.MouseRotate;
+import com.sun.j3d.utils.behaviors.mouse.MouseTranslate;
+import com.sun.j3d.utils.behaviors.mouse.MouseZoom;
+import com.sun.j3d.utils.picking.PickTool;
+import com.sun.j3d.utils.universe.SimpleUniverse;
 
 
 /**

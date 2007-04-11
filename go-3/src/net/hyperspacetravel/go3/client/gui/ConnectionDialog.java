@@ -17,6 +17,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 
+import javax.swing.Box;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JLabel;
@@ -60,7 +61,7 @@ public class ConnectionDialog extends JDialog {
 			contentPane.add(getServerPortTextField(), null);
 			contentPane.add(getUsernameLabel());
 			contentPane.add(getUsernameTextField(), null);
-			contentPane.add(getConnectButton());
+			contentPane.add(getButtonPanel());
 		}
 		return contentPane;
 	}
@@ -178,6 +179,21 @@ public class ConnectionDialog extends JDialog {
 		return usernameTextField;
 	}
 
+	private JPanel getButtonPanel() {
+		if(buttonPanel == null) {
+			buttonPanel = new JPanel();
+			buttonPanel.setName("buttonPanel");
+			buttonPanel.setLayout(
+					new BoxLayout(buttonPanel,
+							BoxLayout.X_AXIS));
+
+			buttonPanel.add(getCancelButton(), null);
+			buttonPanel.add(Box.createHorizontalGlue());
+			buttonPanel.add(getConnectButton());
+		}
+		return buttonPanel;
+	}
+	
 	/**
 	 * Return the connectButton property value.
 	 * @return JButton
@@ -198,6 +214,26 @@ public class ConnectionDialog extends JDialog {
 			});
 		}
 		return connectButton;
+	}
+
+	/**
+	 * Return the cancelButton property value.
+	 * @return JButton
+	 */
+	private JButton getCancelButton() {
+		if (cancelButton == null) {
+			cancelButton = new JButton();
+			cancelButton.setName("cancelButton");
+			cancelButton.setText("Cancel");
+			cancelButton.addActionListener(new ActionListener() {
+				public void actionPerformed(ActionEvent e) {
+					if (e.getActionCommand().equals (cancelButton.getText())) {
+						System.exit(0);
+					}
+				}
+			});
+		}
+		return cancelButton;
 	}
 
 	/**
@@ -230,7 +266,9 @@ public class ConnectionDialog extends JDialog {
 	private JLabel usernameLabel = null;
 	private JTextField usernameTextField = null;
 
+	private JPanel buttonPanel = null;
 	private JButton connectButton = null;
+	private JButton cancelButton = null;
 
 	private int serverPort = 6666;
 	private String username = "";
