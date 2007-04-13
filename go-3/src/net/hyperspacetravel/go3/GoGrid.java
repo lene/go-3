@@ -2,6 +2,9 @@ package net.hyperspacetravel.go3;
 
 import java.util.ArrayList;
 
+import net.hyperspacetravel.go3.client.ChatListener;
+import net.hyperspacetravel.go3.client.CursorListener;
+
 /**
  * class Move represents a move on the go grid, consisting of a position
  * and a colour.
@@ -89,7 +92,9 @@ public abstract class GoGrid extends GameBase {
 	 @param message the message to be sent
 	 */
 	abstract public void sendMessage (int player, String message);
-	
+
+	abstract public void message (String message);
+
 	/**
 	 return (a generally wrong, i.e. much too high, value for) the liberties
 	 which are left to the stone at the given position<br>
@@ -137,7 +142,7 @@ public abstract class GoGrid extends GameBase {
 			}
 		}
 	}
-	
+		
 	
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
@@ -338,7 +343,13 @@ public abstract class GoGrid extends GameBase {
 		return stones[x][y][z];
 	}
 	
-	
+	private ArrayList<ChatListener> chatListeners = new ArrayList<ChatListener> ();
+	public void addChatListener(ChatListener listener) {
+		listener.setGrid(this);
+		chatListeners.add(listener);
+		
+	}
+
 	////////////////////////////////////////////////////////////////////////////
 	//                                                                        //
 	//          VARIABLES SECTION ENDS                                        //

@@ -220,7 +220,7 @@ public class GoGridClient extends GoGrid {
 	 output a received message
 	 @param msg
 	 */
-	void message (String msg) {
+	public void message (String msg) {
 		System.out.println(msg);
 	}
 	

@@ -137,7 +137,7 @@ public class Go3DClient {
 		parse(args);
 
 		GridDisplay game = null;
-		JDialog ChatWindow = null;
+		ChatWindow chatWindow = null;
 
 		while (game == null) {
 			try {
@@ -154,8 +154,8 @@ public class Go3DClient {
 				ConnectedPlayer p = setupConnection();
 
 				if (Utility.getDebugMode()) {
-					if (ChatWindow == null) ChatWindow = new ChatWindow();
-					ChatWindow.setVisible(true);
+					if (chatWindow == null) chatWindow = new ChatWindow();
+					chatWindow.setVisible(true);
 				}
 				
 				ChooseGameDialog choose = new ChooseGameDialog(p, connectionData);
@@ -213,7 +213,9 @@ public class Go3DClient {
 		game.addCursorListener(new CursorDialog(game, frame));
 		if (Utility.getDebugMode())
 			game.addTransformListener(new NavigationDialog(game, frame));
-
+		if (Utility.getDebugMode())
+			game.getGrid().addChatListener(chatWindow);
+		
 		if (false) {
 			for (int i = 0; i < m; i++) {
 				game.fakeGame(2, Colour.BLACK);

@@ -218,6 +218,10 @@ public class Game extends GoGrid {
 		player.getProtocol().message(message);
 	}
 		
+	public void message (String message) {
+		
+	}
+	
 	/**
 	 return (a generally wrong, i.e. much too high, value for) the liberties
 	 which are left to the stone at the given position<br>
