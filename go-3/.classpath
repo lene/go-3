@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="net/hyperspacetravel/go3/client/gui/J3DApp.java|net/hyperspacetravel/go3/client/gui/CursorBehavior.java|net/hyperspacetravel/go3/client/gui/SettingsDialog.java|net/hyperspacetravel/go3/client/gui/StartupDialog.java" path="src" kind="src"/>
-	<classpathentry path="org.eclipse.jdt.launching.JRE_CONTAINER" kind="con"/>
-	<classpathentry path="/usr/share/sun-java3d-bin/lib/j3dcore.jar" exported="true" kind="lib"/>
-	<classpathentry sourcepath="/usr/share/sun-java3d-bin/lib/j3dutils.jar" path="/usr/share/sun-java3d-bin/lib/j3dutils.jar" exported="true" kind="lib"/>
-	<classpathentry path="/usr/share/sun-java3d-bin/lib/vecmath.jar" exported="true" kind="lib"/>
-	<classpathentry path="bin" kind="output"/>
+	<classpathentry excluding="net/hyperspacetravel/go3/client/gui/J3DApp.java|net/hyperspacetravel/go3/client/gui/CursorBehavior.java|net/hyperspacetravel/go3/client/gui/SettingsDialog.java|net/hyperspacetravel/go3/client/gui/StartupDialog.java" kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/usr/local/share/java/java3d/jar/j3dcore.jar"/>
+	<classpathentry kind="lib" path="/usr/local/share/java/java3d/jar/j3dutils.jar"/>
+	<classpathentry kind="lib" path="/usr/local/share/java/java3d/jar/vecmath.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/libJ3D.so"/>
+	<classpathentry kind="output" path="bin"/>
 </classpath>

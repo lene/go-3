@@ -506,6 +506,7 @@ public class GoGridClient extends GoGrid {
 		if (args.length <= 3) p = GoGrid.getServerPort();
 		else p = Integer.parseInt(args[3]);
 		
+		@SuppressWarnings("unused")
 		GoGridClient client = new GoGridClient (s, h, p, u, null);
 	}
 }

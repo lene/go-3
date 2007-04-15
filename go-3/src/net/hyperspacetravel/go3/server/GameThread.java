@@ -1,8 +1,5 @@
 package net.hyperspacetravel.go3.server;
 
-import java.io.*;
-import java.util.LinkedList;
-
 import net.hyperspacetravel.go3.Game;
 import net.hyperspacetravel.go3.GameBase;
 

@@ -20,7 +20,7 @@ public class SimpleTransformListener implements TransformListener {
 	public void notifyTransform(Transform3D transform) {
 		Matrix3d rot = new Matrix3d();
 		Vector3d trans = new Vector3d();
-		Matrix3d test = new Matrix3d();
+
 		try {
 			transform.get(rot);
 			transform.get(trans);

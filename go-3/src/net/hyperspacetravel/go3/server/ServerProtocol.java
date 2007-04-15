@@ -1,7 +1,5 @@
 package net.hyperspacetravel.go3.server;
 
-import java.io.*;
-import java.net.*;
 import java.util.Iterator;
 
 import net.hyperspacetravel.go3.ConnectedPlayer;
@@ -30,7 +28,9 @@ class ServerProtocol extends GoGridProtocol {
 	////////////////////////////////////////////////////////////////////////////
 	
 	protected void sendMessage (String input) {
+		@SuppressWarnings("unused")
 		int to;
+		@SuppressWarnings("unused")
 		String msg = Utility.getArgs (input, 3);
 		try {
 			to = Integer.parseInt (Utility.getArg (input, 2));
@@ -257,6 +257,7 @@ class ServerProtocol extends GoGridProtocol {
 	protected boolean connected = false,
 	await_clients = false;
 
+	@SuppressWarnings("unused")
 	private String boardContent = "";
 
 }

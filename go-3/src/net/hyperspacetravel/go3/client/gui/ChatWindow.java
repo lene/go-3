@@ -40,6 +40,14 @@ public class ChatWindow extends JDialog implements ChatListener {
 		// TODO Auto-generated method stub
 		
 	}	
+	/* (non-Javadoc)
+	 * @see net.hyperspacetravel.go3.client.ChatListener#message()
+	 */
+	public void sendMessage() {
+		// TODO Auto-generated method stub
+		grid.sendMessage(0, "Implement me: ChatWindow.sendMessage()");
+	}
+
 	/**
 	 * Return the contentPane property value.
 	 * @return JPanel
@@ -112,9 +120,6 @@ public class ChatWindow extends JDialog implements ChatListener {
 	private GoGrid grid;
 	/**														 */
 	private static final long serialVersionUID = 4643374556829922269L;
-	/* (non-Javadoc)
-	 * @see net.hyperspacetravel.go3.client.ChatListener#message()
-	 */
 
 
 }

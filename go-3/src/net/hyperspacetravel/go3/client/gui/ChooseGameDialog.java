@@ -54,6 +54,7 @@ public class ChooseGameDialog extends JDialog {
 		initialize();
 	}
 		
+	@SuppressWarnings("unchecked")
 	ArrayList<GameData> getGames() {
 		player.out.println("game list");
 		ArrayList<GameData> games = new ArrayList<GameData>();

@@ -1,12 +1,16 @@
 package net.hyperspacetravel.go3.client.gui;
 
-import javax.media.j3d.*;
-import com.sun.j3d.utils.geometry.Primitive;
-import com.sun.j3d.utils.geometry.Sphere;
-import javax.vecmath.*;
+import javax.media.j3d.Appearance;
+import javax.media.j3d.Material;
+import javax.media.j3d.PolygonAttributes;
+import javax.media.j3d.Shape3D;
+import javax.media.j3d.TransparencyAttributes;
 
 import net.hyperspacetravel.go3.Colour;
 import net.hyperspacetravel.go3.GameBase;
+
+import com.sun.j3d.utils.geometry.Primitive;
+import com.sun.j3d.utils.geometry.Sphere;
 
 
 public class Stone extends Sphere {
@@ -54,7 +58,7 @@ public class Stone extends Sphere {
     	pa.setCullFace (PolygonAttributes.CULL_NONE);
     	app.setPolygonAttributes (pa);
     	}
-//    	setTransparency (STONE_TRANSPARENCY, app);
+    	setTransparency (STONE_TRANSPARENCY, app);
     	
     	return app;
     }

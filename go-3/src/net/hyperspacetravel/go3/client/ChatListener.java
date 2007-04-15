@@ -12,5 +12,5 @@ import net.hyperspacetravel.go3.GoGrid;
 public interface ChatListener {
 	public void message();
 	public void setGrid(GoGrid _grid);
-
+	public void sendMessage();
 }

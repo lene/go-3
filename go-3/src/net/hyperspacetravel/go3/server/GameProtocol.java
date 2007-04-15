@@ -1,7 +1,5 @@
 package net.hyperspacetravel.go3.server;
 
-import java.io.*;
-
 import net.hyperspacetravel.go3.Colour;
 import net.hyperspacetravel.go3.ConnectedPlayer;
 import net.hyperspacetravel.go3.FieldNotPresentException;

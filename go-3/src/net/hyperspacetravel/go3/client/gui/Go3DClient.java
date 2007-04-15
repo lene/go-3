@@ -1,14 +1,11 @@
 package net.hyperspacetravel.go3.client.gui;
 
 import java.awt.Frame;
-
 import java.io.IOException;
-
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.UnknownHostException;
 
-import javax.swing.JDialog;
 import javax.swing.JOptionPane;
 
 import net.hyperspacetravel.go3.Colour;
@@ -158,6 +155,7 @@ public class Go3DClient {
 					chatWindow.setVisible(true);
 				}
 				
+				@SuppressWarnings("unused")
 				ChooseGameDialog choose = new ChooseGameDialog(p, connectionData);
 
 				while (connectionData.getGame() == "" && connectionData.getStartGame() == false) {

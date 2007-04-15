@@ -203,6 +203,7 @@ public class NavigationDialog extends JDialog implements TransformListener {
 		return navigationTextField.get(index);
 	}
 
+	@SuppressWarnings("unused")
 	private JCheckBox getNavigationCheckBox(int index, String name) {
 		if (navigationCheckBox.size() <= index || navigationCheckBox.get(index) == null) {
 			navigationCheckBox.add(index, new JCheckBox());

@@ -9,11 +9,7 @@ import javax.media.j3d.TransformGroup;
 import javax.vecmath.Point3f;
 import javax.vecmath.Vector3f;
 
-import net.hyperspacetravel.go3.GameBase;
-import net.hyperspacetravel.go3.client.gui.LineCursor.CursorLine;
-
 import com.sun.j3d.utils.geometry.Primitive;
-import com.sun.j3d.utils.geometry.Sphere;
 
 
 public class PlaneCursor extends Cursor {
