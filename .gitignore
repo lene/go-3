@@ -14,4 +14,8 @@ hs_err_pid*
 target/
 .idea/
 .vscode/
+.metals/
+project/project/
+project/.bloop/
+project/metals.sbt
 scala3-3.0.0-RC3/

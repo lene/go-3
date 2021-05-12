@@ -24,7 +24,25 @@ sudo apt-get update
 sudo apt-get install sbt
 ```
 
+### Troubleshooting
 
+```shell
+$ sbt compile
+...
+[error] java.io.IOException: User limit of inotify instances reached or too many open files
+...
+```
+can be solved with:
+```shell
+$ cat /proc/sys/fs/inotify/max_user_instances
+128
+$ echo 256 | sudo tee /proc/sys/fs/inotify/max_user_instances             0.000s
+256
+```
+or for a longer term solution (?)
+```shell
+$ sudo sysctl fs.inotify.max_user_instances=256
+```
 
 ## sbt project compiled with Scala 3
 

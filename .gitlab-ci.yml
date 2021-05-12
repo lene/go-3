@@ -32,9 +32,9 @@ Test:
 
 Run:
   extends: .PrepareSBT
-  stage: run
+  stage: test
   needs:
-    - Test
+    - Compile
   script:
     - sbt run
 
@@ -58,8 +58,8 @@ Test:UseSbtDocker:
 
 Run:UseSbtDocker:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
-  stage: run
+  stage: test
   needs:
-    - Test:UseSbtDocker
+    - Compile:UseSbtDocker
   script:
     - sbt run
