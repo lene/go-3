@@ -1,5 +1,14 @@
-@main def hello: Unit = 
-  println("Hello world!")
-  println(msg)
+import go3d.Color
 
-def msg = "I was compiled by Scala 3. :)"
+@main def printDefinitions: Unit = {
+  println("Just some output to verify definitions are ok:")
+  print(Color.Black)
+  print(Color.White)
+  print(Color.Empty)
+  print(Color.Undefined)
+  print(Color.Occupied)
+  print(Color.Red)
+  print(Color.Green)
+  print(Color.Blue)
+  println()
+}

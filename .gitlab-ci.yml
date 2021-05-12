@@ -38,6 +38,9 @@ Run:
   script:
     - sbt run
 
+# The following ones use a prepared docker image. They run somewhat faster, but not all that much.
+# I'll decide later whether to drop one of the ways to install sbt, or keep them both (for some
+# variety in how the build is done, and potentially more cross-compatibility.)
 Compile:UseSbtDocker:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
   stage: compile

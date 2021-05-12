@@ -12,4 +12,6 @@
 hs_err_pid*
 
 target/
-.idea
+.idea/
+.vscode/
+scala3-3.0.0-RC3/
