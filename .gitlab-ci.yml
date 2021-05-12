@@ -29,6 +29,9 @@ Test:
     - Compile
   script:
     - sbt test
+  artifacts:
+    reports:
+      junit: target/test-reports/**/TEST-*.xml
 
 Run:
   extends: .PrepareSBT
@@ -55,6 +58,9 @@ Test:UseSbtDocker:
     - Compile:UseSbtDocker
   script:
     - sbt test
+  artifacts:
+    reports:
+      junit: target/test-reports/**/TEST-*.xml
 
 Run:UseSbtDocker:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
