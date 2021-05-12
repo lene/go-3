@@ -1,12 +1,13 @@
-import org.junit.Test
-import org.junit.Assert.*
+import org.junit.{Assert, Test}
 
 class TestColor:
-  @Test def testColorsNotEqual(): Unit = {
-    assertNotEquals(go3d.Color.Black, go3d.Color.White)
-    assertNotEquals(go3d.Color.Black, go3d.Color.Undefined)
-    assertNotEquals(go3d.Color.White, go3d.Color.Undefined)
-    assertNotEquals(go3d.Color.Black, go3d.Color.Empty)
-    assertNotEquals(go3d.Color.White, go3d.Color.Empty)
-    assertNotEquals(go3d.Color.Empty, go3d.Color.Undefined)
-  }
+  @Test def testColorsNotEqual(): Unit =
+    Assert.assertNotEquals(go3d.Color.Black, go3d.Color.White)
+    Assert.assertNotEquals(go3d.Color.Black, go3d.Color.Undefined)
+    Assert.assertNotEquals(go3d.Color.White, go3d.Color.Undefined)
+    Assert.assertNotEquals(go3d.Color.Black, go3d.Color.Empty)
+    Assert.assertNotEquals(go3d.Color.White, go3d.Color.Empty)
+    Assert.assertNotEquals(go3d.Color.Empty, go3d.Color.Undefined)
+    Assert.assertNotEquals(go3d.Color.Black, go3d.Color.Sentinel)
+    Assert.assertNotEquals(go3d.Color.White, go3d.Color.Sentinel)
+    Assert.assertNotEquals(go3d.Color.Empty, go3d.Color.Sentinel)

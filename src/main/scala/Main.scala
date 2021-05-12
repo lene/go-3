@@ -1,14 +1,15 @@
-import go3d.Color
+import go3d._
 
-@main def printDefinitions: Unit = {
+@main def printDefinitions: Unit =
   println("Just some output to verify definitions are ok:")
   print(Color.Black)
   print(Color.White)
   print(Color.Empty)
   print(Color.Undefined)
-  print(Color.Occupied)
+  print(Color.Sentinel)
   print(Color.Red)
   print(Color.Green)
   print(Color.Blue)
   println()
-}
+  val goban = Goban(3)
+  println(goban.toString)
