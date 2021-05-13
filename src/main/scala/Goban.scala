@@ -2,7 +2,7 @@ package go3d
 
 import Array._
 
-class Goban(val size: Int, val numPlayers: Int = DefaultPlayers):
+class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Boolean = false):
 
   if size < MinBoardSize then throw IllegalArgumentException("size too small: "+size)
   if size > MaxBoardSize then throw IllegalArgumentException("size too big: "+size)
@@ -46,7 +46,7 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers):
 
   private def setStone(move: Move): Unit =
     stones(move.position.x)(move.position.y)(move.position.z) = move.color
-//    checkArea(move)
+    checkArea(move)
 
   private def checkArea(move: Move) =
     for
@@ -65,7 +65,8 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers):
     x > 0 && y > 0 && z > 0 && x <= size && y <= size && z <= size
 
   private def checkAndClear(move: Move): Unit = {
-    if at(move.position) != move.color then return
+    if at(move.position) == move.color then return
+    if verbose then println("Found "+move.color+" at "+move.position)
     stones(move.position.x)(move.position.y)(move.position.z) = Color.Empty
   }
 

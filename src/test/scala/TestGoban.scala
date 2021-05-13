@@ -1,6 +1,6 @@
 package go3d.testing
 
-import go3d.*
+import go3d._
 import org.junit.{Assert, Test}
 
 class TestGoban:
@@ -66,7 +66,7 @@ class TestGoban:
   @Test def testSetStone(): Unit =
     val empty = Goban(TestSize)
     val newBoard = empty.newBoard(Move(2, 2, 2, Color.Black))
-    Assert.assertEquals(newBoard.at(Position(2, 2, 2)), Color.Black)
+    Assert.assertEquals("\n"+newBoard.toString, newBoard.at(Position(2, 2, 2)), Color.Black)
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val empty = Goban(TestSize)
@@ -83,8 +83,8 @@ class TestGoban:
     val empty = Goban(TestSize)
     val firstMove = empty.newBoard(Move(2, 2, 2, Color.Black))
     val secondMove = firstMove.newBoard(Move(2, 2, 1, Color.White))
-    Assert.assertEquals(secondMove.at(Position(2, 2, 2)), Color.Black)
-    Assert.assertEquals(secondMove.at(Position(2, 2, 1)), Color.White)
+    Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
+    Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.White)
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
     val empty = Goban(TestSize)
@@ -95,19 +95,38 @@ class TestGoban:
     val empty = Goban(TestSize)
     val firstMove = empty.newBoard(Move(2, 2, 2, Color.Black))
     val secondMove = firstMove.newBoard(Pass(Color.White))
-    Assert.assertEquals(secondMove.at(Position(2, 2, 2)), Color.Black)
-    Assert.assertEquals(secondMove.at(Position(2, 2, 1)), Color.Empty)
+    Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
+    Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.Empty)
+
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
     val empty = Goban(TestSize)
     val firstMove = empty.newBoard(Pass(Color.Black))
     assertThrowsGameOver({firstMove.newBoard(Pass(Color.White))})
 
-  @Test def testPlayListOfMoves(): Unit =
-    playListOfMoves(TestSize, CaptureMoves)
+  @Test def testPlayListOfMoves(): Unit = {
+    val goban = playListOfMoves(TestSize, CaptureMoves.dropRight(1))
+    for move <- CaptureMoves.dropRight(1) do
+      Assert.assertEquals(
+        "\n"+goban.toString,
+        move.color, goban.at(move.position)
+      )
+  }
 
   @Test def testCaptureStone(): Unit = {
     var goban = playListOfMoves(TestSize, CaptureMoves)
     Assert.assertEquals(Color.Empty, goban.at(Position(2, 2, 1)))
+  }
+
+  @Test def testCaptureStoneDoesNotRemoveOthers(): Unit = {
+    var goban = playListOfMoves(TestSize, CaptureMoves, true)
+    val presentStones = CaptureMoves.filterNot(move => move == Move(2, 2, 1, Color.White))
+    println(CaptureMoves)
+    println(presentStones)
+    for move <- presentStones do
+      Assert.assertEquals(
+        "\n"+goban.toString,
+        move.color, goban.at(move.position)
+      )
   }
 

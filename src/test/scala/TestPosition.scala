@@ -15,3 +15,8 @@ class TestPosition:
   @Test def testPositionTooSmall(): Unit =
     assertThrowsIllegalArgument({Position(1, 1, 0)})
 
+  @Test def testEqual(): Unit =
+    Assert.assertTrue(Position(1, 1, 1) == Position(1, 1, 1))
+
+  @Test def testNotEqual(): Unit =
+    Assert.assertFalse(Position(1, 1, 1) == Position(1, 1, 2))
