@@ -1,3 +1,4 @@
 package go3d
 
-class IllegalMove extends IllegalArgumentException
+class IllegalMove(val x: Int, val y: Int, val z: Int, val col: Color)
+  extends IllegalArgumentException

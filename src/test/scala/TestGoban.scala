@@ -99,6 +99,18 @@ class TestGoban:
     val firstMove = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
     assertThrowsIllegalMove({firstMove.newBoard(firstMove.Move(2, 2, 1, Color.Black))})
 
+  @Test def testSetAndPassSucceeds(): Unit =
+    val empty = Goban(TestSize)
+    val firstMove = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
+    val secondMove = firstMove.newBoard(firstMove.Pass(Color.White))
+    Assert.assertEquals(secondMove.at(secondMove.Position(2, 2, 2)), Color.Black)
+    Assert.assertEquals(secondMove.at(secondMove.Position(2, 2, 1)), Color.Empty)
+
+  @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
+    val empty = Goban(TestSize)
+    val firstMove = empty.newBoard(empty.Pass(Color.Black))
+    assertThrowsGameOver({firstMove.newBoard(firstMove.Pass(Color.White))})
+
 def assertThrowsIllegalArgument(f: => Unit): Unit =
   try f
   catch
@@ -112,3 +124,10 @@ def assertThrowsIllegalMove(f: => Unit): Unit =
     case e: IllegalMove => return
     case e: _ => Assert.fail("Expected IllegalMove, got "+e.getClass)
   Assert.fail("Expected IllegalMove")
+
+def assertThrowsGameOver(f: => Unit): Unit =
+  try f
+  catch
+    case e: GameOver => return
+    case e: _ => Assert.fail("Expected GameOver, got "+e.getClass)
+  Assert.fail("Expected GameOver")
