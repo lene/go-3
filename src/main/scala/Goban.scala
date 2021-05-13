@@ -20,6 +20,7 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers):
   if numPlayers < 2 then throw IllegalArgumentException("too few players: "+numPlayers)
 
   val stones = initializeBoard
+  var moves: Array[Any] = Array[Any]()
 
   def at(pos: Position): Color = stones(pos.x)(pos.y)(pos.z)
 
@@ -27,10 +28,12 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers):
     if !isValid(move) then throw IllegalMove()
     val newboard = this
     newboard.stones(move.position.x)(move.position.y)(move.position.z) = move.color
+    newboard.moves = moves.appended(move)
     newboard
 
   def isValid(move: Move): Boolean =
-    at(move.position) == Color.Empty
+    at(move.position) == Color.Empty &&
+      (moves.isEmpty || moves.last.asInstanceOf[Move].color != move.color)
 
   override def toString: String =
     var out = ""

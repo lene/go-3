@@ -80,16 +80,24 @@ class TestGoban:
   @Test def testSetStone(): Unit =
     val empty = Goban(TestSize)
     val newBoard = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
-    Assert.assertEquals(
-      newBoard.at(newBoard.Position(2, 2, 2)),
-      Color.Black
-    )
+    Assert.assertEquals(newBoard.at(newBoard.Position(2, 2, 2)), Color.Black)
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val empty = Goban(TestSize)
     val newBoard = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
     assertThrowsIllegalMove({empty.newBoard(empty.Move(2, 2, 2, Color.White))})
 
+  @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
+    val empty = Goban(TestSize)
+    val firstMove = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
+    val secondMove = firstMove.newBoard(firstMove.Move(2, 2, 1, Color.White))
+    Assert.assertEquals(secondMove.at(secondMove.Position(2, 2, 2)), Color.Black)
+    Assert.assertEquals(secondMove.at(secondMove.Position(2, 2, 1)), Color.White)
+
+  @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
+    val empty = Goban(TestSize)
+    val firstMove = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
+    assertThrowsIllegalMove({firstMove.newBoard(firstMove.Move(2, 2, 1, Color.Black))})
 
 def assertThrowsIllegalArgument(f: => Unit): Unit =
   try f
