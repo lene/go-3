@@ -12,4 +12,5 @@ import go3d._
   print(Color.Blue)
   println()
   val goban = Goban(3)
+  val moved = goban.newBoard(goban.Move(2, 2, 2, Color.Black))
   println(goban.toString)

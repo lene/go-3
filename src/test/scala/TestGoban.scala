@@ -30,45 +30,15 @@ class TestGoban:
         Assert.assertEquals(Color.Sentinel, goban.stones(x)(y)(TestSize+1))
         for z <- 1 to TestSize do Assert.assertEquals(Color.Empty, goban.stones(x)(y)(z))
 
-  @Test def testBoardSizeTooSmall(): Unit =
-    try
-      Goban(1)
-    catch
-      case e: IllegalArgumentException => return
-      case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
-    Assert.fail("Expected IllegalArgumentException")
+  @Test def testBoardSizeTooSmall(): Unit = assertThrowsIllegalArgument({Goban(1)})
 
-  @Test def testBoardSizeTooBig(): Unit =
-    try
-      Goban(MaxBoardSize+2)
-    catch
-      case e: IllegalArgumentException => return
-      case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
-    Assert.fail("Expected IllegalArgumentException")
+  @Test def testBoardSizeTooBig(): Unit = assertThrowsIllegalArgument({Goban(MaxBoardSize+2)})
 
-  @Test def testBoardSizeEven(): Unit =
-    try
-      Goban(4)
-    catch
-      case e: IllegalArgumentException => return
-      case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
-    Assert.fail("Expected IllegalArgumentException")
+  @Test def testBoardSizeEven(): Unit = assertThrowsIllegalArgument({Goban(4)})
 
-  @Test def testPlayersTooSmall(): Unit =
-    try
-      Goban(TestSize, 1)
-    catch
-      case e: IllegalArgumentException => return
-      case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
-    Assert.fail("Expected IllegalArgumentException")
+  @Test def testPlayersTooSmall(): Unit = assertThrowsIllegalArgument({Goban(TestSize, 1)})
 
-  @Test def testPlayersTooBig(): Unit =
-    try
-      Goban(TestSize, 3)
-    catch
-      case e: IllegalArgumentException => return
-      case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
-    Assert.fail("Expected IllegalArgumentException")
+  @Test def testPlayersTooBig(): Unit = assertThrowsIllegalArgument({Goban(TestSize, 3)})
 
   @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
     val goban = Goban(TestSize)
@@ -84,3 +54,53 @@ class TestGoban:
   @Test def testEmptyBoardToStringNewlines(): Unit =
     val goban = Goban(TestSize)
     Assert.assertEquals(TestSize*(TestSize+2), goban.toString.count(_ == '\n'))
+
+  @Test def testPosition(): Unit =
+    val goban = Goban(TestSize)
+    for x <- 1 to TestSize do
+      for y <- 1 to TestSize do
+        for z <- 1 to TestSize do
+          goban.Position(x, y, z)
+
+  @Test def testPositionTooBig(): Unit =
+    val goban = Goban(TestSize)
+    assertThrowsIllegalArgument({goban.Position(1, 1, TestSize+1)})
+
+  @Test def testPositionTooSmall(): Unit =
+    val goban = Goban(TestSize)
+    assertThrowsIllegalArgument({goban.Position(1, 1, 0)})
+
+  @Test def testEmptyBoardAt(): Unit =
+    val empty = Goban(TestSize)
+    for x <- 1 to TestSize do
+      for y <- 1 to TestSize do
+        for z <- 1 to TestSize do
+          Assert.assertEquals(Color.Empty, empty.at(empty.Position(x, y, z)))
+
+  @Test def testSetStone(): Unit =
+    val empty = Goban(TestSize)
+    val newBoard = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
+    Assert.assertEquals(
+      newBoard.at(newBoard.Position(2, 2, 2)),
+      Color.Black
+    )
+
+  @Test def testSetStoneAtOccupiedPositionFails(): Unit =
+    val empty = Goban(TestSize)
+    val newBoard = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
+    assertThrowsIllegalMove({empty.newBoard(empty.Move(2, 2, 2, Color.White))})
+
+
+def assertThrowsIllegalArgument(f: => Unit): Unit =
+  try f
+  catch
+    case e: IllegalArgumentException => return
+    case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
+  Assert.fail("Expected IllegalArgumentException")
+
+def assertThrowsIllegalMove(f: => Unit): Unit =
+  try f
+  catch
+    case e: IllegalMove => return
+    case e: _ => Assert.fail("Expected IllegalMove, got "+e.getClass)
+  Assert.fail("Expected IllegalMove")
