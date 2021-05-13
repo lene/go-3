@@ -44,6 +44,17 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
       out += "\n"
     out
 
+  def hasLiberties(move: Move): Boolean =
+//    if move.color != Color.Black || move.color != Color.White then return false
+//    if stones(move.position.x)(move.position.y)(move.position.z) != move.color then throw IllegalArgumentException()
+    for x <- move.position.x-1 to move.position.x+1 by 2 do
+      if stones(x)(move.position.y)(move.position.z) == Color.Empty then return true
+    for y <- move.position.y-1 to move.position.y+1 by 2 do
+      if stones(move.position.x)(y)(move.position.z) == Color.Empty then return true
+    for z <- move.position.z-1 to move.position.z+1 by 2 do
+      if stones(move.position.x)(move.position.y)(z) == Color.Empty then return true
+    return false
+
   private def setStone(move: Move): Unit =
     stones(move.position.x)(move.position.y)(move.position.z) = move.color
     checkArea(move)
@@ -66,6 +77,7 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
 
   private def checkAndClear(move: Move): Unit = {
     if at(move.position) == move.color then return
+    if hasLiberties(move) then return
     if verbose then println("Found "+move.color+" at "+move.position)
     stones(move.position.x)(move.position.y)(move.position.z) = Color.Empty
   }

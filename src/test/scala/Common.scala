@@ -14,8 +14,10 @@ val CaptureMoves =
 
 def playListOfMoves(boardSize: Int, moves: List[Move], verbose: Boolean = false): Goban =
   var goban = Goban(boardSize, verbose=verbose)
-  for move <- CaptureMoves do
+  for move <- moves do {
     goban = goban.newBoard(move)
+    if verbose then println(move.toString+"\n"+goban)
+  }
   goban
 
 def assertThrowsIllegalArgument(f: => Unit): Unit =

@@ -104,29 +104,87 @@ class TestGoban:
     val firstMove = empty.newBoard(Pass(Color.Black))
     assertThrowsGameOver({firstMove.newBoard(Pass(Color.White))})
 
-  @Test def testPlayListOfMoves(): Unit = {
+  @Test def testLiberties(): Unit =
+    val goban = Goban(TestSize)
+    goban.stones(2)(2)(2) = Color.Black
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
+    goban.stones(2)(2)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
+    goban.stones(2)(2)(3) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
+    goban.stones(2)(1)(2) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
+    goban.stones(2)(3)(2) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
+    goban.stones(1)(2)(2) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
+    goban.stones(3)(2)(2) = Color.White
+    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 2, 2, Color.Black)))
+
+  @Test def testLibertiesOnFace(): Unit =
+    val goban = Goban(TestSize)
+    goban.stones(2)(2)(1) = Color.Black
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
+    goban.stones(2)(2)(2) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
+    goban.stones(2)(1)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
+    goban.stones(2)(3)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
+    goban.stones(1)(2)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
+    goban.stones(3)(2)(1) = Color.White
+    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 2, 1, Color.Black)))
+
+  @Test def testLibertiesOnEdge(): Unit =
+    val goban = Goban(TestSize)
+    goban.stones(2)(1)(1) = Color.Black
+    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Color.Black)))
+    goban.stones(1)(1)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Color.Black)))
+    goban.stones(3)(1)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Color.Black)))
+    goban.stones(2)(2)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Color.Black)))
+    goban.stones(2)(1)(2) = Color.White
+    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 1, 1, Color.Black)))
+
+  @Test def testLibertiesInCorner(): Unit =
+    val goban = Goban(TestSize)
+    goban.stones(1)(1)(1) = Color.Black
+    Assert.assertTrue(goban.hasLiberties(Move(1, 1, 1, Color.Black)))
+    goban.stones(2)(1)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(1, 1, 1, Color.Black)))
+    goban.stones(1)(2)(1) = Color.White
+    Assert.assertTrue(goban.hasLiberties(Move(1, 1, 1, Color.Black)))
+    goban.stones(1)(1)(2) = Color.White
+    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(1, 1, 1, Color.Black)))
+
+  @Test def testLibertiesFailIfWrongColor(): Unit =
+    var goban = Goban(TestSize)
+    goban = goban.newBoard(Move(2, 2, 2, Color.Black))
+//    assertThrowsIllegalArgument({goban.hasLiberties(Move(2, 2, 2, Color.White))})
+
+  @Test def testPlayListOfMoves(): Unit =
     val goban = playListOfMoves(TestSize, CaptureMoves.dropRight(1))
     for move <- CaptureMoves.dropRight(1) do
       Assert.assertEquals(
-        "\n"+goban.toString,
+        move.toString+"\n"+goban.toString,
         move.color, goban.at(move.position)
       )
-  }
 
-  @Test def testCaptureStone(): Unit = {
+  @Test def testCaptureStone(): Unit =
     var goban = playListOfMoves(TestSize, CaptureMoves)
-    Assert.assertEquals(Color.Empty, goban.at(Position(2, 2, 1)))
-  }
+    Assert.assertEquals(
+      "\n"+goban.toString,
+      Color.Empty, goban.at(Position(2, 2, 1))
+    )
 
-  @Test def testCaptureStoneDoesNotRemoveOthers(): Unit = {
-    var goban = playListOfMoves(TestSize, CaptureMoves, true)
+  @Test def testCaptureStoneDoesNotRemoveOthers(): Unit =
+    var goban = playListOfMoves(TestSize, CaptureMoves)
     val presentStones = CaptureMoves.filterNot(move => move == Move(2, 2, 1, Color.White))
-    println(CaptureMoves)
-    println(presentStones)
     for move <- presentStones do
       Assert.assertEquals(
-        "\n"+goban.toString,
+        move.toString+"\n"+goban.toString,
         move.color, goban.at(move.position)
       )
-  }
-
