@@ -3,7 +3,7 @@ import org.junit.{Assert, Test}
 
 class TestGoban:
 
-  val TestSize = 3
+  val TestSize = MinBoardSize
 
   @Test def testGobanCtorBasic(): Unit =
     val goban = Goban(TestSize)
@@ -70,6 +70,17 @@ class TestGoban:
       case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
     Assert.fail("Expected IllegalArgumentException")
 
-  @Test def testToString(): Unit =
+  @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
     val goban = Goban(TestSize)
-    // todo
+    Assert.assertEquals(Math.pow(TestSize, 3).toInt, goban.toString.count(_ == ' '))
+
+  @Test def testEmptyBoardToStringSentinels(): Unit =
+    val goban = Goban(TestSize)
+    Assert.assertEquals(
+      2*(TestSize+2)*TestSize + 2*TestSize*TestSize,
+      goban.toString.count(_ == '·')
+    )
+
+  @Test def testEmptyBoardToStringNewlines(): Unit =
+    val goban = Goban(TestSize)
+    Assert.assertEquals(TestSize*(TestSize+2), goban.toString.count(_ == '\n'))

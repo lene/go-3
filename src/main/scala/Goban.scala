@@ -15,22 +15,18 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers):
 
   override def toString: String =
     var out = ""
-    for z <- 0 to size + 1 do
+    for z <- 1 to size do
       for y <- 0 to size + 1 do
         for x <- 0 to size + 1 do
-          stones(x)(y)(z) match
-            case Color.Empty => out += " "
-            // todo
-            case _ => out += "*"
+          out += stones(x)(y)(z)
         out += "\n"
-      out += "\n"
     out
 
   private def initializeBoard =
     for x <- 0 to size+1 do
       for y <- 0 to size+1 do
         for z <- 0 to size+1 do
-          stones(x)(y)(z) = if x*y*z == 0 || x == size+1 || y == size+1 || z == size+1 then
+          stones(x)(y)(z) = if x*y*z == 0 || x > size || y > size || z > size then
             Color.Sentinel
           else
             Color.Empty
