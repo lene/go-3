@@ -1,9 +1,9 @@
+package go3d.testing
+
 import go3d.*
 import org.junit.{Assert, Test}
 
 class TestGoban:
-
-  val TestSize = MinBoardSize
 
   @Test def testGobanCtorBasic(): Unit =
     val goban = Goban(TestSize)
@@ -55,79 +55,65 @@ class TestGoban:
     val goban = Goban(TestSize)
     Assert.assertEquals(TestSize*(TestSize+2), goban.toString.count(_ == '\n'))
 
-  @Test def testPosition(): Unit =
-    val goban = Goban(TestSize)
-    for x <- 1 to TestSize do
-      for y <- 1 to TestSize do
-        for z <- 1 to TestSize do
-          goban.Position(x, y, z)
-
-  @Test def testPositionTooBig(): Unit =
-    val goban = Goban(TestSize)
-    assertThrowsIllegalArgument({goban.Position(1, 1, TestSize+1)})
-
-  @Test def testPositionTooSmall(): Unit =
-    val goban = Goban(TestSize)
-    assertThrowsIllegalArgument({goban.Position(1, 1, 0)})
-
   @Test def testEmptyBoardAt(): Unit =
     val empty = Goban(TestSize)
     for x <- 1 to TestSize do
       for y <- 1 to TestSize do
         for z <- 1 to TestSize do
-          Assert.assertEquals(Color.Empty, empty.at(empty.Position(x, y, z)))
+          Assert.assertEquals(Color.Empty, empty.at(Position(x, y, z)))
 
   @Test def testSetStone(): Unit =
     val empty = Goban(TestSize)
-    val newBoard = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
-    Assert.assertEquals(newBoard.at(newBoard.Position(2, 2, 2)), Color.Black)
+    val newBoard = empty.newBoard(Move(2, 2, 2, Color.Black))
+    Assert.assertEquals(newBoard.at(Position(2, 2, 2)), Color.Black)
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val empty = Goban(TestSize)
-    val newBoard = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
-    assertThrowsIllegalMove({empty.newBoard(empty.Move(2, 2, 2, Color.White))})
+    val newBoard = empty.newBoard(Move(2, 2, 2, Color.Black))
+    assertThrowsIllegalMove({empty.newBoard(Move(2, 2, 2, Color.White))})
+
+  @Test def testSetStoneOutsideBoardFails(): Unit =
+    val empty = Goban(TestSize)
+    assertThrowsIllegalMove({empty.newBoard(Move(TestSize+1, 2, 2, Color.White))})
+    assertThrowsIllegalMove({empty.newBoard(Move(2, TestSize+1, 2, Color.White))})
+    assertThrowsIllegalMove({empty.newBoard(Move(2, 2, TestSize+1, Color.White))})
 
   @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
     val empty = Goban(TestSize)
-    val firstMove = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
-    val secondMove = firstMove.newBoard(firstMove.Move(2, 2, 1, Color.White))
-    Assert.assertEquals(secondMove.at(secondMove.Position(2, 2, 2)), Color.Black)
-    Assert.assertEquals(secondMove.at(secondMove.Position(2, 2, 1)), Color.White)
+    val firstMove = empty.newBoard(Move(2, 2, 2, Color.Black))
+    val secondMove = firstMove.newBoard(Move(2, 2, 1, Color.White))
+    Assert.assertEquals(secondMove.at(Position(2, 2, 2)), Color.Black)
+    Assert.assertEquals(secondMove.at(Position(2, 2, 1)), Color.White)
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
     val empty = Goban(TestSize)
-    val firstMove = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
-    assertThrowsIllegalMove({firstMove.newBoard(firstMove.Move(2, 2, 1, Color.Black))})
+    val firstMove = empty.newBoard(Move(2, 2, 2, Color.Black))
+    assertThrowsIllegalMove({firstMove.newBoard(Move(2, 2, 1, Color.Black))})
 
   @Test def testSetAndPassSucceeds(): Unit =
     val empty = Goban(TestSize)
-    val firstMove = empty.newBoard(empty.Move(2, 2, 2, Color.Black))
-    val secondMove = firstMove.newBoard(firstMove.Pass(Color.White))
-    Assert.assertEquals(secondMove.at(secondMove.Position(2, 2, 2)), Color.Black)
-    Assert.assertEquals(secondMove.at(secondMove.Position(2, 2, 1)), Color.Empty)
+    val firstMove = empty.newBoard(Move(2, 2, 2, Color.Black))
+    val secondMove = firstMove.newBoard(Pass(Color.White))
+    Assert.assertEquals(secondMove.at(Position(2, 2, 2)), Color.Black)
+    Assert.assertEquals(secondMove.at(Position(2, 2, 1)), Color.Empty)
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
     val empty = Goban(TestSize)
-    val firstMove = empty.newBoard(empty.Pass(Color.Black))
-    assertThrowsGameOver({firstMove.newBoard(firstMove.Pass(Color.White))})
+    val firstMove = empty.newBoard(Pass(Color.Black))
+    assertThrowsGameOver({firstMove.newBoard(Pass(Color.White))})
 
-def assertThrowsIllegalArgument(f: => Unit): Unit =
-  try f
-  catch
-    case e: IllegalArgumentException => return
-    case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
-  Assert.fail("Expected IllegalArgumentException")
+  @Test def testPlayListOfMoves(): Unit = {
+    val moves =
+      (2, 2, 2, Color.Black) :: (2, 2, 1, Color.White) ::
+      (2, 1, 1, Color.Black) :: (2, 2, 3, Color.White) ::
+      (2, 3, 1, Color.Black) :: (2, 1, 2, Color.White) ::
+      (3, 2, 1, Color.Black) :: (2, 3, 2, Color.White) ::
+      (1, 2, 1, Color.Black) :: Nil
 
-def assertThrowsIllegalMove(f: => Unit): Unit =
-  try f
-  catch
-    case e: IllegalMove => return
-    case e: _ => Assert.fail("Expected IllegalMove, got "+e.getClass)
-  Assert.fail("Expected IllegalMove")
+    var goban = Goban(TestSize)
+    for move <- moves do
+      goban = goban.newBoard(
+        Move(move._1.toInt, move._2.toInt, move._3.toInt, move._4.asInstanceOf[Color])
+      )
+  }
 
-def assertThrowsGameOver(f: => Unit): Unit =
-  try f
-  catch
-    case e: GameOver => return
-    case e: _ => Assert.fail("Expected GameOver, got "+e.getClass)
-  Assert.fail("Expected GameOver")

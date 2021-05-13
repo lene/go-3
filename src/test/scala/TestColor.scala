@@ -1,3 +1,5 @@
+package go3d.testing
+
 import org.junit.{Assert, Test}
 import go3d.Color._
 
