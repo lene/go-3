@@ -57,10 +57,11 @@ class TestGoban:
 
   @Test def testEmptyBoardAt(): Unit =
     val empty = Goban(TestSize)
-    for x <- 1 to TestSize do
-      for y <- 1 to TestSize do
-        for z <- 1 to TestSize do
-          Assert.assertEquals(Color.Empty, empty.at(Position(x, y, z)))
+    for x <- 1 to TestSize
+      y <- 1 to TestSize
+      z <- 1 to TestSize
+    do
+      Assert.assertEquals(Color.Empty, empty.at(Position(x, y, z)))
 
   @Test def testSetStone(): Unit =
     val empty = Goban(TestSize)
@@ -102,18 +103,11 @@ class TestGoban:
     val firstMove = empty.newBoard(Pass(Color.Black))
     assertThrowsGameOver({firstMove.newBoard(Pass(Color.White))})
 
-  @Test def testPlayListOfMoves(): Unit = {
-    val moves =
-      (2, 2, 2, Color.Black) :: (2, 2, 1, Color.White) ::
-      (2, 1, 1, Color.Black) :: (2, 2, 3, Color.White) ::
-      (2, 3, 1, Color.Black) :: (2, 1, 2, Color.White) ::
-      (3, 2, 1, Color.Black) :: (2, 3, 2, Color.White) ::
-      (1, 2, 1, Color.Black) :: Nil
+  @Test def testPlayListOfMoves(): Unit =
+    playListOfMoves(TestSize, CaptureMoves)
 
-    var goban = Goban(TestSize)
-    for move <- moves do
-      goban = goban.newBoard(
-        Move(move._1.toInt, move._2.toInt, move._3.toInt, move._4.asInstanceOf[Color])
-      )
+  @Test def testCaptureStone(): Unit = {
+    var goban = playListOfMoves(TestSize, CaptureMoves)
+    Assert.assertEquals(Color.Empty, goban.at(Position(2, 2, 1)))
   }
 

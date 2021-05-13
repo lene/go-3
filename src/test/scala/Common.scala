@@ -5,6 +5,21 @@ import org.junit.Assert
 
 val TestSize = MinBoardSize
 
+val CaptureMoves =
+  (2, 2, 2, Color.Black) :: (2, 2, 1, Color.White) ::
+    (2, 1, 1, Color.Black) :: (2, 2, 3, Color.White) ::
+    (2, 3, 1, Color.Black) :: (2, 1, 2, Color.White) ::
+    (3, 2, 1, Color.Black) :: (2, 3, 2, Color.White) ::
+    (1, 2, 1, Color.Black) :: Nil
+
+def playListOfMoves(boardSize: Int, moves: List[(Int, Int, Int, Color)]): Goban =
+  var goban = Goban(boardSize)
+  for move <- CaptureMoves do
+    goban = goban.newBoard(
+      Move(move._1.toInt, move._2.toInt, move._3.toInt, move._4.asInstanceOf[Color])
+    )
+  goban
+
 def assertThrowsIllegalArgument(f: => Unit): Unit =
   try f
   catch
