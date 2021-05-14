@@ -97,73 +97,11 @@ class TestGoban:
     val secondMove = firstMove.makeMove(Pass(Color.White))
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.Empty)
-
-
+  
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
     val empty = Goban(TestSize)
     val firstMove = empty.makeMove(Pass(Color.Black))
     assertThrowsGameOver({firstMove.makeMove(Pass(Color.White))})
-
-  @Test def testLiberties(): Unit =
-    val goban = Goban(TestSize)
-    goban.stones(2)(2)(2) = Color.Black
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
-    goban.stones(2)(2)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
-    goban.stones(2)(2)(3) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
-    goban.stones(2)(1)(2) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
-    goban.stones(2)(3)(2) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
-    goban.stones(1)(2)(2) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 2, Color.Black)))
-    goban.stones(3)(2)(2) = Color.White
-    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 2, 2, Color.Black)))
-
-  @Test def testLibertiesOnFace(): Unit =
-    val goban = Goban(TestSize)
-    goban.stones(2)(2)(1) = Color.Black
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
-    goban.stones(2)(2)(2) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
-    goban.stones(2)(1)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
-    goban.stones(2)(3)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
-    goban.stones(1)(2)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 2, 1, Color.Black)))
-    goban.stones(3)(2)(1) = Color.White
-    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 2, 1, Color.Black)))
-
-  @Test def testLibertiesOnEdge(): Unit =
-    val goban = Goban(TestSize)
-    goban.stones(2)(1)(1) = Color.Black
-    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Color.Black)))
-    goban.stones(1)(1)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Color.Black)))
-    goban.stones(3)(1)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Color.Black)))
-    goban.stones(2)(2)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Color.Black)))
-    goban.stones(2)(1)(2) = Color.White
-    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 1, 1, Color.Black)))
-
-  @Test def testLibertiesInCorner(): Unit =
-    val goban = Goban(TestSize)
-    goban.stones(1)(1)(1) = Color.Black
-    Assert.assertTrue(goban.hasLiberties(Move(1, 1, 1, Color.Black)))
-    goban.stones(2)(1)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(1, 1, 1, Color.Black)))
-    goban.stones(1)(2)(1) = Color.White
-    Assert.assertTrue(goban.hasLiberties(Move(1, 1, 1, Color.Black)))
-    goban.stones(1)(1)(2) = Color.White
-    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(1, 1, 1, Color.Black)))
-
-  @Test def testLibertiesFailIfWrongColor(): Unit =
-    var goban = Goban(TestSize)
-    goban = goban.makeMove(Move(2, 2, 2, Color.Black))
-//    assertThrowsIllegalArgument({goban.hasLiberties(Move(2, 2, 2, Color.White))})
 
   @Test def testPlayListOfMoves(): Unit =
     val goban = playListOfMoves(TestSize, CaptureMoves.dropRight(1))

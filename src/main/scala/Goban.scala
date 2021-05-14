@@ -15,7 +15,7 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
 
   def at(pos: Position): Color = stones(pos.x)(pos.y)(pos.z)
 
-  def makeMove(move: Move|Pass): Goban =
+  def makeMove(move: Move | Pass): Goban =
     val newboard = this
     move match
       case p: Pass => if gameOver(p) then throw GameOver(this)
@@ -25,7 +25,7 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
     newboard.moves = moves.appended(move)
     newboard
 
-  def isValid(move: Move|Pass): Boolean =
+  def isValid(move: Move | Pass): Boolean =
     move match
       case p: Pass => true
       case m: Move => isValidMove(m)
@@ -35,6 +35,7 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
     else if at(move.position) != Color.Empty then false
     else if isDifferentPlayer(move) then true
     else if isKo(move) then false
+    else if isSuicide(move) then false
     else false
 
   override def toString: String =
@@ -48,14 +49,29 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
     out
 
   def hasLiberties(move: Move): Boolean =
-//    if move.color != Color.Black || move.color != Color.White then throw IllegalArgumentException()
-//    if stones(move.x)(move.y)(move.z) != move.color then throw IllegalArgumentException()
-    for x <- move.x-1 to move.x+1 by 2 do
-      if stones(x)(move.y)(move.z) == Color.Empty then return true
-    for y <- move.y-1 to move.y+1 by 2 do
-      if stones(move.x)(y)(move.z) == Color.Empty then return true
-    for z <- move.z-1 to move.z+1 by 2 do
-      if stones(move.x)(move.y)(z) == Color.Empty then return true
+    if !Set(Color.Black, Color.White).contains(move.color) then
+      throw IllegalArgumentException(move.toString)
+    if at(move.position) != move.color then return false
+    var toCheck = Set[Move]()
+    for
+      x <- move.x-1 to move.x+1
+      y <- move.y-1 to move.y+1
+      z <- move.z-1 to move.z+1
+      if isNeighbor(move, x, y, z)
+    do
+      stones(x)(y)(z) match
+        case Color.Empty => return true
+        case move.color => toCheck = toCheck + Move(x, y, z, move.color)
+        case _ =>
+
+    // check if part of a connected area
+    stones(move.x)(move.y)(move.z) = Color.Sentinel
+    for checking <- toCheck do
+      if hasLiberties(checking) then
+        stones(move.x)(move.y)(move.z) = move.color
+        return true
+
+    stones(move.x)(move.y)(move.z) = move.color
     return false
 
   private def setStone(move: Move): Unit =
@@ -67,20 +83,19 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
       x <- move.x-1 to move.x+1
       y <- move.y-1 to move.y+1
       z <- move.z-1 to move.z+1
-      if isRelevantForLibertiesChecking(move, x, y, z)
+      if isNeighbor(move, x, y, z)
     do
       checkAndClear(Move(Position(x, y, z), move.color))
-    checkAndClear(move)  // check the stone just set after all others
 
-  private def isRelevantForLibertiesChecking(move: Move, x: Int, y: Int, z: Int): Boolean =
-    (x != move.x || y != move.y || z != move.x) && isOnBoard(x, y, z)
+  private def isNeighbor(move: Move, x: Int, y: Int, z: Int): Boolean =
+    isOnBoard(x, y, z) && (move.position - Position(x, y, z)).abs == 1
 
   private def isOnBoard(x: Int, y: Int, z: Int): Boolean =
     x > 0 && y > 0 && z > 0 && x <= size && y <= size && z <= size
 
   private def checkAndClear(move: Move): Unit = {
-    if at(move.position) == move.color then return
-    if hasLiberties(move) then return
+    if Set(Color.Empty, Color.Sentinel, move.color).contains(at(move.position)) then return
+    if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return
     if verbose then println("Found "+move.color+" at "+move.position)
     stones(move.x)(move.y)(move.z) = Color.Empty
   }
@@ -102,3 +117,5 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
     !moves.isEmpty && moves.last.isInstanceOf[Pass]
 
   private def isKo(move: Move): Boolean = false
+
+  private def isSuicide(move: Move): Boolean = false
