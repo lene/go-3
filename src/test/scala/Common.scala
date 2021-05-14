@@ -12,13 +12,19 @@ val CaptureMoves =
     Move(3, 2, 1, Color.Black) :: Move(2, 3, 2, Color.White) ::
     Move(1, 2, 1, Color.Black) :: Nil
 
-def playListOfMoves(boardSize: Int, moves: List[Move], verbose: Boolean = false): Goban =
+def playListOfMoves(boardSize: Int, moves: List[Move | Pass], verbose: Boolean = false): Goban =
   var goban = Goban(boardSize, verbose=verbose)
   for move <- moves do {
     goban = goban.makeMove(move)
     if verbose then println(move.toString+"\n"+goban)
   }
   goban
+
+def checkStonesOnBoard(goban: Goban, moves: List[Move | Pass]): Unit =
+  for move <- moves do
+    move match
+      case p: Pass =>
+      case m: Move => Assert.assertEquals(goban.at(m.position), m.color)
 
 def assertThrowsIllegalArgument(f: => Unit): Unit =
   try f

@@ -1,7 +1,7 @@
 package go3d.testing
 
 import go3d._
-import org.junit.{Assert, Test}
+import org.junit.{Assert, Ignore, Test}
 
 class TestGoban:
 
@@ -112,17 +112,119 @@ class TestGoban:
       )
 
   @Test def testCaptureStone(): Unit =
-    var goban = playListOfMoves(TestSize, CaptureMoves)
+    val goban = playListOfMoves(TestSize, CaptureMoves)
     Assert.assertEquals(
       "\n"+goban.toString,
       Color.Empty, goban.at(Position(2, 2, 1))
     )
 
   @Test def testCaptureStoneDoesNotRemoveOthers(): Unit =
-    var goban = playListOfMoves(TestSize, CaptureMoves)
+    val goban = playListOfMoves(TestSize, CaptureMoves)
     val presentStones = CaptureMoves.filterNot(move => move == Move(2, 2, 1, Color.White))
     for move <- presentStones do
       Assert.assertEquals(
         move.toString+"\n"+goban.toString,
         move.color, goban.at(move.position)
       )
+
+  @Test def testDoNotCaptureStoneWithNeighbors(): Unit =
+    val moves =
+      Move(1, 1, 1, Color.Black) :: Move(2, 1, 1, Color.White) ::
+      Move(3, 1, 1, Color.Black) :: Move(2, 1, 2, Color.White) ::
+      Move(2, 2, 1, Color.Black) :: Nil
+    val goban = playListOfMoves(TestSize, moves)
+    checkStonesOnBoard(goban, moves)
+
+  @Test def testTwoNonConsecutivePasses(): Unit =
+    val moves = List[Move | Pass](
+      Move(1, 1, 1, Color.Black), Pass(Color.White),
+      Move(3, 1, 1, Color.Black), Pass(Color.White)
+    )
+    val goban = playListOfMoves(TestSize, moves)
+
+  @Test def testConnectedStoneOneStone(): Unit =
+    val moves = List(Move(1, 1, 1, Color.Black))
+    val goban = playListOfMoves(TestSize, moves)
+    Assert.assertEquals(moves, goban.connectedStones(moves(0)))
+
+  @Test def testConnectedStoneOneStoneLeavesBoardUnchanged(): Unit =
+    val moves = List(Move(1, 1, 1, Color.Black))
+    val goban = playListOfMoves(TestSize, moves)
+    Assert.assertEquals(Color.Black, goban.at(Position(1, 1, 1)))
+    for
+      x <- 1 to 3
+      y <- 1 to 3
+      z <- 1 to 3
+      if (x, y, z) != (1, 1, 1)
+    do
+      Assert.assertEquals(Color.Empty, goban.at(Position(x, y, z)))
+
+  @Test def testConnectedStoneTwoUnconnectedStones(): Unit =
+    val moves = List[Move | Pass](
+      Move(1, 1, 1, Color.Black), Pass(Color.White), Move(2, 2, 1, Color.Black)
+    )
+    val goban = playListOfMoves(TestSize, moves)
+    Assert.assertEquals(1, goban.connectedStones(Move(1, 1, 1, Color.Black)).length)
+    Assert.assertEquals(1, goban.connectedStones(Move(2, 2, 1, Color.Black)).length)
+
+
+  @Test def testConnectedStoneTwoConnectedStones(): Unit =
+    val moves = List[Move | Pass](
+      Move(1, 1, 1, Color.Black), Pass(Color.White), Move(2, 1, 1, Color.Black)
+    )
+    val goban = playListOfMoves(TestSize, moves)
+    Assert.assertEquals(2, goban.connectedStones(Move(1, 1, 1, Color.Black)).length)
+    Assert.assertEquals(2, goban.connectedStones(Move(2, 1, 1, Color.Black)).length)
+
+  @Test def testConnectedStoneMinimalEye(): Unit =
+    val moves = List[Move | Pass](
+      Move(2, 1, 1, Color.Black), Pass(Color.White), Move(1, 2, 1, Color.Black), Pass(Color.White),
+      Move(2, 1, 2, Color.Black), Pass(Color.White), Move(1, 2, 2, Color.Black), Pass(Color.White),
+      Move(1, 1, 2, Color.Black), Pass(Color.White)
+    )
+    val goban = playListOfMoves(TestSize, moves)
+    Assert.assertEquals(5, goban.connectedStones(Move(2, 1, 1, Color.Black)).length)
+    Assert.assertEquals(5, goban.connectedStones(Move(1, 2, 1, Color.Black)).length)
+    Assert.assertEquals(5, goban.connectedStones(Move(2, 1, 2, Color.Black)).length)
+    Assert.assertEquals(5, goban.connectedStones(Move(1, 2, 2, Color.Black)).length)
+    Assert.assertEquals(5, goban.connectedStones(Move(1, 1, 2, Color.Black)).length)
+
+  @Test def testCaptureStoneWithNeighbors(): Unit =
+    val moves = List[Move | Pass](
+      Move(1, 1, 1, Color.Black), Move(2, 1, 1, Color.White),
+      Move(3, 1, 1, Color.Black), Move(2, 1, 2, Color.White),
+      Move(2, 2, 1, Color.Black), Pass(Color.White),
+      Move(1, 1, 2, Color.Black), Pass(Color.White),
+      Move(3, 1, 2, Color.Black), Pass(Color.White),
+      Move(2, 2, 2, Color.Black), Pass(Color.White)
+    )
+    var goban = playListOfMoves(TestSize, moves)
+    checkStonesOnBoard(goban, moves)
+    goban = goban.makeMove(Move(2, 1, 3, Color.Black))
+    Assert.assertEquals("\n"+goban.toString, Color.Empty, goban.at(Position(2, 1, 1)))
+    Assert.assertEquals("\n"+goban.toString, Color.Empty, goban.at(Position(2, 1, 2)))
+
+  @Test def testCaptureMinimalEye(): Unit =
+    val moves = List[Move | Pass](
+      Move(2, 1, 1, Color.Black), Pass(Color.White), Move(1, 2, 1, Color.Black), Pass(Color.White),
+      Move(2, 1, 2, Color.Black), Pass(Color.White), Move(1, 2, 2, Color.Black), Pass(Color.White),
+      Move(1, 1, 2, Color.Black),
+      // build the eye first and then encircle it, IMHO that is easier to read
+      Move(1, 3, 1, Color.White), Pass(Color.Black), Move(2, 2, 1, Color.White), Pass(Color.Black),
+      Move(3, 1, 1, Color.White), Pass(Color.Black), Move(1, 3, 2, Color.White), Pass(Color.Black),
+      Move(2, 2, 2, Color.White), Pass(Color.Black), Move(3, 1, 2, Color.White), Pass(Color.Black),
+      Move(1, 1, 3, Color.White), Pass(Color.Black), Move(2, 1, 3, Color.White), Pass(Color.Black),
+      Move(1, 2, 3, Color.White), Pass(Color.Black)
+    )
+    var goban = playListOfMoves(TestSize, moves)
+    Assert.assertEquals(5, goban.connectedStones(Move(2, 1, 1, Color.Black)).length)
+    Assert.assertEquals(5, goban.connectedStones(Move(1, 2, 1, Color.Black)).length)
+    Assert.assertEquals(5, goban.connectedStones(Move(2, 1, 2, Color.Black)).length)
+    Assert.assertEquals(5, goban.connectedStones(Move(1, 2, 2, Color.Black)).length)
+    Assert.assertEquals(5, goban.connectedStones(Move(1, 1, 2, Color.Black)).length)
+    goban = goban.makeMove(Move(1, 1, 1, Color.White))
+    Assert.assertEquals(Color.Empty, goban.at(Position(2, 1, 1)))
+    Assert.assertEquals(Color.Empty, goban.at(Position(1, 2, 1)))
+    Assert.assertEquals(Color.Empty, goban.at(Position(2, 1, 2)))
+    Assert.assertEquals(Color.Empty, goban.at(Position(1, 2, 2)))
+    Assert.assertEquals(Color.Empty, goban.at(Position(1, 1, 2)))

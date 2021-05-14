@@ -11,12 +11,13 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
   if numPlayers < 2 then throw IllegalArgumentException("too few players: "+numPlayers)
 
   val stones = initializeBoard
-  var moves: Array[Any] = Array[Any]()
+  var moves: Array[Move | Pass] = Array()
 
   def at(pos: Position): Color = stones(pos.x)(pos.y)(pos.z)
 
   def makeMove(move: Move | Pass): Goban =
     val newboard = this
+    if verbose then println(move)
     move match
       case p: Pass => if gameOver(p) then throw GameOver(this)
       case m: Move =>
@@ -97,8 +98,31 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
     if Set(Color.Empty, Color.Sentinel, move.color).contains(at(move.position)) then return
     if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return
     if verbose then println("Found "+move.color+" at "+move.position)
-    stones(move.x)(move.y)(move.z) = Color.Empty
+    for toClear <- connectedStones(Move(move.x, move.y, move.z, !move.color)) do
+      stones(toClear.x)(toClear.y)(toClear.z) = Color.Empty
   }
+
+  def connectedStones(move: Move): List[Move] =
+    if stones(move.x)(move.y)(move.z) != move.color then
+      throw IllegalArgumentException(
+        "trying to find connected stones to "+move.toString+" but "+move.position+" contains "+
+          stones(move.x)(move.y)(move.z)
+      )
+
+    var neighbors = List(move)
+    for
+      x <- move.x-1 to move.x+1
+      y <- move.y-1 to move.y+1
+      z <- move.z-1 to move.z+1
+      if isNeighbor(move, x, y, z)
+      if at(Position(x, y, z)) == move.color
+    do {
+      stones(move.x)(move.y)(move.z) = Color.Sentinel
+      neighbors = neighbors ::: connectedStones(Move(x, y, z, move.color))
+      stones(move.x)(move.y)(move.z) = move.color
+    }
+
+    return neighbors
 
   private def initializeBoard: Array[Array[Array[Color]]] =
     val tempStones = ofDim[Color](size+2, size+2, size+2)
@@ -111,7 +135,10 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
     tempStones
 
   private def isDifferentPlayer(move: Move): Boolean =
-    moves.isEmpty || moves.last.asInstanceOf[Move].color != move.color
+    moves.isEmpty || (moves.last match
+      case m: Move => m.color != move.color
+      case p: Pass => p.color != move.color
+    )
 
   private def gameOver(pass: Pass): Boolean =
     !moves.isEmpty && moves.last.isInstanceOf[Pass]

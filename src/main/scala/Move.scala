@@ -13,4 +13,6 @@ class Move(val position: Position, val color: Color):
       case that: Move => position == that.position && color == that.color
       case _ => false
 
-class Pass(val color: Color)
+class Pass(val color: Color):
+  override def toString: String = "pass "+color.toString
+
