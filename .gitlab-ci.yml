@@ -3,6 +3,10 @@ stages:
   - test
   - run
 
+include:
+  - template: Code-Quality.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+
 .PrepareSBT:
   image: ubuntu:20.04
   before_script:

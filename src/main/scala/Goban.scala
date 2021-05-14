@@ -2,18 +2,20 @@ package go3d
 
 import Array._
 
-class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Boolean = false):
+class Goban(val size: Int, val verbose: Boolean = false):
 
   if size < MinBoardSize then throw IllegalArgumentException("size too small: "+size)
   if size > MaxBoardSize then throw IllegalArgumentException("size too big: "+size)
   if size % 2 == 0 then throw IllegalArgumentException("size is even: "+size)
-  if numPlayers > MaxPlayers then throw IllegalArgumentException("too many players: "+numPlayers)
-  if numPlayers < 2 then throw IllegalArgumentException("too few players: "+numPlayers)
 
   val stones = initializeBoard
   var moves: Array[Move | Pass] = Array()
+  var captures: List[Move] = List()
 
   def at(pos: Position): Color = stones(pos.x)(pos.y)(pos.z)
+
+  def captures(color: Color): Int =
+    captures.filter(_.color == color).length
 
   def makeMove(move: Move | Pass): Goban =
     val newboard = this
@@ -31,14 +33,6 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
       case p: Pass => true
       case m: Move => isValidMove(m)
 
-  def isValidMove(move: Move): Boolean =
-    if move.x > size || move.y > size || move.z > size then false
-    else if at(move.position) != Color.Empty then false
-    else if isDifferentPlayer(move) then true
-    else if isKo(move) then false
-    else if isSuicide(move) then false
-    else false
-
   override def toString: String =
     var out = ""
     for y <- 0 to size + 1 do
@@ -46,12 +40,16 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
         for x <- 0 to size + 1 do
           out += stones(x)(y)(z)
         if z < size then out += "|"
+        else if y == 1 then out += (" "+Color.Black)*captures(Color.Black)
+        else if y == 3 then out += (" "+Color.White)*captures(Color.White)
       out += "\n"
     out
 
   def hasLiberties(move: Move): Boolean =
     if !Set(Color.Black, Color.White).contains(move.color) then
-      throw IllegalArgumentException(move.toString)
+      throw IllegalArgumentException(
+        "trying to find liberties for "+move.toString+" which is not a stone but "+move.color
+      )
     if at(move.position) != move.color then return false
     var toCheck = Set[Move]()
     for
@@ -75,11 +73,40 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
     stones(move.x)(move.y)(move.z) = move.color
     return false
 
+  def connectedStones(move: Move): List[Move] =
+    if stones(move.x)(move.y)(move.z) != move.color then
+      throw IllegalArgumentException(
+        "trying to find connected stones to "+move.toString+" but "+move.position+" contains "+
+          stones(move.x)(move.y)(move.z)
+      )
+
+    var neighbors = List(move)
+    for
+      x <- move.x-1 to move.x+1
+      y <- move.y-1 to move.y+1
+      z <- move.z-1 to move.z+1
+      if isNeighbor(move, x, y, z)
+      if at(Position(x, y, z)) == move.color
+    do {
+       stones(move.x)(move.y)(move.z) = Color.Sentinel
+       neighbors = neighbors ::: connectedStones(Move(x, y, z, move.color))
+       stones(move.x)(move.y)(move.z) = move.color
+    }
+    return neighbors
+
+  private def isValidMove(move: Move): Boolean =
+    if move.x > size || move.y > size || move.z > size then false
+    else if at(move.position) != Color.Empty then false
+    else if isDifferentPlayer(move) then true
+    else if isKo(move) then false
+    else if isSuicide(move) then false
+    else false
+
   private def setStone(move: Move): Unit =
     stones(move.x)(move.y)(move.z) = move.color
     checkArea(move)
 
-  private def checkArea(move: Move) =
+  private def checkArea(move: Move): Unit =
     for
       x <- move.x-1 to move.x+1
       y <- move.y-1 to move.y+1
@@ -98,31 +125,11 @@ class Goban(val size: Int, val numPlayers: Int = DefaultPlayers, val verbose: Bo
     if Set(Color.Empty, Color.Sentinel, move.color).contains(at(move.position)) then return
     if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return
     if verbose then println("Found "+move.color+" at "+move.position)
-    for toClear <- connectedStones(Move(move.x, move.y, move.z, !move.color)) do
+    for toClear <- connectedStones(Move(move.x, move.y, move.z, !move.color)) do {
       stones(toClear.x)(toClear.y)(toClear.z) = Color.Empty
-  }
-
-  def connectedStones(move: Move): List[Move] =
-    if stones(move.x)(move.y)(move.z) != move.color then
-      throw IllegalArgumentException(
-        "trying to find connected stones to "+move.toString+" but "+move.position+" contains "+
-          stones(move.x)(move.y)(move.z)
-      )
-
-    var neighbors = List(move)
-    for
-      x <- move.x-1 to move.x+1
-      y <- move.y-1 to move.y+1
-      z <- move.z-1 to move.z+1
-      if isNeighbor(move, x, y, z)
-      if at(Position(x, y, z)) == move.color
-    do {
-      stones(move.x)(move.y)(move.z) = Color.Sentinel
-      neighbors = neighbors ::: connectedStones(Move(x, y, z, move.color))
-      stones(move.x)(move.y)(move.z) = move.color
+      captures = captures.appended(toClear)
     }
-
-    return neighbors
+  }
 
   private def initializeBoard: Array[Array[Array[Color]]] =
     val tempStones = ofDim[Color](size+2, size+2, size+2)

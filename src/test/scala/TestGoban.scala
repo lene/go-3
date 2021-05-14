@@ -8,7 +8,6 @@ class TestGoban:
   @Test def testGobanCtorBasic(): Unit =
     val goban = Goban(TestSize)
     Assert.assertEquals(TestSize, goban.size)
-    Assert.assertEquals(DefaultPlayers, goban.numPlayers)
 
   @Test def testMemoryAllocation(): Unit =
     val goban = Goban(TestSize)
@@ -35,10 +34,6 @@ class TestGoban:
   @Test def testBoardSizeTooBig(): Unit = assertThrowsIllegalArgument({Goban(MaxBoardSize+2)})
 
   @Test def testBoardSizeEven(): Unit = assertThrowsIllegalArgument({Goban(4)})
-
-  @Test def testPlayersTooSmall(): Unit = assertThrowsIllegalArgument({Goban(TestSize, 1)})
-
-  @Test def testPlayersTooBig(): Unit = assertThrowsIllegalArgument({Goban(TestSize, 3)})
 
   @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
     val goban = Goban(TestSize)
@@ -205,6 +200,14 @@ class TestGoban:
     Assert.assertEquals("\n"+goban.toString, Color.Empty, goban.at(Position(2, 1, 2)))
 
   @Test def testCaptureMinimalEye(): Unit =
+    val goban = buildAndCaptureEye()
+    Assert.assertEquals(Color.Empty, goban.at(Position(2, 1, 1)))
+    Assert.assertEquals(Color.Empty, goban.at(Position(1, 2, 1)))
+    Assert.assertEquals(Color.Empty, goban.at(Position(2, 1, 2)))
+    Assert.assertEquals(Color.Empty, goban.at(Position(1, 2, 2)))
+    Assert.assertEquals(Color.Empty, goban.at(Position(1, 1, 2)))
+
+  def buildAndCaptureEye(): Goban =
     val moves = List[Move | Pass](
       Move(2, 1, 1, Color.Black), Pass(Color.White), Move(1, 2, 1, Color.Black), Pass(Color.White),
       Move(2, 1, 2, Color.Black), Pass(Color.White), Move(1, 2, 2, Color.Black), Pass(Color.White),
@@ -222,9 +225,13 @@ class TestGoban:
     Assert.assertEquals(5, goban.connectedStones(Move(2, 1, 2, Color.Black)).length)
     Assert.assertEquals(5, goban.connectedStones(Move(1, 2, 2, Color.Black)).length)
     Assert.assertEquals(5, goban.connectedStones(Move(1, 1, 2, Color.Black)).length)
-    goban = goban.makeMove(Move(1, 1, 1, Color.White))
-    Assert.assertEquals(Color.Empty, goban.at(Position(2, 1, 1)))
-    Assert.assertEquals(Color.Empty, goban.at(Position(1, 2, 1)))
-    Assert.assertEquals(Color.Empty, goban.at(Position(2, 1, 2)))
-    Assert.assertEquals(Color.Empty, goban.at(Position(1, 2, 2)))
-    Assert.assertEquals(Color.Empty, goban.at(Position(1, 1, 2)))
+    goban.makeMove(Move(1, 1, 1, Color.White))
+
+  @Test def testCapturedStonesAreListed(): Unit =
+    val goban = buildAndCaptureEye()
+    Assert.assertEquals(5, goban.captures.length)
+
+  @Test def testCapturedStonesAreCounted(): Unit =
+    val goban = buildAndCaptureEye()
+    Assert.assertEquals(5, goban.captures(Color.Black))
+    Assert.assertEquals(0, goban.captures(Color.White))

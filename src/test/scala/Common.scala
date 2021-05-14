@@ -14,10 +14,9 @@ val CaptureMoves =
 
 def playListOfMoves(boardSize: Int, moves: List[Move | Pass], verbose: Boolean = false): Goban =
   var goban = Goban(boardSize, verbose=verbose)
-  for move <- moves do {
+  for move <- moves do
     goban = goban.makeMove(move)
     if verbose then println(move.toString+"\n"+goban)
-  }
   goban
 
 def checkStonesOnBoard(goban: Goban, moves: List[Move | Pass]): Unit =
