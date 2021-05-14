@@ -53,7 +53,7 @@ class TestGoban:
 
   @Test def testEmptyBoardToStringNewlines(): Unit =
     val goban = Goban(TestSize)
-    Assert.assertEquals(TestSize*(TestSize+2), goban.toString.count(_ == '\n'))
+    Assert.assertEquals(TestSize+2, goban.toString.count(_ == '\n'))
 
   @Test def testEmptyBoardAt(): Unit =
     val empty = Goban(TestSize)
@@ -65,44 +65,44 @@ class TestGoban:
 
   @Test def testSetStone(): Unit =
     val empty = Goban(TestSize)
-    val newBoard = empty.newBoard(Move(2, 2, 2, Color.Black))
+    val newBoard = empty.makeMove(Move(2, 2, 2, Color.Black))
     Assert.assertEquals("\n"+newBoard.toString, newBoard.at(Position(2, 2, 2)), Color.Black)
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val empty = Goban(TestSize)
-    val newBoard = empty.newBoard(Move(2, 2, 2, Color.Black))
-    assertThrowsIllegalMove({empty.newBoard(Move(2, 2, 2, Color.White))})
+    val newBoard = empty.makeMove(Move(2, 2, 2, Color.Black))
+    assertThrowsIllegalMove({empty.makeMove(Move(2, 2, 2, Color.White))})
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = Goban(TestSize)
-    assertThrowsIllegalMove({empty.newBoard(Move(TestSize+1, 2, 2, Color.White))})
-    assertThrowsIllegalMove({empty.newBoard(Move(2, TestSize+1, 2, Color.White))})
-    assertThrowsIllegalMove({empty.newBoard(Move(2, 2, TestSize+1, Color.White))})
+    assertThrowsIllegalMove({empty.makeMove(Move(TestSize+1, 2, 2, Color.White))})
+    assertThrowsIllegalMove({empty.makeMove(Move(2, TestSize+1, 2, Color.White))})
+    assertThrowsIllegalMove({empty.makeMove(Move(2, 2, TestSize+1, Color.White))})
 
   @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
     val empty = Goban(TestSize)
-    val firstMove = empty.newBoard(Move(2, 2, 2, Color.Black))
-    val secondMove = firstMove.newBoard(Move(2, 2, 1, Color.White))
+    val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
+    val secondMove = firstMove.makeMove(Move(2, 2, 1, Color.White))
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.White)
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
     val empty = Goban(TestSize)
-    val firstMove = empty.newBoard(Move(2, 2, 2, Color.Black))
-    assertThrowsIllegalMove({firstMove.newBoard(Move(2, 2, 1, Color.Black))})
+    val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
+    assertThrowsIllegalMove({firstMove.makeMove(Move(2, 2, 1, Color.Black))})
 
   @Test def testSetAndPassSucceeds(): Unit =
     val empty = Goban(TestSize)
-    val firstMove = empty.newBoard(Move(2, 2, 2, Color.Black))
-    val secondMove = firstMove.newBoard(Pass(Color.White))
+    val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
+    val secondMove = firstMove.makeMove(Pass(Color.White))
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.Empty)
 
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
     val empty = Goban(TestSize)
-    val firstMove = empty.newBoard(Pass(Color.Black))
-    assertThrowsGameOver({firstMove.newBoard(Pass(Color.White))})
+    val firstMove = empty.makeMove(Pass(Color.Black))
+    assertThrowsGameOver({firstMove.makeMove(Pass(Color.White))})
 
   @Test def testLiberties(): Unit =
     val goban = Goban(TestSize)
@@ -162,7 +162,7 @@ class TestGoban:
 
   @Test def testLibertiesFailIfWrongColor(): Unit =
     var goban = Goban(TestSize)
-    goban = goban.newBoard(Move(2, 2, 2, Color.Black))
+    goban = goban.makeMove(Move(2, 2, 2, Color.Black))
 //    assertThrowsIllegalArgument({goban.hasLiberties(Move(2, 2, 2, Color.White))})
 
   @Test def testPlayListOfMoves(): Unit =

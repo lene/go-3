@@ -22,12 +22,6 @@ class TestMove:
       Move(x, y, z, Color.Black)
       Move(x, y, z, Color.White)
 
-  @Test def testMoveIsNotPass(): Unit =
-    Assert.assertFalse(Move(1, 1, 1, Color.Black).isPass)
-
-  @Test def testPassIsPass(): Unit =
-    Assert.assertTrue(Pass(Color.Black).isPass)
-
   @Test def testEqual(): Unit =
     Assert.assertTrue(Move(1, 1, 1, Color.Black) == Move(1, 1, 1, Color.Black))
     Assert.assertTrue(Move(1, 1, 1, Color.White) == Move(1, 1, 1, Color.White))
@@ -45,3 +39,9 @@ class TestMove:
     val list = List(Move(1, 1, 1, Color.Black), Move(1, 1, 1, Color.White))
     val filtered = list.filterNot(move => move == Move(1, 1, 1, Color.White))
     Assert.assertTrue(List(Move(1, 1, 1, Color.Black)) == filtered)
+
+  @Test def testShortcuts(): Unit =
+    val move = Move(1, 2, 3, Color.Black)
+    Assert.assertEquals(1, move.x)
+    Assert.assertEquals(2, move.y)
+    Assert.assertEquals(3, move.z)

@@ -15,7 +15,7 @@ val CaptureMoves =
 def playListOfMoves(boardSize: Int, moves: List[Move], verbose: Boolean = false): Goban =
   var goban = Goban(boardSize, verbose=verbose)
   for move <- moves do {
-    goban = goban.newBoard(move)
+    goban = goban.makeMove(move)
     if verbose then println(move.toString+"\n"+goban)
   }
   goban
