@@ -2,6 +2,6 @@ package go3d
 
 trait GoGame{
   def at(position: Position): Color
-  def isValid(move: Move): Boolean
+  def checkValid(move: Move): Unit
   def setStone(move: Move): Unit
 }

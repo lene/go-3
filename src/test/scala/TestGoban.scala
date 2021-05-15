@@ -84,10 +84,10 @@ class TestGoban:
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val empty = Goban(TestSize, initializeBoard(TestSize))
     empty.setStone(Move(2, 2, 2, Color.Black))
-    Assert.assertFalse(empty.isValid(Move(2, 2, 2, Color.White)))
+    assertThrowsIllegalMove({empty.checkValid(Move(2, 2, 2, Color.White))})
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = Goban(TestSize, initializeBoard(TestSize))
-    Assert.assertFalse(empty.isValid(Move(TestSize+1, 2, 2, Color.White)))
-    Assert.assertFalse(empty.isValid(Move(2, TestSize+1, 2, Color.White)))
-    Assert.assertFalse(empty.isValid(Move(2, 2, TestSize+1, Color.White)))
+    assertThrowsIllegalArgument({empty.checkValid(Move(TestSize+1, 2, 2, Color.White))})
+    assertThrowsIllegalArgument({empty.checkValid(Move(2, TestSize+1, 2, Color.White))})
+    assertThrowsIllegalArgument({empty.checkValid(Move(2, 2, TestSize+1, Color.White))})

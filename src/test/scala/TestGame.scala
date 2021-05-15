@@ -181,7 +181,7 @@ class TestGame:
     Assert.assertEquals(Color.Empty, game.at(Position(1, 2, 2)))
     Assert.assertEquals(Color.Empty, game.at(Position(1, 1, 2)))
 
-  def buildAndCaptureEye(): Game =
+  def buildEye(): Game =
     val moves = List[Move | Pass](
       Move(2, 1, 1, Color.Black), Pass(Color.White), Move(1, 2, 1, Color.Black), Pass(Color.White),
       Move(2, 1, 2, Color.Black), Pass(Color.White), Move(1, 2, 2, Color.Black), Pass(Color.White),
@@ -193,13 +193,18 @@ class TestGame:
       Move(1, 1, 3, Color.White), Pass(Color.Black), Move(2, 1, 3, Color.White), Pass(Color.Black),
       Move(1, 2, 3, Color.White), Pass(Color.Black)
     )
-    var game = playListOfMoves(TestSize, moves)
+    val game = playListOfMoves(TestSize, moves)
     Assert.assertEquals(5, game.connectedStones(Move(2, 1, 1, Color.Black)).length)
     Assert.assertEquals(5, game.connectedStones(Move(1, 2, 1, Color.Black)).length)
     Assert.assertEquals(5, game.connectedStones(Move(2, 1, 2, Color.Black)).length)
     Assert.assertEquals(5, game.connectedStones(Move(1, 2, 2, Color.Black)).length)
     Assert.assertEquals(5, game.connectedStones(Move(1, 1, 2, Color.Black)).length)
-    game.makeMove(Move(1, 1, 1, Color.White))
+    return game
+
+  def buildAndCaptureEye(): Game =
+    val game = buildEye()
+    return game.makeMove(Move(1, 1, 1, Color.White))
+
 
   @Test def testCapturedStonesAreListed(): Unit =
     val game = buildAndCaptureEye()
@@ -209,3 +214,15 @@ class TestGame:
     val game = buildAndCaptureEye()
     Assert.assertEquals(5, game.captures(Color.Black))
     Assert.assertEquals(0, game.captures(Color.White))
+
+  @Ignore("To do")
+  @Test def testCapturingStoneWithSettingIntoEyeIsNotSuicide(): Unit =
+    val game = buildEye()
+
+  @Ignore("To do")
+  @Test def testCapturingEyeIsNotSuicide(): Unit =
+    buildAndCaptureEye()
+
+  @Ignore("To do")
+  @Test def testSettingStoneIntoNotEncircledEyeIsSuicide(): Unit =
+    val game = buildEye()

@@ -17,13 +17,16 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
     move match
       case p: Pass => if gameOver(p) then throw GameOver(this)
       case m: Move =>
-        if !isValid(m) then throw IllegalMove(m.x, m.y, m.z, m.color)
+        checkValid(m)
         newboard.setStone(m)
     newboard.moves = moves.appended(move)
     return newboard
 
-  def isValid(move: Move): Boolean =
-      goban.isValid(move) && isDifferentPlayer(move) && !isKo(move) && !isSuicide(move)
+  def checkValid(move: Move): Unit =
+    goban.checkValid(move)
+    if !isDifferentPlayer(move) then throw IllegalMove("Same player twice: "+move)
+    if isKo(move) then throw IllegalMove("Ko: "+move)
+    if isSuicide(move) then throw IllegalMove("Suicide: "+move)
 
   override def toString: String =
     var out = ""
@@ -97,7 +100,25 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
 
   private def isKo(move: Move): Boolean = false
 
-  private def isSuicide(move: Move): Boolean = false
+  private def isSuicide(move: Move): Boolean =
+    if hasLiberties(move) then return false
+    else
+      for 
+        x <- move.x-1 to move.x+1
+        y <- move.y-1 to move.y+1
+        z <- move.z-1 to move.z+1
+        if isNeighbor(move, x, y, z)
+      do
+        if !hasLiberties(Move(x, y, z, !move.color)) then return false
+    return false  // TODO still needs fixing
+
+  def neighbors(move: Move): Seq[Position] =
+    for (
+      x <- move.x-1 until move.x+1;
+      y <- move.y-1 until move.y+1;
+      z <- move.z-1 until move.z+1
+      if isNeighbor(move, x, y, z)
+    ) yield Position(x, y, z)
 
   private def checkArea(move: Move): Unit =
     for

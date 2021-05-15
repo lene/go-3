@@ -22,10 +22,11 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
 
-  def isValid(move: Move): Boolean =
-    if move.x > size || move.y > size || move.z > size then false
-    else if at(move.position) != Color.Empty then false
-    else true
+  def checkValid(move: Move): Unit =
+    if move.x > size || move.y > size || move.z > size then
+      throw IllegalMove("Outside board: "+move)
+    else if at(move.position) != Color.Empty then
+      throw IllegalMove("Occupied: "+move+" with "+at(move.position))
 
   def setStone(x: Int, y: Int, z: Int, color: Color): Unit =
     if x < 0 || y < 0 || z < 0 || x > size+1 || y > size+1 || z > size+1 then
