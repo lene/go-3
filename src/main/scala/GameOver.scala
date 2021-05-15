@@ -1,3 +1,3 @@
 package go3d
 
-class GameOver(board: Goban) extends RuntimeException
+class GameOver(game: Game) extends RuntimeException

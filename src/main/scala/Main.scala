@@ -1,6 +1,6 @@
 import go3d._
 
-def replayGame(goban: Goban, moves: List[Move | Pass], delayMs: Int): Unit =
+def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int): Unit =
   var board = goban
   for move <- moves do {
     board = board.makeMove(move)
@@ -17,7 +17,7 @@ def replayGame(goban: Goban, moves: List[Move | Pass], delayMs: Int): Unit =
     Move(2, 3, 1, Color.Black) :: Move(2, 1, 2, Color.White) ::
     Move(3, 2, 1, Color.Black) :: Move(2, 3, 2, Color.White) ::
     Move(1, 2, 1, Color.Black) :: Nil
-  replayGame(Goban(5), moves1, Delay)
+  replayGame(Game(5), moves1, Delay)
   Thread.sleep(2*Delay)
   // black builds an eye, then white captures it
   val moves2 = List[Move | Pass](
@@ -31,4 +31,4 @@ def replayGame(goban: Goban, moves: List[Move | Pass], delayMs: Int): Unit =
     Move(1, 1, 3, Color.White), Pass(Color.Black), Move(2, 1, 3, Color.White), Pass(Color.Black),
     Move(1, 2, 3, Color.White), Pass(Color.Black), Move(1, 1, 1, Color.White)
   )
-  replayGame(Goban(5), moves2, Delay)
+  replayGame(Game(5), moves2, Delay)
