@@ -29,9 +29,13 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       throw IllegalMove("Occupied: "+move+" with "+at(move.position))
 
   def setStone(x: Int, y: Int, z: Int, color: Color): Unit =
-    if x < 0 || y < 0 || z < 0 || x > size+1 || y > size+1 || z > size+1 then
+    if isOnBoardPlusBorder(x, y, z) then
       throw IllegalArgumentException("Outside board: " + (x, y, z))
     stones(x)(y)(z) = color
+
   def setStone(move: Move): Unit = setStone(move.x, move.y, move.z, move.color)
 
   def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
+
+  private def isOnBoardPlusBorder(x: Int, y: Int, z: Int): Boolean =
+    x < 0 || y < 0 || z < 0 || x > size + 1 || y > size + 1 || z > size + 1
