@@ -50,19 +50,13 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
         "trying to find connected stones to "+move.toString+" but is "+ at(move.position)
       )
 
-    var neighbors = List(move)
-    for
-      x <- move.x-1 to move.x+1
-      y <- move.y-1 to move.y+1
-      z <- move.z-1 to move.z+1
-      if isNeighbor(move, x, y, z)
-      if at(Position(x, y, z)) == move.color
-    do {
+    var area = List(move)
+    for position <- neighbors(move) if at(position) == move.color do
       goban.setStone(Move(move.position, Color.Sentinel))
-      neighbors = neighbors ::: connectedStones(Move(x, y, z, move.color))
+      area = area ::: connectedStones(Move(position, move.color))
       goban.setStone(move)
-    }
-    return neighbors
+
+    return area
 
   def hasLiberties(move: Move): Boolean =
     if !Set(Color.Black, Color.White).contains(move.color) then
@@ -71,15 +65,10 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
       )
     if at(move.position) != move.color then return false
     var toCheck = Set[Move]()
-    for
-      x <- move.x-1 to move.x+1
-      y <- move.y-1 to move.y+1
-      z <- move.z-1 to move.z+1
-      if isNeighbor(move, x, y, z)
-    do
-      at(x, y, z) match
+    for position <- neighbors(move) do
+      at(position) match
         case Color.Empty => return true
-        case move.color => toCheck = toCheck + Move(x, y, z, move.color)
+        case move.color => toCheck = toCheck + Move(position, move.color)
         case _ =>
 
     // check if part of a connected area
@@ -92,6 +81,14 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
     goban.setStone(move)
     return false
 
+  def neighbors(move: Move): Seq[Position] =
+    for (
+      x <- move.x-1 to move.x+1;
+      y <- move.y-1 to move.y+1;
+      z <- move.z-1 to move.z+1
+      if isNeighbor(move, x, y, z)
+    ) yield Position(x, y, z)
+
   private def gameOver(pass: Pass): Boolean =
     !moves.isEmpty && moves.last.isInstanceOf[Pass]
 
@@ -103,34 +100,17 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
   private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
     else
-      for 
-        x <- move.x-1 to move.x+1
-        y <- move.y-1 to move.y+1
-        z <- move.z-1 to move.z+1
-        if isNeighbor(move, x, y, z)
-      do
-        if !hasLiberties(Move(x, y, z, !move.color)) then return false
+      for position <- neighbors(move) do
+        if !hasLiberties(Move(position, !move.color)) then return false
     return false  // TODO still needs fixing
 
-  def neighbors(move: Move): Seq[Position] =
-    for (
-      x <- move.x-1 until move.x+1;
-      y <- move.y-1 until move.y+1;
-      z <- move.z-1 until move.z+1
-      if isNeighbor(move, x, y, z)
-    ) yield Position(x, y, z)
-
   private def checkArea(move: Move): Unit =
-    for
-      x <- move.x-1 to move.x+1
-      y <- move.y-1 to move.y+1
-      z <- move.z-1 to move.z+1
-      if isNeighbor(move, x, y, z)
-    do
-      checkAndClear(Move(Position(x, y, z), move.color))
+    for position <- neighbors(move) do
+      checkAndClear(Move(position, move.color))
 
-  private def isNeighbor(move: Move, x: Int, y: Int, z: Int): Boolean =
+  private def isNeighbor(move: Move, x: Int, y: Int, z: Int): Boolean = {
     goban.isOnBoard(x, y, z) && (move.position - Position(x, y, z)).abs == 1
+  }
 
   private def checkAndClear(move: Move): Unit = {
     if Set(Color.Empty, Color.Sentinel, move.color).contains(at(move.position)) then return
