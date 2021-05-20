@@ -51,7 +51,7 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
       )
 
     var area = List(move)
-    for position <- neighbors(move) if at(position) == move.color do
+    for position <- neighbors(move.position) if at(position) == move.color do
       goban.setStone(Move(move.position, Color.Sentinel))
       area = area ::: connectedStones(Move(position, move.color))
       goban.setStone(move)
@@ -65,7 +65,7 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
       )
     if at(move.position) != move.color then return false
     var toCheck = Set[Move]()
-    for position <- neighbors(move) do
+    for position <- neighbors(move.position) do
       at(position) match
         case Color.Empty => return true
         case move.color => toCheck = toCheck + Move(position, move.color)
@@ -81,12 +81,12 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
     goban.setStone(move)
     return false
 
-  def neighbors(move: Move): Seq[Position] =
+  def neighbors(position: Position): Seq[Position] =
     for (
-      x <- move.x-1 to move.x+1;
-      y <- move.y-1 to move.y+1;
-      z <- move.z-1 to move.z+1
-      if isNeighbor(move, x, y, z)
+      x <- position.x-1 to position.x+1;
+      y <- position.y-1 to position.y+1;
+      z <- position.z-1 to position.z+1
+      if isNeighbor(position, x, y, z)
     ) yield Position(x, y, z)
 
   private def gameOver(pass: Pass): Boolean =
@@ -99,17 +99,22 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
 
   private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
-    else
-      for position <- neighbors(move) do
-        if !hasLiberties(Move(position, !move.color)) then return false
-    return false  // TODO still needs fixing
+    goban.setStone(move)
+    for position <- neighbors(move.position) do {
+      if !hasLiberties(Move(position, !move.color)) then {
+        goban.setStone(Move(move.position, Color.Empty))
+        return false
+      }
+    }
+    goban.setStone(Move(move.position, Color.Empty))
+    return true
 
   private def checkArea(move: Move): Unit =
-    for position <- neighbors(move) do
+    for position <- neighbors(move.position) do
       checkAndClear(Move(position, move.color))
 
-  private def isNeighbor(move: Move, x: Int, y: Int, z: Int): Boolean = {
-    goban.isOnBoard(x, y, z) && (move.position - Position(x, y, z)).abs == 1
+  private def isNeighbor(position: Position, x: Int, y: Int, z: Int): Boolean = {
+    goban.isOnBoard(x, y, z) && (position - Position(x, y, z)).abs == 1
   }
 
   private def checkAndClear(move: Move): Unit = {
