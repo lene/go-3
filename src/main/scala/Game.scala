@@ -99,10 +99,15 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
 
   private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
-    else
-      for position <- neighbors(move) do
-        if !hasLiberties(Move(position, !move.color)) then return false
-    return false  // TODO still needs fixing
+    goban.setStone(move)
+    for position <- neighbors(move) do {
+      if !hasLiberties(Move(position, !move.color)) then {
+        goban.setStone(Move(move.position, Color.Empty))
+        return false
+      }
+    }
+    goban.setStone(Move(move.position, Color.Empty))
+    return true
 
   private def checkArea(move: Move): Unit =
     for position <- neighbors(move) do

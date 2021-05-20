@@ -66,7 +66,7 @@ class TestGame:
     val secondMove = firstMove.makeMove(Pass(Color.White))
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.Empty)
-  
+
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
     val empty = Game(TestSize)
     val firstMove = empty.makeMove(Pass(Color.Black))
@@ -186,23 +186,30 @@ class TestGame:
       Move(2, 1, 1, Color.Black), Pass(Color.White), Move(1, 2, 1, Color.Black), Pass(Color.White),
       Move(2, 1, 2, Color.Black), Pass(Color.White), Move(1, 2, 2, Color.Black), Pass(Color.White),
       Move(1, 1, 2, Color.Black),
-      // build the eye first and then encircle it, IMHO that is easier to read
+    )
+    val game = playListOfMoves(TestSize, moves)
+    return game
+
+  def encircleEye(game: Game): Game =
+    val moves = List[Move | Pass](
       Move(1, 3, 1, Color.White), Pass(Color.Black), Move(2, 2, 1, Color.White), Pass(Color.Black),
       Move(3, 1, 1, Color.White), Pass(Color.Black), Move(1, 3, 2, Color.White), Pass(Color.Black),
       Move(2, 2, 2, Color.White), Pass(Color.Black), Move(3, 1, 2, Color.White), Pass(Color.Black),
       Move(1, 1, 3, Color.White), Pass(Color.Black), Move(2, 1, 3, Color.White), Pass(Color.Black),
       Move(1, 2, 3, Color.White), Pass(Color.Black)
     )
-    val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 1, Color.Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 1, Color.Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 2, Color.Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 2, Color.Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 1, 2, Color.Black)).length)
-    return game
+    var nextGame = game
+    for move <- moves do
+      nextGame = nextGame.makeMove(move)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 1, Color.Black)).length)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 1, Color.Black)).length)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 2, Color.Black)).length)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 2, Color.Black)).length)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 1, 2, Color.Black)).length)
+    return nextGame
 
   def buildAndCaptureEye(): Game =
-    val game = buildEye()
+    val game = encircleEye(buildEye())
     return game.makeMove(Move(1, 1, 1, Color.White))
 
 
@@ -215,14 +222,26 @@ class TestGame:
     Assert.assertEquals(5, game.captures(Color.Black))
     Assert.assertEquals(0, game.captures(Color.White))
 
-  @Ignore("To do")
   @Test def testCapturingStoneWithSettingIntoEyeIsNotSuicide(): Unit =
-    val game = buildEye()
+    val moves = List[Move | Pass](
+      Move(2, 2, 3, Color.Black), Move(2, 2, 4, Color.White),
+      Move(2, 3, 2, Color.Black), Move(2, 3, 3, Color.White),
+      Move(2, 1, 2, Color.Black), Move(2, 1, 3, Color.White),
+      Move(3, 2, 2, Color.Black), Move(3, 2, 3, Color.White),
+      Move(1, 2, 2, Color.Black), Move(1, 2, 3, Color.White),
+      Move(2, 2, 1, Color.Black)
+    )
+    val game = playListOfMoves(5, moves)
+    Assert.assertTrue(game.hasLiberties(Move(2, 2, 3, Color.Black)))
+    Assert.assertEquals(Color.Empty, game.at(2, 2, 2))
+    for stone <- game.neighbors(Move(2, 2, 2, Color.Black)) do
+      Assert.assertEquals(Color.Black, game.at(stone))
+    game.checkValid(Move(2, 2, 2, Color.White))
 
-  @Ignore("To do")
   @Test def testCapturingEyeIsNotSuicide(): Unit =
-    buildAndCaptureEye()
+    val game = encircleEye(buildEye())
+    game.checkValid(Move(1, 1, 1, Color.White))
 
-  @Ignore("To do")
   @Test def testSettingStoneIntoNotEncircledEyeIsSuicide(): Unit =
     val game = buildEye()
+    assertThrowsIllegalMove({game.checkValid(Move(1, 1, 1, Color.White))})
