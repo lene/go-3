@@ -6,11 +6,8 @@ import go3d.Color._
 class TestColor:
   @Test def testColorsNotEqual(): Unit =
     Assert.assertNotEquals(Black, White)
-    Assert.assertNotEquals(Black, Undefined)
-    Assert.assertNotEquals(White, Undefined)
     Assert.assertNotEquals(Black, Empty)
     Assert.assertNotEquals(White, Empty)
-    Assert.assertNotEquals(Empty, Undefined)
     Assert.assertNotEquals(Black, Sentinel)
     Assert.assertNotEquals(White, Sentinel)
     Assert.assertNotEquals(Empty, Sentinel)
