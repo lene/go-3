@@ -234,7 +234,7 @@ class TestGame:
     val game = playListOfMoves(5, moves)
     Assert.assertTrue(game.hasLiberties(Move(2, 2, 3, Color.Black)))
     Assert.assertEquals(Color.Empty, game.at(2, 2, 2))
-    for stone <- game.neighbors(Move(2, 2, 2, Color.Black)) do
+    for stone <- game.neighbors(Position(2, 2, 2)) do
       Assert.assertEquals(Color.Black, game.at(stone))
     game.checkValid(Move(2, 2, 2, Color.White))
 
