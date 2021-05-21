@@ -10,7 +10,7 @@ def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int): Unit =
 
 
 @main def printAGame: Unit =
-  val Delay = 250
+  val Delay = 0
   // watch black capture a white stone
   val moves1 =  Move(2, 2, 2, Color.Black) :: Move(2, 2, 1, Color.White) ::
     Move(2, 1, 1, Color.Black) :: Move(2, 2, 3, Color.White) ::

@@ -24,7 +24,7 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
 
   def checkValid(move: Move): Unit =
     goban.checkValid(move)
-    if !isDifferentPlayer(move) then throw WrongTurn(move)
+    if !isDifferentPlayer(move.color) then throw WrongTurn(move)
     if isKo(move) then throw Ko(move)
     if isSuicide(move) then throw Suicide(move)
 
@@ -89,11 +89,26 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
       if isNeighbor(position, x, y, z)
     ) yield Position(x, y, z)
 
+  def possibleMoves(color: Color): List[Position] =
+    var moves = List[Position]()
+    if !isDifferentPlayer(color) then return moves
+    for
+      x <- 1 to size
+      y <- 1 to size
+      z <- 1 to size
+    do
+      try
+        checkValid(Move(x, y, z, color))
+        moves = moves.appended(Position(x, y, z))
+      catch
+        case e: IllegalMove =>
+    moves
+
   private def gameOver(pass: Pass): Boolean =
     !moves.isEmpty && moves.last.isInstanceOf[Pass]
 
-  private def isDifferentPlayer(move: Move): Boolean =
-    moves.isEmpty || moves.last.color != move.color
+  private def isDifferentPlayer(color: Color): Boolean =
+    moves.isEmpty || moves.last.color != color
 
   private def isKo(move: Move): Boolean =
     !captures.isEmpty && captures.last == move
