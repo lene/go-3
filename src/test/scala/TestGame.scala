@@ -245,3 +245,19 @@ class TestGame:
   @Test def testSettingStoneIntoNotEncircledEyeIsSuicide(): Unit =
     val game = buildEye()
     assertThrowsIllegalMove({game.checkValid(Move(1, 1, 1, Color.White))})
+
+  @Test def testDetectKo(): Unit =
+    val moves = List[Move | Pass](
+      Move(2, 2, 3, Color.Black), Move(2, 2, 4, Color.White),
+      Move(2, 3, 2, Color.Black), Move(2, 3, 3, Color.White),
+      Move(2, 1, 2, Color.Black), Move(2, 1, 3, Color.White),
+      Move(3, 2, 2, Color.Black), Move(3, 2, 3, Color.White),
+      Move(1, 2, 2, Color.Black), Move(1, 2, 3, Color.White),
+      Move(2, 2, 1, Color.Black), Move(2, 2, 2, Color.White)
+    )
+    val game = playListOfMoves(5, moves)
+    Assert.assertEquals(Color.Empty, game.at(2, 2, 3))
+    Assert.assertEquals(1, game.captures.length)
+    Assert.assertEquals(Move(2, 2, 3, Color.Black), game.captures.last)
+    assertThrowsIllegalMove({game.checkValid(Move(2, 2, 3, Color.Black))})
+
