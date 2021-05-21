@@ -24,9 +24,9 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
 
   def checkValid(move: Move): Unit =
     goban.checkValid(move)
-    if !isDifferentPlayer(move) then throw IllegalMove("Same player twice: "+move)
-    if isKo(move) then throw IllegalMove("Ko: "+move)
-    if isSuicide(move) then throw IllegalMove("Suicide: "+move)
+    if !isDifferentPlayer(move) then throw WrongTurn(move)
+    if isKo(move) then throw Ko(move)
+    if isSuicide(move) then throw Suicide(move)
 
   override def toString: String =
     var out = ""
@@ -95,7 +95,8 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
   private def isDifferentPlayer(move: Move): Boolean =
     moves.isEmpty || moves.last.color != move.color
 
-  private def isKo(move: Move): Boolean = false
+  private def isKo(move: Move): Boolean =
+    !captures.isEmpty && captures.last == move
 
   private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
