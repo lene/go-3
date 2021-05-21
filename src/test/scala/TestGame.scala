@@ -136,7 +136,6 @@ class TestGame:
     Assert.assertEquals(1, game.connectedStones(Move(1, 1, 1, Color.Black)).length)
     Assert.assertEquals(1, game.connectedStones(Move(2, 2, 1, Color.Black)).length)
 
-
   @Test def testConnectedStoneTwoConnectedStones(): Unit =
     val moves = List[Move | Pass](
       Move(1, 1, 1, Color.Black), Pass(Color.White), Move(2, 1, 1, Color.Black)
@@ -212,10 +211,9 @@ class TestGame:
     val game = encircleEye(buildEye())
     return game.makeMove(Move(1, 1, 1, Color.White))
 
-
   @Test def testCapturedStonesAreListed(): Unit =
     val game = buildAndCaptureEye()
-    Assert.assertEquals(5, game.captures.length)
+    Assert.assertEquals(5, game.captures(Color.Black))
 
   @Test def testCapturedStonesAreCounted(): Unit =
     val game = buildAndCaptureEye()
@@ -257,7 +255,35 @@ class TestGame:
     )
     val game = playListOfMoves(5, moves)
     Assert.assertEquals(Color.Empty, game.at(2, 2, 3))
-    Assert.assertEquals(1, game.captures.length)
-    Assert.assertEquals(Move(2, 2, 3, Color.Black), game.captures.last)
+    Assert.assertEquals(1, game.captures(Color.Black))
+    Assert.assertEquals(Move(2, 2, 3, Color.Black), game.lastCapture(0))
     assertThrowsIllegalMove({game.checkValid(Move(2, 2, 3, Color.Black))})
+
+  @Test def testPossibleMovesEmptyBoard(): Unit =
+    val empty = Game(TestSize)
+    Assert.assertEquals(TestSize*TestSize*TestSize, empty.possibleMoves(Color.Black).length)
+
+  @Test def testPossibleMovesAfterOneMove(): Unit =
+    val board = Game(TestSize).makeMove(Move(1, 1, 1, Color.Black))
+    Assert.assertEquals(TestSize*TestSize*TestSize-1, board.possibleMoves(Color.White).length)
+    Assert.assertEquals(0, board.possibleMoves(Color.Black).length)
+
+  @Test def testPossibleMovesWithSuicide(): Unit =
+    val game = buildEye()
+    Assert.assertEquals(TestSize*TestSize*TestSize-6, game.possibleMoves(Color.White).length)
+    Assert.assertEquals(0, game.possibleMoves(Color.Black).length)
+
+  @Test def testPossibleMovesWithKo(): Unit =
+    val moves = List[Move | Pass](
+      Move(2, 2, 3, Color.Black), Move(2, 2, 4, Color.White),
+      Move(2, 3, 2, Color.Black), Move(2, 3, 3, Color.White),
+      Move(2, 1, 2, Color.Black), Move(2, 1, 3, Color.White),
+      Move(3, 2, 2, Color.Black), Move(3, 2, 3, Color.White),
+      Move(1, 2, 2, Color.Black), Move(1, 2, 3, Color.White),
+      Move(2, 2, 1, Color.Black), Move(2, 2, 2, Color.White)
+    )
+    val game = playListOfMoves(5, moves)
+    Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Color.Black).length)
+    Assert.assertFalse(game.possibleMoves(Color.Black).contains(Move(2, 2, 3, Color.Black)))
+
 

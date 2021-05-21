@@ -3,6 +3,10 @@ stages:
   - test
   - run
 
+variables:
+  TEST_RUN_BOARD_SIZE: 11
+  TEST_RUN_MAX_RUNNING_TIME: 60
+
 include:
   - template: Code-Quality.gitlab-ci.yml
   - template: Security/SAST.gitlab-ci.yml
@@ -71,3 +75,16 @@ Run:UseSbtDocker:
     - Compile:UseSbtDocker
   script:
     - sbt run
+
+CheckRunTime:UseSbtDocker:
+  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  stage: test
+  needs: []
+  before_script:
+    - apt-get -y update
+    - apt-get -y install bc time
+  script:
+    - sbt compile
+    - /usr/bin/time -f %U -o runtime.log sbt "run $TEST_RUN_BOARD_SIZE"
+    - echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
+    - if [ $(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l) -eq 1 ]; then exit 1; fi
