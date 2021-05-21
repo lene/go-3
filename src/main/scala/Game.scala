@@ -1,5 +1,7 @@
 package go3d
 
+import collection.mutable
+
 def newGame(size: Int): Game = Game(size, newGoban(size), Array(), Map[Int, List[Move]]())
 
 class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
@@ -48,8 +50,15 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     if !isDifferentPlayer(color) then return List()
     return goban.emptyPositions.toList.filter(isPossibleMove(_, color))
 
-  def allPositions: Seq[Position] = goban.allPositions
-  
+  def score: Map[Color, Int] =
+    var scores = mutable.Map[Color, Int]().withDefaultValue(0)
+    var connectedEmptyAreas: Set[Set[Position]] = Set()
+    for color <- List(Color.Black, Color.White) do
+      for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
+      scores(color) = scores(color) - captures(color)
+    for pos <- goban.emptyPositions do {}  // TODO
+    return scores.toMap
+
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
     try
       if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))

@@ -19,8 +19,9 @@ def randomGame(size: Int): Unit =
   while !game.possibleMoves(color).isEmpty && game.moves.length <= size*size*size do
     val move = Move(game.possibleMoves(color)(random.nextInt(game.possibleMoves(color).length)), color)
     game = game.makeMove(move)
-    Console.print(s"${game.moves.length} ")
-    Console.flush()
+    if game.moves.size % 100 == 0 then
+      Console.print(s"${game.moves.length}/${size*size*size} ")
+      Console.flush()
     color = !color
   println("\n"+game)
 
