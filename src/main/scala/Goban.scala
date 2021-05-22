@@ -23,10 +23,9 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
 
   def checkValid(move: Move): Unit =
-    if move.x > size || move.y > size || move.z > size then
-      throw OutsideBoard(move.x, move.y, move.z)
-    else if at(move.position) != Color.Empty then
-      throw PositionOccupied(move, at(move.position))
+    if move.x > size || move.y > size || move.z > size then throw OutsideBoard(move.x, move.y, move.z)
+    if at(move.position) != Color.Empty then throw PositionOccupied(move, at(move.position))
+    if isSuicide(move) then throw Suicide(move)
 
   def setStone(x: Int, y: Int, z: Int, color: Color): Unit =
     if isOnBoardPlusBorder(x, y, z) then
@@ -94,9 +93,19 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       setStone(Move(toClear.position, Color.Empty))
     return area
 
+  def isSuicide(move: Move): Boolean =
+    if hasLiberties(move) then return false
+    setStone(move)
+    for position <- neighbors(move.position) do
+      if !hasLiberties(Move(position, !move.color)) then
+        setStone(Move(move.position, Color.Empty))
+        return false
+
+    setStone(Move(move.position, Color.Empty))
+    return true
+
   private def isNeighbor(position: Position, x: Int, y: Int, z: Int): Boolean =
     isOnBoard(x, y, z) && (position - Position(x, y, z)).abs == 1
 
   private def isOnBoardPlusBorder(x: Int, y: Int, z: Int): Boolean =
     x < 0 || y < 0 || z < 0 || x > size + 1 || y > size + 1 || z > size + 1
-

@@ -3,7 +3,7 @@ package go3d
 class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
   val goban = Goban(size, initializeBoard(size))
   var moves: Array[Move | Pass] = Array()
-  var captures = scala.collection.mutable.Map[Int, List[Move]]()
+  val captures = scala.collection.mutable.Map[Int, List[Move]]()
 
   def captures(color: Color): Int =
     captures.values.filter(_(0).color == color).flatten.size
@@ -27,7 +27,6 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
     goban.checkValid(move)
     if !isDifferentPlayer(move.color) then throw WrongTurn(move)
     if isKo(move) then throw Ko(move)
-    if isSuicide(move) then throw Suicide(move)
 
   override def toString: String =
     var out = ""
@@ -76,22 +75,11 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
   private def isKo(move: Move): Boolean =
     captures.nonEmpty && lastCapture.length == 1 && lastCapture(0) == move
 
-  private def isSuicide(move: Move): Boolean =
-    if hasLiberties(move) then return false
-    goban.setStone(move)
-    for position <- neighbors(move.position) do
-      if !hasLiberties(Move(position, !move.color)) then
-        goban.setStone(Move(move.position, Color.Empty))
-        return false
-
-    goban.setStone(Move(move.position, Color.Empty))
-    return true
-
   private def checkArea(move: Move): Unit =
     for position <- neighbors(move.position) do
       val capturedStones = checkAndClear(Move(position, move.color))
       if capturedStones.nonEmpty then
-        if captures.contains(moves.length) then captures(moves.length) = captures(moves.length) ::: capturedStones
-        else captures = captures + (moves.length -> capturedStones)
+        if captures.contains(moves.length) then captures(moves.length) :::= capturedStones
+        else captures(moves.length) = capturedStones
 
   private def checkAndClear(move: Move): List[Move] = goban.checkAndClear(move)
