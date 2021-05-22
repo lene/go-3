@@ -1,7 +1,7 @@
 package go3d
 
 class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
-  val goban = Goban(size, initializeBoard(size))
+  var goban = Goban(size, initializeBoard(size))
   var moves: Array[Move | Pass] = Array()
   val captures = scala.collection.mutable.Map[Int, List[Move]]()
 
@@ -40,9 +40,10 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
       out += "\n"
     out
 
-  def setStone(move: Move): Unit =
-    goban.setStone(move)
+  def setStone(move: Move): Game =
+    goban = goban.setStone(move)
     checkArea(move)
+    return this
 
   def hasLiberties(move: Move): Boolean = goban.hasLiberties(move)
 
@@ -82,4 +83,7 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
         if captures.contains(moves.length) then captures(moves.length) :::= capturedStones
         else captures(moves.length) = capturedStones
 
-  private def checkAndClear(move: Move): List[Move] = goban.checkAndClear(move)
+  private def checkAndClear(move: Move): List[Move] =
+    val old_goban = goban.clone()
+    goban = goban.checkAndClear(move)
+    return (old_goban-goban).toList

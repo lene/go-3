@@ -32,17 +32,28 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
   override def clone(): Goban = Goban(size, deepCopy(stones))
 
+  def -(other: Goban): IndexedSeq[Move] =
+    if size != other.size then throw IllegalArgumentException(s"sizes ${size} != ${other.size}")
+    for (
+      x <- 1 to size;
+      y <- 1 to size;
+      z <- 1 to size
+      if other.at(x, y, z) == Color.Empty && at(x, y, z) != Color.Empty
+    ) yield Move(x, y, z, at(x, y, z))
+
   def checkValid(move: Move): Unit =
     if move.x > size || move.y > size || move.z > size then throw OutsideBoard(move.x, move.y, move.z)
     if at(move.position) != Color.Empty then throw PositionOccupied(move, at(move.position))
     if isSuicide(move) then throw Suicide(move)
 
-  def setStone(x: Int, y: Int, z: Int, color: Color): Unit =
+  def setStone(x: Int, y: Int, z: Int, color: Color): Goban =
     if isOnBoardPlusBorder(x, y, z) then
       throw OutsideBoard(x, y, z)
-    stones(x)(y)(z) = color
+    val newStones = deepCopy(stones)
+    newStones(x)(y)(z) = color
+    Goban(size, newStones)
 
-  def setStone(move: Move): Unit = setStone(move.x, move.y, move.z, move.color)
+  def setStone(move: Move): Goban = setStone(move.x, move.y, move.z, move.color)
 
   def hasLiberties(move: Move): Boolean =
     if !Set(Color.Black, Color.White).contains(move.color) then
@@ -58,13 +69,10 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
         case _ =>
 
     // check if part of a connected area
-    setStone(Move(move.position, Color.Sentinel))
+    val tempBoard = setStone(Move(move.position, Color.Sentinel))
     for checking <- toCheck do
-      if hasLiberties(checking) then
-        setStone(move)
+      if tempBoard.hasLiberties(checking) then
         return true
-
-    setStone(move)
     return false
 
   def connectedStones(move: Move): List[Move] =
@@ -75,10 +83,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
     var area = List(move)
     for position <- neighbors(move.position) if at(position) == move.color do
-      setStone(Move(move.position, Color.Sentinel))
-      area = area ::: connectedStones(Move(position, move.color))
-      setStone(move)
-
+      area :::= setStone(Move(move.position, Color.Sentinel)).connectedStones(Move(position, move.color))
     return area
 
   def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
@@ -95,23 +100,21 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     for position <- neighbors(position) do if at(position) == Color.Empty then return true
     return false
 
-  def checkAndClear(move: Move): List[Move] =
-    if Set(Color.Empty, Color.Sentinel, move.color).contains(at(move.position)) then return List()
-    if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return List()
+  def checkAndClear(move: Move): Goban =
+    if Set(Color.Empty, Color.Sentinel, move.color).contains(at(move.position)) then return this
+    if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return this
     val area = connectedStones(Move(move.x, move.y, move.z, !move.color))
+    var cleared = clone()
     for toClear <- area do
-      setStone(Move(toClear.position, Color.Empty))
-    return area
+      cleared = cleared.setStone(Move(toClear.position, Color.Empty))
+    return cleared
 
   def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
-    setStone(move)
+    val boardAfterMove = setStone(move)
     for position <- neighbors(move.position) do
-      if !hasLiberties(Move(position, !move.color)) then
-        setStone(Move(move.position, Color.Empty))
+      if !boardAfterMove.hasLiberties(Move(position, !move.color)) then
         return false
-
-    setStone(Move(move.position, Color.Empty))
     return true
 
   private def isNeighbor(position: Position, x: Int, y: Int, z: Int): Boolean =

@@ -55,9 +55,8 @@ class TestGoban:
       Assert.assertEquals(Color.Sentinel, empty.at(x, y, z))
 
   @Test def testSetStoneWithMove(): Unit =
-    val empty = Goban(TestSize, initializeBoard(TestSize))
-    empty.setStone(Move(2, 2, 2, Color.Black))
-    Assert.assertEquals(empty.at(Position(2, 2, 2)), Color.Black)
+    val board = Goban(TestSize, initializeBoard(TestSize)).setStone(Move(2, 2, 2, Color.Black))
+    Assert.assertEquals(board.at(Position(2, 2, 2)), Color.Black)
 
   @Test def testSetStoneWithMoveOutsideBoard(): Unit =
     val empty = Goban(TestSize, initializeBoard(TestSize))
@@ -66,9 +65,8 @@ class TestGoban:
     )
 
   @Test def testSetStoneWithInts(): Unit =
-    val empty = Goban(TestSize, initializeBoard(TestSize))
-    empty.setStone(2, 2, 2, Color.Black)
-    Assert.assertEquals(empty.at(Position(2, 2, 2)), Color.Black)
+    val board = Goban(TestSize, initializeBoard(TestSize)).setStone(2, 2, 2, Color.Black)
+    Assert.assertEquals(board.at(Position(2, 2, 2)), Color.Black)
 
   @Test def testSetStoneWithIntsOnBorder(): Unit =
     val empty = Goban(TestSize, initializeBoard(TestSize))
@@ -82,9 +80,8 @@ class TestGoban:
     )
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
-    val empty = Goban(TestSize, initializeBoard(TestSize))
-    empty.setStone(Move(2, 2, 2, Color.Black))
-    assertThrowsIllegalMove({empty.checkValid(Move(2, 2, 2, Color.White))})
+    val board = Goban(TestSize, initializeBoard(TestSize)).setStone(Move(2, 2, 2, Color.Black))
+    assertThrowsIllegalMove({board.checkValid(Move(2, 2, 2, Color.White))})
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = Goban(TestSize, initializeBoard(TestSize))
