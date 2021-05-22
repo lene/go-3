@@ -3,12 +3,11 @@ package go3d
 class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
   val goban = Goban(size, initializeBoard(size))
   var moves: Array[Move | Pass] = Array()
-  var captures: Map[Int, List[Move]] = Map()
+  var captures = scala.collection.mutable.Map[Int, List[Move]]()
 
   def captures(color: Color): Int =
     captures.values.filter(_(0).color == color).flatten.size
-  def lastCapture: List[Move] = captures.last._2
-
+  def lastCapture: List[Move] = if captures.isEmpty then List() else captures.last._2
 
   def at(pos: Position): Color = goban.at(pos)
   def at(x: Int, y: Int, z: Int): Color = at(Position(x, y, z))
@@ -37,8 +36,8 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
         for x <- 0 to size + 1 do
           out += goban.at(x, y, z)
         if z < size then out += "|"
-        else if y == 1 && !captures.isEmpty then out += " "+Color.Black.toString*captures(Color.Black)
-        else if y == 3 && !captures.isEmpty then out += " "+Color.White.toString*captures(Color.White)
+        else if y == 1 && captures.nonEmpty then out += " "+Color.Black.toString*captures(Color.Black)
+        else if y == 3 && captures.nonEmpty then out += " "+Color.White.toString*captures(Color.White)
       out += "\n"
     out
 
@@ -60,7 +59,7 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
       if at(x, y, z) == Color.Empty
     do
       try
-        if ! hasEmptyNeighbor(Position(x, y, z)) then checkValid(Move(x, y, z, color))
+        if !goban.hasEmptyNeighbor(Position(x, y, z)) then checkValid(Move(x, y, z, color))
         moves = moves.appended(Position(x, y, z))
       catch
         case e: IllegalMove =>
@@ -69,13 +68,13 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
   def neighbors(position: Position): Seq[Position] = goban.neighbors(position)
 
   private def gameOver(pass: Pass): Boolean =
-    !moves.isEmpty && moves.last.isInstanceOf[Pass]
+    moves.nonEmpty && moves.last.isInstanceOf[Pass]
 
   private def isDifferentPlayer(color: Color): Boolean =
     moves.isEmpty || moves.last.color != color
 
   private def isKo(move: Move): Boolean =
-    !captures.isEmpty && lastCapture.length == 1 && lastCapture(0) == move
+    captures.nonEmpty && lastCapture.length == 1 && lastCapture(0) == move
 
   private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
@@ -90,18 +89,9 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
 
   private def checkArea(move: Move): Unit =
     for position <- neighbors(move.position) do
-      checkAndClear(Move(position, move.color))
+      val capturedStones = checkAndClear(Move(position, move.color))
+      if capturedStones.nonEmpty then
+        if captures.contains(moves.length) then captures(moves.length) = captures(moves.length) ::: capturedStones
+        else captures = captures + (moves.length -> capturedStones)
 
-  private def checkAndClear(move: Move): Unit =
-    if Set(Color.Empty, Color.Sentinel, move.color).contains(at(move.position)) then return
-    if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return
-    if verbose then println(s"Found ${move.color} at ${move.position}")
-    val area = connectedStones(Move(move.x, move.y, move.z, !move.color))
-    for toClear <- area do
-      goban.setStone(Move(toClear.position, Color.Empty))
-    captures = captures + (moves.length -> area)
-
-  private def hasEmptyNeighbor(position: Position): Boolean =
-    for position <- neighbors(position) do if at(position) == Color.Empty then return true
-    return false
-
+  private def checkAndClear(move: Move): List[Move] = goban.checkAndClear(move)

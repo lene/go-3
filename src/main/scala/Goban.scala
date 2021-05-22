@@ -82,6 +82,18 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       if isNeighbor(position, x, y, z)
     ) yield Position(x, y, z)
 
+  def hasEmptyNeighbor(position: Position): Boolean =
+    for position <- neighbors(position) do if at(position) == Color.Empty then return true
+    return false
+
+  def checkAndClear(move: Move): List[Move] =
+    if Set(Color.Empty, Color.Sentinel, move.color).contains(at(move.position)) then return List()
+    if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return List()
+    val area = connectedStones(Move(move.x, move.y, move.z, !move.color))
+    for toClear <- area do
+      setStone(Move(toClear.position, Color.Empty))
+    return area
+
   private def isNeighbor(position: Position, x: Int, y: Int, z: Int): Boolean =
     isOnBoard(x, y, z) && (position - Position(x, y, z)).abs == 1
 

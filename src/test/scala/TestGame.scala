@@ -172,6 +172,21 @@ class TestGame:
     Assert.assertEquals("\n"+game.toString, Color.Empty, game.at(Position(2, 1, 1)))
     Assert.assertEquals("\n"+game.toString, Color.Empty, game.at(Position(2, 1, 2)))
 
+  @Test def testCaptureTwoDisjointStonesWithOneMove(): Unit =
+    val moves = List[Move | Pass](
+      Move(2, 1, 1, Color.Black), Move(1, 1, 1, Color.White),
+      Move(4, 1, 1, Color.Black), Move(5, 1, 1, Color.White),
+      Pass(Color.Black), Move(2, 2, 1, Color.White),
+      Pass(Color.Black), Move(4, 2, 1, Color.White),
+      Pass(Color.Black), Move(2, 1, 2, Color.White),
+      Pass(Color.Black), Move(4, 1, 2, Color.White),
+      Pass(Color.Black)
+    )
+    var game = playListOfMoves(5, moves)
+    Assert.assertTrue(game.captures.isEmpty)
+    game = game.makeMove(Move(3, 1, 1, Color.White))
+    Assert.assertEquals(2, game.captures(Color.Black))
+
   @Test def testCaptureMinimalEye(): Unit =
     val game = buildAndCaptureEye()
     Assert.assertEquals(Color.Empty, game.at(Position(2, 1, 1)))
