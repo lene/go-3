@@ -91,3 +91,21 @@ class TestGoban:
     assertThrowsIllegalArgument({empty.checkValid(Move(TestSize+1, 2, 2, Color.White))})
     assertThrowsIllegalArgument({empty.checkValid(Move(2, TestSize+1, 2, Color.White))})
     assertThrowsIllegalArgument({empty.checkValid(Move(2, 2, TestSize+1, Color.White))})
+
+  @Test def testDeepCopy2D(): Unit =
+    val original = Array(Array(1, 2), Array(3,4))
+    val cloned = deepCopy(original)
+    cloned(0)(0) = 9
+    Assert.assertEquals(1, original(0)(0))
+
+  @Test def testDeepCopy3D(): Unit =
+    val original = Array(Array(Array(1, 2), Array(3,4)), Array(Array(5, 6), Array(7,8)))
+    val cloned = deepCopy(original)
+    cloned(0)(0)(0) = 9
+    Assert.assertEquals(1, original(0)(0)(0))
+
+  @Test def testClone(): Unit =
+    val original = Goban(TestSize, initializeBoard(TestSize))
+    val cloned = original.clone()
+    cloned.setStone(1, 1, 1, Color.Black)
+    Assert.assertEquals(Color.Empty, original.at(1, 1, 1))

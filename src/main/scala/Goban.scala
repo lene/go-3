@@ -1,5 +1,7 @@
 package go3d
 
+import scala.reflect.ClassTag
+
 def initializeBoard(size: Int): Array[Array[Array[Color]]] =
   val tempStones = Array.ofDim[Color](size+2, size+2, size+2)
   for
@@ -13,6 +15,12 @@ def initializeBoard(size: Int): Array[Array[Array[Color]]] =
 def onBoard(x: Int, y: Int, z: Int, size: Int): Boolean =
     x > 0 && y > 0 && z > 0 && x <= size && y <= size && z <= size
 
+def deepCopy[T: ClassTag](elements: Array[Array[T]]): Array[Array[T]] =
+  elements.map(_.clone)
+
+def deepCopy[T: ClassTag](elements: Array[Array[Array[T]]]): Array[Array[Array[T]]] =
+  elements.map(deepCopy(_))
+
 class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
   if size < MinBoardSize then throw IllegalArgumentException("size too small: "+size)
@@ -21,6 +29,8 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
+
+  override def clone(): Goban = Goban(size, deepCopy(stones))
 
   def checkValid(move: Move): Unit =
     if move.x > size || move.y > size || move.z > size then throw OutsideBoard(move.x, move.y, move.z)
