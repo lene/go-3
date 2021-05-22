@@ -35,7 +35,56 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
   def setStone(move: Move): Unit = setStone(move.x, move.y, move.z, move.color)
 
+  def hasLiberties(move: Move): Boolean =
+    if !Set(Color.Black, Color.White).contains(move.color) then
+      throw IllegalArgumentException(
+        s"trying to find liberties for $move which is not a stone but ${move.color}"
+      )
+    if at(move.position) != move.color then return false
+    var toCheck = Set[Move]()
+    for position <- neighbors(move.position) do
+      at(position) match
+        case Color.Empty => return true
+        case move.color => toCheck = toCheck + Move(position, move.color)
+        case _ =>
+
+    // check if part of a connected area
+    setStone(Move(move.position, Color.Sentinel))
+    for checking <- toCheck do
+      if hasLiberties(checking) then
+        setStone(move)
+        return true
+
+    setStone(move)
+    return false
+
+  def connectedStones(move: Move): List[Move] =
+    if at(move.position) != move.color then
+      throw IllegalArgumentException(
+        s"trying to find connected stones to $move but is ${at(move.position)}"
+      )
+
+    var area = List(move)
+    for position <- neighbors(move.position) if at(position) == move.color do
+      setStone(Move(move.position, Color.Sentinel))
+      area = area ::: connectedStones(Move(position, move.color))
+      setStone(move)
+
+    return area
+
   def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
+
+  def neighbors(position: Position): Seq[Position] =
+    for (
+      x <- position.x-1 to position.x+1;
+      y <- position.y-1 to position.y+1;
+      z <- position.z-1 to position.z+1
+      if isNeighbor(position, x, y, z)
+    ) yield Position(x, y, z)
+
+  private def isNeighbor(position: Position, x: Int, y: Int, z: Int): Boolean =
+    isOnBoard(x, y, z) && (position - Position(x, y, z)).abs == 1
 
   private def isOnBoardPlusBorder(x: Int, y: Int, z: Int): Boolean =
     x < 0 || y < 0 || z < 0 || x > size + 1 || y > size + 1 || z > size + 1
+
