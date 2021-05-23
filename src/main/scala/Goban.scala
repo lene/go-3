@@ -21,6 +21,8 @@ def deepCopy[T: ClassTag](elements: Array[Array[T]]): Array[Array[T]] =
 def deepCopy[T: ClassTag](elements: Array[Array[Array[T]]]): Array[Array[Array[T]]] =
   elements.map(deepCopy(_))
 
+def newGoban(size: Int): Goban = Goban(size, initializeBoard(size))
+
 class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
   if size < MinBoardSize then throw IllegalArgumentException("size too small: "+size)

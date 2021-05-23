@@ -1,7 +1,7 @@
 package go3d
 
 class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
-  var goban = Goban(size, initializeBoard(size))
+  var goban = newGoban(size)
   var moves: Array[Move | Pass] = Array()
   val captures = scala.collection.mutable.Map[Int, List[Move]]()
 
