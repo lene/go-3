@@ -1,9 +1,11 @@
 package go3d
 
-class Game(val size: Int) extends GoGame:
+def newGame(size: Int): Game =
+  Game(size, scala.collection.mutable.Map[Int, List[Move]]())
+
+class Game(val size: Int, val captures: scala.collection.mutable.Map[Int, List[Move]]) extends GoGame:
   var goban = newGoban(size)
   var moves: Array[Move | Pass] = Array()
-  val captures = scala.collection.mutable.Map[Int, List[Move]]()
 
   def captures(color: Color): Int =
     captures.values.filter(_(0).color == color).flatten.size
@@ -51,19 +53,14 @@ class Game(val size: Int) extends GoGame:
   def possibleMoves(color: Color): List[Position] =
     var moves = List[Position]()
     if !isDifferentPlayer(color) then return moves
-    for
-      x <- 1 to size
-      y <- 1 to size
-      z <- 1 to size
-      if at(x, y, z) == Color.Empty
-    do
+    for emptyPos <- goban.emptyPositions do
       try
-        if !goban.hasEmptyNeighbor(Position(x, y, z)) then checkValid(Move(x, y, z, color))
-        moves = moves.appended(Position(x, y, z))
+        if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))
+        moves = moves.appended(emptyPos)
       catch
         case e: IllegalMove =>
     moves
-  
+
   private def gameOver(pass: Pass): Boolean =
     moves.nonEmpty && moves.last.isInstanceOf[Pass]
 

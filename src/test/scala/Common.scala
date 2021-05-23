@@ -13,7 +13,7 @@ val CaptureMoves =
     Move(1, 2, 1, Color.Black) :: Nil
 
 def playListOfMoves(boardSize: Int, moves: List[Move | Pass], verbose: Boolean = false): Game =
-  var game = Game(boardSize)
+  var game = newGame(boardSize)
   for move <- moves do
     game = game.makeMove(move)
     if verbose then println(move.toString+"\n"+game)

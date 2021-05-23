@@ -17,12 +17,8 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
   def -(other: Goban): IndexedSeq[Move] =
     if size != other.size then throw IllegalArgumentException(s"sizes ${size} != ${other.size}")
-    for (
-      x <- 1 to size;
-      y <- 1 to size;
-      z <- 1 to size
-      if other.at(x, y, z) == Color.Empty && at(x, y, z) != Color.Empty
-    ) yield Move(x, y, z, at(x, y, z))
+    for (pos <- other.emptyPositions.toIndexedSeq if at(pos) != Color.Empty)
+      yield Move(pos, at(pos))
 
   def checkValid(move: Move): Unit =
     if move.x > size || move.y > size || move.z > size then throw OutsideBoard(move.x, move.y, move.z)
@@ -35,7 +31,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     val newStones = deepCopy(stones)
     newStones(x)(y)(z) = color
     return Goban(size, newStones)
-  
+
   def hasLiberties(move: Move): Boolean =
     if !Set(Color.Black, Color.White).contains(move.color) then
       throw ColorMismatch(s"trying to find liberties for $move - not a stone but", move.color)
@@ -70,6 +66,12 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       y <- position.y-1 to position.y+1;
       z <- position.z-1 to position.z+1
       if isNeighbor(position, x, y, z)
+    ) yield Position(x, y, z)
+
+  def emptyPositions: Seq[Position] =
+    for (
+      x <- 1 to size; y <- 1 to size; z <- 1 to size
+      if at(x, y, z) == Color.Empty
     ) yield Position(x, y, z)
 
   def hasEmptyNeighbor(position: Position): Boolean =

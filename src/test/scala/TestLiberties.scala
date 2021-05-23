@@ -6,24 +6,24 @@ import org.junit.{Assert, Ignore, Test}
 class TestLiberties:
 
   @Test def testLibertiesFailIfWrongColor(): Unit =
-    var game = Game(TestSize)
+    var game = newGame(TestSize)
     game = game.makeMove(Move(2, 2, 2, Color.Black))
     assertThrowsIllegalArgument({game.hasLiberties(Move(2, 2, 2, Color.Empty))})
     assertThrowsIllegalArgument({game.hasLiberties(Move(2, 2, 2, Color.Sentinel))})
 
   @Test def testLibertiesOneStone(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     game.goban.stones(2)(2)(2) = Color.Black
     Assert.assertTrue(game.hasLiberties(Move(2, 2, 2, Color.Black)))
 
   @Test def testLibertiesTwoDifferentStones(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     game.goban.stones(2)(2)(2) = Color.Black
     game.goban.stones(2)(2)(1) = Color.White
     Assert.assertTrue(game.hasLiberties(Move(2, 2, 2, Color.Black)))
 
   @Test def testLibertiesInCenter(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     game.goban.stones(2)(2)(2) = Color.Black
     Assert.assertTrue(game.hasLiberties(Move(2, 2, 2, Color.Black)))
     game.goban.stones(2)(2)(1) = Color.White
@@ -40,7 +40,7 @@ class TestLiberties:
     Assert.assertFalse("\n"+game.toString, game.hasLiberties(Move(2, 2, 2, Color.Black)))
 
   @Test def testLibertiesOnFace(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     game.goban.stones(2)(2)(1) = Color.Black
     Assert.assertTrue(game.hasLiberties(Move(2, 2, 1, Color.Black)))
     game.goban.stones(2)(2)(2) = Color.White
@@ -55,7 +55,7 @@ class TestLiberties:
     Assert.assertFalse("\n"+game.toString, game.hasLiberties(Move(2, 2, 1, Color.Black)))
 
   @Test def testLibertiesOnEdge(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     game.goban.stones(2)(1)(1) = Color.Black
     Assert.assertTrue(game.hasLiberties(Move(2, 1, 1, Color.Black)))
     game.goban.stones(1)(1)(1) = Color.White
@@ -68,7 +68,7 @@ class TestLiberties:
     Assert.assertFalse("\n"+game.toString, game.hasLiberties(Move(2, 1, 1, Color.Black)))
 
   @Test def testLibertiesInCorner(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     game.goban.stones(1)(1)(1) = Color.Black
     Assert.assertTrue(game.hasLiberties(Move(1, 1, 1, Color.Black)))
     game.goban.stones(2)(1)(1) = Color.White
@@ -79,14 +79,14 @@ class TestLiberties:
     Assert.assertFalse("\n"+game.toString, game.hasLiberties(Move(1, 1, 1, Color.Black)))
 
   @Test def testLibertiesWithNeighbor(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     setListOfStones(game, (2, 1, 1) :: (2, 1, 2) :: Nil, Color.Black)
     setListOfStones(game, (1, 1, 1) :: (3, 1, 1) :: (2, 2, 1) :: Nil, Color.White)
     Assert.assertTrue(game.hasLiberties(Move(2, 1, 1, Color.Black)))
     Assert.assertTrue(game.hasLiberties(Move(2, 1, 2, Color.Black)))
 
   @Test def testLibertiesWithNeighborCaptured(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     setListOfStones(game, (2, 1, 1) :: (2, 1, 2) :: Nil, Color.Black)
     setListOfStones(
       game,
@@ -101,7 +101,7 @@ class TestLiberties:
     Assert.assertFalse("\n"+game.toString, game.hasLiberties(Move(2, 1, 2, Color.Black)))
 
   @Test def testLargerAreaCaptured(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     setListOfStones(game, (2, 1, 1) :: (2, 1, 2) :: (2, 1, 3) :: Nil, Color.Black)
     setListOfStones(
       game,
@@ -119,7 +119,7 @@ class TestLiberties:
     Assert.assertFalse("\n"+game.toString, game.hasLiberties(Move(2, 1, 3, Color.Black)))
 
   @Test def testOneEye(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     // a minimal eye in the (1, 1, 1) corner
     setListOfStones(
       game,

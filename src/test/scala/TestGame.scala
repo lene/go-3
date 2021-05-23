@@ -6,26 +6,26 @@ import org.junit.{Assert, Ignore, Test}
 class TestGame:
 
   @Test def testGameCtorBasic(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     Assert.assertEquals(TestSize, game.size)
 
   @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     Assert.assertEquals(Math.pow(TestSize, 3).toInt, game.toString.count(_ == ' '))
 
   @Test def testEmptyBoardToStringSentinels(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     Assert.assertEquals(
       2*(TestSize+2)*TestSize + 2*TestSize*TestSize,
       game.toString.count(_ == '·')
     )
 
   @Test def testEmptyBoardToStringNewlines(): Unit =
-    val game = Game(TestSize)
+    val game = newGame(TestSize)
     Assert.assertEquals(TestSize+2, game.toString.count(_ == '\n'))
 
   @Test def testEmptyBoardAt(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     for x <- 1 to TestSize
       y <- 1 to TestSize
       z <- 1 to TestSize
@@ -33,42 +33,42 @@ class TestGame:
       Assert.assertEquals(Color.Empty, empty.at(Position(x, y, z)))
 
   @Test def testSetStone(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     val newBoard = empty.makeMove(Move(2, 2, 2, Color.Black))
     Assert.assertEquals("\n"+newBoard.toString, newBoard.at(Position(2, 2, 2)), Color.Black)
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     val newBoard = empty.makeMove(Move(2, 2, 2, Color.Black))
     assertThrowsIllegalMove({empty.makeMove(Move(2, 2, 2, Color.White))})
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     assertThrowsIllegalMove({empty.makeMove(Move(TestSize+1, 2, 2, Color.White))})
     assertThrowsIllegalMove({empty.makeMove(Move(2, TestSize+1, 2, Color.White))})
     assertThrowsIllegalMove({empty.makeMove(Move(2, 2, TestSize+1, Color.White))})
 
   @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
     val secondMove = firstMove.makeMove(Move(2, 2, 1, Color.White))
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.White)
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
     assertThrowsIllegalMove({firstMove.makeMove(Move(2, 2, 1, Color.Black))})
 
   @Test def testSetAndPassSucceeds(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
     val secondMove = firstMove.makeMove(Pass(Color.White))
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.Empty)
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     val firstMove = empty.makeMove(Pass(Color.Black))
     assertThrowsGameOver({firstMove.makeMove(Pass(Color.White))})
 
@@ -275,11 +275,11 @@ class TestGame:
     assertThrowsIllegalMove({game.checkValid(Move(2, 2, 3, Color.Black))})
 
   @Test def testPossibleMovesEmptyBoard(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGame(TestSize)
     Assert.assertEquals(TestSize*TestSize*TestSize, empty.possibleMoves(Color.Black).length)
 
   @Test def testPossibleMovesAfterOneMove(): Unit =
-    val board = Game(TestSize).makeMove(Move(1, 1, 1, Color.Black))
+    val board = newGame(TestSize).makeMove(Move(1, 1, 1, Color.Black))
     Assert.assertEquals(TestSize*TestSize*TestSize-1, board.possibleMoves(Color.White).length)
     Assert.assertEquals(0, board.possibleMoves(Color.Black).length)
 
