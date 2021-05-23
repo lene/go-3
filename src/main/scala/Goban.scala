@@ -20,6 +20,16 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     for (pos <- other.emptyPositions.toIndexedSeq if at(pos) != Color.Empty)
       yield Move(pos, at(pos))
 
+  override def toString: String =
+    var out = ""
+    for y <- 0 to size + 1 do
+      for z <- 1 to size do
+        for x <- 0 to size + 1 do
+          out += at(x, y, z)
+        if z < size then out += "|"
+      out += "\n"
+    out
+
   def checkValid(move: Move): Unit =
     if move.x > size || move.y > size || move.z > size then throw OutsideBoard(move.x, move.y, move.z)
     if at(move.position) != Color.Empty then throw PositionOccupied(move, at(move.position))

@@ -1,11 +1,11 @@
 package go3d
 
-def newGame(size: Int): Game =
-  Game(size, scala.collection.mutable.Map[Int, List[Move]]())
+import scala.collection.mutable
 
-class Game(val size: Int, val captures: scala.collection.mutable.Map[Int, List[Move]]) extends GoGame:
-  var goban = newGoban(size)
-  var moves: Array[Move | Pass] = Array()
+def newGame(size: Int): Game =
+  Game(size, newGoban(size), Array(), mutable.Map[Int, List[Move]]())
+
+class Game(val size: Int, var goban: Goban, var moves: Array[Move | Pass], val captures: mutable.Map[Int, List[Move]]) extends GoGame:
 
   def captures(color: Color): Int =
     captures.values.filter(_(0).color == color).flatten.size
@@ -15,18 +15,18 @@ class Game(val size: Int, val captures: scala.collection.mutable.Map[Int, List[M
   def at(x: Int, y: Int, z: Int): Color = at(Position(x, y, z))
 
   def makeMove(move: Move | Pass): Game =
-    val newboard = this
     move match
-      case p: Pass => if gameOver(p) then throw GameOver(this)
+      case p: Pass =>
+        if gameOver(p) then throw GameOver(this)
+        return Game(size, goban, moves.appended(move), captures)
       case m: Move =>
         checkValid(m)
-        newboard.setStone(m)
-    newboard.moves = moves.appended(move)
-    return newboard
+        val newboard = setStone(m)
+        return Game(size, newboard.goban, moves.appended(move), newboard.captures)
 
   def checkValid(move: Move): Unit =
-    goban.checkValid(move)
     if !isDifferentPlayer(move.color) then throw WrongTurn(move)
+    goban.checkValid(move)
     if isKo(move) then throw Ko(move)
 
   override def toString: String =
@@ -41,25 +41,22 @@ class Game(val size: Int, val captures: scala.collection.mutable.Map[Int, List[M
       out += "\n"
     out
 
-  def setStone(move: Move): Game =
-    goban = goban.setStone(move)
-    checkArea(move)
-    return this
+  def setStone(move: Move): Game = doCaptures(move, goban.setStone(move))
 
   def hasLiberties(move: Move): Boolean = goban.hasLiberties(move)
 
   def connectedStones(move: Move): List[Move] = goban.connectedStones(move)
 
   def possibleMoves(color: Color): List[Position] =
-    var moves = List[Position]()
-    if !isDifferentPlayer(color) then return moves
-    for emptyPos <- goban.emptyPositions do
-      try
-        if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))
-        moves = moves.appended(emptyPos)
-      catch
-        case e: IllegalMove =>
-    moves
+    if !isDifferentPlayer(color) then return List()
+    return goban.emptyPositions.toList.filter(isPossibleMove(_, color))
+
+  private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
+    try
+      if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))
+    catch
+      case e: IllegalMove => return false
+    return true
 
   private def gameOver(pass: Pass): Boolean =
     moves.nonEmpty && moves.last.isInstanceOf[Pass]
@@ -70,14 +67,13 @@ class Game(val size: Int, val captures: scala.collection.mutable.Map[Int, List[M
   private def isKo(move: Move): Boolean =
     captures.nonEmpty && lastCapture.length == 1 && lastCapture(0) == move
 
-  private def checkArea(move: Move): Unit =
-    for position <- goban.neighbors(move.position) do
-      val capturedStones = checkAndClear(Move(position, move.color))
-      if capturedStones.nonEmpty then
-        if captures.contains(moves.length) then captures(moves.length) :::= capturedStones
-        else captures(moves.length) = capturedStones
+  private def doCaptures(move: Move, board: Goban): Game =
+    val newBoard = captureNeighbors(board, board.neighbors(move.position), move.color)
+    val capturedStones = (board-newBoard).toList
+    if capturedStones.nonEmpty then captures(moves.length) = capturedStones
+    return Game(size, newBoard, moves, captures)
 
-  private def checkAndClear(move: Move): List[Move] =
-    val old_goban = goban.clone()
-    goban = goban.checkAndClear(move)
-    return (old_goban-goban).toList
+  private def captureNeighbors(board: Goban, neighbors: Seq[Position], color: Color): Goban =
+    if neighbors.isEmpty then return board
+    val newBoard = board.checkAndClear(Move(neighbors.last, color))
+    return captureNeighbors(newBoard, neighbors.dropRight(1), color)

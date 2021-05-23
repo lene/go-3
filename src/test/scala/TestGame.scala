@@ -33,14 +33,12 @@ class TestGame:
       Assert.assertEquals(Color.Empty, empty.at(Position(x, y, z)))
 
   @Test def testSetStone(): Unit =
-    val empty = newGame(TestSize)
-    val newBoard = empty.makeMove(Move(2, 2, 2, Color.Black))
-    Assert.assertEquals("\n"+newBoard.toString, newBoard.at(Position(2, 2, 2)), Color.Black)
+    val board = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
+    Assert.assertEquals("\n"+board.toString, board.at(Position(2, 2, 2)), Color.Black)
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
-    val empty = newGame(TestSize)
-    val newBoard = empty.makeMove(Move(2, 2, 2, Color.Black))
-    assertThrowsIllegalMove({empty.makeMove(Move(2, 2, 2, Color.White))})
+    val board = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
+    assertThrowsIllegalMove({board.makeMove(Move(2, 2, 2, Color.White))})
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = newGame(TestSize)
@@ -49,27 +47,23 @@ class TestGame:
     assertThrowsIllegalMove({empty.makeMove(Move(2, 2, TestSize+1, Color.White))})
 
   @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
-    val empty = newGame(TestSize)
-    val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
+    val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
     val secondMove = firstMove.makeMove(Move(2, 2, 1, Color.White))
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.White)
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
-    val empty = newGame(TestSize)
-    val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
+    val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
     assertThrowsIllegalMove({firstMove.makeMove(Move(2, 2, 1, Color.Black))})
 
   @Test def testSetAndPassSucceeds(): Unit =
-    val empty = newGame(TestSize)
-    val firstMove = empty.makeMove(Move(2, 2, 2, Color.Black))
+    val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
     val secondMove = firstMove.makeMove(Pass(Color.White))
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 2)), Color.Black)
     Assert.assertEquals("\n"+secondMove.toString, secondMove.at(Position(2, 2, 1)), Color.Empty)
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
-    val empty = newGame(TestSize)
-    val firstMove = empty.makeMove(Pass(Color.Black))
+    val firstMove = newGame(TestSize).makeMove(Pass(Color.Black))
     assertThrowsGameOver({firstMove.makeMove(Pass(Color.White))})
 
   @Test def testPlayListOfMoves(): Unit =
@@ -300,5 +294,3 @@ class TestGame:
     val game = playListOfMoves(5, moves)
     Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Color.Black).length)
     Assert.assertFalse(game.possibleMoves(Color.Black).contains(Move(2, 2, 3, Color.Black)))
-
-
