@@ -11,7 +11,7 @@ class TestGame:
 
   @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
     val game = newGame(TestSize)
-    Assert.assertEquals(Math.pow(TestSize, 3).toInt, game.toString.count(_ == ' '))
+    Assert.assertEquals(Math.pow(TestSize, 3).toInt+2, game.toString.count(_ == ' '))
 
   @Test def testEmptyBoardToStringSentinels(): Unit =
     val game = newGame(TestSize)
@@ -26,11 +26,8 @@ class TestGame:
 
   @Test def testEmptyBoardAt(): Unit =
     val empty = newGame(TestSize)
-    for x <- 1 to TestSize
-      y <- 1 to TestSize
-      z <- 1 to TestSize
-    do
-      Assert.assertEquals(Color.Empty, empty.at(Position(x, y, z)))
+    for p <- empty.goban.allPositions do
+      Assert.assertEquals(Color.Empty, empty.at(p))
 
   @Test def testSetStone(): Unit =
     val board = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
@@ -114,13 +111,9 @@ class TestGame:
     val moves = List(Move(1, 1, 1, Color.Black))
     val game = playListOfMoves(TestSize, moves)
     Assert.assertEquals(Color.Black, game.at(Position(1, 1, 1)))
-    for
-      x <- 1 to 3
-      y <- 1 to 3
-      z <- 1 to 3
-      if (x, y, z) != (1, 1, 1)
+    for p <- game.goban.allPositions if p != Position(1, 1, 1)
     do
-      Assert.assertEquals(Color.Empty, game.at(Position(x, y, z)))
+      Assert.assertEquals(Color.Empty, game.at(p))
 
   @Test def testConnectedStoneTwoUnconnectedStones(): Unit =
     val moves = List[Move | Pass](

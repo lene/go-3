@@ -79,10 +79,10 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     ) yield Position(x, y, z)
 
   def emptyPositions: Seq[Position] =
-    for (
-      x <- 1 to size; y <- 1 to size; z <- 1 to size
-      if at(x, y, z) == Color.Empty
-    ) yield Position(x, y, z)
+    for (p <- allPositions if at(p) == Color.Empty) yield p
+
+  def allPositions: Seq[Position] =
+    for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield Position(x, y, z)
 
   def hasEmptyNeighbor(position: Position): Boolean =
     for position <- neighbors(position) do if at(position) == Color.Empty then return true

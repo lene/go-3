@@ -40,11 +40,7 @@ class TestGoban:
 
   @Test def testEmptyBoardAt(): Unit =
     val empty = newGoban(TestSize)
-    for x <- 1 to TestSize
-      y <- 1 to TestSize
-      z <- 1 to TestSize
-    do
-      Assert.assertEquals(Color.Empty, empty.at(Position(x, y, z)))
+    for p <- empty.allPositions do Assert.assertEquals(Color.Empty, empty.at(p))
 
   @Test def testAtWithIntsOnBorder(): Unit =
     val empty = newGoban(TestSize)
