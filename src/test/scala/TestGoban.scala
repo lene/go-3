@@ -30,13 +30,13 @@ class TestGoban:
         for z <- 1 to TestSize do Assert.assertEquals(Color.Empty, goban.stones(x)(y)(z))
 
   @Test def testBoardSizeTooSmall(): Unit =
-    assertThrowsIllegalArgument({newGoban(1)})
+    assertThrows[IllegalArgumentException]({newGoban(1)})
 
   @Test def testBoardSizeTooBig(): Unit =
-    assertThrowsIllegalArgument({newGoban(MaxBoardSize+2)})
+    assertThrows[IllegalArgumentException]({newGoban(MaxBoardSize+2)})
 
   @Test def testBoardSizeEven(): Unit =
-    assertThrowsIllegalArgument({newGoban(4)})
+    assertThrows[IllegalArgumentException]({newGoban(4)})
 
   @Test def testEmptyBoardAt(): Unit =
     val empty = newGoban(TestSize)
@@ -56,7 +56,7 @@ class TestGoban:
 
   @Test def testSetStoneWithMoveOutsideBoard(): Unit =
     val empty = newGoban(TestSize)
-    assertThrowsIllegalArgument(
+    assertThrows[IllegalArgumentException](
       {empty.setStone(Move(TestSize+2, TestSize+2, TestSize+2, Color.Black))}
     )
 
@@ -70,19 +70,19 @@ class TestGoban:
 
   @Test def testSetStoneWithIntsOutsideBoard(): Unit =
     val empty = newGoban(TestSize)
-    assertThrowsIllegalArgument(
+    assertThrows[IllegalArgumentException](
       {empty.setStone(TestSize+2, TestSize+2, TestSize+2, Color.Black)}
     )
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val board = newGoban(TestSize).setStone(Move(2, 2, 2, Color.Black))
-    assertThrowsIllegalMove({board.checkValid(Move(2, 2, 2, Color.White))})
+    assertThrows[PositionOccupied]({board.checkValid(Move(2, 2, 2, Color.White))})
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = newGoban(TestSize)
-    assertThrowsIllegalArgument({empty.checkValid(Move(TestSize+1, 2, 2, Color.White))})
-    assertThrowsIllegalArgument({empty.checkValid(Move(2, TestSize+1, 2, Color.White))})
-    assertThrowsIllegalArgument({empty.checkValid(Move(2, 2, TestSize+1, Color.White))})
+    assertThrows[IllegalArgumentException]({empty.checkValid(Move(TestSize+1, 2, 2, Color.White))})
+    assertThrows[IllegalArgumentException]({empty.checkValid(Move(2, TestSize+1, 2, Color.White))})
+    assertThrows[IllegalArgumentException]({empty.checkValid(Move(2, 2, TestSize+1, Color.White))})
 
   @Test def testDeepCopy2D(): Unit =
     val original = Array(Array(1, 2), Array(3,4))

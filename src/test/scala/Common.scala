@@ -3,6 +3,8 @@ package go3d.testing
 import go3d._
 import org.junit.Assert
 
+import scala.reflect.ClassTag
+
 val TestSize = MinBoardSize
 
 val CaptureMoves =
@@ -25,24 +27,10 @@ def checkStonesOnBoard(game: Game, moves: List[Move | Pass]): Unit =
       case p: Pass =>
       case m: Move => Assert.assertEquals(game.at(m.position), m.color)
 
-def assertThrowsIllegalArgument(f: => Unit): Unit =
+def assertThrows[E](f: => Unit)(implicit eType:ClassTag[E]): Unit = {
   try f
   catch
-    case e: IllegalArgumentException => return
-    case e: _ => Assert.fail("Expected IllegalArgumentException, got "+e.getClass)
-  Assert.fail("Expected IllegalArgumentException")
-
-def assertThrowsIllegalMove(f: => Unit): Unit =
-  try f
-  catch
-    case e: IllegalMove => return
-    case e: _ => Assert.fail("Expected IllegalMove, got "+e.getClass)
-  Assert.fail("Expected IllegalMove")
-
-def assertThrowsGameOver(f: => Unit): Unit =
-  try f
-  catch
-    case e: GameOver => return
-    case e: _ => Assert.fail("Expected GameOver, got "+e.getClass)
-  Assert.fail("Expected GameOver")
-
+    case e: E => return
+    case e: _ => Assert.fail(s"Expected ${eType.runtimeClass.getName} got ${e.getClass}")
+  Assert.fail(s"Expected ${eType.runtimeClass.getName}")
+}

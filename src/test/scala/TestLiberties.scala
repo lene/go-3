@@ -8,8 +8,8 @@ class TestLiberties:
   @Test def testLibertiesFailIfWrongColor(): Unit =
     var game = newGame(TestSize)
     game = game.makeMove(Move(2, 2, 2, Color.Black))
-    assertThrowsIllegalArgument({game.hasLiberties(Move(2, 2, 2, Color.Empty))})
-    assertThrowsIllegalArgument({game.hasLiberties(Move(2, 2, 2, Color.Sentinel))})
+    assertThrows[IllegalArgumentException]({game.hasLiberties(Move(2, 2, 2, Color.Empty))})
+    assertThrows[IllegalArgumentException]({game.hasLiberties(Move(2, 2, 2, Color.Sentinel))})
 
   @Test def testLibertiesOneStone(): Unit =
     val game = newGame(TestSize)
