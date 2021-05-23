@@ -14,7 +14,7 @@ def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int, verbose: Boo
 
 def randomGame(size: Int): Unit =
   val random = new Random
-  var game = Game(size)
+  var game = newGame(size)
   var color = Color.Black
   while !game.possibleMoves(color).isEmpty && game.moves.length <= size*size*size do
     val move = Move(game.possibleMoves(color)(random.nextInt(game.possibleMoves(color).length)), color)

@@ -5,7 +5,7 @@ import org.junit.{Assert, Test}
 
 class TestNeighbors:
   @Test def testNeighborsCornerEmpty(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val cornerNeighbors = empty.neighbors(Position(1, 1, 1))
     Assert.assertEquals(cornerNeighbors.toString, 3, cornerNeighbors.length)
     Assert.assertTrue(cornerNeighbors.contains(Position(1, 1, 2)))
@@ -13,7 +13,7 @@ class TestNeighbors:
     Assert.assertTrue(cornerNeighbors.contains(Position(2, 1, 1)))
 
   @Test def testNeighborsEdgeEmpty(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val edgeNeighbors = empty.neighbors(Position(1, 1, 2))
     Assert.assertEquals(edgeNeighbors.toString, 4, edgeNeighbors.length)
     Assert.assertTrue(edgeNeighbors.contains(Position(1, 1, 1)))
@@ -22,7 +22,7 @@ class TestNeighbors:
     Assert.assertTrue(edgeNeighbors.contains(Position(2, 1, 2)))
 
   @Test def testNeighborsFaceEmpty(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val faceNeighbors = empty.neighbors(Position(1, 2, 2))
     Assert.assertEquals(faceNeighbors.toString, 5, faceNeighbors.length)
     Assert.assertTrue(faceNeighbors.contains(Position(1, 2, 1)))
@@ -32,7 +32,7 @@ class TestNeighbors:
     Assert.assertTrue(faceNeighbors.contains(Position(2, 2, 2)))
 
   @Test def testNeighborsInteriorEmpty(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val interiorNeighbors = empty.neighbors(Position(2, 2, 2))
     Assert.assertEquals(interiorNeighbors.toString, 6, interiorNeighbors.length)
     Assert.assertTrue(interiorNeighbors.contains(Position(2, 2, 1)))
@@ -43,7 +43,7 @@ class TestNeighbors:
     Assert.assertTrue(interiorNeighbors.contains(Position(3, 2, 2)))
 
   @Test def testNeighborsCorner(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val cornerNeighbors = empty.neighbors(Position(1, 1, 1))
     Assert.assertEquals(cornerNeighbors.toString, 3, cornerNeighbors.length)
     Assert.assertTrue(cornerNeighbors.contains(Position(1, 1, 2)))
@@ -51,7 +51,7 @@ class TestNeighbors:
     Assert.assertTrue(cornerNeighbors.contains(Position(2, 1, 1)))
 
   @Test def testNeighborsEdge(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val edgeNeighbors = empty.neighbors(Position(1, 1, 2))
     Assert.assertEquals(edgeNeighbors.toString, 4, edgeNeighbors.length)
     Assert.assertTrue(edgeNeighbors.contains(Position(1, 1, 1)))
@@ -60,7 +60,7 @@ class TestNeighbors:
     Assert.assertTrue(edgeNeighbors.contains(Position(2, 1, 2)))
 
   @Test def testNeighborsFace(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val faceNeighbors = empty.neighbors(Position(1, 2, 2))
     Assert.assertEquals(faceNeighbors.toString, 5, faceNeighbors.length)
     Assert.assertTrue(faceNeighbors.contains(Position(1, 2, 1)))
@@ -70,7 +70,7 @@ class TestNeighbors:
     Assert.assertTrue(faceNeighbors.contains(Position(2, 2, 2)))
 
   @Test def testNeighborsInterior(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val interiorNeighbors = empty.neighbors(Position(2, 2, 2))
     Assert.assertEquals(interiorNeighbors.toString, 6, interiorNeighbors.length)
     Assert.assertTrue(interiorNeighbors.contains(Position(2, 2, 1)))
@@ -81,7 +81,7 @@ class TestNeighbors:
     Assert.assertTrue(interiorNeighbors.contains(Position(3, 2, 2)))
 
   @Test def testNeighborsOuterCorner(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val cornerNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize))
     Assert.assertEquals(cornerNeighbors.toString, 3, cornerNeighbors.length)
     Assert.assertTrue(cornerNeighbors.contains(Position(TestSize, TestSize, TestSize-1)))
@@ -89,7 +89,7 @@ class TestNeighbors:
     Assert.assertTrue(cornerNeighbors.contains(Position(TestSize-1, TestSize, TestSize)))
 
   @Test def testNeighborsOuterEdge(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val edgeNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize-1))
     Assert.assertEquals(edgeNeighbors.toString, 4, edgeNeighbors.length)
     Assert.assertTrue(edgeNeighbors.contains(Position(TestSize, TestSize, TestSize)))
@@ -98,7 +98,7 @@ class TestNeighbors:
     Assert.assertTrue(edgeNeighbors.contains(Position(TestSize-1, TestSize, TestSize-1)))
 
   @Test def testNeighborsOuterFace(): Unit =
-    val empty = Game(TestSize)
+    val empty = newGoban(TestSize)
     val faceNeighbors = empty.neighbors(Position(TestSize, TestSize-1, TestSize-1))
     Assert.assertEquals(faceNeighbors.toString, 5, faceNeighbors.length)
     Assert.assertTrue(faceNeighbors.contains(Position(TestSize, TestSize-1, TestSize)))
