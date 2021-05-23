@@ -1,6 +1,6 @@
 package go3d
 
-class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
+class Game(val size: Int) extends GoGame:
   var goban = newGoban(size)
   var moves: Array[Move | Pass] = Array()
   val captures = scala.collection.mutable.Map[Int, List[Move]]()
@@ -14,7 +14,6 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
 
   def makeMove(move: Move | Pass): Game =
     val newboard = this
-    if verbose then println(move)
     move match
       case p: Pass => if gameOver(p) then throw GameOver(this)
       case m: Move =>
@@ -64,9 +63,7 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
       catch
         case e: IllegalMove =>
     moves
-
-  def neighbors(position: Position): Seq[Position] = goban.neighbors(position)
-
+  
   private def gameOver(pass: Pass): Boolean =
     moves.nonEmpty && moves.last.isInstanceOf[Pass]
 
@@ -77,7 +74,7 @@ class Game(val size: Int, val verbose: Boolean = false) extends GoGame:
     captures.nonEmpty && lastCapture.length == 1 && lastCapture(0) == move
 
   private def checkArea(move: Move): Unit =
-    for position <- neighbors(move.position) do
+    for position <- goban.neighbors(move.position) do
       val capturedStones = checkAndClear(Move(position, move.color))
       if capturedStones.nonEmpty then
         if captures.contains(moves.length) then captures(moves.length) :::= capturedStones

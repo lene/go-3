@@ -86,7 +86,7 @@ class TestLiberties:
     Assert.assertTrue(game.hasLiberties(Move(2, 1, 2, Color.Black)))
 
   @Test def testLibertiesWithNeighborCaptured(): Unit =
-    val game = Game(TestSize, verbose = true)
+    val game = Game(TestSize)
     setListOfStones(game, (2, 1, 1) :: (2, 1, 2) :: Nil, Color.Black)
     setListOfStones(
       game,
@@ -101,7 +101,7 @@ class TestLiberties:
     Assert.assertFalse("\n"+game.toString, game.hasLiberties(Move(2, 1, 2, Color.Black)))
 
   @Test def testLargerAreaCaptured(): Unit =
-    val game = Game(TestSize, verbose = true)
+    val game = Game(TestSize)
     setListOfStones(game, (2, 1, 1) :: (2, 1, 2) :: (2, 1, 3) :: Nil, Color.Black)
     setListOfStones(
       game,
@@ -119,7 +119,7 @@ class TestLiberties:
     Assert.assertFalse("\n"+game.toString, game.hasLiberties(Move(2, 1, 3, Color.Black)))
 
   @Test def testOneEye(): Unit =
-    val game = Game(TestSize, verbose = true)
+    val game = Game(TestSize)
     // a minimal eye in the (1, 1, 1) corner
     setListOfStones(
       game,
