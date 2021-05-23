@@ -88,3 +88,6 @@ CheckRunTime:UseSbtDocker:
     - /usr/bin/time -f %U -o runtime.log sbt "run $TEST_RUN_BOARD_SIZE"
     - echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
     - if [ $(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l) -eq 1 ]; then exit 1; fi
+  artifacts:
+    paths:
+      - runtime.log
