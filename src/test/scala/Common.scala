@@ -1,6 +1,7 @@
 package go3d.testing
 
 import go3d._
+import go3d.Color.{Black, White}
 import org.junit.Assert
 
 import scala.reflect.ClassTag
@@ -8,11 +9,9 @@ import scala.reflect.ClassTag
 val TestSize = MinBoardSize
 
 val CaptureMoves =
-  Move(2, 2, 2, Color.Black) :: Move(2, 2, 1, Color.White) ::
-    Move(2, 1, 1, Color.Black) :: Move(2, 2, 3, Color.White) ::
-    Move(2, 3, 1, Color.Black) :: Move(2, 1, 2, Color.White) ::
-    Move(3, 2, 1, Color.Black) :: Move(2, 3, 2, Color.White) ::
-    Move(1, 2, 1, Color.Black) :: Nil
+  Move(2, 2, 2, Black) :: Move(2, 2, 1, White) :: Move(2, 1, 1, Black) :: Move(2, 2, 3, White) ::
+    Move(2, 3, 1, Black) :: Move(2, 1, 2, White) :: Move(3, 2, 1, Black) :: Move(2, 3, 2, White) ::
+    Move(1, 2, 1, Black) :: Nil
 
 def playListOfMoves(boardSize: Int, moves: List[Move | Pass], verbose: Boolean = false): Game =
   var game = newGame(boardSize)

@@ -1,6 +1,7 @@
 package go3d.testing
 
 import go3d._
+import go3d.Color.{Black, White}
 import org.junit.{Assert, Test}
 
 class TestMove:
@@ -10,8 +11,8 @@ class TestMove:
       y <- 1 to TestSize
       z <- 1 to TestSize
     do
-      Move(Position(x, y, z), Color.Black)
-      Move(Position(x, y, z), Color.White)
+      Move(Position(x, y, z), Black)
+      Move(Position(x, y, z), White)
 
   @Test def testOverloadedConstructor(): Unit =
     for
@@ -19,29 +20,29 @@ class TestMove:
       y <- 1 to TestSize
       z <- 1 to TestSize
     do
-      Move(x, y, z, Color.Black)
-      Move(x, y, z, Color.White)
+      Move(x, y, z, Black)
+      Move(x, y, z, White)
 
   @Test def testEqual(): Unit =
-    Assert.assertTrue(Move(1, 1, 1, Color.Black) == Move(1, 1, 1, Color.Black))
-    Assert.assertTrue(Move(1, 1, 1, Color.White) == Move(1, 1, 1, Color.White))
+    Assert.assertTrue(Move(1, 1, 1, Black) == Move(1, 1, 1, Black))
+    Assert.assertTrue(Move(1, 1, 1, White) == Move(1, 1, 1, White))
 
   @Test def testNotEqual(): Unit =
-    Assert.assertFalse(Move(1, 1, 1, Color.Black) == Move(1, 1, 1, Color.White))
-    Assert.assertFalse(Move(1, 1, 1, Color.White) == Move(1, 1, 2, Color.White))
+    Assert.assertFalse(Move(1, 1, 1, Black) == Move(1, 1, 1, White))
+    Assert.assertFalse(Move(1, 1, 1, White) == Move(1, 1, 2, White))
 
   @Test def testPassNeverEqual(): Unit =
-    Assert.assertFalse(Move(1, 1, 1, Color.Black) == Pass(Color.Black))
-    Assert.assertFalse(Pass(Color.Black) == Pass(Color.Black))
-    Assert.assertFalse(Pass(Color.Black) == Pass(Color.White))
+    Assert.assertFalse(Move(1, 1, 1, Black) == Pass(Black))
+    Assert.assertFalse(Pass(Black) == Pass(Black))
+    Assert.assertFalse(Pass(Black) == Pass(White))
 
   @Test def testFilterList(): Unit =
-    val list = List(Move(1, 1, 1, Color.Black), Move(1, 1, 1, Color.White))
-    val filtered = list.filterNot(move => move == Move(1, 1, 1, Color.White))
-    Assert.assertTrue(List(Move(1, 1, 1, Color.Black)) == filtered)
+    val list = List(Move(1, 1, 1, Black), Move(1, 1, 1, White))
+    val filtered = list.filterNot(move => move == Move(1, 1, 1, White))
+    Assert.assertTrue(List(Move(1, 1, 1, Black)) == filtered)
 
   @Test def testShortcuts(): Unit =
-    val move = Move(1, 2, 3, Color.Black)
+    val move = Move(1, 2, 3, Black)
     Assert.assertEquals(1, move.x)
     Assert.assertEquals(2, move.y)
     Assert.assertEquals(3, move.z)
