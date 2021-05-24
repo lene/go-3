@@ -98,8 +98,7 @@ class TestGame:
 
   @Test def testTwoNonConsecutivePasses(): Unit =
     val moves = List[Move | Pass](
-      Move(1, 1, 1, Black), Pass(White),
-      Move(3, 1, 1, Black), Pass(White)
+      Move(1, 1, 1, Black), Pass(White), Move(3, 1, 1, Black), Pass(White)
     )
     val game = playListOfMoves(TestSize, moves)
 
@@ -146,16 +145,15 @@ class TestGame:
     Assert.assertEquals(5, game.connectedStones(Move(1, 1, 2, Black)).length)
 
   @Test def testCaptureStoneWithNeighbors(): Unit =
-    val moves = List[Move | Pass](
-      Move(1, 1, 1, Black), Move(2, 1, 1, White),
-      Move(3, 1, 1, Black), Move(2, 1, 2, White),
-      Move(2, 2, 1, Black), Pass(White),
-      Move(1, 1, 2, Black), Pass(White),
-      Move(3, 1, 2, Black), Pass(White),
-      Move(2, 2, 2, Black), Pass(White)
+    val captureSituation = Map(
+      1 -> """@O@|
+             | @ |
+             |   |""",
+      2 ->"""@O@|
+            | @ |
+            |   |"""
     )
-    var game = playListOfMoves(TestSize, moves)
-    checkStonesOnBoard(game, moves)
+    var game = fromGoban(fromStrings(captureSituation))
     game = game.makeMove(Move(2, 1, 3, Black))
     Assert.assertEquals("\n"+game.toString, Empty, game.at(Position(2, 1, 1)))
     Assert.assertEquals("\n"+game.toString, Empty, game.at(Position(2, 1, 2)))
@@ -224,15 +222,8 @@ class TestGame:
     Assert.assertEquals(0, game.captures(White))
 
   @Test def testCapturingStoneWithSettingIntoEyeIsNotSuicide(): Unit =
-    val moves = List[Move | Pass](
-      Move(2, 2, 3, Black), Move(2, 2, 4, White),
-      Move(2, 3, 2, Black), Move(2, 3, 3, White),
-      Move(2, 1, 2, Black), Move(2, 1, 3, White),
-      Move(3, 2, 2, Black), Move(3, 2, 3, White),
-      Move(1, 2, 2, Black), Move(1, 2, 3, White),
-      Move(2, 2, 1, Black)
-    )
-    val game = playListOfMoves(5, moves)
+    val goban = fromStrings(eyeSituation)
+    val game = fromGoban(goban)
     Assert.assertTrue(game.hasLiberties(Move(2, 2, 3, Black)))
     Assert.assertEquals(Empty, game.at(2, 2, 2))
     for stone <- game.goban.neighbors(Position(2, 2, 2)) do
@@ -248,15 +239,8 @@ class TestGame:
     assertThrows[Suicide]({game.checkValid(Move(1, 1, 1, White))})
 
   @Test def testDetectKo(): Unit =
-    val moves = List[Move | Pass](
-      Move(2, 2, 3, Black), Move(2, 2, 4, White),
-      Move(2, 3, 2, Black), Move(2, 3, 3, White),
-      Move(2, 1, 2, Black), Move(2, 1, 3, White),
-      Move(3, 2, 2, Black), Move(3, 2, 3, White),
-      Move(1, 2, 2, Black), Move(1, 2, 3, White),
-      Move(2, 2, 1, Black), Move(2, 2, 2, White)
-    )
-    val game = playListOfMoves(5, moves)
+    val goban = fromStrings(eyeSituation)
+    val game = fromGoban(goban).makeMove(Move(2, 2, 2, White))
     Assert.assertEquals(Empty, game.at(2, 2, 3))
     Assert.assertEquals(1, game.captures(Black))
     Assert.assertEquals(Move(2, 2, 3, Black), game.lastCapture(0))

@@ -102,3 +102,25 @@ class TestGoban:
     val cloned = original.clone()
     cloned.setStone(1, 1, 1, Black)
     Assert.assertEquals(Empty, original.at(1, 1, 1))
+
+  @Test def testSetListOfStones(): Unit =
+    val goban = setListOfStones(TestSize, CaptureMoves.dropRight(1))
+    for move <- CaptureMoves.dropRight(1) do
+      Assert.assertEquals(
+        move.toString+"\n"+goban.toString,
+        move.color, goban.at(move.position)
+      )
+
+  @Test def testFromStrings(): Unit =
+    val goban = fromStrings(Map(
+      1 -> """ @ |
+             |@ @
+             | @ """,
+      2 -> """   |
+             | @ |
+             |   |"""
+      ))
+      checkStonesOnBoard(goban, 
+        List(Move(2, 1, 1, Black), Move(1, 2, 1, Black), Move(3, 2, 1, Black), 
+          Move(2, 3, 1, Black), Move(2, 2, 2, Black))
+      )
