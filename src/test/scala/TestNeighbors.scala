@@ -54,6 +54,3 @@ class TestNeighbors:
         (TestSize-1, TestSize-1, TestSize-1)),
       faceNeighbors
     )
-
-def assertPositionsEqual(expected: List[(Int, Int, Int)], actual: Seq[Position]): Unit =
-  assertCollectionEqual(for (p <- expected) yield Position(p._1, p._2, p._3), actual)

@@ -40,11 +40,7 @@ class TestPosition:
       if (center - Position(x, y, z)).abs == 1
     do
       neighbors = neighbors.appended(Position(x, y, z))
-    Assert.assertEquals(6, neighbors.length)
-    Assert.assertTrue(neighbors.contains(Position(1, 3, 4)))
-    Assert.assertTrue(neighbors.contains(Position(3, 3, 4)))
-    Assert.assertTrue(neighbors.contains(Position(2, 2, 4)))
-    Assert.assertTrue(neighbors.contains(Position(2, 4, 4)))
-    Assert.assertTrue(neighbors.contains(Position(2, 3, 3)))
-    Assert.assertTrue(neighbors.contains(Position(2, 3, 5)))
+    assertPositionsEqual(
+      List((1, 3, 4), (3, 3, 4), (2, 2, 4), (2, 4, 4), (2, 3, 3), (2, 3, 5)), neighbors
+    )
     Assert.assertFalse(neighbors.contains(Position(2, 3, 4)))
