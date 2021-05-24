@@ -6,9 +6,9 @@ def newGoban(size: Int): Goban = Goban(size, initializeBoard(size))
 
 class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
-  if size < MinBoardSize then throw IllegalArgumentException("size too small: "+size)
-  if size > MaxBoardSize then throw IllegalArgumentException("size too big: "+size)
-  if size % 2 == 0 then throw IllegalArgumentException("size is even: "+size)
+  if size < MinBoardSize then throw BadBoardSize(size, "too small")
+  if size > MaxBoardSize then throw BadBoardSize(size, "too big")
+  if size % 2 == 0 then throw BadBoardSize(size, "even")
 
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
@@ -53,11 +53,13 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
         case move.color => toCheck = toCheck + Move(position, move.color)
         case _ =>
     // check if part of a connected area
-    val tempBoard = setStone(Move(move.position, Color.Sentinel))
-    for checking <- toCheck do
-      if tempBoard.hasLiberties(checking) then
-        return true
-    return false
+    return setStone(Move(move.position, Color.Sentinel)).hasLiberties(toCheck)
+
+  private def hasLiberties(moves: Set[Move]): Boolean =
+    if moves.isEmpty then return false
+    if moves.size == 1 then return hasLiberties(moves.head)
+    if hasLiberties(moves.head) then return true
+    return hasLiberties(moves - moves.head)
 
   def connectedStones(move: Move): List[Move] =
     if at(move.position) != move.color then

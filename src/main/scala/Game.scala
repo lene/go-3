@@ -48,6 +48,8 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     if !isDifferentPlayer(color) then return List()
     return goban.emptyPositions.toList.filter(isPossibleMove(_, color))
 
+  def allPositions: Seq[Position] = goban.allPositions
+  
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
     try
       if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))
