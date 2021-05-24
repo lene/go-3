@@ -3,6 +3,8 @@ package go3d
 class IllegalMove(message: String) extends IllegalArgumentException
 class OutsideBoard(x: Int, y: Int, z: Int)
   extends IllegalMove(message = s"outside board: $x, $y, $z")
+class BadBoardSize(size: Int, reason: String)
+  extends IllegalMove(message = s"$size: $reason")
 class PositionOccupied(move: Move, color: Color)
   extends IllegalMove(message = s"occupied: $move with $color")
 class Ko(move: Move) extends IllegalMove(message = "ko at "+move.toString)

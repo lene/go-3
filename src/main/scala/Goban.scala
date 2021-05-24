@@ -6,9 +6,9 @@ def newGoban(size: Int): Goban = Goban(size, initializeBoard(size))
 
 class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
-  if size < MinBoardSize then throw IllegalArgumentException("size too small: "+size)
-  if size > MaxBoardSize then throw IllegalArgumentException("size too big: "+size)
-  if size % 2 == 0 then throw IllegalArgumentException("size is even: "+size)
+  if size < MinBoardSize then throw BadBoardSize(size, "too small")
+  if size > MaxBoardSize then throw BadBoardSize(size, "too big")
+  if size % 2 == 0 then throw BadBoardSize(size, "even")
 
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)

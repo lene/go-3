@@ -39,9 +39,9 @@ class TestGame:
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = newGame(TestSize)
-    assertThrows[IllegalMove]({empty.makeMove(Move(TestSize+1, 2, 2, Color.White))})
-    assertThrows[IllegalMove]({empty.makeMove(Move(2, TestSize+1, 2, Color.White))})
-    assertThrows[IllegalMove]({empty.makeMove(Move(2, 2, TestSize+1, Color.White))})
+    assertThrows[OutsideBoard]({empty.makeMove(Move(TestSize+1, 2, 2, Color.White))})
+    assertThrows[OutsideBoard]({empty.makeMove(Move(2, TestSize+1, 2, Color.White))})
+    assertThrows[OutsideBoard]({empty.makeMove(Move(2, 2, TestSize+1, Color.White))})
 
   @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
     val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
@@ -51,7 +51,7 @@ class TestGame:
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
     val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
-    assertThrows[IllegalMove]({firstMove.makeMove(Move(2, 2, 1, Color.Black))})
+    assertThrows[WrongTurn]({firstMove.makeMove(Move(2, 2, 1, Color.Black))})
 
   @Test def testSetAndPassSucceeds(): Unit =
     val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Color.Black))
@@ -244,7 +244,7 @@ class TestGame:
 
   @Test def testSettingStoneIntoNotEncircledEyeIsSuicide(): Unit =
     val game = buildEye()
-    assertThrows[IllegalMove]({game.checkValid(Move(1, 1, 1, Color.White))})
+    assertThrows[Suicide]({game.checkValid(Move(1, 1, 1, Color.White))})
 
   @Test def testDetectKo(): Unit =
     val moves = List[Move | Pass](
@@ -259,7 +259,7 @@ class TestGame:
     Assert.assertEquals(Color.Empty, game.at(2, 2, 3))
     Assert.assertEquals(1, game.captures(Color.Black))
     Assert.assertEquals(Move(2, 2, 3, Color.Black), game.lastCapture(0))
-    assertThrows[IllegalMove]({game.checkValid(Move(2, 2, 3, Color.Black))})
+    assertThrows[Ko]({game.checkValid(Move(2, 2, 3, Color.Black))})
 
   @Test def testPossibleMovesEmptyBoard(): Unit =
     val empty = newGame(TestSize)

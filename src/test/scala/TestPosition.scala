@@ -13,7 +13,7 @@ class TestPosition:
       Position(x, y, z)
 
   @Test def testPositionTooSmall(): Unit =
-    assertThrows[IllegalArgumentException]({Position(1, 1, 0)})
+    assertThrows[OutsideBoard]({Position(1, 1, 0)})
 
   @Test def testEqual(): Unit =
     Assert.assertTrue(Position(1, 1, 1) == Position(1, 1, 1))

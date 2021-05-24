@@ -27,6 +27,9 @@ def checkStonesOnBoard(game: Game, moves: List[Move | Pass]): Unit =
       case p: Pass =>
       case m: Move => Assert.assertEquals(game.at(m.position), m.color)
 
+def assertCollectionEqual[T](expected: Seq[T], actual: Seq[T]): Unit =
+  Assert.assertTrue(expected.sortBy(_.toString) == actual.sortBy(_.toString))
+
 def assertThrows[E](f: => Unit)(implicit eType:ClassTag[E]): Unit = {
   try f
   catch

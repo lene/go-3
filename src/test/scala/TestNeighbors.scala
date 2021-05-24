@@ -4,105 +4,56 @@ import go3d._
 import org.junit.{Assert, Test}
 
 class TestNeighbors:
-  @Test def testNeighborsCornerEmpty(): Unit =
-    val empty = newGoban(TestSize)
-    val cornerNeighbors = empty.neighbors(Position(1, 1, 1))
-    Assert.assertEquals(cornerNeighbors.toString, 3, cornerNeighbors.length)
-    Assert.assertTrue(cornerNeighbors.contains(Position(1, 1, 2)))
-    Assert.assertTrue(cornerNeighbors.contains(Position(1, 2, 1)))
-    Assert.assertTrue(cornerNeighbors.contains(Position(2, 1, 1)))
-
-  @Test def testNeighborsEdgeEmpty(): Unit =
-    val empty = newGoban(TestSize)
-    val edgeNeighbors = empty.neighbors(Position(1, 1, 2))
-    Assert.assertEquals(edgeNeighbors.toString, 4, edgeNeighbors.length)
-    Assert.assertTrue(edgeNeighbors.contains(Position(1, 1, 1)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(1, 1, 3)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(1, 2, 2)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(2, 1, 2)))
-
-  @Test def testNeighborsFaceEmpty(): Unit =
-    val empty = newGoban(TestSize)
-    val faceNeighbors = empty.neighbors(Position(1, 2, 2))
-    Assert.assertEquals(faceNeighbors.toString, 5, faceNeighbors.length)
-    Assert.assertTrue(faceNeighbors.contains(Position(1, 2, 1)))
-    Assert.assertTrue(faceNeighbors.contains(Position(1, 2, 3)))
-    Assert.assertTrue(faceNeighbors.contains(Position(1, 1, 2)))
-    Assert.assertTrue(faceNeighbors.contains(Position(1, 3, 2)))
-    Assert.assertTrue(faceNeighbors.contains(Position(2, 2, 2)))
-
-  @Test def testNeighborsInteriorEmpty(): Unit =
-    val empty = newGoban(TestSize)
-    val interiorNeighbors = empty.neighbors(Position(2, 2, 2))
-    Assert.assertEquals(interiorNeighbors.toString, 6, interiorNeighbors.length)
-    Assert.assertTrue(interiorNeighbors.contains(Position(2, 2, 1)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(2, 2, 3)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(2, 1, 2)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(2, 3, 2)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(1, 2, 2)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(3, 2, 2)))
 
   @Test def testNeighborsCorner(): Unit =
     val empty = newGoban(TestSize)
     val cornerNeighbors = empty.neighbors(Position(1, 1, 1))
-    Assert.assertEquals(cornerNeighbors.toString, 3, cornerNeighbors.length)
-    Assert.assertTrue(cornerNeighbors.contains(Position(1, 1, 2)))
-    Assert.assertTrue(cornerNeighbors.contains(Position(1, 2, 1)))
-    Assert.assertTrue(cornerNeighbors.contains(Position(2, 1, 1)))
+    assertPositionsEqual(List((1, 1, 2), (1, 2, 1), (2, 1, 1)), cornerNeighbors)
 
   @Test def testNeighborsEdge(): Unit =
     val empty = newGoban(TestSize)
     val edgeNeighbors = empty.neighbors(Position(1, 1, 2))
-    Assert.assertEquals(edgeNeighbors.toString, 4, edgeNeighbors.length)
-    Assert.assertTrue(edgeNeighbors.contains(Position(1, 1, 1)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(1, 1, 3)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(1, 2, 2)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(2, 1, 2)))
+    assertPositionsEqual(List((1, 1, 1), (1, 1, 3), (1, 2, 2), (2, 1, 2)), edgeNeighbors)
 
   @Test def testNeighborsFace(): Unit =
     val empty = newGoban(TestSize)
     val faceNeighbors = empty.neighbors(Position(1, 2, 2))
-    Assert.assertEquals(faceNeighbors.toString, 5, faceNeighbors.length)
-    Assert.assertTrue(faceNeighbors.contains(Position(1, 2, 1)))
-    Assert.assertTrue(faceNeighbors.contains(Position(1, 2, 3)))
-    Assert.assertTrue(faceNeighbors.contains(Position(1, 1, 2)))
-    Assert.assertTrue(faceNeighbors.contains(Position(1, 3, 2)))
-    Assert.assertTrue(faceNeighbors.contains(Position(2, 2, 2)))
+    assertPositionsEqual(List((1, 2, 1), (1, 2, 3), (1, 1, 2), (1, 3, 2), (2, 2, 2)), faceNeighbors)
 
   @Test def testNeighborsInterior(): Unit =
     val empty = newGoban(TestSize)
     val interiorNeighbors = empty.neighbors(Position(2, 2, 2))
-    Assert.assertEquals(interiorNeighbors.toString, 6, interiorNeighbors.length)
-    Assert.assertTrue(interiorNeighbors.contains(Position(2, 2, 1)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(2, 2, 3)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(2, 1, 2)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(2, 3, 2)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(1, 2, 2)))
-    Assert.assertTrue(interiorNeighbors.contains(Position(3, 2, 2)))
+    assertPositionsEqual(
+      List((2, 2, 1), (2, 2, 3), (2, 1, 2), (2, 3, 2), (1, 2, 2), (3, 2, 2)), interiorNeighbors
+    )
 
   @Test def testNeighborsOuterCorner(): Unit =
     val empty = newGoban(TestSize)
     val cornerNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize))
-    Assert.assertEquals(cornerNeighbors.toString, 3, cornerNeighbors.length)
-    Assert.assertTrue(cornerNeighbors.contains(Position(TestSize, TestSize, TestSize-1)))
-    Assert.assertTrue(cornerNeighbors.contains(Position(TestSize, TestSize-1, TestSize)))
-    Assert.assertTrue(cornerNeighbors.contains(Position(TestSize-1, TestSize, TestSize)))
+    assertPositionsEqual(
+      List((TestSize, TestSize, TestSize-1), (TestSize, TestSize-1, TestSize),
+        (TestSize-1, TestSize, TestSize)),
+      cornerNeighbors
+    )
 
   @Test def testNeighborsOuterEdge(): Unit =
     val empty = newGoban(TestSize)
     val edgeNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize-1))
-    Assert.assertEquals(edgeNeighbors.toString, 4, edgeNeighbors.length)
-    Assert.assertTrue(edgeNeighbors.contains(Position(TestSize, TestSize, TestSize)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(TestSize, TestSize, TestSize-2)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(TestSize, TestSize-1, TestSize-1)))
-    Assert.assertTrue(edgeNeighbors.contains(Position(TestSize-1, TestSize, TestSize-1)))
+    assertPositionsEqual(
+      List((TestSize, TestSize, TestSize), (TestSize, TestSize, TestSize-2),
+        (TestSize, TestSize-1, TestSize-1), (TestSize-1, TestSize, TestSize-1)),
+      edgeNeighbors
+    )
 
   @Test def testNeighborsOuterFace(): Unit =
     val empty = newGoban(TestSize)
     val faceNeighbors = empty.neighbors(Position(TestSize, TestSize-1, TestSize-1))
-    Assert.assertEquals(faceNeighbors.toString, 5, faceNeighbors.length)
-    Assert.assertTrue(faceNeighbors.contains(Position(TestSize, TestSize-1, TestSize)))
-    Assert.assertTrue(faceNeighbors.contains(Position(TestSize, TestSize-1, TestSize-2)))
-    Assert.assertTrue(faceNeighbors.contains(Position(TestSize, TestSize, TestSize-1)))
-    Assert.assertTrue(faceNeighbors.contains(Position(TestSize, TestSize-2, TestSize-1)))
-    Assert.assertTrue(faceNeighbors.contains(Position(TestSize-1, TestSize-1, TestSize-1)))
+    assertPositionsEqual(
+      List((TestSize, TestSize-1, TestSize), (TestSize, TestSize-1, TestSize-2),
+        (TestSize, TestSize, TestSize-1), (TestSize, TestSize-2, TestSize-1),
+        (TestSize-1, TestSize-1, TestSize-1)),
+      faceNeighbors
+    )
+
+def assertPositionsEqual(expected: List[(Int, Int, Int)], actual: Seq[Position]): Unit =
+  assertCollectionEqual(for (p <- expected) yield Position(p._1, p._2, p._3), actual)
