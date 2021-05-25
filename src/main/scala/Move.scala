@@ -12,3 +12,5 @@ class Move(val position: Position, val color: Color) extends HasColor:
     that match
       case that: Move => position == that.position && color == that.color
       case _ => false
+
+  override def hashCode(): Int = toString.hashCode()

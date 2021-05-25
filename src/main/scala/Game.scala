@@ -56,9 +56,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     for color <- List(Color.Black, Color.White) do
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
       scores(color) = scores(color) - captures(color)
-    println(scores)
     val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
-    println(emptyAreas)
     for area <- emptyAreas do
       boundaryColor(area) match
         case Some(color) => scores(color) = scores(color) + area.size
@@ -75,9 +73,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   private def addToConnectedAreas(emptyPositions: Seq[Position], areas: Set[Set[Move]]): Set[Set[Move]] =
     if emptyPositions.isEmpty then return areas
-    println(emptyPositions)
-    val connected = connectedStones(Move(emptyPositions.last, Color.Empty)).toSet
-    println(connected)
+    val connected = connectedStones(Move(emptyPositions.last, Color.Empty))
     return addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
 
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =

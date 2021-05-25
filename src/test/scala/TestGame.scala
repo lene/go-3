@@ -337,7 +337,22 @@ class TestGame:
     Assert.assertEquals(13, game.score(Black))
     Assert.assertEquals(13, game.score(White))
 
-  @Ignore
+  @Test def testScoringWithNotControlledTerritory(): Unit =
+    val finalSituation = Map(
+      1 -> """  @|
+             | @@|
+             |@@@|""",
+      2 -> """ @@|
+             |@ O|
+             |OOO|""",
+      3 -> """OOO|
+             |OOO|
+             |OO |"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(9, game.score(Black))
+    Assert.assertEquals(13, game.score(White))
+
   @Test def testScoringOneStoneControlsAll(): Unit =
     val finalSituation = Map(
       2 -> """   |
@@ -348,7 +363,6 @@ class TestGame:
     Assert.assertEquals(27, game.score(Black))
     Assert.assertEquals(0, game.score(White))
 
-  @Ignore
   @Test def testScoringTwoStonesControlNothing(): Unit =
     val finalSituation = Map(
       2 -> """ O |

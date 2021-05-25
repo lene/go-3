@@ -30,6 +30,7 @@ def randomGame(size: Int): Unit =
   val totalMs = (System.nanoTime()-t0)/1000000
   Console.println(s"overall: ${totalMs/1000.0}s, ${totalMs/(size*size*size)}ms/move")
   println(game)
+  println(game.score)
 
 object Runner {
   def main(args: Array[String]): Unit = {
