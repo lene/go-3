@@ -26,11 +26,10 @@ def randomGame(size: Int): Unit =
       val stepMs = (System.nanoTime()-tStep0)/1000000
       Console.println(s"${game.moves.size}/${size*size*size} (${stepMs/Step}ms/move)")
       tStep0 = System.nanoTime()
-    if game.moves.size == size*size*size then
-      val totalMs = (System.nanoTime()-t0)/1000000
-      Console.println(s"overall: ${totalMs/1000.0}s, ${totalMs/(size*size*size)}ms/move")
     color = !color
-  println("\n"+game)
+  val totalMs = (System.nanoTime()-t0)/1000000
+  Console.println(s"overall: ${totalMs/1000.0}s, ${totalMs/(size*size*size)}ms/move")
+  println(game)
 
 object Runner {
   def main(args: Array[String]): Unit = {

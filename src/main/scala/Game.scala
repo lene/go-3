@@ -56,13 +56,16 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     for color <- List(Color.Black, Color.White) do
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
       scores(color) = scores(color) - captures(color)
-    var emptyAreas: mutable.Set[Set[Move]] = mutable.Set()
-    for pos <- goban.emptyPositions do
-      emptyAreas += connectedStones(Move(pos, Color.Empty)).toSet
-    println(emptyAreas)  // TODO not correct due to Scala's utterly bonkers decision to make equal Sets not equal
+    val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
+    println(emptyAreas)
     // TODO find boundaries of empty areas
-    // todo add size of empty areas with only one boundary color to score
+    // TODO add size of empty areas with only one boundary color to score
     return scores.toMap
+
+  private def addToConnectedAreas(emptyPositions: Seq[Position], areas: Set[Set[Move]]): Set[Set[Move]] =
+    if emptyPositions.isEmpty then return areas
+    val connected = connectedStones(Move(emptyPositions.last, Color.Empty)).toSet
+    return addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
 
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
     try
