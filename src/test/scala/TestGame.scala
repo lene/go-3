@@ -104,9 +104,9 @@ class TestGame:
     val game = playListOfMoves(TestSize, moves)
 
   @Test def testConnectedStoneOneStone(): Unit =
-    val moves = List(Move(1, 1, 1, Black))
+    val moves = Set(Move(1, 1, 1, Black))
     val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(moves, game.connectedStones(moves(0)))
+    Assert.assertEquals(moves, game.connectedStones(moves.head))
 
   @Test def testConnectedStoneOneStoneLeavesBoardUnchanged(): Unit =
     val moves = List(Move(1, 1, 1, Black))
@@ -121,16 +121,16 @@ class TestGame:
       Move(1, 1, 1, Black), Pass(White), Move(2, 2, 1, Black)
     )
     val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(1, game.connectedStones(Move(1, 1, 1, Black)).length)
-    Assert.assertEquals(1, game.connectedStones(Move(2, 2, 1, Black)).length)
+    Assert.assertEquals(1, game.connectedStones(Move(1, 1, 1, Black)).size)
+    Assert.assertEquals(1, game.connectedStones(Move(2, 2, 1, Black)).size)
 
   @Test def testConnectedStoneTwoConnectedStones(): Unit =
     val moves = List[Move | Pass](
       Move(1, 1, 1, Black), Pass(White), Move(2, 1, 1, Black)
     )
     val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(2, game.connectedStones(Move(1, 1, 1, Black)).length)
-    Assert.assertEquals(2, game.connectedStones(Move(2, 1, 1, Black)).length)
+    Assert.assertEquals(2, game.connectedStones(Move(1, 1, 1, Black)).size)
+    Assert.assertEquals(2, game.connectedStones(Move(2, 1, 1, Black)).size)
 
   @Test def testConnectedStoneMinimalEye(): Unit =
     val moves = List[Move | Pass](
@@ -139,11 +139,11 @@ class TestGame:
       Move(1, 1, 2, Black), Pass(White)
     )
     val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 1, Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 1, Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 2, Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 2, Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 1, 2, Black)).length)
+    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 1, Black)).size)
+    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 1, Black)).size)
+    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 2, Black)).size)
+    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 2, Black)).size)
+    Assert.assertEquals(5, game.connectedStones(Move(1, 1, 2, Black)).size)
 
   @Test def testCaptureStoneWithNeighbors(): Unit =
     val captureSituation = Map(
@@ -202,11 +202,11 @@ class TestGame:
     var nextGame = game
     for move <- moves do
       nextGame = nextGame.makeMove(move)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 1, Black)).length)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 1, Black)).length)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 2, Black)).length)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 2, Black)).length)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 1, 2, Black)).length)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 1, Black)).size)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 1, Black)).size)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 2, Black)).size)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 2, Black)).size)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 1, 2, Black)).size)
     return nextGame
 
   def buildAndCaptureEye(): Game =
