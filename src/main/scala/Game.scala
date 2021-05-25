@@ -57,10 +57,19 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
       scores(color) = scores(color) - captures(color)
     val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
-    println(emptyAreas)
-    // TODO find boundaries of empty areas
-    // TODO add size of empty areas with only one boundary color to score
+    for area <- emptyAreas do
+      boundaryColor(area) match
+        case Some(color) => scores(color) = scores(color) + area.size
+        case None =>
     return scores.toMap
+
+  private def boundaryColor(area: Set[Move]): Option[Color] =
+    var boundaryColors = mutable.Set[Color]()
+    for stone <- area do
+      for neighbor <- goban.neighbors(stone.position) if at(neighbor) != stone.color do
+        boundaryColors.add(at(neighbor))
+    if boundaryColors.size == 1 then return Some(boundaryColors.head)
+    return None
 
   private def addToConnectedAreas(emptyPositions: Seq[Position], areas: Set[Set[Move]]): Set[Set[Move]] =
     if emptyPositions.isEmpty then return areas
