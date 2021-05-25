@@ -3,6 +3,7 @@ package go3d.testing
 import go3d._
 import go3d.Color.{Black, White, Empty}
 import org.junit.{Assert, Ignore, Test}
+import scala.util.Random
 
 class TestGame:
 
@@ -103,9 +104,9 @@ class TestGame:
     val game = playListOfMoves(TestSize, moves)
 
   @Test def testConnectedStoneOneStone(): Unit =
-    val moves = List(Move(1, 1, 1, Black))
+    val moves = Set(Move(1, 1, 1, Black))
     val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(moves, game.connectedStones(moves(0)))
+    Assert.assertEquals(moves, game.connectedStones(moves.head))
 
   @Test def testConnectedStoneOneStoneLeavesBoardUnchanged(): Unit =
     val moves = List(Move(1, 1, 1, Black))
@@ -120,16 +121,16 @@ class TestGame:
       Move(1, 1, 1, Black), Pass(White), Move(2, 2, 1, Black)
     )
     val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(1, game.connectedStones(Move(1, 1, 1, Black)).length)
-    Assert.assertEquals(1, game.connectedStones(Move(2, 2, 1, Black)).length)
+    Assert.assertEquals(1, game.connectedStones(Move(1, 1, 1, Black)).size)
+    Assert.assertEquals(1, game.connectedStones(Move(2, 2, 1, Black)).size)
 
   @Test def testConnectedStoneTwoConnectedStones(): Unit =
     val moves = List[Move | Pass](
       Move(1, 1, 1, Black), Pass(White), Move(2, 1, 1, Black)
     )
     val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(2, game.connectedStones(Move(1, 1, 1, Black)).length)
-    Assert.assertEquals(2, game.connectedStones(Move(2, 1, 1, Black)).length)
+    Assert.assertEquals(2, game.connectedStones(Move(1, 1, 1, Black)).size)
+    Assert.assertEquals(2, game.connectedStones(Move(2, 1, 1, Black)).size)
 
   @Test def testConnectedStoneMinimalEye(): Unit =
     val moves = List[Move | Pass](
@@ -138,11 +139,11 @@ class TestGame:
       Move(1, 1, 2, Black), Pass(White)
     )
     val game = playListOfMoves(TestSize, moves)
-    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 1, Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 1, Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 2, Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 2, Black)).length)
-    Assert.assertEquals(5, game.connectedStones(Move(1, 1, 2, Black)).length)
+    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 1, Black)).size)
+    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 1, Black)).size)
+    Assert.assertEquals(5, game.connectedStones(Move(2, 1, 2, Black)).size)
+    Assert.assertEquals(5, game.connectedStones(Move(1, 2, 2, Black)).size)
+    Assert.assertEquals(5, game.connectedStones(Move(1, 1, 2, Black)).size)
 
   @Test def testCaptureStoneWithNeighbors(): Unit =
     val captureSituation = Map(
@@ -201,11 +202,11 @@ class TestGame:
     var nextGame = game
     for move <- moves do
       nextGame = nextGame.makeMove(move)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 1, Black)).length)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 1, Black)).length)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 2, Black)).length)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 2, Black)).length)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 1, 2, Black)).length)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 1, Black)).size)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 1, Black)).size)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 2, Black)).size)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 2, Black)).size)
+    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 1, 2, Black)).size)
     return nextGame
 
   def buildAndCaptureEye(): Game =
@@ -272,3 +273,102 @@ class TestGame:
     val game = playListOfMoves(5, moves)
     Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Black).length)
     Assert.assertFalse(game.possibleMoves(Black).contains(Move(2, 2, 3, Black)))
+    Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Color.Black).length)
+    Assert.assertFalse(game.possibleMoves(Color.Black).contains(Move(2, 2, 3, Color.Black)))
+
+  @Test def testScoring(): Unit =
+    val finalSituation = Map(
+      1 -> """@@@|
+             |@@@|
+             |@@@|""",
+      3 -> """OOO|
+             |OOO|
+             |OOO|"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(9, game.score(Black))
+    Assert.assertEquals(9, game.score(White))
+
+  @Test def testScoring2(): Unit =
+    val finalSituation = Map(
+      1 -> """@@@|
+             |@@@|
+             |@@@|""",
+      2 -> """@@@|
+             |@ O|
+             |OOO|""",
+      3 -> """OOO|
+             |OOO|
+             |OOO|"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(13, game.score(Black))
+    Assert.assertEquals(13, game.score(White))
+
+  @Test def testScoringWithEyes(): Unit =
+    val finalSituation = Map(
+      1 -> """ @@|
+             |@@@|
+             |@@@|""",
+      2 -> """@@@|
+             |@ O|
+             |OOO|""",
+      3 -> """OOO|
+             |OOO|
+             |OO |"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(13, game.score(Black))
+    Assert.assertEquals(13, game.score(White))
+
+  @Test def testScoringWithBiggerTerritory(): Unit =
+    val finalSituation = Map(
+      1 -> """  @|
+             | @@|
+             |@@@|""",
+      2 -> """@@@|
+             |@ O|
+             |OOO|""",
+      3 -> """OOO|
+             |OOO|
+             |OO |"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(13, game.score(Black))
+    Assert.assertEquals(13, game.score(White))
+
+  @Test def testScoringWithNotControlledTerritory(): Unit =
+    val finalSituation = Map(
+      1 -> """  @|
+             | @@|
+             |@@@|""",
+      2 -> """ @@|
+             |@ O|
+             |OOO|""",
+      3 -> """OOO|
+             |OOO|
+             |OO |"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(9, game.score(Black))
+    Assert.assertEquals(13, game.score(White))
+
+  @Test def testScoringOneStoneControlsAll(): Unit =
+    val finalSituation = Map(
+      2 -> """   |
+             | @ |
+             |   |"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(27, game.score(Black))
+    Assert.assertEquals(0, game.score(White))
+
+  @Test def testScoringTwoStonesControlNothing(): Unit =
+    val finalSituation = Map(
+      2 -> """ O |
+             | @ |
+             |   |"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(1, game.score(Black))
+    Assert.assertEquals(1, game.score(White))

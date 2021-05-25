@@ -61,13 +61,13 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     if hasLiberties(moves.head) then return true
     return hasLiberties(moves - moves.head)
 
-  def connectedStones(move: Move): List[Move] =
+  def connectedStones(move: Move): Set[Move] =
     if at(move.position) != move.color then
       throw ColorMismatch(s"checking connected stones to $move but is ", at(move.position))
     // alright, this is not functional style, but much clearer than using recursion
-    var area = List(move)
-    for position <- neighbors(move.position) if at(position) == move.color do
-      area :::= setStone(Move(move.position, Color.Sentinel)).connectedStones(Move(position, move.color))
+    var area = Set(move)
+    for position <- neighborsOfColor(move.position, move.color) if !(area contains(Move(position, move.color))) do
+      area = area ++ setStone(Move(move.position, Color.Sentinel)).connectedStones(Move(position, move.color))
     return area
 
   def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
@@ -79,6 +79,9 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       z <- position.z-1 to position.z+1
       if isNeighbor(position, x, y, z)
     ) yield Position(x, y, z)
+
+  def neighborsOfColor(position: Position, color: Color): Seq[Position] =
+    for (p <- neighbors(position) if at(p) == color) yield p
 
   def emptyPositions: Seq[Position] =
     for (p <- allPositions if at(p) == Color.Empty) yield p
@@ -102,7 +105,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       if !wouldBeBoardAfterMove.hasLiberties(Move(position, !move.color)) then return false
     return true
 
-  private def clearListOfPlaces(toClear: List[Move], goban: Goban): Goban =
+  private def clearListOfPlaces(toClear: Set[Move], goban: Goban): Goban =
     if toClear.isEmpty then return goban
     clearListOfPlaces(toClear.dropRight(1), goban.setStone(Move(toClear.last.position, Color.Empty)))
 

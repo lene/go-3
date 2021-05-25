@@ -40,7 +40,7 @@ val eyeSituation = Map(
       |     |"""
 )
 
-def playListOfMoves(boardSize: Int, moves: List[Move | Pass], verbose: Boolean = false): Game =
+def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass], verbose: Boolean = false): Game =
   var game = newGame(boardSize)
   for move <- moves do
     game = game.makeMove(move)

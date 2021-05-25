@@ -1,5 +1,7 @@
 package go3d
 
+import collection.mutable
+
 def newGame(size: Int): Game = Game(size, newGoban(size), Array(), Map[Int, List[Move]]())
 
 class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
@@ -42,14 +44,38 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def hasLiberties(move: Move): Boolean = goban.hasLiberties(move)
 
-  def connectedStones(move: Move): List[Move] = goban.connectedStones(move)
+  def connectedStones(move: Move): Set[Move] = goban.connectedStones(move)
 
   def possibleMoves(color: Color): List[Position] =
     if !isDifferentPlayer(color) then return List()
+    if moves.size >= size*size*size then return List()
     return goban.emptyPositions.toList.filter(isPossibleMove(_, color))
 
-  def allPositions: Seq[Position] = goban.allPositions
-  
+  def score: Map[Color, Int] =
+    var scores = mutable.Map[Color, Int]().withDefaultValue(0)
+    for color <- List(Color.Black, Color.White) do
+      for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
+      scores(color) = scores(color) - captures(color)
+    val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
+    for area <- emptyAreas do
+      boundaryColor(area) match
+        case Some(color) => scores(color) = scores(color) + area.size
+        case None =>
+    return scores.toMap
+
+  private def boundaryColor(area: Set[Move]): Option[Color] =
+    var boundaryColors = mutable.Set[Color]()
+    for stone <- area do
+      for neighbor <- goban.neighbors(stone.position) if at(neighbor) != stone.color do
+        boundaryColors.add(at(neighbor))
+    if boundaryColors.size == 1 then return Some(boundaryColors.head)
+    return None
+
+  private def addToConnectedAreas(emptyPositions: Seq[Position], areas: Set[Set[Move]]): Set[Set[Move]] =
+    if emptyPositions.isEmpty then return areas
+    val connected = connectedStones(Move(emptyPositions.last, Color.Empty))
+    return addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
+
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
     try
       if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))
