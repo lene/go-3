@@ -277,46 +277,62 @@ class TestGame:
     Assert.assertFalse(game.possibleMoves(Color.Black).contains(Move(2, 2, 3, Color.Black)))
 
   @Test def testScoring(): Unit =
-    val captureSituation = Map(
+    val finalSituation = Map(
       1 -> """@@@|
              |@@@|
              |@@@|""",
-      3 ->"""OOO|
-            |OOO|
-            |OOO|"""
+      3 -> """OOO|
+             |OOO|
+             |OOO|"""
     )
-    var game = fromGoban(fromStrings(captureSituation))
+    var game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(9, game.score(Black))
     Assert.assertEquals(9, game.score(White))
 
   @Test def testScoring2(): Unit =
-    val captureSituation = Map(
+    val finalSituation = Map(
       1 -> """@@@|
              |@@@|
              |@@@|""",
       2 -> """@@@|
              |@ O|
              |OOO|""",
-      3 ->"""OOO|
-            |OOO|
-            |OOO|"""
+      3 -> """OOO|
+             |OOO|
+             |OOO|"""
     )
-    var game = fromGoban(fromStrings(captureSituation))
+    var game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(13, game.score(Black))
     Assert.assertEquals(13, game.score(White))
 
   @Test def testScoringWithEyes(): Unit =
-    val captureSituation = Map(
+    val finalSituation = Map(
       1 -> """ @@|
              |@@@|
              |@@@|""",
       2 -> """@@@|
              |@ O|
              |OOO|""",
-      3 ->"""OOO|
-            |OOO|
-            |OO |"""
+      3 -> """OOO|
+             |OOO|
+             |OO |"""
     )
-    var game = fromGoban(fromStrings(captureSituation))
+    var game = fromGoban(fromStrings(finalSituation))
+    Assert.assertEquals(13, game.score(Black))
+    Assert.assertEquals(13, game.score(White))
+
+  @Test def testScoringWithBiggerTerritory(): Unit =
+    val finalSituation = Map(
+      1 -> """  @|
+             | @@|
+             |@@@|""",
+      2 -> """@@@|
+             |@ O|
+             |OOO|""",
+      3 -> """OOO|
+             |OOO|
+             |OO |"""
+    )
+    var game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(13, game.score(Black))
     Assert.assertEquals(13, game.score(White))
