@@ -37,14 +37,38 @@ def playGame(boardSize: Int): Unit =
   val game = newGame(boardSize)
   try
     val finished_game = makeMove(game, Color.Black)
-  catch case e: GameOver => println(e.game.score)
+    println(finished_game.score)
+  catch case e: GameOver => println(s"game over. score: ${e.game.score}")
 
 def makeMove(game: Game, color: Color): Game =
   if game.moves.size >= game.size*game.size*game.size then return game
   println(game)
-  val input = readLine(s"$color set stone at: ")
-  val pos = Position(input.split(" ").map(s => s.toInt))
-  return makeMove(game.makeMove(Move(pos, color)), !color)
+  val move = readMove(
+    s"move ${game.moves.size+1} - $color set stone at: ", game.possibleMoves(color).toSet, color
+  )
+  return makeMove(game.makeMove(move), !color)
+
+def readMove(message: String, possibleMoves: Set[Position], color: Color): Move| Pass =
+  val input = readLine(message)
+  try
+    val pos = Position(input.split(" ").map(s => s.toInt))
+    if !(possibleMoves contains(pos)) then throw IllegalMove(s"$pos not in $possibleMoves")
+    Move(pos, color)
+  catch
+    case e: IllegalMove =>
+      println(e.message)
+      readMove(message, possibleMoves, color)
+    case e: NumberFormatException =>
+      if e.getMessage.endsWith("p\"") then return Pass(color)
+      println(s"Not a number: ${e.getMessage}")
+      readMove(message, possibleMoves, color)
+    case e: ArrayIndexOutOfBoundsException =>
+      println(s"Not three numbers, only ${e.getMessage}")
+      readMove(message, possibleMoves, color)
+    case e: InterruptedException =>
+      println("Goodbye.")
+      System.exit(1)
+      Move(1, 1, 1, Color.Black)
 
 object Runner:
   type OptionMap = Map[String, Int]
