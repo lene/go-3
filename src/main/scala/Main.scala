@@ -1,5 +1,6 @@
 package go3d
 
+import scala.io.StdIn.readLine
 import scala.util.Random
 
 val Step = 500
@@ -32,9 +33,49 @@ def randomGame(size: Int): Unit =
   println(game)
   println(game.score)
 
-object Runner {
-  def main(args: Array[String]): Unit = {
-    val boardSize = if args.isEmpty then 5 else args(0).toInt
-    randomGame(boardSize)
-  }
-}
+def playGame(boardSize: Int): Unit =
+  val game = newGame(boardSize)
+  try
+    val finished_game = makeMove(game, Color.Black)
+  catch case e: GameOver => println(e.game.score)
+
+def makeMove(game: Game, color: Color): Game =
+  if game.moves.size >= game.size*game.size*game.size then return game
+  println(game)
+  val input = readLine(s"$color set stone at: ")
+  val pos = Position(input.split(" ").map(s => s.toInt))
+  return makeMove(game.makeMove(Move(pos, color)), !color)
+
+object Runner:
+  type OptionMap = Map[String, Int]
+  val DefaultBoardSize = 5
+
+  def nextOption(map : OptionMap, list: List[String]) : OptionMap =
+    def isSwitch(s : String) = (s(0) == '-')
+    println(list)
+    list match
+      case Nil => map
+      case "--benchmark" :: value :: tail =>
+        nextOption(map ++ Map("benchmark_size" -> value.toInt), tail)
+      case "--benchmark" :: tail =>
+        nextOption(map ++ Map("benchmark_size" -> DefaultBoardSize), tail)
+      case "--new-game" :: value :: tail =>
+        nextOption(map ++ Map("game_size" -> value.toInt), tail)
+      case "--new-game" :: tail =>
+        nextOption(map ++ Map("game_size" -> DefaultBoardSize), tail)
+      case option :: tail =>
+        if option.matches("\\d+") then
+          nextOption(map ++ Map("benchmark_size" -> option.toInt), tail)
+        else
+          println("Unknown option "+option)
+          System.exit(1)
+          return map
+
+  def main(args: Array[String]): Unit =
+    val options = nextOption(Map(), args.toList)
+    println(options)
+    if options.contains("benchmark_size") then
+      randomGame(options("benchmark_size"))
+    else if options.contains("game_size") then
+      playGame(options("game_size"))
+    else randomGame(DefaultBoardSize)
