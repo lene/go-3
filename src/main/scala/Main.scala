@@ -1,5 +1,7 @@
 package go3d
 
+import go3d.server.JettyExample
+
 import scala.io.StdIn.readLine
 import scala.util.Random
 
@@ -86,6 +88,8 @@ object Runner:
         nextOption(map ++ Map("game_size" -> value.toInt), tail)
       case "--new-game" :: tail =>
         nextOption(map ++ Map("game_size" -> DefaultBoardSize), tail)
+      case "--server" :: tail =>
+        nextOption(map ++ Map("server" -> 0), tail)
       case option :: tail =>
         if option.matches("\\d+") then
           nextOption(map ++ Map("benchmark_size" -> option.toInt), tail)
@@ -100,4 +104,6 @@ object Runner:
       randomGame(options("benchmark_size"))
     else if options.contains("game_size") then
       playGame(options("game_size"))
+    else if options.contains("server") then
+      JettyExample.runServer()
     else randomGame(DefaultBoardSize)

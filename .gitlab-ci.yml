@@ -7,7 +7,7 @@ stages:
 variables:
   TEST_RUN_BOARD_SIZE: 11
   TEST_RUN_MAX_RUNNING_TIME: 60
-  DEPLOYABLE_TAR_FILE: go-3d.tar.gz
+  DEPLOYABLE_BASE_NAME: go-3d-0.1.0
 
 include:
   - template: Code-Quality.gitlab-ci.yml
@@ -71,13 +71,11 @@ BuildDeployable:
   stage: build
   needs: []
   script:
-    - sbt stage
-    - cd target/universal/stage
-    - tar czvf $DEPLOYABLE_TAR_FILE bin lib
-    - mv $DEPLOYABLE_TAR_FILE ../../..
+    - sbt universal:packageBin
+    - mv target/universal/${DEPLOYABLE_BASE_NAME}.zip .
   artifacts:
     paths:
-      - go-3d.tar.gz
+      - go-3d-0.1.0.zip
 
 TestDeployable:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
@@ -86,13 +84,16 @@ TestDeployable:
     - job: BuildDeployable
       artifacts: true
   script:
-    - test -f $DEPLOYABLE_TAR_FILE
-    - tar zxvf $DEPLOYABLE_TAR_FILE
-    - ./bin/go-3d --benchmark 9
+    - test -f ${DEPLOYABLE_BASE_NAME}.zip
+    - unzip ${DEPLOYABLE_BASE_NAME}.zip
+    - ./${DEPLOYABLE_BASE_NAME}/bin/go-3d --benchmark 9
 
 Upload:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: BuildDeployable
+      artifacts: true
   rules:
     - if: $CI_COMMIT_TAG
   script:
@@ -101,6 +102,9 @@ Upload:
 Release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs:
+    - job: BuildDeployable
+      artifacts: true
   rules:
     - if: $CI_COMMIT_TAG
   script:
