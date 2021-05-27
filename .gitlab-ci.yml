@@ -2,6 +2,7 @@ stages:
   - test
   - build
   - run
+  - release
 
 variables:
   TEST_RUN_BOARD_SIZE: 11
@@ -88,3 +89,30 @@ TestDeployable:
     - test -f $DEPLOYABLE_TAR_FILE
     - tar zxvf $DEPLOYABLE_TAR_FILE
     - ./bin/go-3d --benchmark 9
+
+Upload:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_TAR_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_TAR_FILE}"'
+
+Release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo 'running release_job'
+  release:
+    name: 'Release $CI_COMMIT_TAG'
+    description: 'Created using the release-cli'
+    tag_name: '$CI_COMMIT_TAG'
+    ref: '$CI_COMMIT_TAG'
+    assets: # Optional, multiple asset links
+      links:
+        - name: 'asset2'
+          url: 'https://example.com/assets/2'
+          filepath: '/pretty/url/1' # optional
+          link_type: 'other' # optional
