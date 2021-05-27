@@ -76,7 +76,6 @@ object Runner:
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')
-    println(list)
     list match
       case Nil => map
       case "--benchmark" :: value :: tail =>
@@ -97,7 +96,6 @@ object Runner:
 
   def main(args: Array[String]): Unit =
     val options = nextOption(Map(), args.toList)
-    println(options)
     if options.contains("benchmark_size") then
       randomGame(options("benchmark_size"))
     else if options.contains("game_size") then
