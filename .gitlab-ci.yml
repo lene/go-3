@@ -77,8 +77,7 @@ BuildDeployable:
     paths:
       - go-3d-0.1.0.zip
 
-TestDeployable:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+.TestDeployable:
   stage: run
   needs:
     - job: BuildDeployable
@@ -87,6 +86,30 @@ TestDeployable:
     - test -f ${DEPLOYABLE_BASE_NAME}.zip
     - unzip ${DEPLOYABLE_BASE_NAME}.zip
     - ./${DEPLOYABLE_BASE_NAME}/bin/go-3d --benchmark 9
+
+TestDeployable:ScalaSBT:
+  extends: .TestDeployable
+  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+
+TestDeployable:OpenJDK:8:JRE:
+  extends: .TestDeployable
+  image: openjdk:8-jre
+
+TestDeployable:OpenJDK:11:JRE:
+  extends: .TestDeployable
+  image: openjdk:11-jre
+
+TestDeployable:OpenJDK:16:JRE:
+  extends: .TestDeployable
+  image: openjdk:16
+  before_script:
+    - microdnf install --nodocs unzip && microdnf clean all
+
+TestDeployable:OpenJDK:17:JRE:
+  extends: .TestDeployable
+  image: openjdk:17
+  before_script:
+    - microdnf install --nodocs unzip && microdnf clean all
 
 Upload:
   stage: release
