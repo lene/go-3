@@ -1,10 +1,24 @@
 stages:
-  - compile
   - test
+  - build
   - run
+  - release
 
-.PrepareSBT:
+variables:
+  TEST_RUN_BOARD_SIZE: 11
+  TEST_RUN_MAX_RUNNING_TIME: 60
+  DEPLOYABLE_TAR_FILE: go-3d.tar.gz
+
+include:
+  - template: Code-Quality.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+
+# This job installs sbt by itself. It is somewhat slower than the ones based on scala-sbt below.
+# I leave it in mostly for documentation how to install the environment.
+Test:
   image: ubuntu:20.04
+  stage: test
+  needs: []
   before_script:
     - apt-get -y update
     - apt-get -y upgrade
@@ -14,52 +28,91 @@ stages:
     - curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | apt-key add
     - apt-get -y update
     - apt-get -y install sbt
-
-Compile:
-  extends: .PrepareSBT
-  stage: compile
-  needs: []
-  script:
-    - sbt compile
-
-Test:
-  extends: .PrepareSBT
-  stage: test
-  needs:
-    - Compile
   script:
     - sbt test
 
-Run:
-  extends: .PrepareSBT
-  stage: test
-  needs:
-    - Compile
-  script:
-    - sbt run
-
-# The following ones use a prepared docker image. They run somewhat faster, but not all that much.
-# I'll decide later whether to drop one of the ways to install sbt, or keep them both (for some
-# variety in how the build is done, and potentially more cross-compatibility.)
-Compile:UseSbtDocker:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
-  stage: compile
-  needs: []
-  script:
-    - sbt compile
-
+# The following ones use a prepared docker image for sbt.
 Test:UseSbtDocker:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
   stage: test
-  needs:
-    - Compile:UseSbtDocker
+  needs: []
   script:
     - sbt test
+  artifacts:
+    when: always
+    reports:
+      junit: target/test-reports/**/TEST-*.xml
 
 Run:UseSbtDocker:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
   stage: test
-  needs:
-    - Compile:UseSbtDocker
+  needs: []
   script:
     - sbt run
+
+CheckRunTime:UseSbtDocker:
+  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  stage: test
+  needs: []
+  before_script:
+    - apt-get -y update
+    - apt-get -y install bc time
+  script:
+    - sbt compile
+    - /usr/bin/time -f %U -o runtime.log sbt "run $TEST_RUN_BOARD_SIZE"
+    - echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
+    - if [ $(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l) -eq 1 ]; then exit 1; fi
+  artifacts:
+    paths:
+      - runtime.log
+
+BuildDeployable:
+  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  stage: build
+  needs: []
+  script:
+    - sbt stage
+    - cd target/universal/stage
+    - tar czvf $DEPLOYABLE_TAR_FILE bin lib
+    - mv $DEPLOYABLE_TAR_FILE ../../..
+  artifacts:
+    paths:
+      - go-3d.tar.gz
+
+TestDeployable:
+  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  stage: run
+  needs:
+    - job: BuildDeployable
+      artifacts: true
+  script:
+    - test -f $DEPLOYABLE_TAR_FILE
+    - tar zxvf $DEPLOYABLE_TAR_FILE
+    - ./bin/go-3d --benchmark 9
+
+Upload:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_TAR_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_TAR_FILE}"'
+
+Release:
+  stage: release
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo 'running release_job'
+  release:
+    name: 'Release $CI_COMMIT_TAG'
+    description: 'Created using the release-cli'
+    tag_name: '$CI_COMMIT_TAG'
+    ref: '$CI_COMMIT_TAG'
+    assets: # Optional, multiple asset links
+      links:
+        - name: 'asset2'
+          url: 'https://example.com/assets/2'
+          filepath: '/pretty/url/1' # optional
+          link_type: 'other' # optional
