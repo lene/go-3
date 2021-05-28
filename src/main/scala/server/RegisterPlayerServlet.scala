@@ -15,11 +15,14 @@ class RegisterPlayerServlet extends HttpServlet:
       val pathInfo = request.getPathInfo
       val (gameId, color) = getGameId(pathInfo)
       val game = Games(gameId)
+      val token = generateAuthToken(gameId, color)
       output = ujson.Arr(
         ujson.Obj("headers" -> allHeaders.toList.toMap.mkString(", ")),
         ujson.Obj("query" -> (if (queryString != null && queryString.nonEmpty) queryString else "/")),
         ujson.Obj("pathInfo" -> (if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/")),
-        ujson.Obj("game" -> game.size)
+        ujson.Obj("game" -> Jsonify.toJson(game)),
+        ujson.Obj("color" -> color.toString),
+        ujson.Obj("authToken" -> token)
       )
     catch case e: ServerException =>
       response.setStatus(HttpServletResponse.SC_OK)
@@ -36,3 +39,6 @@ class RegisterPlayerServlet extends HttpServlet:
     val gameId = parts(0)
     if !(Games contains gameId) then throw NonexistentGame(gameId, Games.keys.toList)
     return (gameId, go3d.Color.Black)
+
+  private def generateAuthToken(gameId: String, color: go3d.Color): String =
+    return gameId+color.toString

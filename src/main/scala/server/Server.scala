@@ -2,7 +2,6 @@ package go3d.server
 
 import org.eclipse.jetty.server.{NetworkConnector, Server}
 import org.eclipse.jetty.servlet.ServletHandler
-import ujson._
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
