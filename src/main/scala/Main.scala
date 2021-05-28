@@ -22,7 +22,7 @@ def randomGame(size: Int): Unit =
   var color = Color.Black
   val t0 = System.nanoTime()
   var tStep0 = t0
-  while !game.possibleMoves(color).isEmpty && game.moves.length <= size*size*size do
+  while game.possibleMoves(color).nonEmpty && game.moves.length <= size*size*size do
     val move = Move(game.possibleMoves(color)(random.nextInt(game.possibleMoves(color).length)), color)
     game = game.makeMove(move)
     if game.moves.size % Step == 0 || game.moves.size == size*size*size then
