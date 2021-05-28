@@ -6,6 +6,7 @@ import scala.io.StdIn.readLine
 import scala.util.Random
 
 val Step = 500
+val DefaultBoardSize = 5
 
 def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int, verbose: Boolean = false): Unit =
   var board = goban
@@ -74,7 +75,6 @@ def readMove(message: String, possibleMoves: Set[Position], color: Color): Move|
 
 object Runner:
   type OptionMap = Map[String, Int]
-  val DefaultBoardSize = 5
   val DefaultServerPort = 3333
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =

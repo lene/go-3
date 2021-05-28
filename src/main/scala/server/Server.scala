@@ -1,38 +1,16 @@
-package server
+package go3d.server
 
-import go3d._
 import org.eclipse.jetty.server.{NetworkConnector, Server}
 import org.eclipse.jetty.servlet.ServletHandler
 import ujson._
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 
-class RegisterPlayerServlet extends HttpServlet:
-  override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
-    response.setContentType("application/json")
-    response.setStatus(HttpServletResponse.SC_OK)
-    val output = ujson.Arr(
-      ujson.Obj(
-        "hello" -> "world",
-      ), true
-    )
-    response.getWriter.println(ujson.write(output))
-
-class NewGameServlet extends HttpServlet:
-  override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
-    def gameId = IdGenerator.getId
-
-    response.setContentType("application/json")
-    response.setStatus(HttpServletResponse.SC_OK)
-    val output = ujson.Arr(
-      ujson.Obj("id" -> gameId),
-      //          ujson.Obj("game" -> newGame(5).goban.stones),
-    )
-    response.getWriter.println(ujson.write(output))
+var Games: Map[String, go3d.Game] = Map()
 
 object GoServer:
-  val registerRoute = "/register"
-  val newRoute = "/new"
+  val registerRoute = "/register/*"
+  val newRoute = "/new/*"
   val handler = new ServletHandler()
 
   def createServer(port: Int) = new Server(port)

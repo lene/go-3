@@ -1,4 +1,4 @@
-package server
+package go3d.server
 
 import scala.util.Random
 
