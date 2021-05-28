@@ -26,3 +26,4 @@ project/.bloop/
 project/metals.sbt
 scala3-3.0.0-RC3/
 cs
+go-3d-*.*.*/

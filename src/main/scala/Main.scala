@@ -1,6 +1,6 @@
 package go3d
 
-import go3d.server.JettyExample
+import server.GoServer
 
 import scala.io.StdIn.readLine
 import scala.util.Random
@@ -75,6 +75,7 @@ def readMove(message: String, possibleMoves: Set[Position], color: Color): Move|
 object Runner:
   type OptionMap = Map[String, Int]
   val DefaultBoardSize = 5
+  val DefaultServerPort = 3333
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')
@@ -90,6 +91,8 @@ object Runner:
         nextOption(map ++ Map("game_size" -> DefaultBoardSize), tail)
       case "--server" :: tail =>
         nextOption(map ++ Map("server" -> 0), tail)
+      case "--port" :: value :: tail =>
+        nextOption(map ++ Map("port" -> value.toInt), tail)
       case option :: tail =>
         if option.matches("\\d+") then
           nextOption(map ++ Map("benchmark_size" -> option.toInt), tail)
@@ -104,6 +107,7 @@ object Runner:
       randomGame(options("benchmark_size"))
     else if options.contains("game_size") then
       playGame(options("game_size"))
-    else if options.contains("server") then
-      JettyExample.runServer()
-    else randomGame(DefaultBoardSize)
+    else if options.contains("server") then {
+      val port = options.getOrElse("port", DefaultServerPort)
+      GoServer.run(port)
+    } else randomGame(DefaultBoardSize)
