@@ -1,7 +1,7 @@
 package go3d.testing
 
 import go3d._
-import go3d.Color.{Black, White, Empty}
+import go3d.{Black, White, Empty}
 import org.junit.{Assert, Ignore, Test}
 import scala.util.Random
 
@@ -273,8 +273,8 @@ class TestGame:
     val game = playListOfMoves(5, moves)
     Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Black).length)
     Assert.assertFalse(game.possibleMoves(Black).contains(Move(2, 2, 3, Black)))
-    Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Color.Black).length)
-    Assert.assertFalse(game.possibleMoves(Color.Black).contains(Move(2, 2, 3, Color.Black)))
+    Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Black).length)
+    Assert.assertFalse(game.possibleMoves(Black).contains(Move(2, 2, 3, Black)))
 
   @Test def testScoring(): Unit =
     val finalSituation = Map(

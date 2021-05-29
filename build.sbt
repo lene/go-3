@@ -9,7 +9,6 @@ lazy val root = project
     name := "go-3d",
     version := "0.6.0",
     maintainer := "lene.preuss@gmail.com",
-
     scalaVersion := scala3Version,
 
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
@@ -17,6 +16,6 @@ lazy val root = project
     libraryDependencies ++= Seq(
         "org.eclipse.jetty" % "jetty-servlet" % "9.4.9.v20180320",
         "org.eclipse.jetty" % "jetty-server" % "9.4.9.v20180320",
-        "com.lihaoyi" %% "ujson" % "1.3.15"
-    )
+    ),
+    libraryDependencies += "com.google.code.gson" % "gson" % "2.8.7"
   )

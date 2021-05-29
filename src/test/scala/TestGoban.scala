@@ -1,7 +1,7 @@
 package go3d.testing
 
 import go3d._
-import go3d.Color.{Black, White, Empty, Sentinel}
+import go3d.{Black, White, Empty, Sentinel}
 import org.junit.{Assert, Ignore, Test}
 
 class TestGoban:

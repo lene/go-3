@@ -1,7 +1,7 @@
 package go3d.testing
 
 import org.junit.{Assert, Test}
-import go3d.Color._
+import go3d.{Black, White, Empty, Sentinel}
 
 class TestColor:
   @Test def testColorsNotEqual(): Unit =

@@ -35,8 +35,8 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
         for x <- 0 to size + 1 do
           out += goban.at(x, y, z)
         if z < size then out += "|"
-        else if y == 1 then out += " "+Color.Black.toString*captures(Color.Black)
-        else if y == 3 then out += " "+Color.White.toString*captures(Color.White)
+        else if y == 1 then out += " "+Black.toString*captures(Black)
+        else if y == 3 then out += " "+White.toString*captures(White)
       out += "\n"
     out
 
@@ -53,7 +53,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def score: Map[Color, Int] =
     var scores = mutable.Map[Color, Int]().withDefaultValue(0)
-    for color <- List(Color.Black, Color.White) do
+    for color <- List(Black, White) do
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
       scores(color) = scores(color) - captures(color)
     val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
@@ -73,7 +73,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   private def addToConnectedAreas(emptyPositions: Seq[Position], areas: Set[Set[Move]]): Set[Set[Move]] =
     if emptyPositions.isEmpty then return areas
-    val connected = connectedStones(Move(emptyPositions.last, Color.Empty))
+    val connected = connectedStones(Move(emptyPositions.last, Empty))
     return addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
 
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =

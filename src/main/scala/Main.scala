@@ -20,7 +20,7 @@ def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int, verbose: Boo
 def randomGame(size: Int): Unit =
   val random = new Random
   var game = newGame(size)
-  var color = Color.Black
+  var color = Black
   val t0 = System.nanoTime()
   var tStep0 = t0
   while game.possibleMoves(color).nonEmpty && game.moves.length <= size*size*size do
@@ -39,7 +39,7 @@ def randomGame(size: Int): Unit =
 def playGame(boardSize: Int): Unit =
   val game = newGame(boardSize)
   try
-    val finished_game = makeMove(game, Color.Black)
+    val finished_game = makeMove(game, Black)
     println(finished_game.score)
   catch case e: GameOver => println(s"game over. score: ${e.game.score}")
 
@@ -71,7 +71,7 @@ def readMove(message: String, possibleMoves: Set[Position], color: Color): Move|
     case e: InterruptedException =>
       println("Goodbye.")
       System.exit(1)
-      Move(1, 1, 1, Color.Black)
+      Move(1, 1, 1, Black)
 
 object Runner:
   type OptionMap = Map[String, Int]

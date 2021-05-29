@@ -1,7 +1,7 @@
 package go3d.testing
 
 import go3d._
-import go3d.Color.{Black, White}
+import go3d.{Black, White}
 import org.junit.Assert
 
 import scala.reflect.ClassTag
