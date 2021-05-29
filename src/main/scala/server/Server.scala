@@ -1,11 +1,10 @@
 package go3d.server
 
+import go3d.{Color, Game}
+
 import org.eclipse.jetty.server.{NetworkConnector, Server}
 import org.eclipse.jetty.servlet.ServletHandler
-
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
-
-var Games: Map[String, go3d.Game] = Map()
 
 object GoServer:
   val registerRoute = "/register/*"

@@ -19,4 +19,5 @@ def colorFromChar(c: Char): Color =
     case '@' => Black
     case 'O' => White
     case ' ' => Empty
+    case '·' => Sentinel
     case _ => throw IllegalArgumentException(toString)

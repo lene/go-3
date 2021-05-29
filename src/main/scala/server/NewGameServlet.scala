@@ -8,10 +8,8 @@ class NewGameServlet extends HttpServlet:
     response.setContentType("application/json")
     var output: GoResponse = ErrorResponse("i have no idea what happened")
     try
-      val gameId = IdGenerator.getId
       val boardSize = getBoardSize(request.getPathInfo)
-      val game = go3d.newGame(boardSize)
-      Games = Games + (gameId -> game)
+      val gameId = registerGame(boardSize)
       response.setStatus(HttpServletResponse.SC_OK)
       output = GameCreatedResponse(gameId, boardSize)
     catch case e: go3d.BadBoardSize =>
