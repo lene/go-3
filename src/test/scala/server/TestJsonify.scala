@@ -30,6 +30,16 @@ class TestJsonify:
     Assert.assertTrue(json, json.contains(""""moves":[]"""))
     Assert.assertTrue(json, json.contains(""""captures":{}"""))
 
+  @Test def testSaveGameToJson(): Unit =
+    val gameId = registerGame(TestSize)
+    val player = registerPlayer(Black, gameId, "mock@")
+    val saveGame = SaveGame(Games(gameId), Players(gameId))
+    val json = Jsonify.toJson(saveGame)
+    Assert.assertTrue(json, json.contains(""""size":"""+TestSize.toString))
+    Assert.assertTrue(json, json.contains(""""goban":"""))
+    Assert.assertTrue(json, json.contains(""""moves":[]"""))
+    Assert.assertTrue(json, json.contains(""""captures":{}"""))
+
   @Test def testJsonToColor(): Unit =
     for color <- List(Black, White, Empty, Sentinel) do
       val json = Jsonify.fromJson[Color](s""""${color.toString}"""")

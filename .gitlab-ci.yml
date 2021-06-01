@@ -15,7 +15,7 @@ include:
 
 # This job installs sbt by itself. It is somewhat slower than the ones based on scala-sbt below.
 # I leave it in mostly for documentation how to install the environment.
-Test:
+Test:BuildSbt:
   image: ubuntu:20.04
   stage: test
   needs: []
@@ -32,7 +32,7 @@ Test:
     - sbt test
 
 # The following ones use a prepared docker image for sbt.
-Test:UseSbtDocker:
+Test:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
   stage: test
   needs: []
@@ -50,7 +50,7 @@ Run:UseSbtDocker:
   script:
     - sbt run
 
-CheckRunTime:UseSbtDocker:
+CheckRunTime:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
   stage: test
   needs: []
