@@ -82,7 +82,7 @@ def fromStrings(levels: Map[Int, String]): Goban = {
     val lines = level.stripMargin.replace("|", "").split("\n")
     for (line, y) <- lines.zipWithIndex do
       for (stone, x) <- line.zipWithIndex do
-        goban.stones(x+1)(y+1)(z) = colorFromChar(stone)
+        goban.stones(x+1)(y+1)(z) = Color(stone)
   return goban
 }
 

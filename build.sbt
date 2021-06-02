@@ -1,6 +1,7 @@
 import sbt.Keys.libraryDependencies
 
 val scala3Version = "3.0.0"
+val circeVersion = "0.14.1"
 
 lazy val root = project
   .in(file("."))
@@ -17,5 +18,11 @@ lazy val root = project
         "org.eclipse.jetty" % "jetty-servlet" % "9.4.9.v20180320",
         "org.eclipse.jetty" % "jetty-server" % "9.4.9.v20180320",
     ),
-    libraryDependencies += "com.google.code.gson" % "gson" % "2.8.7"
-  )
+    libraryDependencies += "com.google.code.gson" % "gson" % "2.8.7",
+
+    libraryDependencies ++= Seq(
+        "io.circe" %% "circe-core",
+        "io.circe" %% "circe-generic",
+        "io.circe" %% "circe-parser"
+    ).map(_ % circeVersion),
+)

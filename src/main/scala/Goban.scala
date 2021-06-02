@@ -13,6 +13,15 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
 
+  override def equals(obj: Any): Boolean =
+    obj match
+      case g: Goban =>
+        if size != g.size then return false
+        else
+          for pos <- allPositions do if at(pos) != g.at(pos) then return false
+          return true
+      case _ => return false
+
   override def clone(): Goban = Goban(size, deepCopy(stones))
 
   def -(other: Goban): IndexedSeq[Move] =

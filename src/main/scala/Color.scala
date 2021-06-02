@@ -1,8 +1,12 @@
 package go3d
 
-class Color(ascii: Char):
+import scala.language.implicitConversions
+
+case class Color(ascii: Char):
+  if !Set(' ', '@', 'O', '·').contains(ascii) then throw BadColor(ascii)
   override def toString: String = ascii.toString
-   
+  override def hashCode(): Int = toString.hashCode()
+
   def unary_! =
     ascii match
       case '@' => White
@@ -14,10 +18,5 @@ val Black = Color('@')
 val White = Color('O')
 val Sentinel = Color('·')
 
-def colorFromChar(c: Char): Color =
-  c match
-    case '@' => Black
-    case 'O' => White
-    case ' ' => Empty
-    case '·' => Sentinel
-    case _ => throw IllegalArgumentException(toString)
+implicit def colorToChar(col: Color): Char = col.ascii
+implicit def charToColor(c: Char): Color = Color(c)

@@ -10,6 +10,11 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
   def captures(color: Color): Int = captures.values.filter(_(0).color == color).flatten.size
   def lastCapture: List[Move] = if captures.isEmpty then List() else captures.last._2
 
+  override def equals(obj: Any): Boolean =
+    obj match
+      case g: Game => goban == g.goban && moves.toString == g.moves.toString && captures.toString == g.captures.toString
+      case _ => false
+
   def at(pos: Position): Color = goban.at(pos)
   def at(x: Int, y: Int, z: Int): Color = at(Position(x, y, z))
 
@@ -29,7 +34,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     if isKo(move) then throw Ko(move)
 
   override def toString: String =
-    var out = ""
+    var out = "\n"
     for y <- 0 to size + 1 do
       for z <- 1 to size do
         for x <- 0 to size + 1 do
@@ -38,6 +43,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
         else if y == 1 then out += " "+Black.toString*captures(Black)
         else if y == 3 then out += " "+White.toString*captures(White)
       out += "\n"
+    out += captures.toString + "\n" + moves.toString
     out
 
   def setStone(move: Move): Game = doCaptures(move, goban.setStone(move))

@@ -24,6 +24,7 @@ class TestIo:
     io.saveGame(gameId)
     Assert.assertTrue(io.exists(s"$gameId.json"))
 
+  @Ignore
   @Test def testSaveGameContents(): Unit =
     val gameId = registerGame(TestSize)
     val player = registerPlayer(Black, gameId, "mock@")

@@ -1,6 +1,6 @@
 package go3d.server
 
-import go3d.{Color, colorFromChar}
+import go3d.Color
 
 import java.util.Collections
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
@@ -42,7 +42,7 @@ class RegisterPlayerServlet extends HttpServlet:
     if parts.isEmpty then throw MalformedRequest(pathInfo)
     val gameId = parts(0)
     if !(Games contains gameId) then throw NonexistentGame(gameId, Games.keys.toList)
-    val color = colorFromChar(parts(1)(0))
+    val color = Color(parts(1)(0))
     if Players.contains(gameId) && Players(gameId).contains(color) then
       throw DuplicateColor(gameId, color)
     return (gameId, color)
