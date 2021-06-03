@@ -1,6 +1,6 @@
 package go3d.server
 
-import go3d.{Color, Game, Goban, Move, Pass, Position}
+import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position}
 
 import java.lang.reflect.Type
 import com.google.gson._
@@ -81,7 +81,26 @@ implicit val decodeMove: Decoder[Move] = new Decoder[Move] {
 }
 
 implicit val encodeMovePass: Encoder[Move | Pass] = new Encoder[Move | Pass] {
-  final def apply(move: Move | Pass): Json =
+  final def apply(move: Move | Pass): Json = encodeHasColor(move)
+}
+
+implicit val decodeMovePass: Decoder[Move | Pass] = new Decoder[Move | Pass] {
+  final def apply(c: HCursor): Decoder.Result[Move | Pass] =
+    val keys = c.keys.getOrElse(List[String]()).toSet
+    if keys.contains("position") then
+      for
+        pos <- c.downField("position").as[Position]
+        col <- c.downField("color").as[Color]
+      yield new Move(pos, col)
+    else
+      for
+        pass <- c.downField("pass").as[Boolean]
+        col <- c.downField("color").as[Color]
+      yield new Pass(col)
+}
+
+implicit val encodeHasColor: Encoder[HasColor] = new Encoder[HasColor] {
+  final def apply(move: HasColor): Json =
     move match
       case m: Move => encodeMove(m)
       case p: Pass => Json.obj(
@@ -90,16 +109,19 @@ implicit val encodeMovePass: Encoder[Move | Pass] = new Encoder[Move | Pass] {
       )
 }
 
-implicit val decodeMovePass: Decoder[Move | Pass] = new Decoder[Move | Pass] {
-  final def apply(c: HCursor): Decoder.Result[Move | Pass] =
-    for
-      pos <- c.downField("position").as[Position]
-//      pass <- c.downField("pass").as[Boolean]
-      col <- c.downField("color").as[Color]
-    yield {
-      println(s"******** $pos pass $col")
-      new Move(pos, col)
-    }
+implicit val decodeHasColor: Decoder[HasColor] = new Decoder[HasColor] {
+  final def apply(c: HCursor): Decoder.Result[HasColor] =
+    val keys = c.keys.getOrElse(List[String]()).toSet
+    if keys.contains("position") then
+      for
+        pos <- c.downField("position").as[Position]
+        col <- c.downField("color").as[Color]
+      yield new Move(pos, col)
+    else
+      for
+        pass <- c.downField("pass").as[Boolean]
+        col <- c.downField("color").as[Color]
+      yield new Pass(col)
 }
 
 implicit val encodeGoban: Encoder[Goban] = new Encoder[Goban] {
@@ -120,7 +142,7 @@ implicit val encodeGame: Encoder[Game] = new Encoder[Game] {
   final def apply(game: Game): Json = Json.obj(
     ("size", Json.fromInt(game.size)),
     ("goban", game.goban.asJson),
-//    ("moves", game.moves.asJson),
+    ("moves", game.moves.asJson),
     ("captures", game.captures.asJson)
   )
 }
@@ -130,9 +152,9 @@ implicit val decodeGame: Decoder[Game] = new Decoder[Game] {
     for
       size <- c.downField("size").as[Int]
       goban <- c.downField("goban").as[Goban]
-//      moves <- c.downField("moves").as[Array[Move | Pass]]
-      captures <- c.downField("captures").as[Map[Int, List[Move]]]
-    yield new Game(size, goban, Array(), captures)
+      moves <- c.downField("moves").as[Array[Move | Pass]]
+      captures <- c.downField("captures").as[Map[Int, Array[Move]]]
+    yield new Game(size, goban, moves, captures)
 }
 
 object Jsonify:

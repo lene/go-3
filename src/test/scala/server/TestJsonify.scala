@@ -95,8 +95,8 @@ class TestJsonify:
   @Test def testUseCirceForListMovePassJson(): Unit =
     val moves = List[Move | Pass](Move(1, 1, 1, Black), Pass(White))
     val json = moves.asJson.noSpaces
-    val decoded = decode[List[Move | Pass]](json)//.getOrElse(null)
-    Assert.assertEquals(json, moves, decoded)
+    val decoded = decode[List[Move | Pass]](json).getOrElse(null)
+    Assert.assertEquals(moves.toString, decoded.toString)
 
   @Test def testUseCirceForPrimitiveMapJson(): Unit =
     val map = Map(1 -> "a")
@@ -139,7 +139,13 @@ class TestJsonify:
     val game = newGame(TestSize)
     val json = game.asJson.noSpaces
     val decoded = decode[Game](json).getOrElse(null)
-    Assert.assertEquals(game, decoded)
+    Assert.assertEquals(json, game, decoded)
+
+  @Test def testUseCirceForNonEmptyGameJson(): Unit =
+    val game = playListOfMoves(TestSize, CaptureMoves)
+    val json = game.asJson.noSpaces
+    val decoded = decode[Game](json).getOrElse(null)
+    Assert.assertEquals(json, game, decoded)
 
   @Ignore
   @Test def testListMovesJson(): Unit =

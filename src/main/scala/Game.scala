@@ -2,17 +2,17 @@ package go3d
 
 import collection.mutable
 
-def newGame(size: Int): Game = Game(size, newGoban(size), Array(), Map[Int, List[Move]]())
+def newGame(size: Int): Game = Game(size, newGoban(size), Array(), Map[Int, Array[Move]]())
 
 class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
-           val captures: Map[Int, List[Move]]) extends GoGame:
+           val captures: Map[Int, Array[Move]]) extends GoGame:
 
   def captures(color: Color): Int = captures.values.filter(_(0).color == color).flatten.size
-  def lastCapture: List[Move] = if captures.isEmpty then List() else captures.last._2
+  def lastCapture: Array[Move] = if captures.isEmpty then Array() else captures.last._2
 
   override def equals(obj: Any): Boolean =
     obj match
-      case g: Game => goban == g.goban && moves.toString == g.moves.toString && captures.toString == g.captures.toString
+      case g: Game => goban == g.goban && toString == g.toString
       case _ => false
 
   def at(pos: Position): Color = goban.at(pos)
@@ -43,7 +43,9 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
         else if y == 1 then out += " "+Black.toString*captures(Black)
         else if y == 3 then out += " "+White.toString*captures(White)
       out += "\n"
-    out += captures.toString + "\n" + moves.toString
+    for (move, caps) <- captures do
+      out += s"$move: ${caps.toList}\n"
+    out += moves.toList.toString
     out
 
   def setStone(move: Move): Game = doCaptures(move, goban.setStone(move))
@@ -97,7 +99,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   private def doCaptures(move: Move, board: Goban): Game =
     val newBoard = captureNeighbors(board, board.neighbors(move.position), move.color)
-    val captured = (board-newBoard).toList
+    val captured = (board-newBoard).toArray
     val newCaptures = if captured.nonEmpty then captures + (moves.length -> captured) else captures
     return Game(size, newBoard, moves, newCaptures)
 
