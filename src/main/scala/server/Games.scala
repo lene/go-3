@@ -7,3 +7,8 @@ def registerGame(boardSize: Int): String =
   val game = go3d.newGame(boardSize)
   Games = Games + (gameId -> game)
   return gameId
+
+def restoreGame(saveGame: SaveGame): Unit =
+  val gameId = saveGame.players.last._2.gameId
+  Players(gameId) = saveGame.players
+  Games = Games + (gameId -> saveGame.game)

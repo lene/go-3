@@ -10,28 +10,39 @@ import scala.io.Source
 import io.circe.parser._
 
 class TestIo:
-  val io = Io(Files.createTempDirectory("go3d").toString)
+
+  Io.init(Files.createTempDirectory("go3d").toString)
+
   @Test def testSaveGameFailsNonexistentGame(): Unit =
     val gameId = "mock"
-    assertThrows[NoSuchElementException]({io.saveGame(gameId)})
+    assertThrows[NoSuchElementException]({Io.saveGame(gameId)})
 
   @Test def testSaveGameFailsNonexistentPlayers(): Unit =
     val gameId = registerGame(TestSize)
-    assertThrows[NoSuchElementException]({io.saveGame(gameId)})
+    assertThrows[NoSuchElementException]({Io.saveGame(gameId)})
 
   @Test def testSaveGameWritesFile(): Unit =
     val gameId = registerGame(TestSize)
     val player = registerPlayer(Black, gameId, "mock@")
-    io.saveGame(gameId)
-    Assert.assertTrue(io.exists(s"$gameId.json"))
+    Io.saveGame(gameId)
+    Assert.assertTrue(Io.exists(s"$gameId.json"))
 
   @Test def testSaveGameContents(): Unit =
     val gameId = registerGame(TestSize)
     val player = registerPlayer(Black, gameId, "mock@")
-    val path = io.saveGame(gameId)
+    val path = Io.saveGame(gameId)
     val restored = decode[SaveGame](Source.fromFile(path.toFile).getLines.mkString)
     Assert.assertTrue(restored.isRight)
     val value = restored.getOrElse(null)
     Assert.assertEquals(TestSize, value.game.size)
     Assert.assertTrue(value.players.nonEmpty)
     Assert.assertTrue(value.players.contains(Black))
+
+  @Test def testExists =
+    Io.writeFile("test", "")
+    Assert.assertTrue(Io.exists("test"))
+    Assert.assertFalse(Io.exists("this file should not exist"))
+
+  @Test def testGetListOfJsonFiles(): Unit =
+    Io.writeFile("test.json", "")
+    Assert.assertEquals(List("test.json"), Io.getListOfFiles(".json").map(f => f.getName))

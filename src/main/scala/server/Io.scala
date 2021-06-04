@@ -3,22 +3,40 @@ package go3d.server
 import go3d.{Color, Game}
 
 import scala.collection.mutable
-import java.nio.file.{Path, Paths, Files}
+import collection.convert.ImplicitConversions._
+import java.nio.file.{Files, Path, Paths}
 import java.nio.charset.StandardCharsets
 import io.circe.syntax.EncoderOps
 
+import java.io.File
+
 case class SaveGame(val game: Game, val players: Map[Color, Player])
 
-class Io(baseFolder: String):
-  val basePath = Paths.get(baseFolder)
+object Io:
+  var baseFolder: String = null
+  var basePath: Path = null
+
+  def init(dir: String): Unit =
+//    if baseFolder != null then throw IllegalArgumentException("called Io.init() twice")
+    baseFolder = dir
+    basePath = Paths.get(baseFolder)
+    if !(Files.exists(basePath) && Files.isDirectory(basePath))
+    then throw IllegalArgumentException(s"$dir not a directory")
+
   def saveGame(gameId: String): Path =
+    if basePath == null then throw IllegalArgumentException("call Io.init() before using Io")
     if !Files.exists(basePath) then Files.createDirectory(basePath)
-    val savepath = Paths.get(baseFolder, s"$gameId.json")
-    writeFile(savepath, SaveGame(Games(gameId), Players(gameId)).asJson.noSpaces)
-    return savepath
+    writeFile(s"$gameId.json", SaveGame(Games(gameId), Players(gameId)).asJson.noSpaces)
 
+  def writeFile(saveFile: String, content: String): Path =
+    val path = Paths.get(baseFolder, saveFile)
+    Files.write(path, content.getBytes(StandardCharsets.UTF_8))
+    return path
 
-  def writeFile(saveFile: Path, content: String): Unit =
-    Files.write(saveFile, content.getBytes(StandardCharsets.UTF_8))
+  def exists(filename: String): Boolean =
+    if basePath == null then throw IllegalArgumentException("call Io.init() before using Io")
+    Files.exists(Paths.get(baseFolder, filename))
 
-  def exists(filename: String): Boolean = Files.exists(Paths.get(baseFolder, filename))
+  def getListOfFiles(extension: String): List[File] =
+    if basePath == null then throw IllegalArgumentException("call Io.init() before using Io")
+    new java.io.File(baseFolder).listFiles.toList.filter(_.getName.endsWith(extension))

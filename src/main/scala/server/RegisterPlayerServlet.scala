@@ -8,8 +8,6 @@ import io.circe.syntax.EncoderOps
 
 class RegisterPlayerServlet extends HttpServlet:
 
-  val savePath = "Go3D-Savegames"
-
   override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
     response.setContentType("application/json")
     var output = ErrorResponse("i have no idea what happened").asJson.noSpaces
@@ -28,7 +26,7 @@ class RegisterPlayerServlet extends HttpServlet:
         if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/"
       )
       output = PlayerRegisteredResponse(Games(gameId), color, token, debug).asJson.noSpaces
-      Io(savePath).saveGame(gameId)
+      Io.saveGame(gameId)
     catch case e: ServerException =>
       response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       output = ErrorResponse(e.message.toString).asJson.noSpaces

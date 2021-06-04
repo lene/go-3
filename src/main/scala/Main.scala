@@ -74,8 +74,9 @@ def readMove(message: String, possibleMoves: Set[Position], color: Color): Move|
       Move(1, 1, 1, Black)
 
 object Runner:
-  type OptionMap = Map[String, Int]
+  type OptionMap = Map[String, Int|String]
   val DefaultServerPort = 3333
+  val DefaultSaveDir = "./Go3D-Savegames"
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')
@@ -93,6 +94,8 @@ object Runner:
         nextOption(map ++ Map("server" -> 0), tail)
       case "--port" :: value :: tail =>
         nextOption(map ++ Map("port" -> value.toInt), tail)
+      case "--save-dir" :: value :: tail =>
+        nextOption(map ++ Map("save_dir" -> value), tail)
       case option :: tail =>
         if option.matches("\\d+") then
           nextOption(map ++ Map("benchmark_size" -> option.toInt), tail)
@@ -104,10 +107,12 @@ object Runner:
   def main(args: Array[String]): Unit =
     val options = nextOption(Map(), args.toList)
     if options.contains("benchmark_size") then
-      randomGame(options("benchmark_size"))
+      randomGame(options("benchmark_size").asInstanceOf[Int])
     else if options.contains("game_size") then
-      playGame(options("game_size"))
+      playGame(options("game_size").asInstanceOf[Int])
     else if options.contains("server") then {
-      val port = options.getOrElse("port", DefaultServerPort)
+      val port = options.getOrElse("port", DefaultServerPort).asInstanceOf[Int]
+      val saveDir = options.getOrElse("save_dir", DefaultSaveDir).asInstanceOf[String]
+      GoServer.loadGames(saveDir)
       GoServer.run(port)
     } else randomGame(DefaultBoardSize)

@@ -13,6 +13,8 @@ import scala.io.Source
 import scala.reflect.ClassTag
 import io.circe.parser._
 
+import java.nio.file.Files
+
 val TestPort = 64555
 
 class TestServer:
@@ -26,6 +28,9 @@ class TestServer:
     handler.addServletWithMapping(classOf[RegisterPlayerServlet], GoServer.registerRoute)
     jetty.setHandler(handler)
     jetty.start()
+
+  @Before def setupTempDir(): Unit =
+    Io.init(Files.createTempDirectory("go3d").toString)
 
   @After def stopJetty(): Unit = jetty.stop()
 
