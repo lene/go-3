@@ -5,6 +5,7 @@ import go3d.{Color, Game}
 import scala.collection.mutable
 import java.nio.file.{Path, Paths, Files}
 import java.nio.charset.StandardCharsets
+import io.circe.syntax.EncoderOps
 
 case class SaveGame(val game: Game, val players: Map[Color, Player])
 
@@ -13,7 +14,7 @@ class Io(baseFolder: String):
   def saveGame(gameId: String): Path =
     if !Files.exists(basePath) then Files.createDirectory(basePath)
     val savepath = Paths.get(baseFolder, s"$gameId.json")
-    writeFile(savepath, Jsonify.toJson(SaveGame(Games(gameId), Players(gameId))))
+    writeFile(savepath, SaveGame(Games(gameId), Players(gameId)).asJson.noSpaces)
     return savepath
 
 

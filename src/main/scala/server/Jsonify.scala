@@ -2,33 +2,9 @@ package go3d.server
 
 import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position}
 
-import java.lang.reflect.Type
-import com.google.gson._
 import io.circe._
-import io.circe.generic.auto._
 import io.circe.parser._
 import io.circe.syntax._
-import io.circe.Encoder.AsObject.importedAsObjectEncoder
-
-import scala.reflect.ClassTag
-import scala.collection.mutable
-
-object ColorSerializer extends JsonSerializer[Color]:
-  override def serialize(color: Color, t2: Type,
-                         jsonSerializationContext: JsonSerializationContext): JsonElement =
-    JsonPrimitive(color.toString)
-
-object ColorDeserializer extends JsonDeserializer[Color]:
-  override def deserialize(json: JsonElement, typeOfT: Type,
-                           context: JsonDeserializationContext): Color =
-    val res = json.getAsJsonPrimitive().getAsString
-    Color(res.charAt(0))
-
-object MoveMapInstanceCreator extends InstanceCreator[Map[Int, List[Move]]]:
-  override def createInstance(typeOfT: Type) = Map()
-
-object PlayerMapInstanceCreator extends InstanceCreator[mutable.Map[Color, Player]]:
-  override def createInstance(typeOfT: Type) = mutable.Map[Color, Player]()
 
 implicit val encodeColor: Encoder[Color] = new Encoder[Color] {
   final def apply(col: Color): Json = Json.obj(("color", Json.fromString(col.toString)))
@@ -252,25 +228,3 @@ implicit val decodePlayerRegisteredResponse: Decoder[PlayerRegisteredResponse] =
       debug <- c.downField("debug").as[RequestDebugInfo]
     yield new PlayerRegisteredResponse(game, color, authToken, debug)
 }
-
-object Jsonify:
-  val mygson = new GsonBuilder()
-    .registerTypeAdapter(classOf[Color], ColorSerializer)
-    .registerTypeAdapter(classOf[Color], ColorDeserializer)
-    .registerTypeAdapter(classOf[Map[Int, List[Move]]], MoveMapInstanceCreator)
-//    .registerTypeAdapter(classOf[mutable.Map[Color, Player]], PlayerMapInstanceCreator)
-    .create()
-
-  def toJson[T](obj: T): String = mygson.toJson(obj)
-//  def toJson[T](obj: T): String = obj.asJson.noSpaces
-
-//  def fromJson[Map[Int, String]](json: String) =
-//    mygson.fromJson(json, classOf[java.util.Map[Int, String]]).asInstanceOf[Map[Int, String]]
-
-//  def toJson(obj: Position): String = obj.asJson.noSpaces
-//  def toJson(obj: Move): String = obj.asJson.noSpaces
-
-  def fromJson[T](json: String)(implicit ct: ClassTag[T]) =
-    mygson.fromJson(json, ct.runtimeClass).asInstanceOf[T]
-
-//  def fromJson[T](json: String)(implicit ct: ClassTag[T]): T = decode[T](json).getOrElse(null)

@@ -18,7 +18,6 @@ lazy val root = project
         "org.eclipse.jetty" % "jetty-servlet" % "9.4.9.v20180320",
         "org.eclipse.jetty" % "jetty-server" % "9.4.9.v20180320",
     ),
-    libraryDependencies += "com.google.code.gson" % "gson" % "2.8.7",
 
     libraryDependencies ++= Seq(
         "io.circe" %% "circe-core",

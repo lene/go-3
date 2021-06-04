@@ -4,6 +4,7 @@ import go3d.Color
 
 import java.util.Collections
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import io.circe.syntax.EncoderOps
 
 class RegisterPlayerServlet extends HttpServlet:
 
@@ -11,7 +12,7 @@ class RegisterPlayerServlet extends HttpServlet:
 
   override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
     response.setContentType("application/json")
-    var output: GoResponse = ErrorResponse("i have no idea what happened")
+    var output = ErrorResponse("i have no idea what happened").asJson.noSpaces
     try
       response.setStatus(HttpServletResponse.SC_OK)
       val headerNames = Collections.list(request.getHeaderNames).toArray
@@ -26,15 +27,14 @@ class RegisterPlayerServlet extends HttpServlet:
         if (queryString != null && queryString.nonEmpty) queryString else "/",
         if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/"
       )
-      output = PlayerRegisteredResponse(Games(gameId), color, token, debug)
+      output = PlayerRegisteredResponse(Games(gameId), color, token, debug).asJson.noSpaces
       Io(savePath).saveGame(gameId)
     catch case e: ServerException =>
       response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-      output = ErrorResponse(e.message.toString)
+      output = ErrorResponse(e.message.toString).asJson.noSpaces
     finally
-      val json = Jsonify.toJson(output)
-      println(json)
-      response.getWriter.println(json)
+      println(output)
+      response.getWriter.println(output)
 
   private def getGameId(pathInfo: String): (String, go3d.Color) =
     if pathInfo == null || pathInfo.isEmpty then throw MalformedRequest(pathInfo)
