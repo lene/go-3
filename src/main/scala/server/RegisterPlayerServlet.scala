@@ -1,6 +1,6 @@
 package go3d.server
 
-import go3d.Color
+import go3d.{Color, Black, White}
 
 import java.util.Collections
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
@@ -20,12 +20,13 @@ class RegisterPlayerServlet extends HttpServlet:
       val (gameId, color) = getGameId(pathInfo)
       val token = generateAuthToken(gameId, color)
       val player = registerPlayer(color, gameId, token)
+      val ready = (color == Black) && Players(gameId).contains(White)
       val debug = RequestDebugInfo(
         headers.toList.toMap,
         if (queryString != null && queryString.nonEmpty) queryString else "/",
         if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/"
       )
-      output = PlayerRegisteredResponse(Games(gameId), color, token, debug).asJson.noSpaces
+      output = PlayerRegisteredResponse(Games(gameId), color, token, ready, debug).asJson.noSpaces
       Io.saveGame(gameId)
     catch case e: ServerException =>
       response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)

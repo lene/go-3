@@ -215,6 +215,7 @@ implicit val encodePlayerRegisteredResponse: Encoder[PlayerRegisteredResponse] =
     ("game", response.game.asJson),
     ("color", response.color.asJson),
     ("authToken", Json.fromString(response.authToken)),
+    ("ready", Json.fromBoolean(response.ready)),
     ("debug", response.debug.asJson)
   )
 }
@@ -225,6 +226,7 @@ implicit val decodePlayerRegisteredResponse: Decoder[PlayerRegisteredResponse] =
       game <- c.downField("game").as[Game]
       color <- c.downField("color").as[Color]
       authToken <- c.downField("authToken").as[String]
+      ready <- c.downField("ready").as[Boolean]
       debug <- c.downField("debug").as[RequestDebugInfo]
-    yield new PlayerRegisteredResponse(game, color, authToken, debug)
+    yield new PlayerRegisteredResponse(game, color, authToken, ready, debug)
 }

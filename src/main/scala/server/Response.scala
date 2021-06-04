@@ -7,5 +7,5 @@ case class ErrorResponse(err: String) extends GoResponse
 case class GameCreatedResponse(id: String, size: Int) extends GoResponse
 case class RequestDebugInfo(headers: Map[String, String], query: String, pathInfo: String) 
   extends GoResponse
-case class PlayerRegisteredResponse(game: Game, color: Color, authToken: String,
+case class PlayerRegisteredResponse(game: Game, color: Color, authToken: String, ready: Boolean,
                                     debug: RequestDebugInfo) extends GoResponse

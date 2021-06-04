@@ -68,6 +68,18 @@ class TestServer:
     Assert.assertEquals(TestSize, registerResponse.game.size)
     Assert.assertEquals(White, registerResponse.color)
 
+  @Test def testRegisterTwoPlayersBlackLastSetsReady(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val registerResponse = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    Assert.assertTrue(registerResponse.ready)
+
   @Test def testRegisterOnePlayerTwiceFails(): Unit =
     val newGameResponse = getGCR(
       s"http://localhost:$TestPort/new/$TestSize"
