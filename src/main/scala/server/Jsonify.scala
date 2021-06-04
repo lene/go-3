@@ -157,6 +157,102 @@ implicit val decodeGame: Decoder[Game] = new Decoder[Game] {
     yield new Game(size, goban, moves, captures)
 }
 
+implicit val encodePlayer: Encoder[Player] = new Encoder[Player] {
+  final def apply(player: Player): Json = Json.obj(
+    ("color", player.color.asJson),
+    ("gameId", Json.fromString(player.gameId)),
+    ("token", Json.fromString(player.token))
+  )
+}
+
+implicit val decodePlayer: Decoder[Player] = new Decoder[Player] {
+  final def apply(c: HCursor): Decoder.Result[Player] =
+    for
+      color <- c.downField("color").as[Color]
+      gameId <- c.downField("gameId").as[String]
+      token <- c.downField("token").as[String]
+    yield new Player(color, gameId, token)
+}
+
+implicit val encodeSaveGame: Encoder[SaveGame] = new Encoder[SaveGame] {
+  final def apply(saveGame: SaveGame): Json = Json.obj(
+    ("game", saveGame.game.asJson),
+    ("players", saveGame.players.asJson),
+  )
+}
+
+implicit val decodeSaveGame: Decoder[SaveGame] = new Decoder[SaveGame] {
+  final def apply(c: HCursor): Decoder.Result[SaveGame] =
+    for
+      game <- c.downField("game").as[Game]
+      players <- c.downField("players").as[Map[Color, Player]]
+    yield new SaveGame(game, players)
+}
+
+implicit val encodeErrorResponse: Encoder[ErrorResponse] = new Encoder[ErrorResponse] {
+  final def apply(response: ErrorResponse): Json = Json.obj(
+    ("error", Json.fromString(response.err))
+  )
+}
+
+implicit val decodeErrorResponse: Decoder[ErrorResponse] = new Decoder[ErrorResponse] {
+  final def apply(c: HCursor): Decoder.Result[ErrorResponse] =
+    for
+      err <- c.downField("error").as[String]
+    yield new ErrorResponse(err)
+}
+
+implicit val encodeGameCreatedResponse: Encoder[GameCreatedResponse] = new Encoder[GameCreatedResponse] {
+  final def apply(response: GameCreatedResponse): Json = Json.obj(
+    ("id", Json.fromString(response.id)),
+    ("size", Json.fromInt(response.size))
+  )
+}
+
+implicit val decodeGameCreatedResponse: Decoder[GameCreatedResponse] = new Decoder[GameCreatedResponse] {
+  final def apply(c: HCursor): Decoder.Result[GameCreatedResponse] =
+    for
+      id <- c.downField("id").as[String]
+      size <- c.downField("size").as[Int]
+    yield new GameCreatedResponse(id, size)
+}
+
+implicit val encodeRequestDebugInfo: Encoder[RequestDebugInfo] = new Encoder[RequestDebugInfo] {
+  final def apply(response: RequestDebugInfo): Json = Json.obj(
+    ("headers", response.headers.asJson),
+    ("query", Json.fromString(response.query)),
+    ("pathInfo", Json.fromString(response.pathInfo))
+  )
+}
+
+implicit val decodeRequestDebugInfo: Decoder[RequestDebugInfo] = new Decoder[RequestDebugInfo] {
+  final def apply(c: HCursor): Decoder.Result[RequestDebugInfo] =
+    for
+      headers <- c.downField("headers").as[Map[String, String]]
+      query <- c.downField("query").as[String]
+      pathInfo <- c.downField("pathInfo").as[String]
+    yield new RequestDebugInfo(headers, query, pathInfo)
+}
+
+implicit val encodePlayerRegisteredResponse: Encoder[PlayerRegisteredResponse] = new Encoder[PlayerRegisteredResponse] {
+  final def apply(response: PlayerRegisteredResponse): Json = Json.obj(
+    ("game", response.game.asJson),
+    ("color", response.color.asJson),
+    ("authToken", Json.fromString(response.authToken)),
+    ("debug", response.debug.asJson)
+  )
+}
+
+implicit val decodePlayerRegisteredResponse: Decoder[PlayerRegisteredResponse] = new Decoder[PlayerRegisteredResponse] {
+  final def apply(c: HCursor): Decoder.Result[PlayerRegisteredResponse] =
+    for
+      game <- c.downField("game").as[Game]
+      color <- c.downField("color").as[Color]
+      authToken <- c.downField("authToken").as[String]
+      debug <- c.downField("debug").as[RequestDebugInfo]
+    yield new PlayerRegisteredResponse(game, color, authToken, debug)
+}
+
 object Jsonify:
   val mygson = new GsonBuilder()
     .registerTypeAdapter(classOf[Color], ColorSerializer)

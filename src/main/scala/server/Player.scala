@@ -12,4 +12,4 @@ def registerPlayer(color: Color, gameId: String, token: String): Player =
   Players(gameId) = Players(gameId) + (color -> player)
   return player
 
-class Player(val color: Color, val gameId: String, val token: String)
+case class Player(val color: Color, val gameId: String, val token: String)

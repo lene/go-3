@@ -6,7 +6,7 @@ import scala.collection.mutable
 import java.nio.file.{Path, Paths, Files}
 import java.nio.charset.StandardCharsets
 
-class SaveGame(val game: Game, val players: Map[Color, Player])
+case class SaveGame(val game: Game, val players: Map[Color, Player])
 
 class Io(baseFolder: String):
   val basePath = Paths.get(baseFolder)

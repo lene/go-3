@@ -147,6 +147,53 @@ class TestJsonify:
     val decoded = decode[Game](json).getOrElse(null)
     Assert.assertEquals(json, game, decoded)
 
+  @Test def testUseCirceForPlayerJson(): Unit =
+    val player = Player(Black, "game ID", "token")
+    val json = player.asJson.noSpaces
+    val decoded = decode[Player](json).getOrElse(null)
+    Assert.assertEquals(json, player, decoded)
+
+  @Test def testUseCirceForSaveGameJson(): Unit =
+    val game = playListOfMoves(TestSize, CaptureMoves)
+    val players = Map(
+      (Black -> Player(Black, "game ID", "token")),
+      (White -> Player(White, "game ID", "other token")),
+    )
+    val saveGame = SaveGame(game, players)
+    val json = saveGame.asJson.noSpaces
+    val decoded = decode[SaveGame](json).getOrElse(null)
+    Assert.assertEquals(json, saveGame, decoded)
+
+  @Test def testUseCirceForErrorResponseJson(): Unit =
+    val response = ErrorResponse("error")
+    val json = response.asJson.noSpaces
+    val decoded = decode[ErrorResponse](json).getOrElse(null)
+    Assert.assertEquals(json, response, decoded)
+
+  @Test def testUseCirceForGameCreatedResponseJson(): Unit =
+    val response = GameCreatedResponse("game ID", TestSize)
+    val json = response.asJson.noSpaces
+    val decoded = decode[GameCreatedResponse](json).getOrElse(null)
+    Assert.assertEquals(json, response, decoded)
+
+  @Test def testUseCirceForRequestDebugInfoJson(): Unit =
+    val response = RequestDebugInfo(Map("header name" -> "header value"), "query", "path")
+    val json = response.asJson.noSpaces
+    val decoded = decode[RequestDebugInfo](json).getOrElse(null)
+    Assert.assertEquals(json, response, decoded)
+
+  @Test def testUseCirceForPlayerRegisteredResponseJson(): Unit =
+    val response = PlayerRegisteredResponse(
+      newGame(TestSize), Black, "token",
+      RequestDebugInfo(Map("header name" -> "header value"), "query", "path")
+    )
+    val json = response.asJson.noSpaces
+    val decoded = decode[PlayerRegisteredResponse](json).getOrElse(null)
+    Assert.assertEquals(json, response, decoded)
+
+  // TODO: remove Jsonify and replace with circe
+  // TODO: remove remaining junk
+
   @Ignore
   @Test def testListMovesJson(): Unit =
     val moves = List(Move(1, 1, 1, Black), Move(2, 1, 1, White))
