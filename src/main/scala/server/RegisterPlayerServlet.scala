@@ -17,7 +17,8 @@ class RegisterPlayerServlet extends HttpServlet:
       val headers = for (name <- headerNames) yield (name.toString, request.getHeader(name.toString))
       val queryString = request.getQueryString
       val pathInfo = request.getPathInfo
-      val (gameId, color) = getGameId(pathInfo)
+      val gameId = getGameId(pathInfo)
+      val color = getColor(pathInfo)
       val token = generateAuthToken(gameId, color)
       val player = registerPlayer(color, gameId, token)
       val ready = (color == Black) && Players(gameId).contains(White)
@@ -32,19 +33,7 @@ class RegisterPlayerServlet extends HttpServlet:
       response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       output = ErrorResponse(e.message.toString).asJson.noSpaces
     finally
-      println(output)
       response.getWriter.println(output)
-
-  private def getGameId(pathInfo: String): (String, go3d.Color) =
-    if pathInfo == null || pathInfo.isEmpty then throw MalformedRequest(pathInfo)
-    val parts = pathInfo.stripPrefix("/").split('/')
-    if parts.isEmpty then throw MalformedRequest(pathInfo)
-    val gameId = parts(0)
-    if !(Games contains gameId) then throw NonexistentGame(gameId, Games.keys.toList)
-    val color = Color(parts(1)(0))
-    if Players.contains(gameId) && Players(gameId).contains(color) then
-      throw DuplicateColor(gameId, color)
-    return (gameId, color)
-
+  
   private def generateAuthToken(gameId: String, color: go3d.Color): String =
     return gameId+color.toString

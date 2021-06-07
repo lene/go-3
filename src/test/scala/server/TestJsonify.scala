@@ -137,3 +137,12 @@ class TestJsonify:
     val json = response.asJson.noSpaces
     val decoded = decode[PlayerRegisteredResponse](json).getOrElse(null)
     Assert.assertEquals(json, response, decoded)
+
+  @Test def testUseCirceForStatusResponseJson(): Unit =
+    val response = StatusResponse(
+      newGame(TestSize), List(Position(1, 1, 1)), true, 
+      RequestDebugInfo(Map("header name" -> "header value"), "query", "path")
+    )
+    val json = response.asJson.noSpaces
+    val decoded = decode[StatusResponse](json).getOrElse(null)
+    Assert.assertEquals(json, response, decoded)

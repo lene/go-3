@@ -57,6 +57,8 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
   def possibleMoves(color: Color): List[Position] =
     if !isDifferentPlayer(color) then return List()
     if moves.size >= size*size*size then return List()
+    if moves.isEmpty && color == White then return List()
+    if moves.nonEmpty && color == moves.last.color then return List()
     return goban.emptyPositions.toList.filter(isPossibleMove(_, color))
 
   def score: Map[Color, Int] =

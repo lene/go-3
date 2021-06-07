@@ -1,17 +1,18 @@
 package go3d.testing
 
 import go3d.server._
-import go3d.{Black, White}
+import go3d.{Black, White, newGame}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHandler
 import org.eclipse.jetty.http.HttpStatus
-import org.junit.{After, Assert, Before, Test}
+import org.junit.{After, Assert, Before, Ignore, Test}
 
 import java.io.IOException
 import java.net.HttpURLConnection
 import scala.io.Source
 import scala.reflect.ClassTag
 import io.circe.parser._
+import requests._
 
 import java.nio.file.Files
 
@@ -26,6 +27,7 @@ class TestServer:
     val handler = ServletHandler()
     handler.addServletWithMapping(classOf[NewGameServlet], GoServer.newRoute)
     handler.addServletWithMapping(classOf[RegisterPlayerServlet], GoServer.registerRoute)
+    handler.addServletWithMapping(classOf[StatusServlet], GoServer.statusRoute)
     jetty.setHandler(handler)
     jetty.start()
 
@@ -80,7 +82,28 @@ class TestServer:
     )
     Assert.assertTrue(registerResponse.ready)
 
-  @Test def testRegisterOnePlayerTwiceFails(): Unit =
+  @Test def testRegisterTwoPlayersWhiteLastDoesNotSetReady(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val registerResponse = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    Assert.assertFalse(registerResponse.ready)
+
+  @Test def testRegisterOnePlayerDoesNotSetReady(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val registerResponse = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    Assert.assertFalse(registerResponse.ready)
+
+  @Test def testRegisterSamePlayerTwiceFails(): Unit =
     val newGameResponse = getGCR(
       s"http://localhost:$TestPort/new/$TestSize"
     )
@@ -103,11 +126,121 @@ class TestServer:
       )}
     )
 
+  @Test def testGetStatusWithoutAuthFails(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    assertThrows[RequestFailedException]({getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}", Map()
+    )})
+
+  @Test def testGetStatusAfterBothRegisteredForBlackIsReady(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val blackToken = blackRegistered.authToken
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}",
+      Map("Authentication" -> s"Basic $blackToken")
+    )
+    Assert.assertTrue(statusResponse.ready)
+
+  @Test def testGetStatusAfterBothRegisteredForWhiteIsNotReady(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val whiteToken = whiteRegistered.authToken
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}",
+      Map("Authentication" -> s"Basic $whiteToken")
+    )
+    Assert.assertFalse(statusResponse.toString, statusResponse.ready)
+
+  @Test def testGetStatusAfterBothRegisteredForBlackHasPossibleMoves(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val blackToken = blackRegistered.authToken
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}",
+      Map("Authentication" -> s"Basic $blackToken")
+    )
+    Assert.assertTrue(statusResponse.moves.nonEmpty)
+
+  @Test def testGetStatusAfterBothRegisteredForWhiteHasNoPossibleMoves(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val whiteToken = whiteRegistered.authToken
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}",
+      Map("Authentication" -> s"Basic $whiteToken")
+    )
+    Assert.assertTrue(statusResponse.moves.toString, statusResponse.moves.isEmpty)
+
+  @Ignore
+  @Test def testSetStoneForBlackAtReadyStatusSucceeds(): Unit = ???
+  @Ignore
+  @Test def testSetStoneForBlackAtReadyStatusReturnsUpdatedBoard(): Unit = ???
+  @Ignore
+  @Test def testSetStoneForBlackAtReadyStatusReturnsStatusNotReady(): Unit = ???
+  @Ignore
+  @Test def testSetStoneForBlackAtReadyStatusReturnsNoPossibleMoves(): Unit = ???
+  @Ignore
+  @Test def testGetStatusForBlackAfterBlackSetStoneReturnsStatusNotReady(): Unit = ???
+  @Ignore
+  @Test def testGetStatusForBlackAfterBlackSetStoneReturnsStatusNoPossibleMoves(): Unit = ???
+  @Ignore
+  @Test def testGetStatusForWhiteAfterBlackSetStoneReturnsReady(): Unit = ???
+  @Ignore
+  @Test def testGetStatusForWhiteAfterBlackSetStoneReturnsUpdatedBoard(): Unit = ???
+  @Ignore
+  @Test def testGetStatusForWhiteAfterBlackSetStoneReturnsPossibleMoves(): Unit = ???
+  @Ignore
+  @Test def testGetFullStatusWithoutAuthReturnsBoardButNothingElse(): Unit = ???
+
+
 def getJson(url: String): Source = Source.fromURL(url)
 
 //def getResponse[T](url: String): T =
 //  val json = getJson(url).mkString
 //  return decode[T](json)
+
+//def getSR(url: String, token: String): StatusResponse =
+//  val json = getJson(url).mkString
+//  val result = decode[StatusResponse](json)
+//  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
+//  return result.getOrElse(null)
 
 def getPRR(url: String): PlayerRegisteredResponse =
   val json = getJson(url).mkString
@@ -118,5 +251,12 @@ def getPRR(url: String): PlayerRegisteredResponse =
 def getGCR(url: String): GameCreatedResponse =
   val json = getJson(url).mkString
   val result = decode[GameCreatedResponse](json)
+  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
+  return result.getOrElse(null)
+
+def getSR(url: String, header: Map[String, String]): StatusResponse =
+  val response = requests.get(url, headers = header)
+  val json = response.text()
+  val result = decode[StatusResponse](json)
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
   return result.getOrElse(null)

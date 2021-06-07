@@ -9,8 +9,9 @@ import scala.io.Source
 import io.circe.parser._
 
 object GoServer:
-  val registerRoute = "/register/*"
   val newRoute = "/new/*"
+  val registerRoute = "/register/*"
+  val statusRoute = "/status/*"
   val handler = new ServletHandler()
 
   def createServer(port: Int) = new Server(port)
@@ -32,9 +33,10 @@ object GoServer:
   def run(port: Int = 3333): Unit =
     val goServer = createServer(port)
     goServer.setHandler(handler)
-    handler.addServletWithMapping(classOf[RegisterPlayerServlet], registerRoute)
     handler.addServletWithMapping(classOf[NewGameServlet], newRoute)
+    handler.addServletWithMapping(classOf[RegisterPlayerServlet], registerRoute)
+    handler.addServletWithMapping(classOf[StatusServlet], statusRoute)
     goServer.start()
-    println(s"Server started on ${serverPort(goServer)} with routes: $newRoute, $registerRoute")
+    println(s"Server started on ${serverPort(goServer)} with routes: $newRoute, $registerRoute, $statusRoute")
     goServer.join()
 

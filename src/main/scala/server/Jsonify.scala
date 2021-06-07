@@ -230,3 +230,22 @@ implicit val decodePlayerRegisteredResponse: Decoder[PlayerRegisteredResponse] =
       debug <- c.downField("debug").as[RequestDebugInfo]
     yield new PlayerRegisteredResponse(game, color, authToken, ready, debug)
 }
+
+implicit val encodeStatusResponse: Encoder[StatusResponse] = new Encoder[StatusResponse] {
+  final def apply(response: StatusResponse): Json = Json.obj(
+    ("game", response.game.asJson),
+    ("moves", response.moves.asJson),
+    ("ready", Json.fromBoolean(response.ready)),
+    ("debug", response.debug.asJson)
+  )
+}
+
+implicit val decodeStatusResponse: Decoder[StatusResponse] = new Decoder[StatusResponse] {
+  final def apply(c: HCursor): Decoder.Result[StatusResponse] =
+    for
+      game <- c.downField("game").as[Game]
+      moves <- c.downField("moves").as[List[Position]]
+      ready <- c.downField("ready").as[Boolean]
+      debug <- c.downField("debug").as[RequestDebugInfo]
+    yield new StatusResponse(game, moves, ready, debug)
+}
