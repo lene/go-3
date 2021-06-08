@@ -28,6 +28,7 @@ class TestServer:
     handler.addServletWithMapping(classOf[NewGameServlet], GoServer.newRoute)
     handler.addServletWithMapping(classOf[RegisterPlayerServlet], GoServer.registerRoute)
     handler.addServletWithMapping(classOf[StatusServlet], GoServer.statusRoute)
+    handler.addServletWithMapping(classOf[SetServlet], GoServer.setRoute)
     jetty.setHandler(handler)
     jetty.start()
 
@@ -208,10 +209,54 @@ class TestServer:
     )
     Assert.assertTrue(statusResponse.moves.toString, statusResponse.moves.isEmpty)
 
-  @Ignore
-  @Test def testSetStoneForBlackAtReadyStatusSucceeds(): Unit = ???
-  @Ignore
-  @Test def testSetStoneForBlackAtReadyStatusReturnsUpdatedBoard(): Unit = ???
+  @Test def testSetStoneForBlackAtReadyStatusSucceeds(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val blackToken = blackRegistered.authToken
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}",
+      Map("Authentication" -> s"Basic $blackToken")
+    )
+    Assert.assertTrue(statusResponse.ready)
+    Assert.assertTrue(statusResponse.moves.nonEmpty)
+    val move = statusResponse.moves.last
+    val setResponse = getSR(
+      s"http://localhost:$TestPort/set/${newGameResponse.id}/${move.x}/${move.y}/${move.z}",
+      Map("Authentication" -> s"Basic $blackToken")
+    )
+
+  @Test def testSetStoneForBlackAtReadyStatusReturnsUpdatedBoard(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val blackToken = blackRegistered.authToken
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}",
+      Map("Authentication" -> s"Basic $blackToken")
+    )
+    Assert.assertTrue(statusResponse.ready)
+    Assert.assertTrue(statusResponse.moves.nonEmpty)
+    val move = statusResponse.moves.last
+    val setResponse = getSR(
+      s"http://localhost:$TestPort/set/${newGameResponse.id}/${move.x}/${move.y}/${move.z}",
+      Map("Authentication" -> s"Basic $blackToken")
+    )
+    Assert.assertEquals(Black, setResponse.game.at(move))
+
+
   @Ignore
   @Test def testSetStoneForBlackAtReadyStatusReturnsStatusNotReady(): Unit = ???
   @Ignore

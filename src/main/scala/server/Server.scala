@@ -12,6 +12,7 @@ object GoServer:
   val newRoute = "/new/*"
   val registerRoute = "/register/*"
   val statusRoute = "/status/*"
+  val setRoute = "/set/*"
   val handler = new ServletHandler()
 
   def createServer(port: Int) = new Server(port)
@@ -36,6 +37,7 @@ object GoServer:
     handler.addServletWithMapping(classOf[NewGameServlet], newRoute)
     handler.addServletWithMapping(classOf[RegisterPlayerServlet], registerRoute)
     handler.addServletWithMapping(classOf[StatusServlet], statusRoute)
+    handler.addServletWithMapping(classOf[SetServlet], setRoute)
     goServer.start()
     println(s"Server started on ${serverPort(goServer)} with routes: $newRoute, $registerRoute, $statusRoute")
     goServer.join()
