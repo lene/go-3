@@ -29,6 +29,7 @@ class TestServer:
     handler.addServletWithMapping(classOf[RegisterPlayerServlet], GoServer.registerRoute)
     handler.addServletWithMapping(classOf[StatusServlet], GoServer.statusRoute)
     handler.addServletWithMapping(classOf[SetServlet], GoServer.setRoute)
+    handler.addServletWithMapping(classOf[PassServlet], GoServer.passRoute)
     jetty.setHandler(handler)
     jetty.start()
 
@@ -273,6 +274,28 @@ class TestServer:
   @Test def testGetStatusForWhiteAfterBlackSetStoneReturnsPossibleMoves(): Unit = ???
   @Ignore
   @Test def testGetFullStatusWithoutAuthReturnsBoardButNothingElse(): Unit = ???
+
+  @Ignore
+  @Test def testPassReturnsNonReadyStatus(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val blackToken = blackRegistered.authToken
+    val passResponse = getSR(
+      s"http://localhost:$TestPort/pass",
+      Map("Authentication" -> s"Basic $blackToken")
+    )
+    Assert.assertFalse(passResponse.ready)
+    Assert.assertTrue(passResponse.moves.isEmpty)
+
+  @Ignore
+  @Test def testPassTwiceReturnsGameOver(): Unit = ???
 
 
 def getJson(url: String): Source = Source.fromURL(url)
