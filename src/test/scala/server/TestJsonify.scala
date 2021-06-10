@@ -140,7 +140,7 @@ class TestJsonify:
 
   @Test def testUseCirceForStatusResponseJson(): Unit =
     val response = StatusResponse(
-      newGame(TestSize), List(Position(1, 1, 1)), true, 
+      newGame(TestSize), List(Position(1, 1, 1)), true,
       RequestDebugInfo(Map("header name" -> "header value"), "query", "path")
     )
     val json = response.asJson.noSpaces

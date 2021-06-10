@@ -19,15 +19,15 @@ class PassServlet extends HttpServlet:
       val pathInfo = request.getPathInfo
       val debug = RequestDebugInfo(request)
       val gameId = getGameId(pathInfo)
-      println(gameId)
       val token = getToken(headersMap)
       val player = playerFromToken(gameId, token)
-      println(player)
       val color = player.color
       val game = Games(gameId)
       val ready = if game.moves.isEmpty then color == Black else color != game.moves.last.color
+      println("********* ready: "+ready+" "+color+" "+game.moves.toList)
       if !ready then throw NotReadyToSet(gameId, token)
       val newGame = game.makeMove(Pass(color))
+      Games = Games + (gameId -> newGame)
       output = StatusResponse(newGame, newGame.possibleMoves(color), !ready, debug).asJson.noSpaces
     catch
       case e @ (_: go3d.BadBoardSize | _: PlayerNotFoundByToken | _: NotReadyToSet) =>

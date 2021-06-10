@@ -20,16 +20,22 @@ class StatusServlet extends HttpServlet:
       val pathInfo = request.getPathInfo
       val debug = RequestDebugInfo(request)
       val gameId = getGameId(pathInfo)
-      println(gameId)
-      val token = getToken(headersMap)
-      val player = playerFromToken(gameId, token)
-      println(player)
-      val color = player.color
       val game = Games(gameId)
-      val ready = if game.moves.isEmpty then color == Black else color != game.moves.last.color
-      output = StatusResponse(game, game.possibleMoves(color), ready, debug).asJson.noSpaces
+      try
+        val token = getToken(headersMap)
+        val player = playerFromToken(gameId, token)
+        player match {
+          case Some(p) =>
+            val color = p.color
+            val ready = if game.moves.isEmpty then color == Black else color != game.moves.last.color
+            output = StatusResponse(game, game.possibleMoves(color), ready, debug).asJson.noSpaces
+          case None => output = StatusResponse(game, List(), false, debug).asJson.noSpaces
+        }
+      catch
+        case e: AuthorizationMissing =>
+          output = StatusResponse(game, List(), false, debug).asJson.noSpaces
     catch
-      case e @ (_: go3d.BadBoardSize | _: PlayerNotFoundByToken) =>
+      case e: go3d.BadBoardSize =>
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
         output = ErrorResponse(e.toString).asJson.noSpaces
       case e =>
@@ -44,7 +50,7 @@ class StatusServlet extends HttpServlet:
     if authorizationParts(0) != "Basic" then throw AuthorizationMethodWrong(authorizationParts(0))
     return authorizationParts(1)
 
-  private def playerFromToken(gameId: String, token: String): Player =
+  private def playerFromToken(gameId: String, token: String): Option[Player] =
     val players = Players(gameId)
-    for (_, player) <- players do if player.token == token then return player
-    throw PlayerNotFoundByToken(gameId, token)
+    for (_, player) <- players do if player.token == token then return Some(player)
+    return None

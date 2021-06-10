@@ -39,10 +39,13 @@ class TestIo:
     Assert.assertTrue(value.players.contains(Black))
 
   @Test def testExists =
-    Io.writeFile("test", "")
+    Io.writeFile("test", "{}")
     Assert.assertTrue(Io.exists("test"))
     Assert.assertFalse(Io.exists("this file should not exist"))
 
   @Test def testGetListOfJsonFiles(): Unit =
-    Io.writeFile("test.json", "")
-    Assert.assertEquals(List("test.json"), Io.getListOfFiles(".json").map(f => f.getName))
+    Io.writeFile("test.json", "{}")
+    val matchingFiles = Io.getListOfFiles(".json").map(f => f.getName)
+    Assert.assertEquals(
+      java.io.File(Io.baseFolder).listFiles.toList.toString, List("test.json"), matchingFiles
+    )

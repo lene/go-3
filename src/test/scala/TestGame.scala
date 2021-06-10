@@ -63,7 +63,7 @@ class TestGame:
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
     val firstMove = newGame(TestSize).makeMove(Pass(Black))
-    assertThrows[GameOver]({firstMove.makeMove(Pass(White))})
+    Assert.assertTrue(firstMove.makeMove(Pass(White)).isOver)
 
   @Test def testPlayListOfMoves(): Unit =
     val game = playListOfMoves(TestSize, CaptureMoves.dropRight(1))
@@ -376,3 +376,7 @@ class TestGame:
     var game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(1, game.score(Black))
     Assert.assertEquals(1, game.score(White))
+
+  @Test def testIsOver(): Unit =
+    val game = newGame(TestSize)
+    Assert.assertFalse(game.isOver)

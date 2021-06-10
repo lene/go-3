@@ -19,19 +19,21 @@ class SetServlet extends HttpServlet:
       val pathInfo = request.getPathInfo
       val debug = RequestDebugInfo(request)
       val gameId = getGameId(pathInfo)
-      println(gameId)
       val token = getToken(headersMap)
       val player = playerFromToken(gameId, token)
-      println(player)
       val color = player.color
       val game = Games(gameId)
       val ready = if game.moves.isEmpty then color == Black else color != game.moves.last.color
       if !ready then throw NotReadyToSet(gameId, token)
       val position = getPosition(pathInfo)
       val newGame = game.makeMove(Move(position, color))
+      Games = Games + (gameId -> newGame)
       output = StatusResponse(newGame, newGame.possibleMoves(color), !ready, debug).asJson.noSpaces
     catch
-      case e @ (_: go3d.BadBoardSize | _: PlayerNotFoundByToken | _: NotReadyToSet) =>
+      case e @ (_: PlayerNotFoundByToken | _: AuthorizationMissing | _: AuthorizationMethodWrong) =>
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
+        output = ErrorResponse(e.toString).asJson.noSpaces
+      case e @ (_: go3d.BadBoardSize | _: NotReadyToSet) =>
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
         output = ErrorResponse(e.toString).asJson.noSpaces
       case e =>

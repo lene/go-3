@@ -13,7 +13,7 @@ object GoServer:
   val registerRoute = "/register/*"
   val statusRoute = "/status/*"
   val setRoute = "/set/*"
-  val passRoute = "/pass"
+  val passRoute = "/pass/*"
   val handler = new ServletHandler()
 
   def createServer(port: Int) = new Server(port)
