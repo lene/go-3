@@ -1,7 +1,7 @@
 package go3d.testing
 
 import go3d.server._
-import go3d.{Black, White, newGame}
+import go3d.{Black, White, newGame, Move, Pass, Empty, Position}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHandler
 import org.eclipse.jetty.http.HttpStatus
@@ -468,15 +468,96 @@ class TestServer:
       s"http://localhost:$TestPort/pass/${newGameResponse.id}",
       Map("Authentication" -> s"Basic $blackToken")
     )
-    println(pass1Response.game)
     val pass2Response = getSR(
       s"http://localhost:$TestPort/pass/${newGameResponse.id}",
       Map("Authentication" -> s"Basic $whiteToken")
     )
     Assert.assertTrue(pass2Response.game.isOver)
 
+  @Test def testPlayListOfMoves(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val blackToken = blackRegistered.authToken
+    val whiteToken = whiteRegistered.authToken
+    playListOfMoves(newGameResponse.id, blackToken, whiteToken, CaptureMoves.dropRight(1))
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}", Map()
+    )
+    for move <- CaptureMoves.dropRight(1) do
+      Assert.assertEquals(
+        move.toString+"\n"+statusResponse.game.toString,
+        move.color, statusResponse.game.at(move.position)
+      )
 
+  @Test def testCaptureStone(): Unit =
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val blackToken = blackRegistered.authToken
+    val whiteToken = whiteRegistered.authToken
+    playListOfMoves(newGameResponse.id, blackToken, whiteToken, CaptureMoves)
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}", Map()
+    )
+    Assert.assertEquals(
+      "\n"+statusResponse.game.toString,
+      Empty, statusResponse.game.at(Position(2, 2, 1))
+    )
 
+  @Test def testCaptureTwoDisjointStonesWithOneMove(): Unit =
+    val moves = List[Move | Pass](
+      Move(2, 1, 1, Black), Move(1, 1, 1, White),
+      Move(4, 1, 1, Black), Move(5, 1, 1, White),
+      Pass(Black), Move(2, 2, 1, White),
+      Pass(Black), Move(4, 2, 1, White),
+      Pass(Black), Move(2, 1, 2, White),
+      Pass(Black), Move(4, 1, 2, White),
+      Pass(Black)
+    )
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/5"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val blackToken = blackRegistered.authToken
+    val whiteToken = whiteRegistered.authToken
+
+    playListOfMoves(newGameResponse.id, blackToken, whiteToken, moves)
+    val statusResponse = getSR(
+      s"http://localhost:$TestPort/status/${newGameResponse.id}", Map()
+    )
+    Assert.assertTrue(statusResponse.game.captures.isEmpty)
+    val statusResponseAgain = playListOfMoves(newGameResponse.id, blackToken, whiteToken,List(Move(3, 1, 1, White)))
+    Assert.assertEquals(statusResponseAgain.game.toString, 2, statusResponseAgain.game.captures(Black))
+
+  def playListOfMoves(gameId: String, blackToken: String, whiteToken: String,
+                      moves: Iterable[Move | Pass]): StatusResponse =
+    var statusResponse: StatusResponse = null
+    for move <- moves do
+      val token = if move.color == Black then blackToken else whiteToken
+      val url =
+        move match
+          case m: Move => s"http://localhost:$TestPort/set/$gameId/${m.x}/${m.y}/${m.z}"
+          case p: Pass => s"http://localhost:$TestPort/pass/$gameId"
+      statusResponse = getSR(url, Map("Authentication" -> s"Basic $token"))
+    return statusResponse
 
 def getJson(url: String): Source = Source.fromURL(url)
 
