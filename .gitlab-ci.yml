@@ -119,7 +119,12 @@ Upload:
       artifacts: true
   rules:
     - if: $CI_COMMIT_TAG
+  before_script:
+    - apk update
+    - apk add curl
   script:
+    - export DEPLOYABLE_TAR_FILE=${DEPLOYABLE_BASE_NAME}.zip
+    - echo curl --header "JOB-TOKEN $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_TAR_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_TAR_FILE}"
     - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_TAR_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_TAR_FILE}"'
 
 Release:
