@@ -544,8 +544,50 @@ class TestServer:
       s"http://localhost:$TestPort/status/${newGameResponse.id}", Map()
     )
     Assert.assertTrue(statusResponse.game.captures.isEmpty)
-    val statusResponseAgain = playListOfMoves(newGameResponse.id, blackToken, whiteToken,List(Move(3, 1, 1, White)))
-    Assert.assertEquals(statusResponseAgain.game.toString, 2, statusResponseAgain.game.captures(Black))
+    val statusResponseAgain = playListOfMoves(
+      newGameResponse.id, blackToken, whiteToken,List(Move(3, 1, 1, White))
+    )
+    Assert.assertEquals(2, statusResponseAgain.game.captures(Black))
+
+  @Test def testPlayRandomGame(): Unit =
+    import scala.util.Random
+    val random = new Random
+    val newGameResponse = getGCR(
+      s"http://localhost:$TestPort/new/$TestSize"
+    )
+    val blackRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/@"
+    )
+    val whiteRegistered = getPRR(
+      s"http://localhost:$TestPort/register/${newGameResponse.id}/O"
+    )
+    val tokens = Map(Black -> blackRegistered.authToken, White -> whiteRegistered.authToken)
+    var gameOver = false
+    var color = Black
+    while !gameOver do
+      val statusResponse = getSR(
+        s"http://localhost:$TestPort/status/${newGameResponse.id}",
+        Map("Authentication" -> s"Basic ${tokens(color)}")
+      )
+      if statusResponse.ready then
+        val move = Move(
+          statusResponse.game.possibleMoves(color)(
+            random.nextInt(statusResponse.game.possibleMoves(color).length)
+          ), color
+        )
+        val setResponse = getSR(
+          s"http://localhost:$TestPort/set/${newGameResponse.id}/${move.x}/${move.y}/${move.z}",
+          Map("Authentication" -> s"Basic ${tokens(color)}")
+        )
+        gameOver = setResponse.game.isOver
+      else
+        val passResponse = getSR(
+          s"http://localhost:$TestPort/pass/${newGameResponse.id}",
+          Map("Authentication" -> s"Basic ${tokens(color)}")
+        )
+        gameOver = passResponse.game.isOver
+      color = !color
+
 
   def playListOfMoves(gameId: String, blackToken: String, whiteToken: String,
                       moves: Iterable[Move | Pass]): StatusResponse =
