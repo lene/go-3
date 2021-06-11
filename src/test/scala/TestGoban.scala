@@ -1,7 +1,7 @@
 package go3d.testing
 
 import go3d._
-import go3d.Color.{Black, White, Empty, Sentinel}
+import go3d.{Black, White, Empty, Sentinel}
 import org.junit.{Assert, Ignore, Test}
 
 class TestGoban:
@@ -124,3 +124,52 @@ class TestGoban:
         List(Move(2, 1, 1, Black), Move(1, 2, 1, Black), Move(3, 2, 1, Black), 
           Move(2, 3, 1, Black), Move(2, 2, 2, Black))
       )
+
+  @Test def testEqualGobansAreEqual(): Unit =
+    val goban1 = fromStrings(Map(
+      1 -> """ @ |
+             |@ @
+             | @ """,
+      2 -> """   |
+             | @ |
+             |   |"""
+    ))
+    val goban2 = fromStrings(Map(
+      1 -> """ @ |
+             |@ @
+             | @ """,
+      2 -> """   |
+             | @ |
+             |   |"""
+    ))
+    Assert.assertEquals(goban1, goban2)
+
+  @Test def testUnequalGobansAreNotEqual(): Unit =
+    val goban1 = fromStrings(Map(
+      1 -> """ @ |
+             |@ @
+             | @ """,
+      2 -> """   |
+             | @ |
+             |   |"""
+    ))
+    val goban2 = fromStrings(Map(
+      1 -> """ @ |
+             |@ @
+             | @ """,
+      2 -> """   |
+             | @ |
+             | @ |"""
+    ))
+    Assert.assertNotEquals(goban1, goban2)
+
+  @Test def testGobansIsNotEqualToSomethingDifferent(): Unit =
+    val goban1 = fromStrings(Map(
+      1 -> """ @ |
+             |@ @
+             | @ """,
+      2 -> """   |
+             | @ |
+             |   |"""
+    ))
+    Assert.assertNotEquals(goban1, "some random thing")

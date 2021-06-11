@@ -1,7 +1,7 @@
 package go3d.testing
 
 import go3d._
-import go3d.Color.{Black, White, Empty}
+import go3d.{Black, White, Empty}
 import org.junit.{Assert, Ignore, Test}
 import scala.util.Random
 
@@ -24,7 +24,7 @@ class TestGame:
 
   @Test def testEmptyBoardToStringNewlines(): Unit =
     val game = newGame(TestSize)
-    Assert.assertEquals(TestSize+2, game.toString.count(_ == '\n'))
+    Assert.assertTrue(TestSize+2 <= game.toString.count(_ == '\n'))
 
   @Test def testEmptyBoardAt(): Unit =
     val empty = newGame(TestSize)
@@ -63,7 +63,7 @@ class TestGame:
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
     val firstMove = newGame(TestSize).makeMove(Pass(Black))
-    assertThrows[GameOver]({firstMove.makeMove(Pass(White))})
+    Assert.assertTrue(firstMove.makeMove(Pass(White)).isOver)
 
   @Test def testPlayListOfMoves(): Unit =
     val game = playListOfMoves(TestSize, CaptureMoves.dropRight(1))
@@ -247,9 +247,13 @@ class TestGame:
     Assert.assertEquals(Move(2, 2, 3, Black), game.lastCapture(0))
     assertThrows[Ko]({game.checkValid(Move(2, 2, 3, Black))})
 
-  @Test def testPossibleMovesEmptyBoard(): Unit =
+  @Test def testPossibleMovesForBlackEmptyBoard(): Unit =
     val empty = newGame(TestSize)
     Assert.assertEquals(TestSize*TestSize*TestSize, empty.possibleMoves(Black).length)
+
+  @Test def testPossibleMovesForWhiteEmptyBoard(): Unit =
+    val empty = newGame(TestSize)
+    Assert.assertTrue(empty.possibleMoves(White).isEmpty)
 
   @Test def testPossibleMovesAfterOneMove(): Unit =
     val board = newGame(TestSize).makeMove(Move(1, 1, 1, Black))
@@ -273,8 +277,8 @@ class TestGame:
     val game = playListOfMoves(5, moves)
     Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Black).length)
     Assert.assertFalse(game.possibleMoves(Black).contains(Move(2, 2, 3, Black)))
-    Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Color.Black).length)
-    Assert.assertFalse(game.possibleMoves(Color.Black).contains(Move(2, 2, 3, Color.Black)))
+    Assert.assertEquals(5*5*5-moves.length, game.possibleMoves(Black).length)
+    Assert.assertFalse(game.possibleMoves(Black).contains(Move(2, 2, 3, Black)))
 
   @Test def testScoring(): Unit =
     val finalSituation = Map(
@@ -372,3 +376,7 @@ class TestGame:
     var game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(1, game.score(Black))
     Assert.assertEquals(1, game.score(White))
+
+  @Test def testIsOver(): Unit =
+    val game = newGame(TestSize)
+    Assert.assertFalse(game.isOver)

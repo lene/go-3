@@ -1,7 +1,7 @@
 package go3d.testing
 
 import go3d._
-import go3d.Color.{Black, White}
+import go3d.{Black, White}
 import org.junit.Assert
 
 import scala.reflect.ClassTag
@@ -82,7 +82,7 @@ def fromStrings(levels: Map[Int, String]): Goban = {
     val lines = level.stripMargin.replace("|", "").split("\n")
     for (line, y) <- lines.zipWithIndex do
       for (stone, x) <- line.zipWithIndex do
-        goban.stones(x+1)(y+1)(z) = colorFromChar(stone)
+        goban.stones(x+1)(y+1)(z) = Color(stone)
   return goban
 }
 

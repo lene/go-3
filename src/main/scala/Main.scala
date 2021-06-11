@@ -1,9 +1,12 @@
 package go3d
 
+import server.GoServer
+
 import scala.io.StdIn.readLine
 import scala.util.Random
 
 val Step = 500
+val DefaultBoardSize = 5
 
 def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int, verbose: Boolean = false): Unit =
   var board = goban
@@ -17,10 +20,10 @@ def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int, verbose: Boo
 def randomGame(size: Int): Unit =
   val random = new Random
   var game = newGame(size)
-  var color = Color.Black
+  var color = Black
   val t0 = System.nanoTime()
   var tStep0 = t0
-  while !game.possibleMoves(color).isEmpty && game.moves.length <= size*size*size do
+  while game.possibleMoves(color).nonEmpty && game.moves.length <= size*size*size do
     val move = Move(game.possibleMoves(color)(random.nextInt(game.possibleMoves(color).length)), color)
     game = game.makeMove(move)
     if game.moves.size % Step == 0 || game.moves.size == size*size*size then
@@ -36,7 +39,7 @@ def randomGame(size: Int): Unit =
 def playGame(boardSize: Int): Unit =
   val game = newGame(boardSize)
   try
-    val finished_game = makeMove(game, Color.Black)
+    val finished_game = makeMove(game, Black)
     println(finished_game.score)
   catch case e: GameOver => println(s"game over. score: ${e.game.score}")
 
@@ -68,11 +71,12 @@ def readMove(message: String, possibleMoves: Set[Position], color: Color): Move|
     case e: InterruptedException =>
       println("Goodbye.")
       System.exit(1)
-      Move(1, 1, 1, Color.Black)
+      Move(1, 1, 1, Black)
 
 object Runner:
-  type OptionMap = Map[String, Int]
-  val DefaultBoardSize = 5
+  type OptionMap = Map[String, Int|String]
+  val DefaultServerPort = 3333
+  val DefaultSaveDir = "./Go3D-Savegames"
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')
@@ -86,6 +90,12 @@ object Runner:
         nextOption(map ++ Map("game_size" -> value.toInt), tail)
       case "--new-game" :: tail =>
         nextOption(map ++ Map("game_size" -> DefaultBoardSize), tail)
+      case "--server" :: tail =>
+        nextOption(map ++ Map("server" -> 0), tail)
+      case "--port" :: value :: tail =>
+        nextOption(map ++ Map("port" -> value.toInt), tail)
+      case "--save-dir" :: value :: tail =>
+        nextOption(map ++ Map("save_dir" -> value), tail)
       case option :: tail =>
         if option.matches("\\d+") then
           nextOption(map ++ Map("benchmark_size" -> option.toInt), tail)
@@ -97,7 +107,12 @@ object Runner:
   def main(args: Array[String]): Unit =
     val options = nextOption(Map(), args.toList)
     if options.contains("benchmark_size") then
-      randomGame(options("benchmark_size"))
+      randomGame(options("benchmark_size").asInstanceOf[Int])
     else if options.contains("game_size") then
-      playGame(options("game_size"))
-    else randomGame(DefaultBoardSize)
+      playGame(options("game_size").asInstanceOf[Int])
+    else if options.contains("server") then {
+      val port = options.getOrElse("port", DefaultServerPort).asInstanceOf[Int]
+      val saveDir = options.getOrElse("save_dir", DefaultSaveDir).asInstanceOf[String]
+      GoServer.loadGames(saveDir)
+      GoServer.run(port)
+    } else randomGame(DefaultBoardSize)
