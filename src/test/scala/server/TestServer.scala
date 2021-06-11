@@ -24,6 +24,7 @@ class TestServer:
   var jetty: Server = null
 
   @Before def startJetty(): Unit =
+    System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
     jetty = GoServer.createServer(TestPort)
     val handler = ServletHandler()
     handler.addServletWithMapping(classOf[NewGameServlet], GoServer.newRoute)
