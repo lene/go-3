@@ -251,6 +251,15 @@ implicit val decodeStatusResponse: Decoder[StatusResponse] = new Decoder[StatusR
     yield new StatusResponse(game, moves, ready, debug)
 }
 
+implicit val encodeGoResponse: Encoder[GoResponse] = new Encoder[GoResponse] {
+  final def apply(response: GoResponse): Json =
+    response match
+      case r: StatusResponse => encodeStatusResponse(r)
+      case r: PlayerRegisteredResponse => encodePlayerRegisteredResponse(r)
+      case r: ErrorResponse => encodeErrorResponse(r)
+      case r: GameCreatedResponse => encodeGameCreatedResponse(r)
+}
+
 //def getResponse[T<:GoResponse](url: String): T =
 //  val json = Source.fromURL(url).mkString
 //  return decode[T](json)

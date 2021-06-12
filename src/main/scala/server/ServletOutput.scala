@@ -3,4 +3,4 @@ package go3d.server
 import javax.servlet.http.HttpServletResponse
 
 trait ServletOutput:
-  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): String
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse

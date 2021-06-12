@@ -7,7 +7,7 @@ import javax.servlet.http.HttpServletResponse
 
 class RegisterPlayerServlet extends BaseServlet:
 
-  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): String =
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     try
       val gameId = requestInfo.getGameId
       val color = getColor(requestInfo)
@@ -15,13 +15,11 @@ class RegisterPlayerServlet extends BaseServlet:
       val player = registerPlayer(color, gameId, token)
       val ready = (color == Black) && Players(gameId).contains(White)
       Io.saveGame(gameId)
-      return PlayerRegisteredResponse(
-        Games(gameId), color, token, ready, requestInfo
-      ).asJson.noSpaces
+      return PlayerRegisteredResponse(Games(gameId), color, token, ready, requestInfo)
     catch
-      case e: DuplicateColor => 
+      case e: DuplicateColor =>
         return errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
-      case e: ServerException => 
+      case e: ServerException =>
         return errorResponse(response, e.toString, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
 
   // TODO generate a secret token

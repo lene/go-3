@@ -7,7 +7,7 @@ import javax.servlet.http.HttpServletResponse
 
 class PassServlet extends BaseServlet:
 
-  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): String =
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     try
       val gameId = requestInfo.getGameId
       val color = requestInfo.mustGetPlayer.color
@@ -16,9 +16,7 @@ class PassServlet extends BaseServlet:
       val newGame = game.makeMove(Pass(color))
       Games = Games + (gameId -> newGame)
       Io.saveGame(gameId)
-      return StatusResponse(
-        newGame, newGame.possibleMoves(color), false, requestInfo
-      ).asJson.noSpaces
+      return StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo)
     catch
       case e: AuthorizationError =>
         return errorResponse(response, e.toString, HttpServletResponse.SC_UNAUTHORIZED)

@@ -6,8 +6,8 @@ import io.circe.syntax.EncoderOps
 import javax.servlet.http.HttpServletResponse
 
 class SetServlet extends BaseServlet:
-  
-  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): String =
+
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     try
       val gameId = requestInfo.getGameId
       val color = requestInfo.mustGetPlayer.color
@@ -16,9 +16,7 @@ class SetServlet extends BaseServlet:
       val newGame = game.makeMove(getMove(requestInfo.path, color))
       Games = Games + (gameId -> newGame)
       Io.saveGame(gameId)
-      return StatusResponse(
-        newGame, newGame.possibleMoves(color), false, requestInfo
-      ).asJson.noSpaces
+      return StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo)
     catch
       case e: AuthorizationError =>
         return errorResponse(response, e.toString, HttpServletResponse.SC_UNAUTHORIZED)

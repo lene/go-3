@@ -10,6 +10,6 @@ abstract class BaseServlet extends HttpServlet with ServletOutput:
     response.setStatus(HttpServletResponse.SC_OK)
     val requestInfo = RequestInfo(request)
 
-    output = generateOutput(requestInfo, response)
+    output = generateOutput(requestInfo, response).asJson.noSpaces
 
     response.getWriter.println(output)

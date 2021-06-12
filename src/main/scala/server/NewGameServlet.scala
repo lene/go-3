@@ -5,12 +5,12 @@ import io.circe.syntax.EncoderOps
 import javax.servlet.http.HttpServletResponse
 
 class NewGameServlet extends BaseServlet:
-  
-  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): String =
+
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     try
       val boardSize = getBoardSize(requestInfo.path)
       val gameId = registerGame(boardSize)
-      return GameCreatedResponse(gameId, boardSize).asJson.noSpaces
+      return GameCreatedResponse(gameId, boardSize)
     catch case e: go3d.BadBoardSize =>
       return errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
 
