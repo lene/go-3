@@ -19,9 +19,8 @@ class RegisterPlayerServlet extends BaseServlet:
       case e: DuplicateColor => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
       case e: ServerException => error(response, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
 
-  // TODO generate a secret token
   private def generateAuthToken(gameId: String, color: go3d.Color): String =
-    return gameId+color.toString
+    return IdGenerator.getBase62(10)
 
   private def getColor(requestInfo: RequestInfo): go3d.Color =
     val parts = requestInfo.path.stripPrefix("/").split('/')
