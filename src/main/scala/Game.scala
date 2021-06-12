@@ -22,11 +22,13 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     moves.length >= size * size * size || (
       moves.length >= 2 && moves.last.isInstanceOf[Pass] && moves.init.last.isInstanceOf[Pass]
     )
+  
+  def isTurn(color: Color): Boolean =
+    if moves.isEmpty then color == Black else color != moves.last.color
 
   def makeMove(move: Move | Pass): Game =
     move match
       case p: Pass =>
-//        if gameOver(p) then throw GameOver(this)
         return Game(size, goban, moves.appended(move), captures)
       case m: Move =>
         checkValid(m)

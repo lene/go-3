@@ -1,10 +1,11 @@
 package go3d.server
 
 import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position}
-
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
+
+import scala.io.Source
 
 implicit val encodeColor: Encoder[Color] = new Encoder[Color] {
   final def apply(col: Color): Json = Json.obj(("color", Json.fromString(col.toString)))
@@ -193,21 +194,21 @@ implicit val decodeGameCreatedResponse: Decoder[GameCreatedResponse] = new Decod
     yield new GameCreatedResponse(id, size)
 }
 
-implicit val encodeRequestDebugInfo: Encoder[RequestDebugInfo] = new Encoder[RequestDebugInfo] {
-  final def apply(response: RequestDebugInfo): Json = Json.obj(
+implicit val encodeRequestInfo: Encoder[RequestInfo] = new Encoder[RequestInfo] {
+  final def apply(response: RequestInfo): Json = Json.obj(
     ("headers", response.headers.asJson),
     ("query", Json.fromString(response.query)),
-    ("pathInfo", Json.fromString(response.pathInfo))
+    ("pathInfo", Json.fromString(response.path))
   )
 }
 
-implicit val decodeRequestDebugInfo: Decoder[RequestDebugInfo] = new Decoder[RequestDebugInfo] {
-  final def apply(c: HCursor): Decoder.Result[RequestDebugInfo] =
+implicit val decodeRequestInfo: Decoder[RequestInfo] = new Decoder[RequestInfo] {
+  final def apply(c: HCursor): Decoder.Result[RequestInfo] =
     for
       headers <- c.downField("headers").as[Map[String, String]]
       query <- c.downField("query").as[String]
       pathInfo <- c.downField("pathInfo").as[String]
-    yield new RequestDebugInfo(headers, query, pathInfo)
+    yield new RequestInfo(headers, query, pathInfo)
 }
 
 implicit val encodePlayerRegisteredResponse: Encoder[PlayerRegisteredResponse] = new Encoder[PlayerRegisteredResponse] {
@@ -227,7 +228,7 @@ implicit val decodePlayerRegisteredResponse: Decoder[PlayerRegisteredResponse] =
       color <- c.downField("color").as[Color]
       authToken <- c.downField("authToken").as[String]
       ready <- c.downField("ready").as[Boolean]
-      debug <- c.downField("debug").as[RequestDebugInfo]
+      debug <- c.downField("debug").as[RequestInfo]
     yield new PlayerRegisteredResponse(game, color, authToken, ready, debug)
 }
 
@@ -246,6 +247,19 @@ implicit val decodeStatusResponse: Decoder[StatusResponse] = new Decoder[StatusR
       game <- c.downField("game").as[Game]
       moves <- c.downField("moves").as[List[Position]]
       ready <- c.downField("ready").as[Boolean]
-      debug <- c.downField("debug").as[RequestDebugInfo]
+      debug <- c.downField("debug").as[RequestInfo]
     yield new StatusResponse(game, moves, ready, debug)
 }
+
+implicit val encodeGoResponse: Encoder[GoResponse] = new Encoder[GoResponse] {
+  final def apply(response: GoResponse): Json =
+    response match
+      case r: StatusResponse => encodeStatusResponse(r)
+      case r: PlayerRegisteredResponse => encodePlayerRegisteredResponse(r)
+      case r: ErrorResponse => encodeErrorResponse(r)
+      case r: GameCreatedResponse => encodeGameCreatedResponse(r)
+}
+
+//def getResponse[T<:GoResponse](url: String): T =
+//  val json = Source.fromURL(url).mkString
+//  return decode[T](json)

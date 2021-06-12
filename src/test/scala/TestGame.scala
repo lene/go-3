@@ -380,3 +380,27 @@ class TestGame:
   @Test def testIsOver(): Unit =
     val game = newGame(TestSize)
     Assert.assertFalse(game.isOver)
+
+  @Test def testIsOverAfterSinglePass(): Unit =
+    val game = newGame(TestSize).makeMove(Pass(Black))
+    Assert.assertFalse(game.isOver)
+
+  @Test def testIsOverAfterDoublePass(): Unit =
+    val game = newGame(TestSize).makeMove(Pass(Black)).makeMove(Pass(White))
+    Assert.assertTrue(game.isOver)
+
+  @Test def testIsTurnEmptyBoard(): Unit =
+    val game = newGame(TestSize)
+    Assert.assertTrue(game.isTurn(Black))
+    Assert.assertFalse(game.isTurn(White))
+
+  @Test def testIsTurnAfterBlackSet(): Unit =
+    val game = newGame(TestSize).makeMove(Pass(Black))
+    Assert.assertFalse(game.isTurn(Black))
+    Assert.assertTrue(game.isTurn(White))
+
+  @Test def testIsTurnAfterWhiteSet(): Unit =
+    val game = newGame(TestSize).makeMove(Pass(Black)).makeMove(Pass(White))
+    Assert.assertTrue(game.isTurn(Black))
+    Assert.assertFalse(game.isTurn(White))
+

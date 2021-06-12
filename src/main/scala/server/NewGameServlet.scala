@@ -1,25 +1,17 @@
 package go3d.server
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
-import io.circe.syntax.EncoderOps
+import javax.servlet.http.HttpServletResponse
 
-class NewGameServlet extends HttpServlet:
-  override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
-    response.setContentType("application/json")
-    var output = ErrorResponse("i have no idea what happened").asJson.noSpaces
+class NewGameServlet extends BaseServlet:
+
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     try
-      val boardSize = getBoardSize(request.getPathInfo)
+      val boardSize = getBoardSize(requestInfo.path)
       val gameId = registerGame(boardSize)
-      response.setStatus(HttpServletResponse.SC_OK)
-      output = GameCreatedResponse(gameId, boardSize).asJson.noSpaces
-    catch case e: go3d.BadBoardSize =>
-      response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
-      output = ErrorResponse(e.message.toString).asJson.noSpaces
-    finally
-      response.getWriter.println(output)
+      GameCreatedResponse(gameId, boardSize)
+    catch case e: go3d.BadBoardSize => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
 
   private def getBoardSize(pathInfo: String): Int =
     if pathInfo == null || pathInfo.isEmpty then return go3d.DefaultBoardSize
     val parts = pathInfo.stripPrefix("/").split('/')
-    if parts.isEmpty then return go3d.DefaultBoardSize
-    return parts(0).toInt
+    if parts.isEmpty then go3d.DefaultBoardSize else parts(0).toInt
