@@ -14,9 +14,18 @@ object GoServer:
   val statusRoute = "/status/*"
   val setRoute = "/set/*"
   val passRoute = "/pass/*"
-  val handler = new ServletHandler()
 
-  def createServer(port: Int) = new Server(port)
+  def createServer(port: Int): Server =
+    val server = new Server(port)
+    val handler = new ServletHandler()
+    server.setHandler(handler)
+    handler.addServletWithMapping(classOf[NewGameServlet], newRoute)
+    handler.addServletWithMapping(classOf[RegisterPlayerServlet], registerRoute)
+    handler.addServletWithMapping(classOf[StatusServlet], statusRoute)
+    handler.addServletWithMapping(classOf[SetServlet], setRoute)
+    handler.addServletWithMapping(classOf[PassServlet], passRoute)
+    return server
+
   def serverPort(server: Server) =
     server.getConnectors()(0).asInstanceOf[NetworkConnector].getLocalPort
 
@@ -31,15 +40,8 @@ object GoServer:
       else restoreGame(result.getOrElse(null))
     println(Games)
 
-
   def run(port: Int = 3333): Unit =
     val goServer = createServer(port)
-    goServer.setHandler(handler)
-    handler.addServletWithMapping(classOf[NewGameServlet], newRoute)
-    handler.addServletWithMapping(classOf[RegisterPlayerServlet], registerRoute)
-    handler.addServletWithMapping(classOf[StatusServlet], statusRoute)
-    handler.addServletWithMapping(classOf[SetServlet], setRoute)
-    handler.addServletWithMapping(classOf[PassServlet], passRoute)
     goServer.start()
     println(s"Server started on ${serverPort(goServer)} with routes: $newRoute, $registerRoute, $statusRoute")
     goServer.join()

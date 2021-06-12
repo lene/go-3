@@ -16,8 +16,8 @@ lazy val root = project
     libraryDependencies +=  "com.lihaoyi" %% "requests" % "0.6.9",
 
     libraryDependencies ++= Seq(
-        "org.eclipse.jetty" % "jetty-servlet" % "9.4.9.v20180320",
-        "org.eclipse.jetty" % "jetty-server" % "9.4.9.v20180320",
+        "org.eclipse.jetty" % "jetty-servlet" % "9.4.42.v20210604",
+        "org.eclipse.jetty" % "jetty-server" % "9.4.42.v20210604",
     ),
 
     libraryDependencies ++= Seq(
