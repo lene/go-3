@@ -6,9 +6,9 @@ import org.eclipse.jetty.servlet.ServletHandler
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import scala.io.Source
-import io.circe.parser._
 
 object GoServer:
+
   val newRoute = "/new/*"
   val registerRoute = "/register/*"
   val statusRoute = "/status/*"
@@ -32,12 +32,9 @@ object GoServer:
   def loadGames(baseDir: String): Unit =
     Io.init(baseDir)
     for saveFile <- Io.getListOfFiles(".json") do
-      val source = Source.fromFile(saveFile)
-      val fileContents = source.getLines.mkString
-      source.close()
-      val result = decode[SaveGame](fileContents)
-      if result.isLeft then println(result.left.getOrElse(null).getMessage)
-      else restoreGame(result.getOrElse(null))
+      try
+        restoreGame(readGame(saveFile))
+      catch case e: ReadSaveGameError => println(e.message)
     println(Games)
 
   def run(port: Int = 3333): Unit =

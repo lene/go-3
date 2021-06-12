@@ -49,13 +49,6 @@ class TestServer:
   @Before def startJetty(): Unit =
     System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
     jetty = GoServer.createServer(TestPort)
-    val handler = ServletHandler()
-    handler.addServletWithMapping(classOf[NewGameServlet], GoServer.newRoute)
-    handler.addServletWithMapping(classOf[RegisterPlayerServlet], GoServer.registerRoute)
-    handler.addServletWithMapping(classOf[StatusServlet], GoServer.statusRoute)
-    handler.addServletWithMapping(classOf[SetServlet], GoServer.setRoute)
-    handler.addServletWithMapping(classOf[PassServlet], GoServer.passRoute)
-    jetty.setHandler(handler)
     jetty.start()
 
   @Before def setupTempDir(): Unit = Io.init(Files.createTempDirectory("go3d").toString)
@@ -253,16 +246,18 @@ class TestServer:
 
   @Test def testPlayRandomGame(): Unit =
     val gameData = setUpGame(TestSize)
-    var gameOver = false
-    var color = Black
-    while !gameOver do
-      val statusResponse = gameData.status(color)
-      if statusResponse.ready then
-        val move = Move(randomChoice(statusResponse.game.possibleMoves(color)), color)
-        gameOver = gameData.set(move).game.isOver
-      else
-        gameOver = gameData.pass(color).game.isOver
-      color = !color
+    playRandomGame(gameData)
+
+  @Test def testPlayRandomGameIsSaved(): Unit =
+    val gameData = setUpGame(TestSize)
+    playRandomGame(gameData)
+    Assert.assertTrue(Io.exists(gameData.id + ".json"))
+
+  @Test def testSavedRandomGameIsSameAsPlayed(): Unit =
+    val gameData = setUpGame(TestSize)
+    playRandomGame(gameData)
+    val savedGame = readGame(Io.open(gameData.id + ".json"))
+    Assert.assertEquals(Games(gameData.id), savedGame.game)
 
 def randomChoice[T](elements: List[T]): T = elements((new Random).nextInt(elements.length))
 
@@ -308,3 +303,15 @@ def setUpGame(size: Int): GameData =
 
 def gameWithBlackAt111(size: Int): StatusResponse =
   setUpGame(size).set(Move(Position(1, 1, 1), Black))
+
+def playRandomGame(gameData: GameData) =
+    var gameOver = false
+    var color = Black
+    while !gameOver do
+      val statusResponse = gameData.status(color)
+      if statusResponse.ready then
+        val move = Move(randomChoice(statusResponse.game.possibleMoves(color)), color)
+        gameOver = gameData.set(move).game.isOver
+      else
+        gameOver = gameData.pass(color).game.isOver
+      color = !color

@@ -28,6 +28,7 @@ class PassServlet extends HttpServlet:
       val newGame = game.makeMove(Pass(color))
       Games = Games + (gameId -> newGame)
       output = StatusResponse(newGame, newGame.possibleMoves(color), !ready, debug).asJson.noSpaces
+      Io.saveGame(gameId)
     catch
       case e @ (_: go3d.BadBoardSize | _: PlayerNotFoundByToken | _: NotReadyToSet) =>
         response.setStatus(HttpServletResponse.SC_BAD_REQUEST)

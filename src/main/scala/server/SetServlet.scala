@@ -29,6 +29,7 @@ class SetServlet extends HttpServlet:
       val newGame = game.makeMove(Move(position, color))
       Games = Games + (gameId -> newGame)
       output = StatusResponse(newGame, newGame.possibleMoves(color), !ready, debug).asJson.noSpaces
+      Io.saveGame(gameId)
     catch
       case e @ (_: PlayerNotFoundByToken | _: AuthorizationMissing | _: AuthorizationMethodWrong) =>
         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED)
