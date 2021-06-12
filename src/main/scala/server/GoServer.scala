@@ -5,7 +5,7 @@ import org.eclipse.jetty.server.{NetworkConnector, Server}
 import org.eclipse.jetty.servlet.ServletHandler
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
-import scala.io.Source
+import io.circe.syntax.EncoderOps
 
 object GoServer:
 
@@ -43,3 +43,6 @@ object GoServer:
     println(s"Server started on ${serverPort(goServer)} with routes: $newRoute, $registerRoute, $statusRoute")
     goServer.join()
 
+def errorResponse(response: HttpServletResponse, msg: String, statusCode: Int): String =
+  response.setStatus(statusCode)
+  ErrorResponse(msg).asJson.noSpaces

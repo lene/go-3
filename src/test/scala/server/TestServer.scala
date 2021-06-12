@@ -139,6 +139,14 @@ class TestServer:
       case e: RequestFailedException => Assert.assertEquals(401, e.response.statusCode)
       case _ => Assert.fail()
 
+  @Test def testPassWithoutAuthSetsStatus401(): Unit =
+    val gameData = setUpGame(TestSize)
+    try
+      val response = requests.get(s"http://localhost:$TestPort/pass/${gameData.id}")
+    catch
+      case e: RequestFailedException => Assert.assertEquals(401, e.response.statusCode)
+      case _ => Assert.fail()
+
   @Test def testSetStoneForBlackAtReadyStatusSucceeds(): Unit = gameWithBlackAt111(TestSize)
 
   @Test def testSetStoneForBlackAtReadyStatusReturnsUpdatedBoard(): Unit =
@@ -259,21 +267,17 @@ class TestServer:
     val savedGame = readGame(Io.open(gameData.id + ".json"))
     Assert.assertEquals(Games(gameData.id), savedGame.game)
 
-def randomChoice[T](elements: List[T]): T = elements((new Random).nextInt(elements.length))
-
-def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
-  var statusResponse: StatusResponse = null
-  for move <- moves do
-    statusResponse = move match
+  def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
+    var statusResponse: StatusResponse = null
+    for move <- moves do
+      statusResponse = move match
         case m: Move => gameData.set(m)
         case p: Pass => gameData.pass(p.color)
-  return statusResponse
+    return statusResponse
+
+def randomChoice[T](elements: List[T]): T = elements((new Random).nextInt(elements.length))
 
 def getJson(url: String): Source = Source.fromURL(url)
-
-//def getResponse[T](url: String): T =
-//  val json = getJson(url).mkString
-//  return decode[T](json)
 
 def getPRR(url: String): PlayerRegisteredResponse =
   val json = getJson(url).mkString

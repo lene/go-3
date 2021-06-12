@@ -7,14 +7,13 @@ class NewGameServlet extends HttpServlet:
   override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
     response.setContentType("application/json")
     var output = ErrorResponse("i have no idea what happened").asJson.noSpaces
+    response.setStatus(HttpServletResponse.SC_OK)
     try
       val boardSize = getBoardSize(request.getPathInfo)
       val gameId = registerGame(boardSize)
-      response.setStatus(HttpServletResponse.SC_OK)
       output = GameCreatedResponse(gameId, boardSize).asJson.noSpaces
     catch case e: go3d.BadBoardSize =>
-      response.setStatus(HttpServletResponse.SC_BAD_REQUEST)
-      output = ErrorResponse(e.message.toString).asJson.noSpaces
+      output = errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
     finally
       response.getWriter.println(output)
 

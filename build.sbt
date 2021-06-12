@@ -15,6 +15,7 @@ lazy val root = project
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     libraryDependencies +=  "com.lihaoyi" %% "requests" % "0.6.9",
 
+    // newer jetty versions require both code changes and Java >= 11
     libraryDependencies ++= Seq(
         "org.eclipse.jetty" % "jetty-servlet" % "9.4.42.v20210604",
         "org.eclipse.jetty" % "jetty-server" % "9.4.42.v20210604",
