@@ -7,7 +7,7 @@ stages:
 variables:
   TEST_RUN_BOARD_SIZE: 11
   TEST_RUN_MAX_RUNNING_TIME: 60
-  DEPLOYABLE_BASE_NAME: go-3d-0.6.0
+  DEPLOYABLE_BASE_NAME: go-3d-0.6.1
 
 include:
   - template: Code-Quality.gitlab-ci.yml
@@ -75,7 +75,7 @@ BuildDeployable:
     - mv target/universal/${DEPLOYABLE_BASE_NAME}.zip .
   artifacts:
     paths:
-      - go-3d-0.6.0.zip
+      - go-3d-0.6.1.zip
 
 .TestDeployable:
   stage: run
