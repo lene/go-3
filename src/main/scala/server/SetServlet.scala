@@ -1,7 +1,6 @@
 package go3d.server
 
-import go3d.{Color, Move, Position}
-import io.circe.syntax.EncoderOps
+import go3d.{Color, GoException, Move, Position}
 
 import javax.servlet.http.HttpServletResponse
 
@@ -16,14 +15,11 @@ class SetServlet extends BaseServlet:
       val newGame = game.makeMove(getMove(requestInfo.path, color))
       Games = Games + (gameId -> newGame)
       Io.saveGame(gameId)
-      return StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo)
+      StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo)
     catch
-      case e: AuthorizationError =>
-        return errorResponse(response, e.toString, HttpServletResponse.SC_UNAUTHORIZED)
-      case e @ (_: go3d.BadBoardSize | _: NotReadyToSet) =>
-        return errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
-      case e =>
-        return errorResponse(response, e.toString, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+      case e: NotReadyToSet => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
+      case e: AuthorizationError => error(response, e, HttpServletResponse.SC_UNAUTHORIZED)
+      case e: GoException => error(response, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
 
   private def getMove(pathInfo: String, color: Color): Move =
     if pathInfo == null || pathInfo.isEmpty then throw MalformedRequest(pathInfo)

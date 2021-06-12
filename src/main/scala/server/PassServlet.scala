@@ -1,7 +1,6 @@
 package go3d.server
 
-import go3d.Pass
-import io.circe.syntax.EncoderOps
+import go3d.{GoException, Pass}
 
 import javax.servlet.http.HttpServletResponse
 
@@ -16,11 +15,8 @@ class PassServlet extends BaseServlet:
       val newGame = game.makeMove(Pass(color))
       Games = Games + (gameId -> newGame)
       Io.saveGame(gameId)
-      return StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo)
+      StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo)
     catch
-      case e: AuthorizationError =>
-        return errorResponse(response, e.toString, HttpServletResponse.SC_UNAUTHORIZED)
-      case e @ (_: go3d.BadBoardSize | _: NotReadyToSet) =>
-        return errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
-      case e =>
-        return errorResponse(response, e.toString, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+      case e: NotReadyToSet => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
+      case e: AuthorizationError => error(response, e, HttpServletResponse.SC_UNAUTHORIZED)
+      case e: GoException => error(response, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)

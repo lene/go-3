@@ -66,6 +66,9 @@ class TestServer:
     assertThrows[IOException]({getJson(s"http://localhost:$TestPort/new/4")})
     assertThrows[IOException]({getJson(s"http://localhost:$TestPort/new/27")})
 
+  @Test def testNewGameWithBadSizeSetsStatus400(): Unit =
+    assertFailsWithStatus(s"http://localhost:$TestPort/new/27", 400)
+
   @Test def testRegisterOnePlayer(): Unit =
     val newGameResponse = GameData.create(TestSize)
     val registerResponse = GameData.register(newGameResponse.id, Black)
@@ -133,19 +136,11 @@ class TestServer:
 
   @Test def testSetStoneWithoutAuthSetsStatus401(): Unit =
     val gameData = setUpGame(TestSize)
-    try
-      val response = requests.get(s"http://localhost:$TestPort/set/${gameData.id}/1/1/1")
-    catch
-      case e: RequestFailedException => Assert.assertEquals(401, e.response.statusCode)
-      case _ => Assert.fail()
+    assertFailsWithStatus(s"http://localhost:$TestPort/set/${gameData.id}/1/1/1", 401)
 
   @Test def testPassWithoutAuthSetsStatus401(): Unit =
     val gameData = setUpGame(TestSize)
-    try
-      val response = requests.get(s"http://localhost:$TestPort/pass/${gameData.id}")
-    catch
-      case e: RequestFailedException => Assert.assertEquals(401, e.response.statusCode)
-      case _ => Assert.fail()
+    assertFailsWithStatus(s"http://localhost:$TestPort/pass/${gameData.id}", 401)
 
   @Test def testSetStoneForBlackAtReadyStatusSucceeds(): Unit = gameWithBlackAt111(TestSize)
 
@@ -160,6 +155,31 @@ class TestServer:
   @Test def testSetStoneForBlackAtReadyStatusReturnsNoPossibleMoves(): Unit =
     val setResponse = gameWithBlackAt111(TestSize)
     Assert.assertTrue(setResponse.moves.isEmpty)
+
+  @Test def testSetStoneWhenNotReadyFails(): Unit =
+    val gameData = setUpGame(TestSize)
+    Assert.assertFalse(gameData.status(White).ready)
+    assertThrows[RequestFailedException]({gameData.set(White, 1, 1, 1)})
+
+  @Test def testSetStoneWhenNotReadySetsStatus400(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/set/${gameData.id}/1/1/1", 400,
+      Map("Authentication" -> s"Basic ${gameData.token(White)}")
+    )
+
+  @Test def testPassWhenNotReadyFails(): Unit =
+    val gameData = setUpGame(TestSize)
+    Assert.assertFalse(gameData.status(White).ready)
+    assertThrows[RequestFailedException]({gameData.pass(White)})
+
+  @Test def testPassWhenNotReadySetsStatus400(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/pass/${gameData.id}", 400,
+      Map("Authentication" -> s"Basic ${gameData.token(White)}")
+    )
+
 
   @Test def testGetStatusForBlackAfterBlackSetStoneReturnsStatusNotReady(): Unit =
     val gameData = setUpGame(TestSize)
@@ -319,3 +339,16 @@ def playRandomGame(gameData: GameData) =
       else
         gameOver = gameData.pass(color).game.isOver
       color = !color
+
+def assertFailsWithStatus(url: String, expectedStatus: Int,
+                          headers: Map[String, String] = Map()): Unit =
+  try
+    val response = requests.get(url, headers = headers)
+    Assert.fail("request unexpectedly succeeded")
+  catch
+    case e: RequestFailedException => Assert.assertEquals(
+      e.response.text(), expectedStatus, e.response.statusCode
+    )
+    case e: Throwable => Assert.fail(
+      s"expected RequestFailedException, got ${e.getClass.getSimpleName}"
+    )

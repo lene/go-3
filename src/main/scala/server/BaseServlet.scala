@@ -1,5 +1,7 @@
 package go3d.server
 
+import go3d.GoException
+
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import io.circe.syntax.EncoderOps
 
@@ -13,3 +15,7 @@ abstract class BaseServlet extends HttpServlet with ServletOutput:
     output = generateOutput(requestInfo, response).asJson.noSpaces
 
     response.getWriter.println(output)
+
+def error(response: HttpServletResponse, e: GoException, statusCode: Int): ErrorResponse =
+  response.setStatus(statusCode)
+  ErrorResponse(s"${e.getClass.getSimpleName}: $e")

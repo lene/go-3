@@ -1,7 +1,6 @@
 package go3d.server
 
 import go3d.{Black, Color, White}
-import io.circe.syntax.EncoderOps
 
 import javax.servlet.http.HttpServletResponse
 
@@ -15,12 +14,10 @@ class RegisterPlayerServlet extends BaseServlet:
       val player = registerPlayer(color, gameId, token)
       val ready = (color == Black) && Players(gameId).contains(White)
       Io.saveGame(gameId)
-      return PlayerRegisteredResponse(Games(gameId), color, token, ready, requestInfo)
+      PlayerRegisteredResponse(Games(gameId), color, token, ready, requestInfo)
     catch
-      case e: DuplicateColor =>
-        return errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
-      case e: ServerException =>
-        return errorResponse(response, e.toString, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
+      case e: DuplicateColor => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
+      case e: ServerException => error(response, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
 
   // TODO generate a secret token
   private def generateAuthToken(gameId: String, color: go3d.Color): String =

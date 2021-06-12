@@ -42,7 +42,3 @@ object GoServer:
     goServer.start()
     println(s"Server started on ${serverPort(goServer)} with routes: $newRoute, $registerRoute, $statusRoute")
     goServer.join()
-
-def errorResponse(response: HttpServletResponse, msg: String, statusCode: Int): ErrorResponse =
-  response.setStatus(statusCode)
-  ErrorResponse(msg)

@@ -1,8 +1,8 @@
 package go3d.server
 
-import go3d.Color
+import go3d.{Color, GoException}
 
-class ServerException(val message: String) extends RuntimeException:
+class ServerException(val message: String) extends GoException:
   override def toString = message
 
 class AuthorizationError(val msg: String) extends ServerException(message = s"authorization $msg")
