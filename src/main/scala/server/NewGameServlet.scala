@@ -1,21 +1,18 @@
 package go3d.server
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import io.circe.syntax.EncoderOps
 
-class NewGameServlet extends HttpServlet:
-  override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
-    response.setContentType("application/json")
-    var output = ErrorResponse("i have no idea what happened").asJson.noSpaces
-    response.setStatus(HttpServletResponse.SC_OK)
+import javax.servlet.http.HttpServletResponse
+
+class NewGameServlet extends BaseServlet:
+  
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): String =
     try
-      val boardSize = getBoardSize(request.getPathInfo)
+      val boardSize = getBoardSize(requestInfo.path)
       val gameId = registerGame(boardSize)
-      output = GameCreatedResponse(gameId, boardSize).asJson.noSpaces
+      return GameCreatedResponse(gameId, boardSize).asJson.noSpaces
     catch case e: go3d.BadBoardSize =>
-      output = errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
-    finally
-      response.getWriter.println(output)
+      return errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
 
   private def getBoardSize(pathInfo: String): Int =
     if pathInfo == null || pathInfo.isEmpty then return go3d.DefaultBoardSize

@@ -3,14 +3,11 @@ package go3d.server
 import go3d.{Color, Move, Position}
 import io.circe.syntax.EncoderOps
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import javax.servlet.http.HttpServletResponse
 
-class SetServlet extends HttpServlet:
-  override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
-    response.setContentType("application/json")
-    var output = ErrorResponse("i have no idea what happened").asJson.noSpaces
-    response.setStatus(HttpServletResponse.SC_OK)
-    val requestInfo = RequestInfo(request)
+class SetServlet extends BaseServlet:
+  
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): String =
     try
       val gameId = requestInfo.getGameId
       val color = requestInfo.mustGetPlayer.color
@@ -18,19 +15,17 @@ class SetServlet extends HttpServlet:
       if !game.isTurn(color) then throw NotReadyToSet(gameId, color)
       val newGame = game.makeMove(getMove(requestInfo.path, color))
       Games = Games + (gameId -> newGame)
-      output = StatusResponse(
+      Io.saveGame(gameId)
+      return StatusResponse(
         newGame, newGame.possibleMoves(color), false, requestInfo
       ).asJson.noSpaces
-      Io.saveGame(gameId)
     catch
       case e: AuthorizationError =>
-        output = errorResponse(response, e.toString, HttpServletResponse.SC_UNAUTHORIZED)
+        return errorResponse(response, e.toString, HttpServletResponse.SC_UNAUTHORIZED)
       case e @ (_: go3d.BadBoardSize | _: NotReadyToSet) =>
-        output = errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
+        return errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
       case e =>
-        output = errorResponse(response, e.toString, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-    finally
-      response.getWriter.println(output)
+        return errorResponse(response, e.toString, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
 
   private def getMove(pathInfo: String, color: Color): Move =
     if pathInfo == null || pathInfo.isEmpty then throw MalformedRequest(pathInfo)

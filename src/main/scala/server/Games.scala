@@ -1,12 +1,7 @@
 package go3d.server
 
-import go3d.Color
-
 import scala.io.Source
 import io.circe.parser._
-
-import java.util.Collections
-import javax.servlet.http.HttpServletRequest
 
 var Games: Map[String, go3d.Game] = Map()
 
@@ -28,4 +23,3 @@ def restoreGame(saveGame: SaveGame): Unit =
   val gameId = saveGame.players.last._2.gameId
   Players(gameId) = saveGame.players
   Games = Games + (gameId -> saveGame.game)
-

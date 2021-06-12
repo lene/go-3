@@ -1,32 +1,28 @@
 package go3d.server
 
-import go3d.{Color, Black, White}
-
-import java.util.Collections
-import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
+import go3d.{Black, Color, White}
 import io.circe.syntax.EncoderOps
 
-class RegisterPlayerServlet extends HttpServlet:
+import javax.servlet.http.HttpServletResponse
 
-  override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
-    response.setContentType("application/json")
-    var output = ErrorResponse("i have no idea what happened").asJson.noSpaces
-    response.setStatus(HttpServletResponse.SC_OK)
-    val requestInfo = RequestInfo(request)
+class RegisterPlayerServlet extends BaseServlet:
+
+  def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): String =
     try
       val gameId = requestInfo.getGameId
       val color = getColor(requestInfo)
       val token = generateAuthToken(gameId, color)
       val player = registerPlayer(color, gameId, token)
       val ready = (color == Black) && Players(gameId).contains(White)
-      output = PlayerRegisteredResponse(
+      Io.saveGame(gameId)
+      return PlayerRegisteredResponse(
         Games(gameId), color, token, ready, requestInfo
       ).asJson.noSpaces
-      Io.saveGame(gameId)
-    catch case e: ServerException =>
-      output = errorResponse(response, e.toString, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
-    finally
-      response.getWriter.println(output)
+    catch
+      case e: DuplicateColor => 
+        return errorResponse(response, e.toString, HttpServletResponse.SC_BAD_REQUEST)
+      case e: ServerException => 
+        return errorResponse(response, e.toString, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
 
   // TODO generate a secret token
   private def generateAuthToken(gameId: String, color: go3d.Color): String =
