@@ -173,3 +173,7 @@ class TestGoban:
              |   |"""
     ))
     Assert.assertNotEquals(goban1, "some random thing")
+
+  @Test def testFromStringsWithPipes(): Unit = ???
+  @Test def testFromStringsWithMargin(): Unit = ???
+  @Test def testFromStringsWithoutPipesOrMargin(): Unit = ???

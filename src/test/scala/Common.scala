@@ -67,15 +67,14 @@ def assertCollectionEqual[T](expected: Seq[T], actual: Seq[T]): Unit =
 def assertPositionsEqual(expected: List[(Int, Int, Int)], actual: Seq[Position]): Unit =
   assertCollectionEqual(for (p <- expected) yield Position(p._1, p._2, p._3), actual)
 
-def assertThrows[E](f: => Unit)(implicit eType:ClassTag[E]): Unit = {
+def assertThrows[E](f: => Unit)(implicit eType:ClassTag[E]): Unit =
   try f
   catch
     case e: E => return
     case e: _ => Assert.fail(s"Expected ${eType.runtimeClass.getName} got ${e.getClass}")
   Assert.fail(s"Expected ${eType.runtimeClass.getName}")
-}
 
-def fromStrings(levels: Map[Int, String]): Goban = {
+def fromStrings(levels: Map[Int, String]): Goban =
   if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
   val goban = newGoban((levels.head._2.stripMargin.replace("|", "").split("\n").length))
   for (z, level) <- levels do
@@ -84,7 +83,6 @@ def fromStrings(levels: Map[Int, String]): Goban = {
       for (stone, x) <- line.zipWithIndex do
         goban.stones(x+1)(y+1)(z) = Color(stone)
   return goban
-}
 
 def fromGoban(goban: Goban): Game =
   Game(goban.size, goban, Array(), Map())
