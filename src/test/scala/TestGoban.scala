@@ -173,3 +173,47 @@ class TestGoban:
              |   |"""
     ))
     Assert.assertNotEquals(goban1, "some random thing")
+
+  @Test def testFromStringsWithPipes(): Unit =
+    val goban = Goban.fromStrings(
+      Array("|   |\n|   |\n|   |", "|   |\n| @ |\n|   |", "|   |\n|   |\n|   |")
+    )
+    Assert.assertEquals(Black, goban.at(2, 2, 2))
+
+  @Test def testFromStringsWithMargin(): Unit =
+    val goban = Goban.fromStrings(Array(
+      """|   |
+         |   |
+         |   |""",
+      """|   |
+         | @ |
+         |   |""",
+      """|   |
+         |   |
+         |   |"""
+      ))
+    Assert.assertEquals(goban.toString, Black, goban.at(2, 2, 2))
+
+  @Test def testFromStringsWithoutPipesOrMargin(): Unit =
+    val goban = Goban.fromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   "))
+    Assert.assertEquals(Black, goban.at(2, 2, 2))
+
+  @Test def testToStringsIsInverseOfFromStrings(): Unit =
+    val definition = Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   ")
+    val goban = Goban.fromStrings(definition)
+    Assert.assertEquals(definition.toList, Goban.toStrings(goban).toList)
+
+  @Test def testFromStringsIsInverseOfToStrings(): Unit =
+    val goban = Goban.fromStrings(Array(
+      """|   |
+         |   |
+         |   |""",
+      """|   |
+         | @ |
+         |   |""",
+      """|   |
+         |   |
+         |   |"""
+    ))
+    val definition = Goban.toStrings(goban)
+    Assert.assertEquals(Goban.toStrings(goban).toList, definition.toList)
