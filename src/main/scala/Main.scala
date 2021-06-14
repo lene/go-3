@@ -26,9 +26,9 @@ def randomGame(size: Int): Unit =
   while game.possibleMoves(color).nonEmpty && game.moves.length <= size*size*size do
     val move = Move(game.possibleMoves(color)(random.nextInt(game.possibleMoves(color).length)), color)
     game = game.makeMove(move)
-    if game.moves.size % Step == 0 || game.moves.size == size*size*size then
+    if game.moves.length % Step == 0 || game.moves.length == size*size*size then
       val stepMs = (System.nanoTime()-tStep0)/1000000
-      Console.println(s"${game.moves.size}/${size*size*size} (${stepMs/Step}ms/move)")
+      Console.println(s"${game.moves.length}/${size*size*size} (${stepMs/Step}ms/move)")
       tStep0 = System.nanoTime()
     color = !color
   val totalMs = (System.nanoTime()-t0)/1000000

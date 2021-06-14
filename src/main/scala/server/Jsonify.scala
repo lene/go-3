@@ -103,7 +103,7 @@ implicit val decodeHasColor: Decoder[HasColor] = new Decoder[HasColor] {
 
 implicit val encodeGoban: Encoder[Goban] = new Encoder[Goban] {
   final def apply(goban: Goban): Json = Json.obj(
-    ("size", Json.fromInt(goban.size)), ("stones", goban.stones.asJson)
+    ("size", Json.fromInt(goban.size)), ("stones", Goban.toStrings(goban).asJson)
   )
 }
 
@@ -111,8 +111,8 @@ implicit val decodeGoban: Decoder[Goban] = new Decoder[Goban] {
   final def apply(c: HCursor): Decoder.Result[Goban] =
     for
       size <- c.downField("size").as[Int]
-      stones <- c.downField("stones").as[Array[Array[Array[Color]]]]
-    yield new Goban(size, stones)
+      stones <- c.downField("stones").as[Array[String]]
+    yield Goban.fromStrings(stones)
 }
 
 implicit val encodeGame: Encoder[Game] = new Encoder[Game] {
