@@ -63,6 +63,60 @@ class TestJsonify:
     val decoded = decode[Map[Color, String]](json).getOrElse(null)
     Assert.assertEquals(map, decoded)
 
+  @Test def testFromStringsWithPipes(): Unit =
+    val goban = gobanFromStrings(
+      Array("|   |\n|   |\n|   |", "|   |\n| @ |\n|   |", "|   |\n|   |\n|   |")
+    )
+    Assert.assertEquals(Black, goban.at(2, 2, 2))
+
+  @Test def testFromStringsWithMargin(): Unit =
+    val goban = gobanFromStrings(Array(
+      """|   |
+         |   |
+         |   |""",
+      """|   |
+         | @ |
+         |   |""",
+      """|   |
+         |   |
+         |   |"""
+    ))
+    Assert.assertEquals(goban.toString, Black, goban.at(2, 2, 2))
+
+  @Test def testFromStringsWithoutPipesOrMargin(): Unit =
+    val goban = gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   "))
+    Assert.assertEquals(Black, goban.at(2, 2, 2))
+
+  @Test def testToStringsIsInverseOfFromStrings(): Unit =
+    val definition = Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   ")
+    val goban = gobanFromStrings(definition)
+    Assert.assertEquals(definition.toList, gobanToStrings(goban).toList)
+
+  @Test def testFromStringsIsInverseOfToStrings(): Unit =
+    val goban = gobanFromStrings(Array(
+      """|   |
+         |   |
+         |   |""",
+      """|   |
+         | @ |
+         |   |""",
+      """|   |
+         |   |
+         |   |"""
+    ))
+    val definition = gobanToStrings(goban)
+    Assert.assertEquals(gobanToStrings(goban).toList, definition.toList)
+
+  @Test def testFromStringsWithTooFewLevels(): Unit =
+    assertThrows[JsonDecodeError](
+      {gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   "))}
+    )
+
+  @Test def testFromStringsWithTruncatedLastLevel(): Unit =
+    assertThrows[JsonDecodeError](
+      {gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n "))}
+    )
+
   @Test def testUseCirceForEmptyGobanJson(): Unit =
     val goban = newGoban(TestSize)
     val json = goban.asJson.noSpaces

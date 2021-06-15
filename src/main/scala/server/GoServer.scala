@@ -34,7 +34,9 @@ object GoServer:
     for saveFile <- Io.getListOfFiles(".json") do
       try
         restoreGame(readGame(saveFile))
-      catch case e: ReadSaveGameError => println(s"${saveFile.getName}: ${e.message}")
+      catch
+        case e: ReadSaveGameError => println(s"${saveFile.getName}: ${e.message}")
+        case e: JsonDecodeError => println(s"${saveFile.getName}: ${e.message}")
     println(Games)
 
   def run(port: Int = 3333): Unit =
