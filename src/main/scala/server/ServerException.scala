@@ -15,6 +15,8 @@ class PlayerNotFoundByToken(gameId: String, token: String)
 
 class MalformedRequest(val pathInfo: String)
   extends ServerException(message = s"bad request: $pathInfo")
+class RequestTooLong(allowed: Int, actual: Int)
+  extends ServerException(s"request too long: $actual > $allowed")
 class NonexistentGame(val gameId: String, keys: List[String])
   extends ServerException(message = s"game $gameId not found in $keys")
 class DuplicateColor(val gameId: String, color: Color)
