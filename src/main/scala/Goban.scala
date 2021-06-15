@@ -4,29 +4,6 @@ import scala.reflect.ClassTag
 
 def newGoban(size: Int): Goban = Goban(size, initializeBoard(size))
 
-object Goban:
-  def fromStrings(levels: Array[String]): Goban =
-    if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
-    val size = levels(0).stripMargin.replace("|", "").split("\n").length
-    val goban = newGoban(size)
-    for (level, z) <- levels.zipWithIndex do
-      val lines = level.stripMargin.replace("|", "").split("\n")
-      assert(lines.length == size, s"${lines.toString}: ${lines.length} != $size")
-      for (line, y) <- lines.zipWithIndex do
-        assert(line.length == size, s"\"$line\": ${line.length} != $size")
-        for (stone, x) <- line.zipWithIndex do
-          goban.stones(x+1)(y+1)(z+1) = Color(stone)
-    return goban
-
-  def toStrings(goban: Goban): Array[String] =
-    val strings = Array.fill(goban.size){""}
-    for z <- 1 to goban.size do
-      for y <- 1 to goban.size do
-        for x <- 1 to goban.size do
-          strings(z-1) += goban.at(x, y, z)
-        if y < goban.size then strings(z-1) += "\n"
-    return strings
-
 class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
   if size < MinBoardSize then throw BadBoardSize(size, "too small")

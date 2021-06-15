@@ -5,11 +5,12 @@ import javax.servlet.http.HttpServletResponse
 class NewGameServlet extends BaseServlet:
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
-    try
       val boardSize = getBoardSize(requestInfo.path)
       val gameId = registerGame(boardSize)
+      response.setStatus(HttpServletResponse.SC_OK)
       GameCreatedResponse(gameId, boardSize)
-    catch case e: go3d.BadBoardSize => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
+
+  def maxRequestLength: Int = "/".length + 2
 
   private def getBoardSize(pathInfo: String): Int =
     if pathInfo == null || pathInfo.isEmpty then return go3d.DefaultBoardSize

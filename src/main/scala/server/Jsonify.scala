@@ -1,6 +1,6 @@
 package go3d.server
 
-import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position}
+import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position, newGoban}
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
@@ -101,9 +101,32 @@ implicit val decodeHasColor: Decoder[HasColor] = new Decoder[HasColor] {
       yield new Pass(col)
 }
 
+def gobanFromStrings(levels: Array[String]): Goban =
+  if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
+  val size = levels(0).stripMargin.replace("|", "").split("\n").length
+  if levels.length != size then throw JsonDecodeError(s"${levels.length} != $size")
+  val goban = newGoban(size)
+  for (level, z) <- levels.zipWithIndex do
+    val lines = level.stripMargin.replace("|", "").split("\n")
+    if lines.length != size then throw JsonDecodeError(s"${lines.toString}: ${lines.length} != $size")
+    for (line, y) <- lines.zipWithIndex do
+      if line.length != size then throw JsonDecodeError(s"\"$line\": ${line.length} != $size")
+      for (stone, x) <- line.zipWithIndex do
+        goban.stones(x+1)(y+1)(z+1) = Color(stone)
+  return goban
+
+def gobanToStrings(goban: Goban): Array[String] =
+  val strings = Array.fill(goban.size){""}
+  for z <- 1 to goban.size do
+    for y <- 1 to goban.size do
+      for x <- 1 to goban.size do
+        strings(z-1) += goban.at(x, y, z)
+      if y < goban.size then strings(z-1) += "\n"
+  return strings
+
 implicit val encodeGoban: Encoder[Goban] = new Encoder[Goban] {
   final def apply(goban: Goban): Json = Json.obj(
-    ("size", Json.fromInt(goban.size)), ("stones", Goban.toStrings(goban).asJson)
+    ("size", Json.fromInt(goban.size)), ("stones", gobanToStrings(goban).asJson)
   )
 }
 
@@ -112,7 +135,7 @@ implicit val decodeGoban: Decoder[Goban] = new Decoder[Goban] {
     for
       size <- c.downField("size").as[Int]
       stones <- c.downField("stones").as[Array[String]]
-    yield Goban.fromStrings(stones)
+    yield gobanFromStrings(stones)
 }
 
 implicit val encodeGame: Encoder[Game] = new Encoder[Game] {

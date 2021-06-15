@@ -287,6 +287,70 @@ class TestServer:
     val savedGame = readGame(Io.open(gameData.id + ".json"))
     Assert.assertEquals(Games(gameData.id), savedGame.game)
 
+  @Test def testTooLongURLSetsStatus414WhenCreatingGame(): Unit =
+    assertFailsWithStatus(s"http://localhost:$TestPort/new/123", 414)
+
+  @Test def testTooLongURLSetsStatus414WhenRegisteringPlayer(): Unit =
+    val newGameResponse = GameData.create(TestSize)
+    assertFailsWithStatus(s"http://localhost:$TestPort/register/${newGameResponse.id}/@X", 414)
+
+  @Test def testTooLongURLSetsStatus414WhenRegisteringPlayerEvenIfGameIdWrong(): Unit =
+    assertFailsWithStatus(s"http://localhost:$TestPort/register/NOTID!/@X", 414)
+
+  @Test def testTooLongURLSetsStatus414WhenSetting(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 414,
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+
+  @Test def testTooLongURLSetsStatus414WhenSettingEvenIfNotReady(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 414,
+      Map("Authentication" -> s"Basic ${gameData.token(White)}")
+    )
+
+  @Test def testTooLongURLSetsStatus414WhenPassing(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/pass/${gameData.id}/X", 414,
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+
+  @Test def testTooLongURLSetsStatus414WhenFetchingStatus(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/status/${gameData.id}/X", 414,
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+
+  @Test def testTooLongURLSetsStatus414WhenFetchingStatusIfUnauthenticated(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(s"http://localhost:$TestPort/status/${gameData.id}/X", 414)
+
+  @Test def testNonexistentGameSetsStatus404WhenRegisteringPlayer(): Unit =
+    val newGameResponse = GameData.create(TestSize)
+    assertFailsWithStatus(s"http://localhost:$TestPort/register/NOPE!!/@", 404)
+
+  @Test def testNonexistentGameSetsStatus404WhenSetting(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/set/NOPE!!/1/1/1", 404,
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+
+  @Test def testNonexistentGameSetsStatus404WhenPassing(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/pass/NOPE!!", 404,
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+
+  @Test def testNonexistentGameSetsStatus404WhenFetchingStatus(): Unit =
+    val gameData = setUpGame(TestSize)
+    assertFailsWithStatus(s"http://localhost:$TestPort/status/NOPE!!", 404)
+
   def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
     for move <- moves do
