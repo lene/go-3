@@ -45,6 +45,7 @@ class TestIo:
 
   @Test def testGetListOfJsonFiles(): Unit =
     Io.writeFile("test.json", "{}")
+    Assert.assertTrue(Io.exists("test.json"))
     val matchingFiles = Io.getListOfFiles(".json").map(f => f.getName)
     Assert.assertEquals(
       java.io.File(Io.baseFolder).listFiles.toList.toString, List("test.json"), matchingFiles

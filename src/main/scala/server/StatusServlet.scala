@@ -11,7 +11,8 @@ class StatusServlet extends BaseServlet:
       response.setStatus(HttpServletResponse.SC_OK)
       requestInfo.getPlayer match
         case Some(p) =>
-          StatusResponse(game, game.possibleMoves(p.color), game.isTurn(p.color), requestInfo)
+          val ready = game.isTurn(p.color) && Players(gameId).size == 2
+          StatusResponse(game, game.possibleMoves(p.color), ready, requestInfo)
         case None => StatusResponse(game, List(), false, requestInfo)
     catch
       case e: AuthorizationMissing => StatusResponse(game, List(), false, requestInfo)

@@ -48,7 +48,7 @@ Run:UseSbtDocker:
   stage: test
   needs: []
   script:
-    - sbt run
+    - sbt "runMain go3d.Runner"
 
 CheckRunTime:
   image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
@@ -59,7 +59,7 @@ CheckRunTime:
     - apt-get -y install bc time
   script:
     - sbt compile
-    - /usr/bin/time -f %U -o runtime.log sbt "run $TEST_RUN_BOARD_SIZE"
+    - /usr/bin/time -f %U -o runtime.log sbt "runMain go3d.Runner $TEST_RUN_BOARD_SIZE"
     - echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
     - if [ $(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l) -eq 1 ]; then exit 1; fi
   artifacts:
@@ -85,7 +85,7 @@ BuildDeployable:
   script:
     - test -f ${DEPLOYABLE_BASE_NAME}.zip
     - unzip ${DEPLOYABLE_BASE_NAME}.zip
-    - ./${DEPLOYABLE_BASE_NAME}/bin/go-3d --benchmark 9
+    - ./${DEPLOYABLE_BASE_NAME}/bin/runner --benchmark 9
 
 TestDeployable:ScalaSBT:
   extends: .TestDeployable

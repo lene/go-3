@@ -6,6 +6,7 @@ import io.circe.parser._
 import io.circe.syntax._
 
 import scala.io.Source
+import scala.reflect.ClassTag
 
 implicit val encodeColor: Encoder[Color] = new Encoder[Color] {
   final def apply(col: Color): Json = Json.obj(("color", Json.fromString(col.toString)))
@@ -283,6 +284,6 @@ implicit val encodeGoResponse: Encoder[GoResponse] = new Encoder[GoResponse] {
       case r: GameCreatedResponse => encodeGameCreatedResponse(r)
 }
 
-//def getResponse[T<:GoResponse](url: String): T =
+//def getResponse[T<:GoResponse](url: String)(implicit cType:ClassTag[T]): T =
 //  val json = Source.fromURL(url).mkString
 //  return decode[T](json)
