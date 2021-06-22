@@ -9,6 +9,7 @@ import io.circe.syntax.EncoderOps
 
 object GoServer:
 
+  val DefaultPort = 6030 // "Go3D"
   val newRoute = "/new/*"
   val registerRoute = "/register/*"
   val statusRoute = "/status/*"
@@ -39,7 +40,7 @@ object GoServer:
         case e: JsonDecodeError => println(s"${saveFile.getName}: ${e.message}")
     println(Games)
 
-  def run(port: Int = 3333): Unit =
+  def run(port: Int = DefaultPort): Unit =
     val goServer = createServer(port)
     goServer.start()
     println(s"Server started on ${serverPort(goServer)} with routes: $newRoute, $registerRoute, $statusRoute")
