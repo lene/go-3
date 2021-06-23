@@ -17,7 +17,6 @@ object Io:
   var basePath: Path = null
 
   def init(dir: String): Unit =
-//    if baseFolder != null then throw IllegalArgumentException("called Io.init() twice")
     baseFolder = dir
     basePath = Paths.get(baseFolder)
     if !(Files.exists(basePath) && Files.isDirectory(basePath))

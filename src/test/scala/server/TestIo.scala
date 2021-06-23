@@ -2,7 +2,7 @@ package go3d.testing
 
 import go3d.{Black, White, newGame}
 import go3d.server.{Games, Io, registerGame, registerPlayer, SaveGame, decodeSaveGame}
-import org.junit.{Assert, Ignore, Test}
+import org.junit.{Assert, Test, Before}
 
 import java.util.NoSuchElementException
 import java.nio.file.{Files, Paths}
@@ -11,7 +11,7 @@ import io.circe.parser._
 
 class TestIo:
 
-  Io.init(Files.createTempDirectory("go3d").toString)
+  @Before def initIo = Io.init(Files.createTempDirectory("go3d").toString)
 
   @Test def testSaveGameFailsNonexistentGame(): Unit =
     val gameId = "mock"
