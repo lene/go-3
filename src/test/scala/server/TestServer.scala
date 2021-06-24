@@ -94,10 +94,33 @@ class TestServer:
     val registerResponse = GameData.register(newGameResponse.id, White)
     Assert.assertFalse(registerResponse.ready)
 
-  @Test def testRegisterOnePlayerDoesNotSetReady(): Unit =
+  @Test def testRegisterOnlyBlackDoesNotSetReady(): Unit =
     val newGameResponse = GameData.create(TestSize)
     val registerResponse = GameData.register(newGameResponse.id, Black)
     Assert.assertFalse(registerResponse.ready)
+
+  @Test def testRegisterOnlyWhiteDoesNotSetReady(): Unit =
+    val newGameResponse = GameData.create(TestSize)
+    val registerResponse = GameData.register(newGameResponse.id, White)
+    Assert.assertFalse(registerResponse.ready)
+
+  @Test def testRegisterOnlyBlackDoesNotReturnReadyStatus(): Unit =
+    val newGameResponse = GameData.create(TestSize)
+    val registerResponse = GameData.register(newGameResponse.id, Black)
+    val statusResponse = getSR(
+      s"${GameData.ServerURL}/status/${newGameResponse.id}",
+      Map("Authentication" -> s"Basic ${registerResponse.authToken}")
+    )
+    Assert.assertFalse(statusResponse.ready)
+
+  @Test def testRegisterOnlyWhiteDoesNotReturnReadyStatus(): Unit =
+    val newGameResponse = GameData.create(TestSize)
+    val registerResponse = GameData.register(newGameResponse.id, White)
+    val statusResponse = getSR(
+      s"${GameData.ServerURL}/status/${newGameResponse.id}",
+      Map("Authentication" -> s"Basic ${registerResponse.authToken}")
+    )
+    Assert.assertFalse(statusResponse.ready)
 
   @Test def testRegisterSamePlayerTwiceFails(): Unit =
     val newGameResponse = GameData.create(TestSize)

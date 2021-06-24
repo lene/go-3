@@ -14,7 +14,7 @@ remote="$1"
 url="$2"
 
 status=0
-sbt test run || status=1
+sbt test "runMain go3d.Runner" || status=1
 
 if [ $status -gt 0 ]; then
   commitmsg=$(git log --oneline | head -n 1 | cut -d' ' -f 2-)

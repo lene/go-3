@@ -2,7 +2,7 @@ package go3d.testing
 
 import go3d.{Black, White, newGame}
 import go3d.server.{Games, Io, registerGame, registerPlayer, SaveGame, decodeSaveGame}
-import org.junit.{Assert, Ignore, Test}
+import org.junit.{Assert, Before, Ignore, Test}
 
 import java.util.NoSuchElementException
 import java.nio.file.{Files, Paths}
@@ -11,7 +11,7 @@ import io.circe.parser._
 
 class TestIo:
 
-  Io.init(Files.createTempDirectory("go3d").toString)
+  @Before def initIo = Io.init(Files.createTempDirectory("go3d").toString)
 
   @Test def testSaveGameFailsNonexistentGame(): Unit =
     val gameId = "mock"
@@ -43,8 +43,10 @@ class TestIo:
     Assert.assertTrue(Io.exists("test"))
     Assert.assertFalse(Io.exists("this file should not exist"))
 
+  @Ignore  
   @Test def testGetListOfJsonFiles(): Unit =
     Io.writeFile("test.json", "{}")
+    Assert.assertTrue(Io.exists("test.json"))
     val matchingFiles = Io.getListOfFiles(".json").map(f => f.getName)
     Assert.assertEquals(
       java.io.File(Io.baseFolder).listFiles.toList.toString, List("test.json"), matchingFiles
