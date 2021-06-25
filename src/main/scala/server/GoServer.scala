@@ -15,6 +15,7 @@ object GoServer:
   val statusRoute = "/status/*"
   val setRoute = "/set/*"
   val passRoute = "/pass/*"
+  val healthRoute = "/health"
 
   def createServer(port: Int): Server =
     val server = new Server(port)
@@ -25,6 +26,7 @@ object GoServer:
     handler.addServletWithMapping(classOf[StatusServlet], statusRoute)
     handler.addServletWithMapping(classOf[SetServlet], setRoute)
     handler.addServletWithMapping(classOf[PassServlet], passRoute)
+    handler.addServletWithMapping(classOf[HealthServlet], healthRoute)
     return server
 
   def serverPort(server: Server) =
