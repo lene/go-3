@@ -12,9 +12,9 @@ class StatusServlet extends BaseServlet:
       requestInfo.getPlayer match
         case Some(p) =>
           val ready = game.isTurn(p.color) && Players(gameId).size == 2
-          StatusResponse(game, game.possibleMoves(p.color), ready, requestInfo)
-        case None => StatusResponse(game, List(), false, requestInfo)
+          StatusResponse(game, game.possibleMoves(p.color), ready, requestInfo.debugInfo)
+        case None => StatusResponse(game, List(), false, NullRequestInfo)
     catch
-      case e: AuthorizationMissing => StatusResponse(game, List(), false, requestInfo)
+      case e: AuthorizationMissing => StatusResponse(game, List(), false, NullRequestInfo)
 
   def maxRequestLength: Int = "/".length + IdGenerator.IdLength

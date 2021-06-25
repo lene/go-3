@@ -75,6 +75,10 @@ class TestServer:
     Assert.assertEquals(TestSize, registerResponse.game.size)
     Assert.assertEquals(Black, registerResponse.color)
 
+  @Test def testRegisterBadColorSetsStatus400(): Unit =
+    val newGameResponse = GameData.create(TestSize)
+    assertFailsWithStatus(s"${GameData.ServerURL}/register/${newGameResponse.id}/X", 400)
+
   @Test def testRegisterTwoPlayers(): Unit =
     val newGameResponse = GameData.create(TestSize)
     GameData.register(newGameResponse.id, Black)
@@ -203,7 +207,6 @@ class TestServer:
       Map("Authentication" -> s"Basic ${gameData.token(White)}")
     )
 
-
   @Test def testGetStatusForBlackAfterBlackSetStoneReturnsStatusNotReady(): Unit =
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(Black)
@@ -315,10 +318,10 @@ class TestServer:
 
   @Test def testTooLongURLSetsStatus414WhenRegisteringPlayer(): Unit =
     val newGameResponse = GameData.create(TestSize)
-    assertFailsWithStatus(s"http://localhost:$TestPort/register/${newGameResponse.id}/@X", 414)
+    assertFailsWithStatus(s"http://localhost:$TestPort/register/${newGameResponse.id}/@/XX", 414)
 
   @Test def testTooLongURLSetsStatus414WhenRegisteringPlayerEvenIfGameIdWrong(): Unit =
-    assertFailsWithStatus(s"http://localhost:$TestPort/register/NOTID!/@X", 414)
+    assertFailsWithStatus(s"http://localhost:$TestPort/register/NOTID!/@/XX", 414)
 
   @Test def testTooLongURLSetsStatus414WhenSetting(): Unit =
     val gameData = setUpGame(TestSize)
@@ -380,6 +383,77 @@ class TestServer:
 
   @Test def testHealthFailsWithExtraData(): Unit =
     assertFailsWithStatus(s"http://localhost:$TestPort/health/xyz", 404)
+
+  @Test def testRegisterWithDebug(): Unit =
+    val newGameResponse = GameData.create(TestSize)
+    val registerResponse = getPRR(s"${GameData.ServerURL}/register/${newGameResponse.id}/@/d")
+    Assert.assertTrue(registerResponse.debug.headers.nonEmpty)
+
+  @Test def testRegisterWithoutDebugDoesNotPassDebugInfo(): Unit =
+    val newGameResponse = GameData.create(TestSize)
+    val registerResponse = getPRR(s"${GameData.ServerURL}/register/${newGameResponse.id}/@")
+    Assert.assertFalse(registerResponse.debug.headers.nonEmpty)
+
+  @Test def testSetStoneWithDebug(): Unit =
+    val gameData = setUpGame(TestSize)
+    val setResponse = getSR(
+      s"${GameData.ServerURL}/set/${gameData.id}/1/1/1/d",
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+    Assert.assertTrue(setResponse.debug.headers.nonEmpty)
+
+  @Test def testSetStoneWithoutDebugDoesNotPassDebugInfo(): Unit =
+    val gameData = setUpGame(TestSize)
+    val setResponse = getSR(
+      s"${GameData.ServerURL}/set/${gameData.id}/1/1/1",
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+    Assert.assertFalse(setResponse.debug.headers.nonEmpty)
+
+  @Test def testSetStoneWithDebugOnBigField(): Unit =
+    val gameData = setUpGame(11)
+    val setResponse = getSR(
+      s"${GameData.ServerURL}/set/${gameData.id}/11/11/11/d",
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+    Assert.assertTrue(setResponse.debug.headers.nonEmpty)
+
+  @Test def testPassWithDebug(): Unit =
+    val gameData = setUpGame(TestSize)
+    val passResponse = getSR(
+      s"${GameData.ServerURL}/pass/${gameData.id}/d",
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+    Assert.assertTrue(passResponse.debug.headers.nonEmpty)
+
+  @Test def testPassWithoutDebugDoesNotPassDebugInfo(): Unit =
+    val gameData = setUpGame(TestSize)
+    val passResponse = getSR(
+      s"${GameData.ServerURL}/pass/${gameData.id}",
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+    Assert.assertFalse(passResponse.debug.headers.nonEmpty)
+
+  @Test def testGetStatusWithDebug(): Unit =
+    val gameData = setUpGame(TestSize)
+    val statusResponse = getSR(
+      s"${GameData.ServerURL}/status/${gameData.id}/d",
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+    Assert.assertTrue(statusResponse.debug.headers.nonEmpty)
+
+  @Test def testGetStatusWithoutDebugDoesNotPassDebugInfo(): Unit =
+    val gameData = setUpGame(TestSize)
+    val statusResponse = getSR(
+      s"${GameData.ServerURL}/status/${gameData.id}",
+      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+    )
+    Assert.assertFalse(statusResponse.debug.headers.nonEmpty)
+
+  @Test def testGetStatusWithDebugWithoutAuthDoesNotPassDebugInfo(): Unit =
+    val gameData = setUpGame(TestSize)
+    val statusResponse = getSR(s"${GameData.ServerURL}/status/${gameData.id}/d", Map())
+    Assert.assertFalse(statusResponse.debug.headers.nonEmpty)
 
   def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null

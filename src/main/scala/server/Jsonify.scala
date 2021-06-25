@@ -232,7 +232,7 @@ implicit val decodeRequestInfo: Decoder[RequestInfo] = new Decoder[RequestInfo] 
       headers <- c.downField("headers").as[Map[String, String]]
       query <- c.downField("query").as[String]
       pathInfo <- c.downField("pathInfo").as[String]
-    yield new RequestInfo(headers, query, pathInfo)
+    yield new RequestInfo(headers, query, pathInfo, false)
 }
 
 implicit val encodePlayerRegisteredResponse: Encoder[PlayerRegisteredResponse] = new Encoder[PlayerRegisteredResponse] {

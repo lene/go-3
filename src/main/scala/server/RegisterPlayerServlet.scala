@@ -14,9 +14,9 @@ class RegisterPlayerServlet extends BaseServlet:
     val ready = (color == Black) && Players(gameId).contains(White)
     Io.saveGame(gameId)
     response.setStatus(HttpServletResponse.SC_OK)
-    PlayerRegisteredResponse(Games(gameId), color, token, ready, requestInfo)
+    PlayerRegisteredResponse(Games(gameId), color, token, ready, requestInfo.debugInfo)
 
-  def maxRequestLength: Int = "/".length + IdGenerator.IdLength + 2
+  def maxRequestLength: Int = "/".length + IdGenerator.IdLength + 2 + 2
 
   private def generateAuthToken(gameId: String, color: Color): String =
     return IdGenerator.getBase62(10)

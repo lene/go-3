@@ -13,5 +13,5 @@ abstract class MakeMoveServlet extends BaseServlet with MakeMove:
     Games = Games + (gameId -> newGame)
     Io.saveGame(gameId)
     response.setStatus(HttpServletResponse.SC_OK)
-    StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo)
+    StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo.debugInfo)
 
