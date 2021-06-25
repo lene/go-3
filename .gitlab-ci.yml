@@ -148,3 +148,14 @@ Release:
           url: 'https://example.com/assets/2'
           filepath: '/pretty/url/1' # optional
           link_type: 'other' # optional
+
+# this job is never executed and left in as instruction how to push to github manually
+PushToGithub:
+  stage: release
+  only:
+    - master
+  when: manual
+  script:
+    - git remote add github git@github.com:lene/go-3.git
+    - git remote show github
+    - git push github master
