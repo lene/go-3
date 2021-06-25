@@ -137,6 +137,25 @@ CreateDockerImage:
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
     - docker push registry.gitlab.com/lilacashes/go-3/server
 
+TestDockerImage:
+  stage: run
+  image: docker:19.03.13
+  services:
+    - docker:19.03.13-dind
+  needs:
+    - job: BuildDeployable
+      artifacts: true
+    - job: CreateDockerImage
+      artifacts: false
+  before_script:
+    - microdnf install --nodocs unzip && microdnf clean all
+  script:
+    - unzip ${DEPLOYABLE_BASE_NAME}.zip
+    - docker run --net=host -t registry.gitlab.com/lilacashes/go-3/server:latest 2>&1 >server.log &
+    - sleep 60  # definitely should not take longer than that to start docker image
+    - killall docker
+    - tail server.log | grep -A1 "Server started on"
+
 Release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
