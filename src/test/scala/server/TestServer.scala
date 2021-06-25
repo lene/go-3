@@ -374,6 +374,13 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(s"http://localhost:$TestPort/status/NOPE!!", 404)
 
+  @Test def testHealth(): Unit =
+    val response = requests.get(s"http://localhost:$TestPort/health")
+    Assert.assertEquals("1", response.text())
+
+  @Test def testHealthFailsWithExtraData(): Unit =
+    assertFailsWithStatus(s"http://localhost:$TestPort/health/xyz", 404)
+
   def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
     for move <- moves do
