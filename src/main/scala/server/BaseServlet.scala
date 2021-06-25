@@ -16,9 +16,10 @@ abstract class BaseServlet extends HttpServlet with ServletOutput:
     catch
       case e: RequestTooLong => error(response, e, HttpServletResponse.SC_REQUEST_URI_TOO_LONG)
       case e: go3d.BadBoardSize => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
-      case e: NonexistentGame => error(response, e, HttpServletResponse.SC_NOT_FOUND)
+      case e: go3d.BadColor => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
       case e: DuplicateColor => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
       case e: NotReadyToSet => error(response, e, HttpServletResponse.SC_BAD_REQUEST)
+      case e: NonexistentGame => error(response, e, HttpServletResponse.SC_NOT_FOUND)
       case e: AuthorizationError => error(response, e, HttpServletResponse.SC_UNAUTHORIZED)
       case e: ServerException => error(response, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
       case e: GoException => error(response, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)

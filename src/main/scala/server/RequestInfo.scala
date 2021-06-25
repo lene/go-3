@@ -3,21 +3,28 @@ package go3d.server
 import java.util.Collections
 import javax.servlet.http.HttpServletRequest
 
+val NullRequestInfo = RequestInfo(Map(), "", "", false)
+
 object RequestInfo:
   def apply(request: HttpServletRequest, maxLength: Int): RequestInfo =
     val headerNames = Collections.list(request.getHeaderNames).toArray
     val headers = for (name <- headerNames) yield (name.toString, request.getHeader(name.toString))
     val queryString = request.getQueryString
-    val pathInfo = request.getPathInfo
+    val (pathInfo, debug) = parsePathInfo(request.getPathInfo)
     if pathInfo != null && pathInfo.length > maxLength
       then throw RequestTooLong(maxLength, pathInfo.length)
     return RequestInfo(
       headers.toList.toMap,
       if (queryString != null && queryString.nonEmpty) queryString else "/",
-      if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/"
+      if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/",
+      debug
     )
 
-case class RequestInfo(headers: Map[String, String], query: String, path: String)
+  def parsePathInfo(pathInfo: String): (String, Boolean) =
+    if pathInfo.endsWith("/d") then (pathInfo.dropRight(2), true)
+    else (pathInfo, false)
+
+case class RequestInfo(headers: Map[String, String], query: String, path: String, debug: Boolean)
   extends GoResponse:
   def getGameId: String =
     if path == null || path.isEmpty then throw MalformedRequest(path)
@@ -44,3 +51,5 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
     val players = Players(getGameId)
     for (_, player) <- players do if player.token == getToken then return player
     throw PlayerNotFoundByToken(getGameId, getToken)
+
+  def debugInfo: RequestInfo = if debug then this else NullRequestInfo
