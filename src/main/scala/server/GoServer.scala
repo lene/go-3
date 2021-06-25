@@ -45,5 +45,6 @@ object GoServer:
   def run(port: Int = DefaultPort): Unit =
     val goServer = createServer(port)
     goServer.start()
-    println(s"Server started on ${serverPort(goServer)} with routes: $newRoute, $registerRoute, $statusRoute")
+    println(s"Server started on ${serverPort(goServer)} with routes:")
+    println(s"$newRoute, $registerRoute, $statusRoute, $setRoute, $passRoute, $healthRoute")
     goServer.join()
