@@ -12,6 +12,8 @@ lazy val root = project
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
+    libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     libraryDependencies +=  "com.lihaoyi" %% "requests" % "0.6.9",
 

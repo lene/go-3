@@ -1,8 +1,9 @@
 package go3d.server
 
 import javax.servlet.http.HttpServletResponse
+import com.typesafe.scalalogging.LazyLogging
 
-abstract class MakeMoveServlet extends BaseServlet with MakeMove:
+abstract class MakeMoveServlet extends BaseServlet with MakeMove with LazyLogging:
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     val gameId = requestInfo.getGameId
@@ -13,5 +14,6 @@ abstract class MakeMoveServlet extends BaseServlet with MakeMove:
     Games = Games + (gameId -> newGame)
     Io.saveGame(gameId)
     response.setStatus(HttpServletResponse.SC_OK)
+    logger.info(s"${requestInfo.path}, $color")
     StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo.debugInfo)
 

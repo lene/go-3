@@ -1,13 +1,15 @@
 package go3d.server
 
 import javax.servlet.http.HttpServletResponse
+import com.typesafe.scalalogging.LazyLogging
 
-class NewGameServlet extends BaseServlet:
+class NewGameServlet extends BaseServlet with LazyLogging:
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
       val boardSize = getBoardSize(requestInfo.path)
       val gameId = registerGame(boardSize)
       response.setStatus(HttpServletResponse.SC_OK)
+      logger.info(s"$gameId, $boardSize")
       GameCreatedResponse(gameId, boardSize)
 
   def maxRequestLength: Int = "/".length + 2
