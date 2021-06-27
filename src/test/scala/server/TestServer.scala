@@ -46,6 +46,12 @@ class TestServer:
 
   var jetty: Server = null
 
+  @Before def quietLogging(): Unit =
+    import ch.qos.logback.classic.{Level,Logger}
+    import org.slf4j.LoggerFactory
+    val root = org.slf4j.Logger.ROOT_LOGGER_NAME
+    LoggerFactory.getLogger(root).asInstanceOf[Logger].setLevel(Level.WARN)
+
   @Before def startJetty(): Unit =
     System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
     jetty = GoServer.createServer(TestPort)
