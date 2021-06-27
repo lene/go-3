@@ -3,8 +3,9 @@ package go3d.server
 import go3d.{Black, Color, White}
 
 import javax.servlet.http.HttpServletResponse
+import com.typesafe.scalalogging.LazyLogging
 
-class RegisterPlayerServlet extends BaseServlet:
+class RegisterPlayerServlet extends BaseServlet with LazyLogging:
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     val gameId = requestInfo.getGameId
@@ -14,6 +15,7 @@ class RegisterPlayerServlet extends BaseServlet:
     val ready = (color == Black) && Players(gameId).contains(White)
     Io.saveGame(gameId)
     response.setStatus(HttpServletResponse.SC_OK)
+    logger.info(s"$gameId, $color, $token")
     PlayerRegisteredResponse(Games(gameId), color, token, ready, requestInfo.debugInfo)
 
   def maxRequestLength: Int = "/".length + IdGenerator.IdLength + 2 + 2

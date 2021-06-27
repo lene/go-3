@@ -1,8 +1,10 @@
 package go3d.server
   
 import javax.servlet.http.HttpServletResponse
+import com.typesafe.scalalogging.Logger
 
 class StatusServlet extends BaseServlet:
+  def logger = Logger[StatusServlet]
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     val gameId = requestInfo.getGameId
