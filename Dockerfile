@@ -6,6 +6,7 @@ COPY . /go-3
 RUN sbt universal:packageBin
 
 FROM openjdk:16
+
 RUN microdnf install --nodocs unzip && microdnf clean all
 WORKDIR /go-3
 COPY --from=builder /go-3/target/universal/*.zip .
@@ -14,6 +15,10 @@ RUN chown -R go-3d .
 USER go-3d
 RUN unzip go-3d-*.*.*.zip
 RUN mv go-3d-*.*.*/??? . && rm -r go-3d-*.*.*
-RUN mkdir saves
-EXPOSE 6030
-ENTRYPOINT ["./bin/runner", "--server", "--port", "6030", "--save-dir", "saves"]
+
+ENV SAVE_DIR saves
+ENV PORT 6030
+RUN mkdir -p "${SAVE_DIR}"
+EXPOSE ${PORT}
+ENTRYPOINT ./bin/runner --server --port "${PORT}" --save-dir "${SAVE_DIR}"
+HEALTHCHECK CMD curl --fail http://localhost:${PORT}/health
