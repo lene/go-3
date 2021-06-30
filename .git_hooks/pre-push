@@ -16,6 +16,8 @@ url="$2"
 status=0
 sbt test "runMain go3d.Runner" || status=1
 
+docker build -t test_image . || status = 1
+
 if [ $status -gt 0 ]; then
   commitmsg=$(git log --oneline | head -n 1 | cut -d' ' -f 2-)
   if echo $commitmsg | grep '^WIP:'; then
