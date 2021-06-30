@@ -3,9 +3,43 @@ dimensions - placing stones on a cubic grid.
 
 This is a program for playing on such a three-dimensional grid. 
 
-It runs under Java and needs the Java3D extension.
+Installing
+==========
 
-Under development: Port to Scala
+Running
+=======
+Server
+------
+From docker image (setting the savegames folder to `$SAVE_DIR` and the port to `$PORT`):
+```
+$ docker run [--net=host] [--env SAVE_DIR=$SAVE_DIR] [--env PORT=$PORT] \
+    -t registry.gitlab.com/lilacashes/go-3/server:latest
+```
+From a local install:
+``` 
+$ runner --server [--port $PORT] [--save-dir $SAVE_DIR]
+```
+
+Client
+------
+
+To start a new game with board size `$SIZE`:
+```
+$ ascii-client --server $SERVER --port 6030 --size $SIZE --color [b|w]
+```
+To register as second player for a game with ID `$GAME_ID`:
+```
+$ ascii-client --server $SERVER --port 6030 --game-id $GAME_ID --color [b|w]
+```
+To reconnect to a game that has already started and the player has been given the authentication
+token `$TOKEN`:
+```
+$ ascii-client --server $SERVER --port 6030 --game-id $GAME_ID --token $TOKEN
+```
+The client will display a spinning prompt while waiting for the other client to make their move.
+
+Once a client is ready to make a move, the command `s $X $Y $Z` will set a stone at position 
+(`$X`, `$Y`, `$Z`), or the command `p` will pass.
 
 Development notes
 =================
@@ -43,10 +77,3 @@ or for a longer term solution (?)
 ```shell
 $ sudo sysctl fs.inotify.max_user_instances=256
 ```
-
-## sbt project compiled with Scala 3
-
-### Usage
-
-This is a normal sbt project. You can compile code with `sbt compile`, run it with `sbt run`, and
-`sbt console` will start a Scala 3 REPL.
