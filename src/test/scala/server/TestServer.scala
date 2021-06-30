@@ -24,17 +24,17 @@ case class GameData(id: String, token: Map[Color, String]):
     this(gameId, Map(Black -> blackToken, White -> whiteToken))
 
   def status(color: Color): StatusResponse =
-    getSR(s"${GameData.ServerURL}/status/${id}", Map("Authentication" -> s"Basic ${token(color)}"))
+    getSR(s"${GameData.ServerURL}/status/${id}", Map("Authentication" -> s"Bearer ${token(color)}"))
   def status(): StatusResponse = getSR(s"${GameData.ServerURL}/status/${id}", Map())
 
   def set(color: Color, x: Int, y: Int, z: Int): StatusResponse =
     getSR(
-      s"${GameData.ServerURL}/set/${id}/${x}/${y}/${z}", Map("Authentication" -> s"Basic ${token(color)}")
+      s"${GameData.ServerURL}/set/${id}/${x}/${y}/${z}", Map("Authentication" -> s"Bearer ${token(color)}")
     )
   def set(move: Move): StatusResponse = set(move.color, move.x, move.y, move.z)
 
   def pass(color: Color): StatusResponse =
-    getSR(s"${GameData.ServerURL}/pass/${id}", Map("Authentication" -> s"Basic ${token(color)}"))
+    getSR(s"${GameData.ServerURL}/pass/${id}", Map("Authentication" -> s"Bearer ${token(color)}"))
 
 object GameData:
   val ServerURL = s"http://localhost:$TestPort"
@@ -119,7 +119,7 @@ class TestServer:
     val registerResponse = GameData.register(newGameResponse.id, Black)
     val statusResponse = getSR(
       s"${GameData.ServerURL}/status/${newGameResponse.id}",
-      Map("Authentication" -> s"Basic ${registerResponse.authToken}")
+      Map("Authentication" -> s"Bearer ${registerResponse.authToken}")
     )
     Assert.assertFalse(statusResponse.ready)
 
@@ -128,7 +128,7 @@ class TestServer:
     val registerResponse = GameData.register(newGameResponse.id, White)
     val statusResponse = getSR(
       s"${GameData.ServerURL}/status/${newGameResponse.id}",
-      Map("Authentication" -> s"Basic ${registerResponse.authToken}")
+      Map("Authentication" -> s"Bearer ${registerResponse.authToken}")
     )
     Assert.assertFalse(statusResponse.ready)
 
@@ -198,7 +198,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/set/${gameData.id}/1/1/1", 400,
-      Map("Authentication" -> s"Basic ${gameData.token(White)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
   @Test def testPassWhenNotReadyFails(): Unit =
@@ -210,7 +210,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/pass/${gameData.id}", 400,
-      Map("Authentication" -> s"Basic ${gameData.token(White)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
   @Test def testGetStatusForBlackAfterBlackSetStoneReturnsStatusNotReady(): Unit =
@@ -333,28 +333,28 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 414,
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenSettingEvenIfNotReady(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 414,
-      Map("Authentication" -> s"Basic ${gameData.token(White)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenPassing(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/pass/${gameData.id}/X", 414,
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenFetchingStatus(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/status/${gameData.id}/X", 414,
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenFetchingStatusIfUnauthenticated(): Unit =
@@ -369,14 +369,14 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/set/NOPE!!/1/1/1", 404,
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testNonexistentGameSetsStatus404WhenPassing(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/pass/NOPE!!", 404,
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testNonexistentGameSetsStatus404WhenFetchingStatus(): Unit =
@@ -404,7 +404,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val setResponse = getSR(
       s"${GameData.ServerURL}/set/${gameData.id}/1/1/1/d",
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
     Assert.assertTrue(setResponse.debug.headers.nonEmpty)
 
@@ -412,7 +412,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val setResponse = getSR(
       s"${GameData.ServerURL}/set/${gameData.id}/1/1/1",
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
     Assert.assertFalse(setResponse.debug.headers.nonEmpty)
 
@@ -420,7 +420,7 @@ class TestServer:
     val gameData = setUpGame(11)
     val setResponse = getSR(
       s"${GameData.ServerURL}/set/${gameData.id}/11/11/11/d",
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
     Assert.assertTrue(setResponse.debug.headers.nonEmpty)
 
@@ -428,7 +428,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val passResponse = getSR(
       s"${GameData.ServerURL}/pass/${gameData.id}/d",
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
     Assert.assertTrue(passResponse.debug.headers.nonEmpty)
 
@@ -436,7 +436,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val passResponse = getSR(
       s"${GameData.ServerURL}/pass/${gameData.id}",
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
     Assert.assertFalse(passResponse.debug.headers.nonEmpty)
 
@@ -444,7 +444,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val statusResponse = getSR(
       s"${GameData.ServerURL}/status/${gameData.id}/d",
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
     Assert.assertTrue(statusResponse.debug.headers.nonEmpty)
 
@@ -452,7 +452,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val statusResponse = getSR(
       s"${GameData.ServerURL}/status/${gameData.id}",
-      Map("Authentication" -> s"Basic ${gameData.token(Black)}")
+      Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
     Assert.assertFalse(statusResponse.debug.headers.nonEmpty)
 

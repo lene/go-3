@@ -11,14 +11,14 @@ import io.circe.parser._
 
 case class BaseClient(serverURL: String, id: String, token: String):
   def status: StatusResponse =
-    getSR(s"$serverURL/status/$id", Map("Authentication" -> s"Basic $token"))
+    getSR(s"$serverURL/status/$id", Map("Authentication" -> s"Bearer $token"))
 
   def set(x: Int, y: Int, z: Int): StatusResponse =
-    getSR(s"$serverURL/set/$id/$x/$y/$z", Map("Authentication" -> s"Basic $token"))
+    getSR(s"$serverURL/set/$id/$x/$y/$z", Map("Authentication" -> s"Bearer $token"))
   def set(move: Move): StatusResponse = set(move.x, move.y, move.z)
 
   def pass: StatusResponse =
-    getSR(s"$serverURL/pass/$id", Map("Authentication" -> s"Basic $token"))
+    getSR(s"$serverURL/pass/$id", Map("Authentication" -> s"Bearer $token"))
 
 object BaseClient:
   def create(serverURL: String, size: Int, color: Color): BaseClient =

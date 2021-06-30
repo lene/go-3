@@ -37,7 +37,7 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
   def getToken: String =
     if !headers.contains("Authentication") then throw AuthorizationMissing(headers)
     val authorizationParts = headers("Authentication").split("\\s+")
-    if authorizationParts(0) != "Basic" then throw AuthorizationMethodWrong(authorizationParts(0))
+    if authorizationParts(0) != "Bearer" then throw AuthorizationMethodWrong(authorizationParts(0))
     return authorizationParts(1)
 
   def getPlayer: Option[Player] =
