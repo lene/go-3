@@ -7,14 +7,17 @@ RUN sbt universal:packageBin
 
 FROM openjdk:16
 
+ARG version=0.6.2
+
 RUN microdnf install --nodocs unzip && microdnf clean all
 WORKDIR /go-3
-COPY --from=builder /go-3/target/universal/*.zip .
+COPY --from=builder /go-3/target/universal/go-3d-${version}.zip ./
 RUN useradd go-3d
 RUN chown -R go-3d .
 USER go-3d
-RUN unzip go-3d-*.*.*.zip
-RUN mv go-3d-*.*.*/??? . && rm -r go-3d-*.*.*
+RUN ls -al
+RUN unzip go-3d-${version}.zip
+RUN mv go-3d-${version}/??? . && rm -r go-3d-*.*.*
 
 ENV SAVE_DIR saves
 ENV PORT 6030

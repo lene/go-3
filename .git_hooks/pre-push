@@ -16,7 +16,8 @@ url="$2"
 status=0
 sbt test "runMain go3d.Runner" || status=1
 
-docker build -t test_image . || status = 1
+VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
+docker build --build-arg version=$VERSION -t test_image . || status=1
 
 if [ $status -gt 0 ]; then
   commitmsg=$(git log --oneline | head -n 1 | cut -d' ' -f 2-)

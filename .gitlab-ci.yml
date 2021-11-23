@@ -133,7 +133,9 @@ CreateDockerImage:
   services:
     - docker:19.03.13-dind
   script:
-    - docker build -t registry.gitlab.com/lilacashes/go-3/server .
+    - VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
+    - TAG=${VERSION}-${CI_COMMIT_SHORT_SHA}
+    - docker build  --build-arg version=${VERSION} -t registry.gitlab.com/lilacashes/go-3/server:${TAG} .
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
     - docker push registry.gitlab.com/lilacashes/go-3/server
 
