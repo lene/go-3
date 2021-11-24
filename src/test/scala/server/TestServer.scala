@@ -46,20 +46,20 @@ class TestServer:
 
   var jetty: Server = null
 
+  @Before def startJetty(): Unit =
+    System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
+    jetty = GoServer.createServer(TestPort)
+    jetty.start()
+
   @Before def quietLogging(): Unit =
     import ch.qos.logback.classic.{Level,Logger}
     import org.slf4j.LoggerFactory
     val root = org.slf4j.Logger.ROOT_LOGGER_NAME
     LoggerFactory.getLogger(root).asInstanceOf[Logger].setLevel(Level.WARN)
 
-  @Before def startJetty(): Unit =
-    System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
-    jetty = GoServer.createServer(TestPort)
-    jetty.start()
-
   @Before def setupTempDir(): Unit = Io.init(Files.createTempDirectory("go3d").toString)
 
-  @After def stopJetty(): Unit = jetty.stop()
+  @After def stopJetty(): Unit = if jetty != null then jetty.stop()
 
   @Test def testNewGame(): Unit =
     val response = GameData.create(TestSize)

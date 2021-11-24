@@ -7,7 +7,9 @@ stages:
 variables:
   TEST_RUN_BOARD_SIZE: 11
   TEST_RUN_MAX_RUNNING_TIME: 60
-  DEPLOYABLE_BASE_NAME: go-3d-0.6.3
+  DEPLOYABLE_BASE_NAME: go-3d
+  DEPLOYABLE_VERSION: 0.6.3
+  SBT_IMAGE: hseeberger/scala-sbt:8u312_1.5.5_2.13.7
 
 include:
   - template: Code-Quality.gitlab-ci.yml
@@ -33,7 +35,7 @@ Test:BuildSbt:
 
 # The following ones use a prepared docker image for sbt.
 Test:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
   stage: test
   needs: []
   script:
@@ -44,14 +46,14 @@ Test:
       junit: target/test-reports/**/TEST-*.xml
 
 Run:UseSbtDocker:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
   stage: test
   needs: []
   script:
     - sbt "runMain go3d.Runner"
 
 CheckRunTime:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
   stage: test
   needs: []
   before_script:
@@ -67,15 +69,15 @@ CheckRunTime:
       - runtime.log
 
 BuildDeployable:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
   stage: build
   needs: []
   script:
     - sbt universal:packageBin
-    - mv target/universal/${DEPLOYABLE_BASE_NAME}.zip .
+    - mv target/universal/${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip .
   artifacts:
     paths:
-      - go-3d-0.6.3.zip
+      - go-3d-*.*.*.zip
 
 .TestDeployable:
   stage: run
@@ -83,13 +85,13 @@ BuildDeployable:
     - job: BuildDeployable
       artifacts: true
   script:
-    - test -f ${DEPLOYABLE_BASE_NAME}.zip
-    - unzip ${DEPLOYABLE_BASE_NAME}.zip
-    - ./${DEPLOYABLE_BASE_NAME}/bin/runner --benchmark 9
+    - test -f ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+    - unzip ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+    - ./${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}/bin/runner --benchmark 9
 
 TestDeployable:ScalaSBT:
   extends: .TestDeployable
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
 
 TestDeployable:OpenJDK:8:JRE:
   extends: .TestDeployable
@@ -123,9 +125,9 @@ Upload:
     - apk update
     - apk add curl
   script:
-    - export DEPLOYABLE_TAR_FILE=${DEPLOYABLE_BASE_NAME}.zip
-    - echo curl --header "JOB-TOKEN $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_TAR_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_TAR_FILE}"
-    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_TAR_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_TAR_FILE}"'
+    - export DEPLOYABLE_ZIP_FILE=${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+    - echo curl --header "JOB-TOKEN $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_ZIP_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_ZIP_FILE}"
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_ZIP_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_ZIP_FILE}"'
 
 CreateDockerImage:
   stage: build
@@ -152,7 +154,7 @@ TestDockerImage:
   before_script:
     - microdnf install --nodocs unzip && microdnf clean all
   script:
-    - unzip ${DEPLOYABLE_BASE_NAME}.zip
+    - unzip ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
     - docker run --net=host -t registry.gitlab.com/lilacashes/go-3/server:latest 2>&1 >server.log &
     - sleep 60  # definitely should not take longer than that to start docker image
     - killall docker
