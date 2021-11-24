@@ -10,35 +10,35 @@ import java.io.IOException
 import java.net.{ConnectException, UnknownHostException}
 
 
-class TestStupidClient:
+class TestBotClient:
 
   @Test def testBadColor(): Unit =
     assertThrows[BadColor]({
-      StupidClient.parseArgs(Array(
+      BotClient.parseArgs(Array(
         "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--color", "bx"
       ))
     })
 
   @Test def testUnknownHost(): Unit =
     assertThrows[UnknownHostException]({
-      StupidClient.parseArgs(Array(
+      BotClient.parseArgs(Array(
         "--server", "doesnt exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
       ))
     })
 
   @Test def testMissingArguments(): Unit =
     assertThrows[NoSuchElementException]({
-      StupidClient.parseArgs(Array(
+      BotClient.parseArgs(Array(
         "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
       ))
     })
     assertThrows[NoSuchElementException]({
-      StupidClient.parseArgs(Array(
+      BotClient.parseArgs(Array(
         "--server", "localhost", "--size", "3", "--color", "b"
       ))
     })
     assertThrows[NoSuchElementException]({
-      StupidClient.parseArgs(Array(
+      BotClient.parseArgs(Array(
         "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3"
       ))
     })
@@ -55,8 +55,8 @@ class TestStupidClient:
     assertPositionsEqual(expected, strategy(toCheck.map(e => Position(e))))
 
   @Test def testClosestToCenterStrategy(): Unit =
-    StupidClient.gameSize = 3
-    val check = checkStrategyResults.curried(StupidClient.closestToCenter)
+    BotClient.gameSize = 3
+    val check = checkStrategyResults.curried(BotClient.closestToCenter)
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
     check(List((1, 1, 1),(1, 2, 2), (2, 1, 2), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
     check(List((1, 1, 1), (1, 2, 2), (3, 3, 3)))(List((1, 2, 2)))

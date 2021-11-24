@@ -10,7 +10,7 @@ import java.net.{ConnectException, UnknownHostException}
 import scala.io.StdIn.readLine
 import requests._
 
-object StupidClient extends Client:
+object BotClient extends Client:
 
   val random = Random()
   var strategies: Array[String] = Array[String]()

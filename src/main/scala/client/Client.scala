@@ -2,7 +2,7 @@ package go3d.client
 
 import go3d.BadColor
 import go3d.client.AsciiClient.exit
-import go3d.client.StupidClient.{mainLoop, parseArgs}
+import go3d.client.BotClient.{mainLoop, parseArgs}
 import go3d.server.StatusResponse
 
 import java.io.IOException
