@@ -7,7 +7,7 @@ RUN sbt universal:packageBin
 
 FROM openjdk:16
 
-ARG version=0.6.2
+ARG version=0.6.3
 
 RUN microdnf install --nodocs unzip && microdnf clean all
 WORKDIR /go-3
