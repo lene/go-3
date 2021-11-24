@@ -16,9 +16,9 @@ object BotClient extends Client:
   var strategies: Array[String] = Array[String]()
   var gameSize: Int = 0
 
-  /// sbt "runMain go3d.client.StupidClient --server $SERVER --port #### --size ## --color [b|w]"
-  /// sbt "runMain go3d.client.StupidClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
-  /// sbt "runMain go3d.client.StupidClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
+  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
+  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
+  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
   /// --strategy is a comma-separated list of:
   //  closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
 
@@ -48,8 +48,10 @@ object BotClient extends Client:
     then possible
     else
       val nextPossible = strategies.head match
+        case "random" => possible
         case "closestToCenter" => closestToCenter(possible)
-        case s => throw IllegalArgumentException(s"nextMove(): $s not implemented")
+        case "closestToStarPoints" => closestToStarPoints(possible)
+        case s => throw IllegalArgumentException(s"narrowDown(): $s not implemented")
       narrowDown(nextPossible, strategies.tail)
 
   def randomMove(possible: List[Position]): Position =
@@ -62,12 +64,24 @@ object BotClient extends Client:
     possible.filter(p => (center - p).abs == closestDistance)
 
   def closestToStarPoints(possible: List[Position]): List[Position] =
-    ???
+    val stars = StarPoints(gameSize)
+    for (points <- List(stars.corner, stars.midLine, stars.midFace, stars.center))
+      val pointsInInput = possible.toSet.intersect(points.toSet)
+      if pointsInInput.nonEmpty then return pointsInInput.toList
+    val oneClosest = possible.minBy(p => minDistanceToPointList(p, stars.all))
+    val closestDistance = minDistanceToPointList(oneClosest, stars.all)
+    possible.filter(p => minDistanceToPointList(p, stars.all) == closestDistance)
+
+  def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
+    remotes.map(p => (p - local).abs).min
 
   def maximizeOwnLiberties(possible: List[Position]): List[Position] =
     ???
 
   def minimizeOpponentLiberties(possible: List[Position]): List[Position] =
+    ???
+
+  def maximizeDistance(possible: List[Position]): List[Position] =
     ???
 
   def parseArgs(args: Array[String]) =
@@ -89,8 +103,6 @@ object BotClient extends Client:
       )
     else throw IllegalArgumentException("Either --size or --game-id must be supplied")
     strategies = options("strategy").asInstanceOf[String].split(',')
-    if strategies.last != "random" then
-      strategies = strategies :+ "random"
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')
