@@ -1,8 +1,7 @@
 package go3d.testing
 
-import client.SetStrategy
-import go3d.{Position, newGame, Black, Move}
-import go3d.client.BotClient
+import go3d.{Position, newGame, Black, Move, White, Pass}
+import go3d.client.{SetStrategy, totalNumLiberties, BotClient}
 import org.junit.{Test, Assert}
 
 class TestSetStrategy:
@@ -38,6 +37,7 @@ class TestSetStrategy:
       List((1, 1, 1), (1, 1, 3), (2, 2, 2), (3, 3, 1), (3, 3, 3)))(
       List((1, 1, 1), (1, 1, 3), (3, 3, 1), (3, 3, 3))
     )
+
   @Test def testClosestToStarPointsStrategyCornerStarPoints(): Unit =
     val strategy = getStrategy(7)
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)

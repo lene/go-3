@@ -12,15 +12,6 @@ val ClientTestPort = 64556
 
 class TestAsciiClient:
 
-  var jetty: Server = null
-
-  @Before def startJetty(): Unit =
-    System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
-    jetty = GoServer.createServer(ClientTestPort)
-    jetty.start()
-
-  @After def stopJetty(): Unit = jetty.stop()
-
   @Test def testBadColor(): Unit =
     assertThrows[BadColor]({
       AsciiClient.parseArgs(Array(

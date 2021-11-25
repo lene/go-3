@@ -1,8 +1,6 @@
 package go3d.client
 
-import client.SetStrategy
 import go3d.{BadColor, Black, Color, Game, Position, White}
-import go3d.client.{BaseClient, Exit}
 import go3d.server.StatusResponse
 
 import scala.util.Random

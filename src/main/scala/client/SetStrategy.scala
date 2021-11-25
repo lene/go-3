@@ -1,4 +1,4 @@
-package client
+package go3d.client
 
 import go3d.client.StarPoints
 import go3d.{Color, Game, Goban, Move, Position}
@@ -34,22 +34,12 @@ case class SetStrategy(game: Game, strategies: Array[String]):
     val closestDistance = minDistanceToPointList(oneClosest, stars.all)
     possible.filter(p => minDistanceToPointList(p, stars.all) == closestDistance)
 
-  def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
-    remotes.map(p => (p - local).abs).min
-
   def maximizeOwnLiberties(possible: Seq[Position]): Seq[Position] =
-    val color = moveColor(game)
-    val oneBest = possible.maxBy(p => totalNumLiberties(game.setStone(Move(p, color)), color))
-    val maxLiberties = totalNumLiberties(game.setStone(Move(oneBest, color)), color)
-    possible.filter(p => totalNumLiberties(game.setStone(Move(p, color)), color) == maxLiberties)
+    val oneBest = possible.maxBy(p => game.setStone(Move(p, moveColor)).totalNumLiberties(moveColor))
+    val maxLiberties = game.setStone(Move(oneBest, moveColor)).totalNumLiberties(moveColor)
+    possible.filter(p => game.setStone(Move(p, moveColor)).totalNumLiberties(moveColor) == maxLiberties)
 
-  def moveColor(game: Game): Color = !game.moves.last.color
-
-  def totalNumLiberties(game: Game, color: Color): Int =
-    game.goban.emptyPositions.filter(hasNeighbor(game.goban, _, color)).size
-
-  def hasNeighbor(goban: Goban, pos: Position, color: Color): Boolean =
-    goban.neighbors(pos).exists(goban.at(_) == color)
+  def moveColor: Color = !game.moves.last.color
 
   def minimizeOpponentLiberties(possible: Seq[Position]): Seq[Position] =
     ???
@@ -57,3 +47,5 @@ case class SetStrategy(game: Game, strategies: Array[String]):
   def maximizeDistance(possible: Seq[Position]): Seq[Position] =
     ???
 
+def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
+  remotes.map(p => (p - local).abs).min
