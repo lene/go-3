@@ -1,6 +1,7 @@
 package go3d.client
 
-import go3d.{BadColor, Black, Color, White, Position}
+import client.SetStrategy
+import go3d.{BadColor, Black, Color, Game, Position, White}
 import go3d.client.{BaseClient, Exit}
 import go3d.server.StatusResponse
 
@@ -14,7 +15,7 @@ object BotClient extends Client:
 
   val random = Random()
   var strategies: Array[String] = Array[String]()
-  var gameSize: Int = 0
+  var game: Game = null
 
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
@@ -25,17 +26,18 @@ object BotClient extends Client:
   def mainLoop(args: Array[String]): Unit =
     print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token}  ")
     val status = waitUntilReady()
-    gameSize = status.game.size
-    println(s"\b \n${status.game.goban}")
+    game = status.game
+    println(s"\b \n${game.goban}")
     var over = false
     try
+      val strategy = SetStrategy(game, strategies)
       val possible = status.moves
       if possible.nonEmpty then
-        val setPosition = randomMove(narrowDown(possible, strategies))
-        client.set(setPosition.x, setPosition.y, setPosition.z)
+        val setPosition = randomMove(strategy.narrowDown(possible, strategies))
+        game = client.set(setPosition.x, setPosition.y, setPosition.z).game
       else
         over = true
-        client.pass
+        game = client.pass.game
     catch
       case e: Exit => exit(0)
       case e: InterruptedException => exit(1)
@@ -43,46 +45,8 @@ object BotClient extends Client:
     if !over then mainLoop(Array())
     else println(client.status.game)
 
-  def narrowDown(possible: List[Position], strategies: Array[String]): List[Position] =
-    if strategies.isEmpty
-    then possible
-    else
-      val nextPossible = strategies.head match
-        case "random" => possible
-        case "closestToCenter" => closestToCenter(possible)
-        case "closestToStarPoints" => closestToStarPoints(possible)
-        case s => throw IllegalArgumentException(s"narrowDown(): $s not implemented")
-      narrowDown(nextPossible, strategies.tail)
-
   def randomMove(possible: List[Position]): Position =
     possible(random.nextInt(possible.length))
-
-  def closestToCenter(possible: List[Position]): List[Position] =
-    val center = Position(gameSize/2+1, gameSize/2+1, gameSize/2+1)
-    val oneClosest = possible.minBy(p => (center - p).abs)
-    val closestDistance = (center - oneClosest).abs
-    possible.filter(p => (center - p).abs == closestDistance)
-
-  def closestToStarPoints(possible: List[Position]): List[Position] =
-    val stars = StarPoints(gameSize)
-    for (points <- List(stars.corner, stars.midLine, stars.midFace, stars.center))
-      val pointsInInput = possible.toSet.intersect(points.toSet)
-      if pointsInInput.nonEmpty then return pointsInInput.toList
-    val oneClosest = possible.minBy(p => minDistanceToPointList(p, stars.all))
-    val closestDistance = minDistanceToPointList(oneClosest, stars.all)
-    possible.filter(p => minDistanceToPointList(p, stars.all) == closestDistance)
-
-  def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
-    remotes.map(p => (p - local).abs).min
-
-  def maximizeOwnLiberties(possible: List[Position]): List[Position] =
-    ???
-
-  def minimizeOpponentLiberties(possible: List[Position]): List[Position] =
-    ???
-
-  def maximizeDistance(possible: List[Position]): List[Position] =
-    ???
 
   def parseArgs(args: Array[String]) =
     val options = nextOption(Map(), args.toList)
