@@ -45,7 +45,7 @@ object BotClient extends Client:
     if !over then mainLoop(Array())
     else println(client.status.game)
 
-  def randomMove(possible: List[Position]): Position =
+  def randomMove(possible: Seq[Position]): Position =
     possible(random.nextInt(possible.length))
 
   def parseArgs(args: Array[String]) =

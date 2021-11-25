@@ -64,7 +64,7 @@ def checkStonesOnBoard(game: GoGame, moves: List[Move | Pass]): Unit =
 def assertCollectionEqual[T](expected: Seq[T], actual: Seq[T]): Unit =
   Assert.assertTrue(s"$actual != ${expected}", expected.sortBy(_.toString) == actual.sortBy(_.toString))
 
-def assertPositionsEqual(expected: List[(Int, Int, Int)], actual: Seq[Position]): Unit =
+def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]): Unit =
   assertCollectionEqual(for (p <- expected) yield Position(p._1, p._2, p._3), actual)
 
 def assertThrows[E](f: => Unit)(implicit eType:ClassTag[E]): Unit =

@@ -1,9 +1,9 @@
 package go3d.testing
 
 import client.SetStrategy
-import go3d.{Position, newGame}
+import go3d.{Position, newGame, Black, Move}
 import go3d.client.BotClient
-import org.junit.Test
+import org.junit.{Test, Assert}
 
 class TestSetStrategy:
 
@@ -67,14 +67,31 @@ class TestSetStrategy:
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((2, 2, 1)))
 
+  @Test def testMaximizeLiberties(): Unit =
+    val game = playListOfMoves(3, List(Move(3, 3, 3, Black)))
+    val strategy = SetStrategy(game, Array())
+    val check = checkStrategyResults.curried(strategy.maximizeOwnLiberties)
+    check(List((2, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(List((2, 2, 2)))
+    check(
+      List((2, 2, 3), (2, 3, 2), (3, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(
+      List((2, 2, 3), (2, 3, 2), (3, 2, 2))
+    )
+    check(game.goban.emptyPositions.map(p => (p.x, p.y, p.z)))(List((2, 2, 2)))
+
+  @Test def testMaximizeLiberties2(): Unit =
+    val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))
+    val strategy = SetStrategy(game, Array())
+    Assert.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions).contains(Position(2, 2, 2)))
+    Assert.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions).contains(Position(1, 1, 1)))
+
 
 def getStrategy(size: Int): SetStrategy =
   SetStrategy(newGame(size), Array())
 
 
 def checkStrategyResults(
-  strategy: List[Position] => List[Position],
-  toCheck: List[(Int, Int, Int)], expected: List[(Int, Int, Int)]
+  strategy: Seq[Position] => Seq[Position],
+  toCheck: Seq[(Int, Int, Int)], expected: Seq[(Int, Int, Int)]
 ): Unit =
     val found = strategy(toCheck.map(e => Position(e)))
     assertPositionsEqual(expected, found)
