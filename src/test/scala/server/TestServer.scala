@@ -1,18 +1,18 @@
 package go3d.testing
 
-import go3d.server._
+import go3d.server.*
 import go3d.{Black, Color, Empty, Move, Pass, Position, White, newGame}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHandler
 import org.eclipse.jetty.http.HttpStatus
-import org.junit.{After, Assert, Before, Ignore, Test}
+import org.junit.{After, Assert, Before, BeforeClass, Ignore, Test}
 
 import java.io.IOException
 import java.net.HttpURLConnection
 import scala.io.Source
 import scala.reflect.ClassTag
-import io.circe.parser._
-import requests._
+import io.circe.parser.*
+import requests.*
 
 import java.nio.file.Files
 import scala.util.Random
@@ -42,6 +42,13 @@ object GameData:
   def register(id: String, color: Color): PlayerRegisteredResponse =
     getPRR(s"$ServerURL/register/$id/$color")
 
+object TestServer:
+  @BeforeClass def quietLogging(): Unit =
+    import ch.qos.logback.classic.{Level,Logger}
+    import org.slf4j.LoggerFactory
+    val root = org.slf4j.Logger.ROOT_LOGGER_NAME
+    LoggerFactory.getLogger(root).asInstanceOf[Logger].setLevel(Level.WARN)
+
 class TestServer:
 
   var jetty: Server = null
@@ -50,12 +57,6 @@ class TestServer:
     System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
     jetty = GoServer.createServer(TestPort)
     jetty.start()
-
-  @Before def quietLogging(): Unit =
-    import ch.qos.logback.classic.{Level,Logger}
-    import org.slf4j.LoggerFactory
-    val root = org.slf4j.Logger.ROOT_LOGGER_NAME
-    LoggerFactory.getLogger(root).asInstanceOf[Logger].setLevel(Level.WARN)
 
   @Before def setupTempDir(): Unit = Io.init(Files.createTempDirectory("go3d").toString)
 
