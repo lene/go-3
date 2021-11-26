@@ -1,11 +1,15 @@
 package go3d.testing
 
 import go3d.{Black, Move, Pass, Position, White, newGame}
-import go3d.client.{BotClient, SetStrategy, totalNumLiberties}
+import go3d.client.{BotClient, SetStrategy, totalNumLiberties, bestBy}
 import org.junit.{Assert, BeforeClass, Test}
 
 
 class TestSetStrategy:
+
+  @Test def testBestBy(): Unit =
+    assertCollectionEqual(List(1,1), bestBy(Array(1, 1, 2, 3, 4), _.abs))
+    assertCollectionEqual(List(4), bestBy(Array(1, 1, 2, 3, 4), -_.abs))
 
   @Test def testClosestToCenterStrategy(): Unit =
     val strategy = getStrategy(3)
