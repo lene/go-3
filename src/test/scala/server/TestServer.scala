@@ -462,6 +462,44 @@ class TestServer:
     val statusResponse = getSR(s"${GameData.ServerURL}/status/${gameData.id}/d", Map())
     Assert.assertFalse(statusResponse.debug.headers.nonEmpty)
 
+  @Test def testGetOpenGamesReturnsResponse(): Unit =
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertTrue(response.isInstanceOf[GameListResponse])
+
+  @Test def testGetOpenGamesReturns404IfRouteHasTrailingSlash(): Unit =
+    assertThrows[java.io.FileNotFoundException] {
+      getOGR(s"${GameData.ServerURL}/openGames/")
+    }
+
+  @Test def testGetOpenGamesDoesNotReturnGameWithNoPlayer(): Unit =
+    val newGameResponse = GameData.create(3)
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertFalse(response.ids.isEmpty)
+    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetOpenGamesReturnsOneRegisteredGame(): Unit =
+    val newGameResponse = GameData.create(3)
+    val blackRegistered = GameData.register(newGameResponse.id, Black)
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertFalse(response.ids.isEmpty)
+    Assert.assertTrue(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetOpenGamesDoesNotReturnGameWithNoBlackPlayer(): Unit =
+    val newGameResponse = GameData.create(3)
+    val whiteRegistered = GameData.register(newGameResponse.id, White)
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertFalse(response.ids.isEmpty)
+    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetOpenGamesDoesNotReturnGameWithTwoPlayers(): Unit =
+    val newGameResponse = GameData.create(3)
+    val blackRegistered = GameData.register(newGameResponse.id, Black)
+    val whiteRegistered = GameData.register(newGameResponse.id, White)
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertFalse(response.ids.isEmpty)
+    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+
+
   def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
     for move <- moves do
@@ -490,6 +528,12 @@ def getSR(url: String, header: Map[String, String]): StatusResponse =
   val response = requests.get(url, headers = header)
   val json = response.text()
   val result = decode[StatusResponse](json)
+  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
+  return result.getOrElse(null)
+
+def getOGR(url: String): GameListResponse =
+  val json = getJson(url).mkString
+  val result = decode[GameListResponse](json)
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
   return result.getOrElse(null)
 
