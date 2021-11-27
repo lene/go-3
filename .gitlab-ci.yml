@@ -128,22 +128,24 @@ TestDeployable:OpenJDK:17:JRE:
 
 TestDockerImage:
   stage: run
-  image: docker:19.03.13
-  services:
-    - docker:19.03.13-dind
+  image:
+    name: registry.gitlab.com/lilacashes/go-3/server:latest
+    entrypoint: [""]
   needs:
-    - job: BuildDeployable
-      artifacts: true
-    - job: CreateDockerImage
+    - job: BuildDockerImage
       artifacts: false
-  before_script:
-    - microdnf install --nodocs unzip && microdnf clean all
   script:
-    - unzip ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
-    - docker run --net=host -t registry.gitlab.com/lilacashes/go-3/server:latest 2>&1 >server.log &
-    - sleep 60  # definitely should not take longer than that to start docker image
-    - killall docker
-    - tail server.log | grep -A1 "Server started on"
+    - mkdir -p saves
+    - /go-3/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log &
+    - sleep 5
+    - grep -A1 "Server started on" server.log
+    - time /go-3/bin/bot-client --server localhost --port 6030 --size 7 --color b --strategy closestToStarPoints &
+    - sleep 5
+    - time /go-3/bin/bot-client --server localhost --port 6030 --game-id $(curl -s http://localhost:6030/openGames | jq -r .ids[0]) --color w --strategy random
+    - sleep 5
+    - jobs
+    - grep -c "go3d.server.SetServlet" server.log
+    - grep -c "go3d.server.PassServlet" server.log
 
 Upload:
   stage: release

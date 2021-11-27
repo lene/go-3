@@ -14,7 +14,7 @@ FROM openjdk:16
 ARG version=0.6.3
 
 WORKDIR /go-3
-RUN useradd go-3d && chown -R go-3d .
+RUN useradd go-3d && chown -R go-3d . && microdnf install jq
 USER go-3d
 COPY --from=builder /go-3/bin /go-3/bin/
 COPY --from=builder /go-3/lib /go-3/lib/
