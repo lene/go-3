@@ -32,3 +32,8 @@ class TestGameExtension:
     Assert.assertEquals(12, game.totalNumLiberties(Black))
     Assert.assertEquals(0, game.totalNumLiberties(White))
 
+  @Test def testTotalNumLibertiesEmptyBoard(): Unit =
+    val game = playListOfMoves(5, List[Move|Pass]())
+    Assert.assertEquals(0, game.totalNumLiberties(Black))
+    Assert.assertEquals(0, game.totalNumLiberties(White))
+
