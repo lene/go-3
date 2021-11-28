@@ -14,6 +14,20 @@ remote="$1"
 url="$2"
 
 status=0
+
+
+if [ -n "${GITLAB_ACCESS_TOKEN}" ]; then
+  CONTENT="$(cat .gitlab-ci.yml)"
+  jq --null-input --arg yaml "$CONTENT" '.content=$yaml' | \
+  curl -s "https://gitlab.com/api/v4/ci/lint" \
+    --header 'Content-Type: application/json' --header "PRIVATE-TOKEN: $GITLAB_ACCESS_TOKEN" \
+    --data @- | \
+    jq .valid | grep true || status=1
+else
+  echo "please export GITLAB_ACCESS_TOKEN"
+  exit 1
+fi
+
 sbt test "runMain go3d.Runner" || status=1
 
 VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
