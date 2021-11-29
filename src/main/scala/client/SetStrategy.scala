@@ -61,10 +61,10 @@ case class SetStrategy(game: Game, strategies: Array[String]):
   def moveColor: Color = if game.moves.isEmpty then Black else !game.moves.last.color
 
   def minimizeOpponentLiberties(possible: Seq[Position]): Seq[Position] =
-    val possibleMoves = game.getFreeNeighbors(!moveColor)
+    val possibleMoves = game.getFreeNeighbors(!moveColor).toSet.intersect(possible.toSet)
     if possibleMoves.isEmpty
     then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
-    else bestBy(possible.toSet.intersect(possibleMoves).toList, p => game.setStone(Move(p, moveColor)).totalNumLiberties(!moveColor))
+    else bestBy(possibleMoves.toList, p => game.setStone(Move(p, moveColor)).totalNumLiberties(!moveColor))
 
   def maximizeDistance(possible: Seq[Position]): Seq[Position] =
     val opponentStones = game.getStones(!moveColor)
