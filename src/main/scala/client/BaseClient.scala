@@ -44,7 +44,7 @@ def getGCR(url: String): GameCreatedResponse =
   return result.getOrElse(null)
 
 def getSR(url: String, header: Map[String, String]): StatusResponse =
-  val response = requests.get(url, headers = header)
+  val response = requests.get(url, headers = header, connectTimeout = 30000)
   val json = response.text()
   val result = decode[StatusResponse](json)
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
