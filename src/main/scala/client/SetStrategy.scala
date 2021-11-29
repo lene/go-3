@@ -31,6 +31,7 @@ case class SetStrategy(game: Game, strategies: Array[String]):
       val nextPossible = strategies.head match
         case "random" => possible
         case "closestToCenter" => closestToCenter(possible)
+        case "onStarPoints" => onStarPoints(possible)
         case "closestToStarPoints" => closestToStarPoints(possible)
         case "maximizeOwnLiberties" => maximizeOwnLiberties(possible)
         case "minimizeOpponentLiberties" => minimizeOpponentLiberties(possible)
@@ -42,12 +43,17 @@ case class SetStrategy(game: Game, strategies: Array[String]):
     val center = Position(gameSize/2+1, gameSize/2+1, gameSize/2+1)
     bestBy(possible, p => (center - p).abs)
 
-  def closestToStarPoints(possible: Seq[Position]): Seq[Position] =
+  def onStarPoints(possible: Seq[Position]): Seq[Position] =
     val stars = StarPoints(gameSize)
     for (points <- Array(stars.corner, stars.midLine, stars.midFace, stars.center))
       val pointsInInput = possible.toSet.intersect(points.toSet)
       if pointsInInput.nonEmpty then return pointsInInput.toList
-    bestBy(possible, minDistanceToPointList(_, stars.all))
+    return possible
+
+  def closestToStarPoints(possible: Seq[Position]): Seq[Position] =
+    if StarPoints(gameSize).all.toSet.intersect(possible.toSet).nonEmpty
+    then onStarPoints(possible)
+    else bestBy(possible, minDistanceToPointList(_, StarPoints(gameSize).all))
 
   def maximizeOwnLiberties(possible: Seq[Position]): Seq[Position] =
     bestBy(possible, p => -game.setStone(Move(p, moveColor)).totalNumLiberties(moveColor))
@@ -61,7 +67,10 @@ case class SetStrategy(game: Game, strategies: Array[String]):
     else bestBy(possible.toSet.intersect(possibleMoves).toList, p => game.setStone(Move(p, moveColor)).totalNumLiberties(!moveColor))
 
   def maximizeDistance(possible: Seq[Position]): Seq[Position] =
-    ???
+    val opponentStones = game.getStones(!moveColor)
+    if opponentStones.isEmpty
+    then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
+    else bestBy(possible, -minDistanceToPointList(_, opponentStones))
 
 
 def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =

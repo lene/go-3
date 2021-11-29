@@ -80,8 +80,9 @@ BuildDeployable:
       - go-3d-*.*.*.zip
 
 BuildDockerImage:
-  stage: build
   image: docker:19.03.13
+  stage: build
+  needs: []
   services:
     - docker:19.03.13-dind
   script:
@@ -96,7 +97,8 @@ BuildDockerImage:
   stage: run
   variables:
     BOARD_SIZE: 7
-    STRATEGIES: closestToCenter closestToStarPoints maximizeOwnLiberties minimizeOpponentLiberties
+    STRATEGIES: closestToCenter onStarPoints closestToStarPoints maximizeOwnLiberties minimizeOpponentLiberties maximizeDistance
+  retry: 2
   script:
     - mkdir -p saves
     - ${INSTALL_DIR}/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log &
