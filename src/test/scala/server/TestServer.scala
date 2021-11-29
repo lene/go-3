@@ -552,7 +552,7 @@ def playRandomGame(gameData: GameData) =
     var color = Black
     while !gameOver do
       val statusResponse = gameData.status(color)
-      if statusResponse.ready then
+      if statusResponse.ready && statusResponse.game.possibleMoves(color).length > 0 then
         val move = Move(randomChoice(statusResponse.game.possibleMoves(color)), color)
         gameOver = gameData.set(move).game.isOver
       else

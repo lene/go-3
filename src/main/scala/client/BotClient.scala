@@ -25,7 +25,8 @@ object BotClient extends Client:
     print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token}  ")
     val status = waitUntilReady()
     game = status.game
-    println(s"\b \n${game.goban}")
+//    println(s"\b \n${game.goban}")
+    print(s"\b Move: ${game.moves.length} \r")
     var over = false
     try
       val strategy = SetStrategy(game, strategies)

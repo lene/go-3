@@ -13,7 +13,7 @@ class TestGame:
 
   @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
     val game = newGame(TestSize)
-    Assert.assertEquals(Math.pow(TestSize, 3).toInt+2, game.toString.count(_ == ' '))
+    Assert.assertEquals(Math.pow(TestSize, 3).toInt+7, game.toString.count(_ == ' '))
 
   @Test def testEmptyBoardToStringSentinels(): Unit =
     val game = newGame(TestSize)
