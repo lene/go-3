@@ -28,7 +28,7 @@ else
   exit 1
 fi
 
-sbt test "runMain go3d.Runner" || status=1
+sbt test || status=1
 
 VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
 docker build --build-arg version=$VERSION -t test_image . || status=1
