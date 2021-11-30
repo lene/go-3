@@ -1,7 +1,7 @@
 stages:
   - test
   - build
-  - run
+  - test built
   - release
 
 variables:
@@ -10,6 +10,9 @@ variables:
   DEPLOYABLE_BASE_NAME: go-3d
   DEPLOYABLE_VERSION: 0.6.3
   SBT_IMAGE: hseeberger/scala-sbt:8u312_1.5.5_2.13.7
+
+default:
+  retry: 2
 
 include:
   - template: Code-Quality.gitlab-ci.yml
@@ -94,26 +97,37 @@ BuildDockerImage:
     - docker push registry.gitlab.com/lilacashes/go-3/server
 
 .TestGameplay:
-  stage: run
+  stage: test built
   variables:
     BOARD_SIZE: 7
-    STRATEGIES: >
-      closestToCenter onStarPoints closestToStarPoints maximizeOwnLiberties minimizeOpponentLiberties maximizeDistance prioritiseCapture
-      onStarPoints,minimizeOpponentLiberties onStarPoints,maximizeOwnLiberties minimizeOpponentLiberties,closestToStarPoints
-  retry: 2
+  timeout: 10 minutes
+  parallel:
+    matrix:
+      - STRATEGY:
+        - closestToCenter
+        - onStarPoints
+        - closestToStarPoints
+        - maximizeOwnLiberties
+        - minimizeOpponentLiberties
+        - maximizeDistance
+        - prioritiseCapture
+        - onStarPoints,minimizeOpponentLiberties
+        - onStarPoints,maximizeOwnLiberties
+        - minimizeOpponentLiberties,closestToStarPoints
   script:
     - mkdir -p saves
     - ${INSTALL_DIR}/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log &
     - sleep 5
     - grep -A1 "Server started on" server.log
-    - for STRATEGY in $STRATEGIES; do
-    -   echo $STRATEGY
-    -   time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy $STRATEGY &
-    -   sleep 2
-    -   time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $(curl -s http://localhost:6030/openGames | jq -r .ids[0]) --color w --strategy random > /dev/null
-    - done
+    - echo $STRATEGY
+    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy $STRATEGY | grep 'Map(' | tee game.log &
+    - sleep 2
+    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $(curl -s http://localhost:6030/openGames | jq -r .ids[0]) --color w --strategy random > /dev/null
     - grep -c "go3d.server.SetServlet" server.log
     - grep -c "go3d.server.PassServlet" server.log
+  artifacts:
+    paths:
+      - game.log
 
 
 .TestDeployable:
