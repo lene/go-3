@@ -71,8 +71,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     return hasLiberties(moves - moves.head)
 
   def connectedStones(move: Move): Set[Move] =
-    if at(move.position) != move.color then
-      throw ColorMismatch(s"checking connected stones to $move but is ", at(move.position))
+    if at(move.position) != move.color then return Set()
     // alright, this is not functional style, but much clearer than using recursion
     var area = Set(move)
     for position <- neighborsOfColor(move.position, move.color) if !(area contains(Move(position, move.color))) do

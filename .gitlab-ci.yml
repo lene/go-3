@@ -97,7 +97,9 @@ BuildDockerImage:
   stage: run
   variables:
     BOARD_SIZE: 7
-    STRATEGIES: closestToCenter onStarPoints closestToStarPoints maximizeOwnLiberties minimizeOpponentLiberties maximizeDistance onStarPoints,minimizeOpponentLiberties onStarPoints,maximizeOwnLiberties minimizeOpponentLiberties,closestToStarPoints
+    STRATEGIES: >
+      closestToCenter onStarPoints closestToStarPoints maximizeOwnLiberties minimizeOpponentLiberties maximizeDistance prioritiseCapture
+      onStarPoints,minimizeOpponentLiberties onStarPoints,maximizeOwnLiberties minimizeOpponentLiberties,closestToStarPoints
   retry: 2
   script:
     - mkdir -p saves

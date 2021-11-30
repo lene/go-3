@@ -17,3 +17,13 @@ extension (game: Game)
     game.getStones(color).foldLeft(Set[Position]())(
       (neighbors, position) => neighbors ++ game.goban.neighborsOfColor(position, Empty)
     )
+
+  def getAreas(color: Color): Set[Set[Position]] =
+    game.getStones(color).foldLeft(Set[Set[Position]]())(
+      (areas, position) => areas + game.connectedStones(Move(position, color)).map(m => m.position)
+    )
+
+  def liberties(color: Color, area: Set[Position]): Int =
+    area.foldLeft(Set[Position]())(
+      (neighbors, position) => neighbors ++ game.goban.neighborsOfColor(position, Empty)
+    ).size

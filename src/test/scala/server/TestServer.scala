@@ -5,7 +5,7 @@ import go3d.{Black, Color, Empty, Move, Pass, Position, White, newGame}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHandler
 import org.eclipse.jetty.http.HttpStatus
-import org.junit.{After, Assert, Before, BeforeClass, Ignore, Test}
+import org.junit.{After, Assert, Before, BeforeClass, Test}
 
 import java.io.IOException
 import java.net.HttpURLConnection

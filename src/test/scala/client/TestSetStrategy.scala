@@ -186,6 +186,60 @@ class TestSetStrategy:
     val check = checkStrategyResults.curried(strategy.maximizeDistance)
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((1, 1, 1), (3, 3, 3)))
 
+  @Test def testPrioritiseCapture6Liberties(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(2, 2, 2, Black)),
+      List((1, 2, 2), (2, 1, 2), (2, 2, 1), (3, 2, 2), (2, 3, 2), (2, 2, 3))
+    )
+
+  @Test def testPrioritiseCapture5Liberties(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(1, 2, 2, Black)),
+      List((1, 2, 1), (1, 1, 2), (2, 2, 2), (1, 2, 3), (1, 3, 2))
+    )
+
+  @Test def testPrioritiseCapture4Liberties(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(1, 1, 2, Black)),
+      List((1, 1, 1), (1, 1, 3), (1, 2, 2), (2, 1, 2))
+    )
+
+  @Test def testPrioritiseCapture3Liberties(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(1, 1, 1, Black)),
+      List((1, 1, 2), (1, 2, 1), (2, 1, 1))
+    )
+
+  @Test def testPrioritiseCapture2Stones3Liberties(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(1, 1, 1, Black), Move(1, 1, 2, White)),
+      List((1, 1, 3), (1, 2, 2), (2, 1, 2))
+    )
+
+  @Test def testPrioritiseCapture2Stones2Liberties(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(1, 1, 1, Black), Move(1, 1, 2, White), Pass(Black)),
+      List((1, 2, 1), (2, 1, 1))
+    )
+
+  @Test def testPrioritiseCapture2Stones1Liberty(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(1, 1, 1, Black), Move(1, 1, 2, White), Pass(Black), Move(1, 2, 1, White), Pass(Black)),
+      List((2, 1, 1))
+    )
+
+  @Test def testPrioritiseCapture2DifferentAreasSameSizeChoosesBoth(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(1, 1, 1, Black), Pass(White), Move(3, 3, 3, Black)),
+      List((1, 1, 2), (1, 2, 1), (2, 1, 1), (2, 3, 3), (3, 2, 3), (3, 3, 2))
+    )
+
+  @Test def testPrioritiseCapture2DifferentAreasDifferentSizeChoosesSmaller(): Unit =
+    check3BoardForPossibleMoves(
+      List(Move(1, 1, 1, Black), Pass(White), Move(1, 1, 2, Black), Pass(White), Move(3, 3, 3, Black)),
+      List((2, 3, 3), (3, 2, 3), (3, 3, 2))
+    )
+
 def getStrategy(size: Int): SetStrategy =
   SetStrategy(newGame(size), Array())
 
@@ -195,3 +249,10 @@ def checkStrategyResults(
   toCheck: Seq[(Int, Int, Int)], expected: Seq[(Int, Int, Int)]
 ): Unit =
     assertPositionsEqual(expected, strategy(toCheck.map(e => Position(e))))
+
+def check3BoardForPossibleMoves(moves: List[Move|Pass], expected: List[(Int, Int, Int)]): Unit =
+  val game = playListOfMoves(3, moves)
+  val strategy = SetStrategy(game, Array())
+  val check = checkStrategyResults.curried(strategy.prioritiseCapture)
+  val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z)).toSet -- moves.collect { case m: Move => m }.map(m => (m.x, m.y, m.z))
+  check(starPoints.toList)(expected)

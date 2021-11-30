@@ -36,6 +36,7 @@ case class SetStrategy(game: Game, strategies: Array[String]):
         case "maximizeOwnLiberties" => maximizeOwnLiberties(possible)
         case "minimizeOpponentLiberties" => minimizeOpponentLiberties(possible)
         case "maximizeDistance" => maximizeDistance(possible)
+        case "prioritiseCapture" => prioritiseCapture(possible)
         case s => throw IllegalArgumentException(s"narrowDown(): $s not implemented")
       narrowDown(nextPossible, strategies.tail)
 
@@ -72,9 +73,24 @@ case class SetStrategy(game: Game, strategies: Array[String]):
     then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
     else bestBy(possible, -minDistanceToPointList(_, opponentStones))
 
+  def prioritiseCapture(possible: Seq[Position]): Seq[Position] =
+    val opponentStones = game.getStones(!moveColor)
+    if opponentStones.isEmpty
+    then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
+    else
+      val opponentNeighbors = game.getFreeNeighbors(!moveColor)
+      val possibleMoves = possible.toSet.intersect(opponentNeighbors).toList
+      bestBy(possibleMoves, p => minLiberties(game.setStone(Move(p, moveColor)), !moveColor))
 
 def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
   values.groupBy(metric).minBy(_._1)._2
 
+def minBy[A](values: Seq[A], metric: A => Int): Int = {
+  values.groupBy(metric).minBy(_._1)._1
+}
+
 def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
   remotes.map(p => (p - local).abs).min
+
+def minLiberties(game: Game, color: Color): Int =
+  minBy(game.getAreas(color).toList, game.liberties(color, _))

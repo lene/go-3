@@ -1,6 +1,6 @@
 package go3d.testing
 
-import org.junit.{Assert, Ignore, Test}
+import org.junit.{Assert, Test}
 import go3d.server._
 import go3d.{
   Black, Color, Empty, Game, Goban, Move, Pass, Position, Sentinel, White, newGame, newGoban
