@@ -6,7 +6,9 @@ import go3d.{BadColor, Black, Color, White}
 import java.io.IOException
 import java.net.{ConnectException, UnknownHostException}
 import scala.io.StdIn.readLine
-import requests._
+import requests.*
+
+import scala.annotation.tailrec
 
 class Exit extends RuntimeException
 
@@ -19,6 +21,7 @@ object AsciiClient extends Client:
   /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
   /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
 
+  @tailrec
   def mainLoop(args: Array[String]): Unit =
     print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token}  ")
     val status = waitUntilReady()
@@ -43,7 +46,7 @@ object AsciiClient extends Client:
       case e: RequestFailedException => println(e)
     mainLoop(Array())
 
-  def parseArgs(args: Array[String]) =
+  def parseArgs(args: Array[String]): Unit =
     val options = nextOption(Map(), args.toList)
     val serverURL = s"http://${options("server")}:${options("port")}"
     if options.contains("size") then
@@ -63,6 +66,7 @@ object AsciiClient extends Client:
     else throw IllegalArgumentException("Either --size or --game-id must be supplied")
 
 
+  @tailrec
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')
     list match
@@ -82,7 +86,7 @@ object AsciiClient extends Client:
       case option :: tail =>
           println("Unknown option "+option)
           System.exit(1)
-          return map
+          map
 
   def set(args: String): StatusResponse =
     val Array(x, y, z) = args.split("\\s+", 3).map(s => s.trim.toInt)
@@ -101,7 +105,7 @@ object AsciiClient extends Client:
       print("\b" + "/-\\|"(index % 4))
       status = client.status
       if !status.ready then Thread.sleep(500)
-    return status
+    status
 
 def colorFromString(string: String): Color =
   string.toLowerCase match

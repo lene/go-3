@@ -48,3 +48,9 @@ class TestBotClient:
       ))
     })
 
+  @Test def testExecutionTimeString(): Unit =
+    Assert.assertEquals("", BotClient.executionTimeString)
+    BotClient.executionTimes = BotClient.executionTimes.appended(10)
+    Assert.assertTrue(BotClient.executionTimeString.startsWith("(10ms last/10ms avg)"))
+    BotClient.executionTimes = BotClient.executionTimes.appended(30)
+    Assert.assertTrue(BotClient.executionTimeString.startsWith("(30ms last/20ms avg)"))

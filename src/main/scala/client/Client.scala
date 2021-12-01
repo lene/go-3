@@ -35,7 +35,7 @@ abstract class Client extends ClientTrait:
       "--" + e.getMessage.substring("key not found: ".length).replace('_', '-')
 
   def exit(message: String, status: Int): Unit =
-    if message.length > 0 then println(message)
+    if message.nonEmpty then println(message)
     System.exit(status)
   def exit(status: Int): Unit = exit("", status)
 

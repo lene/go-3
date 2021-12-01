@@ -7,13 +7,17 @@ import scala.util.Random
 import java.io.IOException
 import java.net.{ConnectException, UnknownHostException}
 import scala.io.StdIn.readLine
-import requests._
+import requests.*
+
+import scala.annotation.tailrec
 
 object BotClient extends Client:
 
-  val random = Random()
-  var strategies: Array[String] = Array[String]()
+  val PULL_WAIT_MS = 10
+  val random: Random = Random()
+  var strategies: Array[String] = Array()
   var game: Game = null
+  var executionTimes: List[Long] = List()
 
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
@@ -25,9 +29,9 @@ object BotClient extends Client:
     print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token}  ")
     val status = waitUntilReady()
     game = status.game
-//    println(s"\b \n${game.goban}")
-    print(s"\b Move: ${game.moves.length} \r")
+    print(s"\b Move: ${game.moves.length} ${executionTimeString}\r")
     var over = false
+    val startTime = System.currentTimeMillis()
     try
       val strategy = SetStrategy(game, strategies)
       val possible = status.moves
@@ -40,14 +44,23 @@ object BotClient extends Client:
     catch
       case e: Exit => exit(0)
       case e: InterruptedException => exit(1)
-      case e: RequestFailedException => println(e)
+      case e: RequestFailedException => println(e); mainLoop(Array())
+    finally
+      executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
     if !over then mainLoop(Array())
     else println(client.status.game)
 
   def randomMove(possible: Seq[Position]): Position =
     possible(random.nextInt(possible.length))
 
-  def parseArgs(args: Array[String]) =
+  def executionTimeString: String =
+    if executionTimes.isEmpty then ""
+    else
+      val last = executionTimes.last
+      val avg = executionTimes.sum / executionTimes.length
+      f"(${last}ms last/${avg}ms avg)  "
+
+  def parseArgs(args: Array[String]): Unit =
     val options = nextOption(Map(), args.toList)
     val serverURL = s"http://${options("server")}:${options("port")}"
     if options.contains("size") then
@@ -67,7 +80,7 @@ object BotClient extends Client:
     else throw IllegalArgumentException("Either --size or --game-id must be supplied")
     strategies = options("strategy").asInstanceOf[String].split(',')
 
-  def nextOption(map : OptionMap, list: List[String]) : OptionMap =
+  @tailrec def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')
     list match
       case Nil => map
@@ -88,11 +101,11 @@ object BotClient extends Client:
       case option :: tail =>
         println("Unknown option "+option)
         System.exit(1)
-        return map
+        map
 
   def waitUntilReady(): StatusResponse =
     var status = StatusResponse(null, null, false, null)
     while !status.ready do
       status = client.status
-      if !status.ready then Thread.sleep(10)
-    return status
+      if !status.ready then Thread.sleep(PULL_WAIT_MS)
+    status
