@@ -1,13 +1,18 @@
 stages:
   - test
   - build
-  - run
+  - test built
   - release
 
 variables:
   TEST_RUN_BOARD_SIZE: 11
   TEST_RUN_MAX_RUNNING_TIME: 60
-  DEPLOYABLE_BASE_NAME: go-3d-0.6.2
+  DEPLOYABLE_BASE_NAME: go-3d
+  DEPLOYABLE_VERSION: 0.6.3
+  SBT_IMAGE: hseeberger/scala-sbt:8u312_1.5.5_2.13.7
+
+default:
+  retry: 2
 
 include:
   - template: Code-Quality.gitlab-ci.yml
@@ -33,7 +38,7 @@ Test:BuildSbt:
 
 # The following ones use a prepared docker image for sbt.
 Test:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
   stage: test
   needs: []
   script:
@@ -44,14 +49,14 @@ Test:
       junit: target/test-reports/**/TEST-*.xml
 
 Run:UseSbtDocker:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
   stage: test
   needs: []
   script:
     - sbt "runMain go3d.Runner"
 
 CheckRunTime:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
   stage: test
   needs: []
   before_script:
@@ -67,29 +72,80 @@ CheckRunTime:
       - runtime.log
 
 BuildDeployable:
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
   stage: build
   needs: []
   script:
     - sbt universal:packageBin
-    - mv target/universal/${DEPLOYABLE_BASE_NAME}.zip .
+    - mv target/universal/${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip .
   artifacts:
     paths:
-      - go-3d-0.6.2.zip
+      - go-3d-*.*.*.zip
+
+BuildDockerImage:
+  image: docker:19.03.13
+  stage: build
+  needs: []
+  services:
+    - docker:19.03.13-dind
+  script:
+    - VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
+    - TAG=${VERSION}-${CI_COMMIT_SHORT_SHA}
+    - docker build  --build-arg version=${VERSION} -t registry.gitlab.com/lilacashes/go-3/server:${TAG} .
+    - docker tag registry.gitlab.com/lilacashes/go-3/server:${TAG} registry.gitlab.com/lilacashes/go-3/server:latest
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
+    - docker push registry.gitlab.com/lilacashes/go-3/server
+
+.TestGameplay:
+  stage: test built
+  variables:
+    BOARD_SIZE: 7
+  timeout: 10 minutes
+  parallel:
+    matrix:
+      - STRATEGY:
+        - closestToCenter
+        - onStarPoints
+        - closestToStarPoints
+        - maximizeOwnLiberties
+        - minimizeOpponentLiberties
+        - maximizeDistance
+        - prioritiseCapture
+        - onStarPoints,minimizeOpponentLiberties
+        - onStarPoints,maximizeOwnLiberties
+        - minimizeOpponentLiberties,closestToStarPoints
+  script:
+    - mkdir -p saves
+    - ${INSTALL_DIR}/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log &
+    - sleep 5
+    - grep -A1 "Server started on" server.log
+    - echo $STRATEGY
+    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy $STRATEGY | grep 'Map(' | tee game.log &
+    - sleep 2
+    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $(curl -s http://localhost:6030/openGames | jq -r .ids[0]) --color w --strategy random > /dev/null
+    - grep -c "go3d.server.SetServlet" server.log
+    - grep -c "go3d.server.PassServlet" server.log
+  artifacts:
+    paths:
+      - game.log
+
 
 .TestDeployable:
-  stage: run
+  extends: .TestGameplay
   needs:
     - job: BuildDeployable
       artifacts: true
-  script:
-    - test -f ${DEPLOYABLE_BASE_NAME}.zip
-    - unzip ${DEPLOYABLE_BASE_NAME}.zip
-    - ./${DEPLOYABLE_BASE_NAME}/bin/runner --benchmark 9
+  variables:
+    INSTALL_DIR: ./${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}
+  before_script:
+    - apt-get -y update && apt-get -y upgrade && apt-get -y install jq curl || true
+    - microdnf install --nodocs unzip jq && microdnf clean all || true
+    - test -f ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+    - unzip -q ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
 
 TestDeployable:ScalaSBT:
   extends: .TestDeployable
-  image: hseeberger/scala-sbt:8u222_1.3.5_2.13.1
+  image: $SBT_IMAGE
 
 TestDeployable:OpenJDK:8:JRE:
   extends: .TestDeployable
@@ -102,14 +158,21 @@ TestDeployable:OpenJDK:11:JRE:
 TestDeployable:OpenJDK:16:JRE:
   extends: .TestDeployable
   image: openjdk:16
-  before_script:
-    - microdnf install --nodocs unzip && microdnf clean all
 
 TestDeployable:OpenJDK:17:JRE:
   extends: .TestDeployable
   image: openjdk:17
-  before_script:
-    - microdnf install --nodocs unzip && microdnf clean all
+
+TestDockerImage:
+  extends: .TestGameplay
+  image:
+    name: registry.gitlab.com/lilacashes/go-3/server:latest
+    entrypoint: [""]
+  needs:
+    - job: BuildDockerImage
+      artifacts: false
+  variables:
+    INSTALL_DIR: /go-3
 
 Upload:
   stage: release
@@ -123,38 +186,9 @@ Upload:
     - apk update
     - apk add curl
   script:
-    - export DEPLOYABLE_TAR_FILE=${DEPLOYABLE_BASE_NAME}.zip
-    - echo curl --header "JOB-TOKEN $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_TAR_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_TAR_FILE}"
-    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_TAR_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_TAR_FILE}"'
-
-CreateDockerImage:
-  stage: build
-  image: docker:19.03.13
-  services:
-    - docker:19.03.13-dind
-  script:
-    - docker build -t registry.gitlab.com/lilacashes/go-3/server .
-    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
-    - docker push registry.gitlab.com/lilacashes/go-3/server
-
-TestDockerImage:
-  stage: run
-  image: docker:19.03.13
-  services:
-    - docker:19.03.13-dind
-  needs:
-    - job: BuildDeployable
-      artifacts: true
-    - job: CreateDockerImage
-      artifacts: false
-  before_script:
-    - microdnf install --nodocs unzip && microdnf clean all
-  script:
-    - unzip ${DEPLOYABLE_BASE_NAME}.zip
-    - docker run --net=host -t registry.gitlab.com/lilacashes/go-3/server:latest 2>&1 >server.log &
-    - sleep 60  # definitely should not take longer than that to start docker image
-    - killall docker
-    - tail server.log | grep -A1 "Server started on"
+    - export DEPLOYABLE_ZIP_FILE=${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+    - echo curl --header "JOB-TOKEN $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_ZIP_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_ZIP_FILE}"
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_ZIP_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_ZIP_FILE}"'
 
 Release:
   stage: release

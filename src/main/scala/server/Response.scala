@@ -11,3 +11,4 @@ case class GameCreatedResponse(id: String, size: Int) extends GoResponse
 case class PlayerRegisteredResponse(game: Game, color: Color, authToken: String, ready: Boolean,
                                     debug: RequestInfo) extends GoResponse
 case class StatusResponse(game: Game, moves: List[Position], ready: Boolean, debug: RequestInfo) extends GoResponse
+case class GameListResponse(ids: Array[String]) extends GoResponse

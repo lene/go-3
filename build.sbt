@@ -1,6 +1,6 @@
 import sbt.Keys.libraryDependencies
 
-val scala3Version = "3.0.0"
+val scala3Version = "3.1.0"
 val circeVersion = "0.14.1"
 
 lazy val root = project
@@ -8,7 +8,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.6.2",
+    version := "0.6.3",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 

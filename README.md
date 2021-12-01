@@ -1,7 +1,7 @@
 The Asian game of Go takes place two-dimensional board. Its idea readily extends to three 
-dimensions - placing stones on a cubic grid. 
+dimensions - placing stones on a cubic lattice. 
 
-This is a program for playing on such a three-dimensional grid. 
+This is a program for playing on such a three-dimensional lattice. 
 
 Installing
 ==========

@@ -1,8 +1,9 @@
 package go3d.client
 
+import go3d.{BadColor, Black, Color, Game, Position, White}
 import go3d.server.StatusResponse
-import go3d.{BadColor, Black, Color, White}
 
+import scala.util.Random
 import java.io.IOException
 import java.net.{ConnectException, UnknownHostException}
 import scala.io.StdIn.readLine
@@ -10,41 +11,54 @@ import requests.*
 
 import scala.annotation.tailrec
 
-class Exit extends RuntimeException
+object BotClient extends Client:
 
-object AsciiClient extends Client:
+  val PULL_WAIT_MS = 10
+  val random: Random = Random()
+  var strategies: Array[String] = Array()
+  var game: Game = null
+  var executionTimes: List[Long] = List()
 
-  var gameId: String = ""
-  var token: String = ""
+  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
+  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
+  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
+  /// --strategy is a comma-separated list of:
+  //  closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
 
-  /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --size ## --color [b|w]"
-  /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
-  /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
-
-  @tailrec
   def mainLoop(args: Array[String]): Unit =
     print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token}  ")
     val status = waitUntilReady()
-    println(s"\b \n${status.game.goban}")
+    game = status.game
+    print(s"\b Move: ${game.moves.length} ${executionTimeString}\r")
+    var over = false
+    val startTime = System.currentTimeMillis()
     try
-      val input = readLine("your input: ")
-      val Array(command, args) = (input+" ").split("\\s+", 2)
-      command match
-        case "set"|"s" => set(args)
-        case "pass"|"p" => pass
-        case "status"|"st" => getStatus
-        case "exit" =>
-          println("Exiting. If you want to reconnect to the game, enter")
-          println(s"$$ sbt \"runMain go3d.client.AsciiClient --server ${client.serverURL} --game-id ${client.id} --token ${client.token}\"")
-          throw Exit()
-        case _ => println(
-          s"\"$command\" not understood - use \"set|s\", \"pass|p\", \"status|st\" or \"exit\"!"
-        )
+      val strategy = SetStrategy(game, strategies)
+      val possible = status.moves
+      if possible.nonEmpty then
+        val setPosition = randomMove(strategy.narrowDown(possible, strategies))
+        game = client.set(setPosition.x, setPosition.y, setPosition.z).game
+      else
+        over = true
+        game = client.pass.game
     catch
       case e: Exit => exit(0)
       case e: InterruptedException => exit(1)
-      case e: RequestFailedException => println(e)
-    mainLoop(Array())
+      case e: RequestFailedException => println(e); mainLoop(Array())
+    finally
+      executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
+    if !over then mainLoop(Array())
+    else println(client.status.game)
+
+  def randomMove(possible: Seq[Position]): Position =
+    possible(random.nextInt(possible.length))
+
+  def executionTimeString: String =
+    if executionTimes.isEmpty then ""
+    else
+      val last = executionTimes.last
+      val avg = executionTimes.sum / executionTimes.length
+      f"(${last}ms last/${avg}ms avg)  "
 
   def parseArgs(args: Array[String]): Unit =
     val options = nextOption(Map(), args.toList)
@@ -64,10 +78,9 @@ object AsciiClient extends Client:
         colorFromString(options("color").asInstanceOf[String])
       )
     else throw IllegalArgumentException("Either --size or --game-id must be supplied")
+    strategies = options("strategy").asInstanceOf[String].split(',')
 
-
-  @tailrec
-  def nextOption(map : OptionMap, list: List[String]) : OptionMap =
+  @tailrec def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')
     list match
       case Nil => map
@@ -83,32 +96,16 @@ object AsciiClient extends Client:
         nextOption(map ++ Map("server" -> value), tail)
       case "--port" :: value :: tail =>
         nextOption(map ++ Map("port" -> value.toInt), tail)
+      case "--strategy" :: value :: tail =>
+        nextOption(map ++ Map("strategy" -> value), tail)
       case option :: tail =>
-          println("Unknown option "+option)
-          System.exit(1)
-          map
+        println("Unknown option "+option)
+        System.exit(1)
+        map
 
-  def set(args: String): StatusResponse =
-    val Array(x, y, z) = args.split("\\s+", 3).map(s => s.trim.toInt)
-    println(s"set $x $y $z")
-    client.set(x, y, z)
-
-  def pass: StatusResponse = client.pass
-
-  def getStatus: StatusResponse = client.status
-  
   def waitUntilReady(): StatusResponse =
     var status = StatusResponse(null, null, false, null)
-    var index = 0
     while !status.ready do
-      index = index+1
-      print("\b" + "/-\\|"(index % 4))
       status = client.status
-      if !status.ready then Thread.sleep(500)
+      if !status.ready then Thread.sleep(PULL_WAIT_MS)
     status
-
-def colorFromString(string: String): Color =
-  string.toLowerCase match
-    case "@"|"black"|"b" => Black
-    case "o"|"white"|"w" => White
-    case _ => throw BadColor(string(0))

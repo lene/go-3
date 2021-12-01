@@ -1,18 +1,18 @@
 package go3d.testing
 
-import go3d.server._
+import go3d.server.*
 import go3d.{Black, Color, Empty, Move, Pass, Position, White, newGame}
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHandler
 import org.eclipse.jetty.http.HttpStatus
-import org.junit.{After, Assert, Before, Ignore, Test}
+import org.junit.{After, Assert, Before, BeforeClass, Test}
 
 import java.io.IOException
 import java.net.HttpURLConnection
 import scala.io.Source
 import scala.reflect.ClassTag
-import io.circe.parser._
-import requests._
+import io.circe.parser.*
+import requests.*
 
 import java.nio.file.Files
 import scala.util.Random
@@ -42,15 +42,16 @@ object GameData:
   def register(id: String, color: Color): PlayerRegisteredResponse =
     getPRR(s"$ServerURL/register/$id/$color")
 
-class TestServer:
-
-  var jetty: Server = null
-
-  @Before def quietLogging(): Unit =
+object TestServer:
+  @BeforeClass def quietLogging(): Unit =
     import ch.qos.logback.classic.{Level,Logger}
     import org.slf4j.LoggerFactory
     val root = org.slf4j.Logger.ROOT_LOGGER_NAME
     LoggerFactory.getLogger(root).asInstanceOf[Logger].setLevel(Level.WARN)
+
+class TestServer:
+
+  var jetty: Server = null
 
   @Before def startJetty(): Unit =
     System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
@@ -59,7 +60,7 @@ class TestServer:
 
   @Before def setupTempDir(): Unit = Io.init(Files.createTempDirectory("go3d").toString)
 
-  @After def stopJetty(): Unit = jetty.stop()
+  @After def stopJetty(): Unit = if jetty != null then jetty.stop()
 
   @Test def testNewGame(): Unit =
     val response = GameData.create(TestSize)
@@ -461,6 +462,44 @@ class TestServer:
     val statusResponse = getSR(s"${GameData.ServerURL}/status/${gameData.id}/d", Map())
     Assert.assertFalse(statusResponse.debug.headers.nonEmpty)
 
+  @Test def testGetOpenGamesReturnsResponse(): Unit =
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertTrue(response.isInstanceOf[GameListResponse])
+
+  @Test def testGetOpenGamesReturns404IfRouteHasTrailingSlash(): Unit =
+    assertThrows[java.io.FileNotFoundException] {
+      getOGR(s"${GameData.ServerURL}/openGames/")
+    }
+
+  @Test def testGetOpenGamesDoesNotReturnGameWithNoPlayer(): Unit =
+    val newGameResponse = GameData.create(3)
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertFalse(response.ids.isEmpty)
+    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetOpenGamesReturnsOneRegisteredGame(): Unit =
+    val newGameResponse = GameData.create(3)
+    val blackRegistered = GameData.register(newGameResponse.id, Black)
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertFalse(response.ids.isEmpty)
+    Assert.assertTrue(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetOpenGamesDoesNotReturnGameWithNoBlackPlayer(): Unit =
+    val newGameResponse = GameData.create(3)
+    val whiteRegistered = GameData.register(newGameResponse.id, White)
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertFalse(response.ids.isEmpty)
+    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetOpenGamesDoesNotReturnGameWithTwoPlayers(): Unit =
+    val newGameResponse = GameData.create(3)
+    val blackRegistered = GameData.register(newGameResponse.id, Black)
+    val whiteRegistered = GameData.register(newGameResponse.id, White)
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    Assert.assertFalse(response.ids.isEmpty)
+    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+
+
   def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
     for move <- moves do
@@ -492,6 +531,12 @@ def getSR(url: String, header: Map[String, String]): StatusResponse =
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
   return result.getOrElse(null)
 
+def getOGR(url: String): GameListResponse =
+  val json = getJson(url).mkString
+  val result = decode[GameListResponse](json)
+  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
+  return result.getOrElse(null)
+
 def setUpGame(size: Int): GameData =
   val newGameResponse = GameData.create(size)
   val blackRegistered = GameData.register(newGameResponse.id, Black)
@@ -507,7 +552,7 @@ def playRandomGame(gameData: GameData) =
     var color = Black
     while !gameOver do
       val statusResponse = gameData.status(color)
-      if statusResponse.ready then
+      if statusResponse.ready && statusResponse.game.possibleMoves(color).length > 0 then
         val move = Move(randomChoice(statusResponse.game.possibleMoves(color)), color)
         gameOver = gameData.set(move).game.isOver
       else

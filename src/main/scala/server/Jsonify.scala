@@ -275,6 +275,18 @@ implicit val decodeStatusResponse: Decoder[StatusResponse] = new Decoder[StatusR
     yield new StatusResponse(game, moves, ready, debug)
 }
 
+implicit val encodeOpenGamesResponse: Encoder[GameListResponse] = new Encoder[GameListResponse] {
+  final def apply(response: GameListResponse): Json =
+    Json.obj(("ids", response.ids.asJson))
+}
+
+implicit val decodeOpenGamesResponse: Decoder[GameListResponse] = new Decoder[GameListResponse] {
+  final def apply(c: HCursor): Decoder.Result[GameListResponse] =
+    for
+      ids <- c.downField("ids").as[Array[String]]
+    yield new GameListResponse(ids)
+}
+
 implicit val encodeGoResponse: Encoder[GoResponse] = new Encoder[GoResponse] {
   final def apply(response: GoResponse): Json =
     response match
@@ -282,6 +294,7 @@ implicit val encodeGoResponse: Encoder[GoResponse] = new Encoder[GoResponse] {
       case r: PlayerRegisteredResponse => encodePlayerRegisteredResponse(r)
       case r: ErrorResponse => encodeErrorResponse(r)
       case r: GameCreatedResponse => encodeGameCreatedResponse(r)
+      case r: GameListResponse => encodeOpenGamesResponse(r)
 }
 
 //def getResponse[T<:GoResponse](url: String)(implicit cType:ClassTag[T]): T =

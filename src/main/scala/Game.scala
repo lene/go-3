@@ -50,9 +50,8 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
         else if y == 1 then out += " "+Black.toString*captures(Black)
         else if y == 3 then out += " "+White.toString*captures(White)
       out += "\n"
-    for (move, caps) <- captures do
-      out += s"$move: ${caps.toList}\n"
-    out += moves.toList.toString
+    for (move, caps) <- captures.toSeq.sortBy(x => x._1) do out += s"$move: ${caps.toList}\n"
+    out += score.toString
     out
 
   def setStone(move: Move): Game = doCaptures(move, goban.setStone(move))

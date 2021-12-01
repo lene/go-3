@@ -21,7 +21,7 @@ object RequestInfo:
     )
 
   def parsePathInfo(pathInfo: String): (String, Boolean) =
-    if pathInfo.endsWith("/d") then (pathInfo.dropRight(2), true)
+    if pathInfo != null && pathInfo.endsWith("/d") then (pathInfo.dropRight(2), true)
     else (pathInfo, false)
 
 case class RequestInfo(headers: Map[String, String], query: String, path: String, debug: Boolean)

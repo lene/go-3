@@ -2,7 +2,7 @@ package go3d.testing
 
 import go3d._
 import go3d.{Black, White, Empty}
-import org.junit.{Assert, Ignore, Test}
+import org.junit.{Assert, Test}
 import scala.util.Random
 
 class TestGame:
@@ -13,7 +13,7 @@ class TestGame:
 
   @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
     val game = newGame(TestSize)
-    Assert.assertEquals(Math.pow(TestSize, 3).toInt+2, game.toString.count(_ == ' '))
+    Assert.assertEquals(Math.pow(TestSize, 3).toInt+7, game.toString.count(_ == ' '))
 
   @Test def testEmptyBoardToStringSentinels(): Unit =
     val game = newGame(TestSize)
