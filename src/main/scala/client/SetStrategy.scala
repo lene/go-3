@@ -23,7 +23,7 @@ object logger:
 
 case class SetStrategy(game: Game, strategies: Array[String]):
 
-  val gameSize = game.size
+  val gameSize: Int = game.size
 
   def narrowDown(possible: Seq[Position], strategies: Array[String]): Seq[Position] =
     if strategies.isEmpty then possible
