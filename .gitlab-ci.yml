@@ -92,6 +92,7 @@ BuildDockerImage:
     - VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
     - TAG=${VERSION}-${CI_COMMIT_SHORT_SHA}
     - docker build  --build-arg version=${VERSION} -t registry.gitlab.com/lilacashes/go-3/server:${TAG} .
+    - test -n "$CI_COMMIT_TAG" && docker tag registry.gitlab.com/lilacashes/go-3/server:${TAG} registry.gitlab.com/lilacashes/go-3/server:$CI_COMMIT_TAG
     - docker tag registry.gitlab.com/lilacashes/go-3/server:${TAG} registry.gitlab.com/lilacashes/go-3/server:latest
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
     - docker push registry.gitlab.com/lilacashes/go-3/server
@@ -128,7 +129,6 @@ BuildDockerImage:
   artifacts:
     paths:
       - game.log
-
 
 .TestDeployable:
   extends: .TestGameplay
@@ -205,12 +205,6 @@ Release:
     description: 'Created using the release-cli'
     tag_name: '$CI_COMMIT_TAG'
     ref: '$CI_COMMIT_TAG'
-    assets: # Optional, multiple asset links
-      links:
-        - name: 'asset2'
-          url: 'https://example.com/assets/2'
-          filepath: '/pretty/url/1' # optional
-          link_type: 'other' # optional
 
 # this job is never executed and left in as instruction how to push to github manually
 PushToGithub:
