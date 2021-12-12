@@ -8,7 +8,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.6.5",
+    version := "0.7.0",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -17,7 +17,7 @@ lazy val root = project
     libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
     libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
-    libraryDependencies +=  "com.lihaoyi" %% "requests" % "0.6.9",
+    libraryDependencies += "com.lihaoyi" %% "requests" % "0.6.9",
 
     // newer jetty versions require both code changes and Java >= 11
     libraryDependencies ++= Seq(
