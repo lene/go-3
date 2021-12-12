@@ -35,11 +35,11 @@ while [ "$(wc -l "${OUT_FILE}" | cut -d ' ' -f 1)" -lt "${UP_TO}" ]; do
           --size "${BOARD_SIZE}" --color b \
           --strategy "${STRATEGY_BLACK}" | \
           grep 'Map(' | tr -d '[:alpha:][:blank:]()>@-' \
-          >> "${OUT_FILE}" &
+          >> "${OUT_FILE}" || exit 1 &
   sleep 2
   time "./go-3d-${VERSION}/bin/bot-client" --server "${SERVER}" --port "${PORT}" \
           --game-id "$(curl -s "http://${SERVER}:${PORT}/openGames" | jq -r .ids[0])" \
           --color w \
-          --strategy "${STRATEGY_WHITE}"
+          --strategy "${STRATEGY_WHITE}" || exit 1
   sleep 1
 done

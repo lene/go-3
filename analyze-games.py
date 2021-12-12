@@ -43,8 +43,12 @@ def table(basedir: Path) -> ResultsTable:
     return result
 
 
+def count(frame: pd.DataFrame) -> int:
+    return frame.shape[0]
+
+
 def wins(frame: pd.DataFrame) -> str:
-    return f"{frame[frame['black'] > frame['white']].size/frame.size*100:.1f}%"
+    return f"{0 if frame.size == 0 else frame[frame['black'] > frame['white']].size/frame.size*100:.1f}%"
 
 
 def score(frame: pd.DataFrame) -> float:
@@ -84,6 +88,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     results = table(Path(args.base_dir))
+    print("number of games:")
+    print_table(evaluate(results, count))
     print("percentage of black wins:")
     print_table(evaluate(results, wins))
     print("average black score advantage:")
