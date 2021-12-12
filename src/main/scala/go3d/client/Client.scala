@@ -13,6 +13,7 @@ trait ClientTrait:
   def parseArgs(args: Array[String]): Unit
   def nextOption(map : OptionMap, list: List[String]) : OptionMap
   def waitUntilReady(): StatusResponse
+  def init(): Unit
 
 abstract class Client extends ClientTrait:
 
@@ -27,7 +28,10 @@ abstract class Client extends ClientTrait:
       case e: BadColor => exit(s"not a color, must be either black/b/@ or white/w/O", 1)
       case e: NoSuchElementException => exit(s"missing argument: ${exceptionToParam(e)}", 1)
       case e: IllegalArgumentException => exit(s"missing argument: ${e.getMessage}", 1)
+    init()
     mainLoop(args)
+
+  def init(): Unit = {}
 
   protected def exceptionToParam(e: NoSuchElementException): String =
       "--" + e.getMessage.substring("key not found: ".length).replace('_', '-')
