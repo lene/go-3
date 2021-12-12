@@ -3,7 +3,12 @@
 STRATEGY_BLACK=random
 STRATEGY_WHITE=prioritiseCapture
 BOARD_SIZE=7
-VERSION=0.6.3
+UP_TO=10
+VERSION=0.6.4
+
+SAVE_DIR=results
+SERVER=localhost
+PORT=6030
 
 while [[ $# -gt 0 ]]; do
   key="$1"
@@ -11,24 +16,30 @@ while [[ $# -gt 0 ]]; do
     --black) STRATEGY_BLACK="$2";;
     --white) STRATEGY_WHITE="$2";;
     --size) BOARD_SIZE="$2";;
+    --up-to) UP_TO="$2";;
     --version) VERSION="$2";;
-    *) echo "uh, what?"; exit 1
+    *) echo "uh, what?"; exit 1 ;;
   esac
   shift 2
 done
 
-mkdir -p results
+mkdir -p "${SAVE_DIR}"
 unzip -oq "./target/universal/go-3d-${VERSION}.zip"
 
-"./go-3d-${VERSION}/bin/bot-client" --server localhost --port 6030 \
-        --size "$BOARD_SIZE" --color b \
-        --strategy "$STRATEGY_BLACK" | \
-        grep 'Map(' | tr -d '[:alpha:][:blank:]()>@-' \
-        >> "results/${STRATEGY_BLACK}:${STRATEGY_WHITE}:${BOARD_SIZE}.csv" &
-sleep 2
-time "./go-3d-${VERSION}/bin/bot-client" --server localhost --port 6030 \
-        --game-id $(curl -s http://localhost:6030/openGames | jq -r .ids[0]) \
-        --color w \
-        --strategy "$STRATEGY_WHITE"
-wait
-sleep 1
+COMBINATION="${STRATEGY_BLACK}:${STRATEGY_WHITE}:${BOARD_SIZE}"
+OUT_FILE="${SAVE_DIR}/${COMBINATION}.csv"
+touch "${OUT_FILE}"
+while [ "$(wc -l "${OUT_FILE}" | cut -d ' ' -f 1)" -lt "${UP_TO}" ]; do
+  echo "${COMBINATION} - $(wc -l "${OUT_FILE}" | cut -d ' ' -f 1)/${UP_TO}"
+  "./go-3d-${VERSION}/bin/bot-client" --server "${SERVER}" --port "${PORT}" \
+          --size "${BOARD_SIZE}" --color b \
+          --strategy "${STRATEGY_BLACK}" | \
+          grep 'Map(' | tr -d '[:alpha:][:blank:]()>@-' \
+          >> "${OUT_FILE}" || exit 1 &
+  sleep 2
+  time "./go-3d-${VERSION}/bin/bot-client" --server "${SERVER}" --port "${PORT}" \
+          --game-id "$(curl -s "http://${SERVER}:${PORT}/openGames" | jq -r .ids[0])" \
+          --color w \
+          --strategy "${STRATEGY_WHITE}" || exit 1
+  sleep 1
+done

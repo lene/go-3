@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "analyze-games"
+version = "0.1.0"
+description = "Analyze outcome of different go-3d algorithms playing each other"
+authors = ["Lene Preuss <lene.preuss@gmail.com>"]
+license = "MIT"
+
+[tool.poetry.dependencies]
+python = ">=3.9"
+pandas = "^1.3.4"
+Jinja2 = "^3.0.3"
+
+[tool.poetry.dev-dependencies]
+ptpython = "^3.0.20"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+mixcloud_upload = "analyze-games:main"
