@@ -6,7 +6,7 @@ import go3d.{BadColor, Black, Color, White}
 import java.io.IOException
 import java.net.{ConnectException, UnknownHostException}
 import scala.io.StdIn.readLine
-import requests.*
+import requests._
 
 import scala.annotation.tailrec
 

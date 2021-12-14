@@ -1,5 +1,4 @@
 package go3d
 
-trait HasColor {
+trait HasColor:
   val color: Color
-}

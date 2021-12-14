@@ -3,7 +3,6 @@ package go3d.server
 import go3d.{Color, Game}
 
 import scala.collection.mutable
-import collection.convert.ImplicitConversions._
 import java.nio.file.{Files, Path, Paths}
 import java.nio.charset.StandardCharsets
 import io.circe.syntax.EncoderOps

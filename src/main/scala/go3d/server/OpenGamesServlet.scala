@@ -1,7 +1,6 @@
 package go3d.server
 
 import com.typesafe.scalalogging.Logger
-
 import javax.servlet.http.HttpServletResponse
 
 /**

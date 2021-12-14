@@ -3,7 +3,7 @@ package go3d.server
 import go3d.{Color, GoException}
 
 class ServerException(val message: String) extends GoException:
-  override def toString = message
+  override def toString: String = message
 
 class AuthorizationError(val msg: String) extends ServerException(message = s"authorization $msg")
 class AuthorizationMissing(headers: Map[String, String])

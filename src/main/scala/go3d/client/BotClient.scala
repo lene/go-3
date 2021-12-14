@@ -1,13 +1,10 @@
 package go3d.client
 
-import go3d.{BadColor, Black, Color, Game, Position, White}
+import go3d.{Game, Position}
 import go3d.server.StatusResponse
 
 import scala.util.Random
-import java.io.IOException
-import java.net.{ConnectException, UnknownHostException}
-import scala.io.StdIn.readLine
-import requests.*
+import requests.RequestFailedException
 
 import scala.annotation.tailrec
 

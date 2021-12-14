@@ -26,4 +26,4 @@ def restoreGame(saveGame: SaveGame): Unit =
   Games = Games + (gameId -> saveGame.game)
 
 def openGames(): Array[String] =
-  Players.filter(p => p._2.contains(Black) && !p._2.contains(White)).map(_._1).toArray
+  Players.filter(p => p._2.contains(Black) && !p._2.contains(White)).keys.toArray

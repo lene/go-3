@@ -5,7 +5,7 @@ case class Color(ascii: Char):
   override def toString: String = ascii.toString
   override def hashCode(): Int = toString.hashCode()
 
-  def unary_! =
+  def unary_! : Color =
     ascii match
       case '@' => White
       case 'O' => Black

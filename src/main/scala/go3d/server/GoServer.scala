@@ -31,7 +31,7 @@ object GoServer:
     handler.addServletWithMapping(classOf[HealthServlet], healthRoute)
     return server
 
-  def serverPort(server: Server) =
+  def serverPort(server: Server): Int =
     server.getConnectors()(0).asInstanceOf[NetworkConnector].getLocalPort
 
   def loadGames(baseDir: String): Unit =

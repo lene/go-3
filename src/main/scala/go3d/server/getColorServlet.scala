@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.Logger
 import javax.servlet.http.HttpServletResponse
 
 class getColorServlet extends BaseServlet:
-  def logger = Logger[getColorServlet]
+  def logger: Logger = Logger[getColorServlet]
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     val gameId = requestInfo.getGameId

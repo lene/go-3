@@ -1,9 +1,9 @@
 package go3d.client
 
 import go3d.{Color, Move}
-import go3d.server.{StatusResponse, GameCreatedResponse, PlayerRegisteredResponse, ServerException}
 import go3d.server.{
-  GoResponse, decodeStatusResponse, decodeGameCreatedResponse, decodePlayerRegisteredResponse
+  StatusResponse, GameCreatedResponse, PlayerRegisteredResponse, ServerException, GoResponse,
+  decodeStatusResponse, decodeGameCreatedResponse, decodePlayerRegisteredResponse
 }
 
 import scala.io.Source

@@ -1,6 +1,5 @@
 package go3d.client
 
-import go3d.client.StarPoints
 import go3d.{Black, Color, Game, Goban, Move, Position}
 /*
     Following lines are disabled, because when running tests instantiating a Logger ouside of the

@@ -2,10 +2,10 @@ package go3d.client
 
 import go3d.Position
 
-case class StarPoints(val size: Int):
+case class StarPoints(size: Int):
 
-  val centerPos = size/2+1
-  val distToCenter = centerPos/2
+  val centerPos: Int = size/2+1
+  val distToCenter: Int = centerPos/2
 
   val corner: Seq[Position] = alignedToCenter(0)
   val midLine: Seq[Position] = alignedToCenter(1)
