@@ -1,16 +1,15 @@
-package go3d.testing
+package go3d.client
 
-import go3d.client.{getAreas, hasNeighborOfColor, liberties, totalNumLiberties}
-import go3d.*
+import go3d._
 import org.junit.{Assert, Test}
 
 class TestGameExtension:
 
   @Test def testHasNeighborsOfColor(): Unit =
     val game = playListOfMoves(3, List(Move(3, 3, 3, Black)))
-    game.goban.neighbors(Position(3, 3, 3)).map(p => Assert.assertTrue(game.hasNeighborOfColor(p, Black)))
-    game.goban.neighbors(Position(3, 3, 3)).map(p => Assert.assertFalse(game.hasNeighborOfColor(p, White)))
-    game.goban.allPositions.map(p => Assert.assertFalse(game.hasNeighborOfColor(p, White)))
+    game.goban.neighbors(Position(3, 3, 3)).foreach(p => Assert.assertTrue(game.hasNeighborOfColor(p, Black)))
+    game.goban.neighbors(Position(3, 3, 3)).foreach(p => Assert.assertFalse(game.hasNeighborOfColor(p, White)))
+    game.goban.allPositions.foreach(p => Assert.assertFalse(game.hasNeighborOfColor(p, White)))
 
   @Test def testTotalNumLibertiesCenter(): Unit =
     val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))

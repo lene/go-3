@@ -1,12 +1,9 @@
-package go3d.testing
+package go3d.server
 
-import org.junit.{Assert, Test}
-import go3d.server._
-import go3d.{
-  Black, Color, Empty, Game, Goban, Move, Pass, Position, Sentinel, White, newGame, newGoban
-}
-import io.circe.syntax._
+import go3d._
 import io.circe.parser._
+import io.circe.syntax._
+import org.junit.{Assert, Test}
 
 class TestJsonify:
 

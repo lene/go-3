@@ -1,17 +1,15 @@
-package go3d.testing
+package go3d.server
 
-import go3d.{Black, White, newGame}
-import go3d.server.{Games, Io, registerGame, registerPlayer, SaveGame, decodeSaveGame}
+import go3d._
+import io.circe.parser.*
 import org.junit.{Assert, Before, Ignore, Test}
 
-import java.util.NoSuchElementException
-import java.nio.file.{Files, Paths}
 import scala.io.Source
-import io.circe.parser._
+import java.nio.file.Files
 
 class TestIo:
 
-  @Before def initIo = Io.init(Files.createTempDirectory("go3d").toString)
+  @Before def initIo(): Unit = Io.init(Files.createTempDirectory("go3d").toString)
 
   @Test def testSaveGameFailsNonexistentGame(): Unit =
     val gameId = "mock"
@@ -38,7 +36,7 @@ class TestIo:
     Assert.assertTrue(value.players.nonEmpty)
     Assert.assertTrue(value.players.contains(Black))
 
-  @Test def testExists =
+  @Test def testExists(): Unit =
     Io.writeFile("test", "{}")
     Assert.assertTrue(Io.exists("test"))
     Assert.assertFalse(Io.exists("this file should not exist"))

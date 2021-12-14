@@ -1,6 +1,6 @@
-package go3d.testing
+package go3d.client
 
-import go3d.client.StarPoints
+import go3d._
 import org.junit.Test
 
 class TestStarPoints:

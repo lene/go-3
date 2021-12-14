@@ -1,6 +1,5 @@
-package go3d.testing
+package go3d
 
-import go3d._
 import org.junit.{Assert, Test}
 
 class TestNeighbors:

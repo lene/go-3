@@ -1,7 +1,6 @@
-package go3d.testing
+package go3d.server
 
 import org.junit.{Assert, Test}
-import go3d.server._
 
 class TestIdGenerator:
 

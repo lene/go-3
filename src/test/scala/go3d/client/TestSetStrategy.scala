@@ -1,7 +1,6 @@
-package go3d.testing
+package go3d.client
 
-import go3d.{Black, Move, Pass, Position, White, newGame}
-import go3d.client.{BotClient, SetStrategy, StarPoints, bestBy, totalNumLiberties}
+import go3d._
 import org.junit.{Assert, BeforeClass, Test}
 
 

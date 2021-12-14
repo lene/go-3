@@ -1,14 +1,10 @@
-package go3d.testing
+package go3d.client
 
-import go3d.{BadColor, Position}
-import go3d.client.*
+import go3d._
 import go3d.server.GoServer
 import org.eclipse.jetty.server.Server
 import org.junit.{After, Assert, Before, Test}
-
-import java.io.IOException
-import java.net.{ConnectException, UnknownHostException}
-
+import java.net.UnknownHostException
 
 class TestBotClient:
 

@@ -1,7 +1,5 @@
-package go3d.testing
+package go3d
 
-import go3d._
-import go3d.{Black, White, Empty, Sentinel}
 import org.junit.{Assert, Test}
 
 class TestLiberties:

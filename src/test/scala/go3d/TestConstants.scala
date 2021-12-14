@@ -1,7 +1,6 @@
-package go3d.testing
+package go3d
 
 import org.junit.{Assert, Test}
-import go3d.*
 
 class TestConstants:
   @Test def testMinBoardSize(): Unit =
