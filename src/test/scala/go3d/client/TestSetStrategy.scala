@@ -7,8 +7,8 @@ import org.junit.{Assert, BeforeClass, Test}
 class TestSetStrategy:
 
   @Test def testBestBy(): Unit =
-    assertCollectionEqual(List(1,1), bestBy(Array(1, 1, 2, 3, 4), _.abs))
-    assertCollectionEqual(List(4), bestBy(Array(1, 1, 2, 3, 4), -_.abs))
+    assertCollectionEqual(List(1,1), bestBy(Seq(1, 1, 2, 3, 4), _.abs))
+    assertCollectionEqual(List(4), bestBy(Seq(1, 1, 2, 3, 4), -_.abs))
 
   @Test def testClosestToCenterStrategy(): Unit =
     val strategy = getStrategy(3)

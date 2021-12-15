@@ -97,3 +97,11 @@ class TestGameExtension:
       5, List(Move(2, 2, 2, Black), Move(2, 2, 1, White), Move(2, 2, 3, Black), Move(2, 2, 4, White))
     )
     Assert.assertEquals(8, game.liberties(Black, Set(Position(2, 2, 2), Position(2, 2, 3))))
+
+  @Test def testLibertiesFailsIfCalledWithWrongColor(): Unit =
+    val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))
+    assertThrows[AssertionError](game.liberties(White, Set(Position(2, 2, 2))))
+
+  @Test def testLibertiesFailsIfCalledWithMixedColor(): Unit =
+    val game = playListOfMoves(3, List(Move(2, 2, 2, Black), Move(2, 2, 1, White)))
+    assertThrows[AssertionError](game.liberties(White, Set(Position(2, 2, 2), Position(2, 2, 1))))

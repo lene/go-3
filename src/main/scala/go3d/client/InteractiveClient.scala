@@ -2,9 +2,7 @@ package go3d.client
 
 import go3d.server.StatusResponse
 
-abstract class InteractiveClient extends Client:
-
-  val pollInterval = 500
+abstract case class InteractiveClient(pollInterval: Int = 500) extends Client:
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
     def isSwitch(s : String) = (s(0) == '-')

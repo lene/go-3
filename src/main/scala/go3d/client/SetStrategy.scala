@@ -93,3 +93,4 @@ def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
 
 def minLiberties(game: Game, color: Color): Int =
   minBy(game.getAreas(color).toList, game.liberties(color, _))
+  

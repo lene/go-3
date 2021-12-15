@@ -1,6 +1,6 @@
 import sbt.Keys.libraryDependencies
 
-val scala3Version = "3.1.0"
+val scala3Version = "3.1.3"
 val circeVersion = "0.14.1"
 
 lazy val root = project
@@ -11,6 +11,8 @@ lazy val root = project
     version := "0.6.4",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
+
+    scalacOptions ++= Seq("-deprecation", "-explain", "-feature"),
 
     libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
     libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",

@@ -1,5 +1,6 @@
 package go3d
 
+import scala.annotation.{tailrec, targetName}
 import scala.reflect.ClassTag
 
 def newGoban(size: Int): Goban = Goban(size, initializeBoard(size))
@@ -10,20 +11,21 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   if size > MaxBoardSize then throw BadBoardSize(size, "too big")
   if size % 2 == 0 then throw BadBoardSize(size, "even")
 
+  lazy val areas: Set[Area] = calculateAreas()
+
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
 
   override def equals(obj: Any): Boolean =
     obj match
       case g: Goban =>
-        if size != g.size then return false
-        else
-          for pos <- allPositions do if at(pos) != g.at(pos) then return false
-          return true
-      case _ => return false
+        if size != g.size then false
+        else allPositions.forall(pos => at(pos) == g.at(pos))
+      case _ => false
 
   override def clone(): Goban = Goban(size, deepCopy(stones))
 
+  @targetName("minus")
   def -(other: Goban): IndexedSeq[Move] =
     if size != other.size then throw IllegalArgumentException(s"sizes ${size} != ${other.size}")
     for (pos <- other.emptyPositions.toIndexedSeq if at(pos) != Empty)
@@ -49,7 +51,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     if isOnBoardPlusBorder(x, y, z) then throw OutsideBoard(x, y, z)
     val newStones = deepCopy(stones)
     newStones(x)(y)(z) = color
-    return Goban(size, newStones)
+    Goban(size, newStones)
 
   def hasLiberties(move: Move): Boolean =
     if !Set(Black, White).contains(move.color) then
@@ -62,21 +64,33 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
         case move.color => toCheck = toCheck + Move(position, move.color)
         case _ =>
     // check if part of a connected area
-    return setStone(Move(move.position, Sentinel)).hasLiberties(toCheck)
+    setStone(Move(move.position, Sentinel)).hasLiberties(toCheck)
 
+  def numLiberties(area: Set[Move]): Int = numLiberties(area.map(m => m.position))
+
+  @targetName("numLibertiesPosition")
+  def numLiberties(area: Set[Position]): Int =
+    val emptyNeighbors = area.foldLeft(
+      Set[Position]()
+    )(
+      (neighbors, position) => neighbors ++ neighborsOfColor(position, Empty)
+    )
+    emptyNeighbors.size
+
+  @tailrec
   private def hasLiberties(moves: Set[Move]): Boolean =
     if moves.isEmpty then return false
     if moves.size == 1 then return hasLiberties(moves.head)
     if hasLiberties(moves.head) then return true
-    return hasLiberties(moves - moves.head)
+    hasLiberties(moves - moves.head)
 
   def connectedStones(move: Move): Set[Move] =
     if at(move.position) != move.color then return Set()
-    // alright, this is not functional style, but much clearer than using recursion
-    var area = Set(move)
-    for position <- neighborsOfColor(move.position, move.color) if !(area contains(Move(position, move.color))) do
-      area = area ++ setStone(Move(move.position, Sentinel)).connectedStones(Move(position, move.color))
-    return area
+    // ok, this is not functional style, but to me much clearer than using recursion
+    var connected = Set(move)
+    for position <- neighborsOfColor(move.position, move.color) if !(connected contains(Move(position, move.color))) do
+      connected = connected ++ setStone(Move(move.position, Sentinel)).connectedStones(Move(position, move.color))
+    connected
 
   def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
 
@@ -88,31 +102,43 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       if isNeighbor(position, x, y, z)
     ) yield Position(x, y, z)
 
-  def neighborsOfColor(position: Position, color: Color): Seq[Position] =
-    for (p <- neighbors(position) if at(p) == color) yield p
+  def neighborsOfColor(position: Position, color: Color): Seq[Position] = neighbors(position).filter(at(_) == color)
 
-  def emptyPositions: Seq[Position] =
-    for (p <- allPositions if at(p) == Empty) yield p
+  def emptyPositions: Seq[Position] = for (p <- allPositions if at(p) == Empty) yield p
 
   def allPositions: Seq[Position] =
     for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield Position(x, y, z)
 
-  def hasEmptyNeighbor(position: Position): Boolean =
-    for position <- neighbors(position) do if at(position) == Empty then return true
-    return false
+  def hasEmptyNeighbor(position: Position): Boolean = neighbors(position).exists(at(_) == Empty)
 
   def checkAndClear(move: Move): Goban =
     if Set(Empty, Sentinel, move.color).contains(at(move.position)) then return this
     if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return this
-    return clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, !move.color)), this)
+    clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, !move.color)), this)
 
   def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
     val wouldBeBoardAfterMove = setStone(move)
     for position <- neighbors(move.position) do
       if !wouldBeBoardAfterMove.hasLiberties(Move(position, !move.color)) then return false
-    return true
+    true
 
+  private def calculateAreas(): Set[Area] =
+    @tailrec
+    def areaFromMoves(moves: Set[Move], areas: Set[Area]): Set[Area] =
+      if moves.isEmpty then areas
+      else
+        val firstArea = connectedStones(moves.head)
+        areaFromMoves(
+          moves -- firstArea,
+          areas + Area(firstArea, numLiberties(firstArea))
+        )
+
+    val stones = for (p <- allPositions if at(p) == Black || at(p) == White) yield Move(p, at(p))
+    areaFromMoves(stones.toSet, Set())
+
+
+  @tailrec
   private def clearListOfPlaces(toClear: Set[Move], goban: Goban): Goban =
     if toClear.isEmpty then return goban
     clearListOfPlaces(toClear.dropRight(1), goban.setStone(Move(toClear.last.position, Empty)))

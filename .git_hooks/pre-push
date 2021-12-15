@@ -27,11 +27,14 @@ else
   echo "please export GITLAB_ACCESS_TOKEN"
   exit 1
 fi
+echo "status after gitlab lint: $status"
 
 sbt test || status=1
+echo "status after sbt test: $status"
 
 VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
 docker build --build-arg version=$VERSION -t test_image . || status=1
+echo "status after docker build: $status"
 
 if [ $status -gt 0 ]; then
   commitmsg=$(git log --oneline | head -n 1 | cut -d' ' -f 2-)

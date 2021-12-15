@@ -20,14 +20,14 @@ include:
 
 # This job installs sbt by itself. It is somewhat slower than the ones based on scala-sbt below.
 # I leave it in mostly for documentation how to install the environment.
-Test:BuildSbt:
-  image: ubuntu:20.04
+Test:Ubuntu:
+  image: ubuntu:22.04
   stage: test
   needs: []
   before_script:
     - apt-get -y update
     - apt-get -y upgrade
-    - apt-get -y install curl gnupg openjdk-16-jdk
+    - apt-get -y install curl gnupg openjdk-18-jdk
     - echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" > /etc/apt/sources.list.d/sbt.list
     - echo "deb https://repo.scala-sbt.org/scalasbt/debian /" > /etc/apt/sources.list.d/sbt_old.list
     - curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | apt-key add
@@ -37,7 +37,7 @@ Test:BuildSbt:
     - sbt test
 
 # The following ones use a prepared docker image for sbt.
-Test:
+Test:SbtImage:
   image: $SBT_IMAGE
   stage: test
   needs: []
@@ -119,16 +119,20 @@ BuildDockerImage:
     - mkdir -p saves
     - ${INSTALL_DIR}/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log &
     - sleep 5
+    - GAME_ID=""
+    - while [ "$GAME_ID" != "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
     - grep -A1 "Server started on" server.log
-    - echo $STRATEGY
-    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy $STRATEGY | grep 'Map(' | tee game.log &
-    - sleep 2
-    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $(curl -s http://localhost:6030/openGames | jq -r .ids[0]) --color w --strategy random > /dev/null
+    - echo ${STRATEGY:-random}
+    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY:-random} | grep 'Map(' | tee game.log &
+    - while [ "$GAME_ID" == "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
+    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy random # > /dev/null
     - grep -c "go3d.server.SetServlet" server.log
     - grep -c "go3d.server.PassServlet" server.log
   artifacts:
+    when: always
     paths:
       - game.log
+      - server.log
 
 .TestDeployable:
   extends: .TestGameplay
@@ -143,25 +147,12 @@ BuildDockerImage:
     - test -f ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
     - unzip -q ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
 
-TestDeployable:ScalaSBT:
+TestDeployable:
   extends: .TestDeployable
-  image: $SBT_IMAGE
-
-TestDeployable:OpenJDK:8:JRE:
-  extends: .TestDeployable
-  image: openjdk:8-jre
-
-TestDeployable:OpenJDK:11:JRE:
-  extends: .TestDeployable
-  image: openjdk:11-jre
-
-TestDeployable:OpenJDK:16:JRE:
-  extends: .TestDeployable
-  image: openjdk:16
-
-TestDeployable:OpenJDK:17:JRE:
-  extends: .TestDeployable
-  image: openjdk:17
+  parallel:
+    matrix:
+      - IMAGE: [$SBT_IMAGE, openjdk:8-jre, openjdk:11-jre, openjdk:16, openjdk:17, openjdk:18]
+  image: $IMAGE
 
 TestDockerImage:
   extends: .TestGameplay

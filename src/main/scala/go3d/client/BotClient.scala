@@ -11,10 +11,10 @@ import scala.annotation.tailrec
 object BotClient extends Client:
 
   val PULL_WAIT_MS = 10
-  val random: Random = Random()
-  var strategies: Array[String] = Array()
-  var game: Game = null
   var executionTimes: List[Long] = List()
+  private val random: Random = Random()
+  private var strategies: Array[String] = Array()
+  private var game: Game = null
 
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
@@ -60,6 +60,8 @@ object BotClient extends Client:
   def parseArgs(args: Array[String]): Unit =
     val options = nextOption(Map(), args.toList)
     val serverURL = s"http://${options("server")}:${options("port")}"
+    if options.contains("size") && options.contains("game_id") then
+      throw IllegalArgumentException("--size and --game-id are mutually exclusive")
     if options.contains("size") then
       client = BaseClient.create(
         serverURL, options("size").asInstanceOf[Int],

@@ -68,8 +68,8 @@ def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]):
 def assertThrows[E](f: => Unit)(implicit eType:ClassTag[E]): Unit =
   try f
   catch
-    case e: E => return
-    case e: _ => Assert.fail(s"Expected ${eType.runtimeClass.getName} got ${e.getClass}")
+    case _: E => return
+    case e: Any => Assert.fail(s"Expected ${eType.runtimeClass.getName} got ${e.getClass}")
   Assert.fail(s"Expected ${eType.runtimeClass.getName}")
 
 def fromStrings(levels: Map[Int, String]): Goban =

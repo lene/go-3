@@ -171,3 +171,78 @@ class TestGoban:
              |   |"""
     ))
     Assert.assertNotEquals(goban1, "some random thing")
+
+  @Test def testNumLibertiesAllNeighborsFreeBlack(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """   |
+          | @ |
+          |   |"""
+    ))
+    Assert.assertEquals(6, goban.numLiberties(Set(Position(2, 2, 2))))
+
+  @Test def testNumLibertiesAllNeighborsFreeWhite(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """   |
+          | O |
+          |   |"""
+    ))
+    Assert.assertEquals(6, goban.numLiberties(Set(Position(2, 2, 2))))
+
+  @Test def testNumLibertiesAllNeighborsFreeOnFace(): Unit =
+    val goban = fromStrings(Map(
+      1 ->
+        """   |
+          | @ |
+          |   |"""
+    ))
+    Assert.assertEquals(5, goban.numLiberties(Set(Position(2, 2, 1))))
+
+  @Test def testNumLibertiesAllNeighborsFreeOnEdge(): Unit =
+    val goban = fromStrings(Map(
+      1 ->
+        """   |
+          |@  |
+          |   |"""
+    ))
+    Assert.assertEquals(4, goban.numLiberties(Set(Position(2, 1, 1))))
+
+  @Test def testNumLibertiesAllNeighborsFreeInCorner(): Unit =
+    val goban = fromStrings(Map(
+      1 ->
+        """@   |
+          |   |
+          |   |"""
+    ))
+    Assert.assertEquals(3, goban.numLiberties(Set(Position(1, 1, 1))))
+
+  @Test def testNumLibertiesOfFriendlyNeighborsAdded(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """   |
+          |@@ |
+          |   |"""
+    ))
+    Assert.assertEquals(9, goban.numLiberties(Set(Position(2, 2, 2), Position(1, 2, 2))))
+
+  @Test def testNumLibertiesOfFriendlyAndEnemyNeighborsAdded(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """   |
+          |@@O|
+          |   |"""
+    ))
+    Assert.assertEquals(8, goban.numLiberties(Set(Position(2, 2, 2), Position(1, 2, 2))))
+    Assert.assertEquals(4, goban.numLiberties(Set(Position(3, 2, 2))))
+
+  @Test def testNumLibertiesWithSeparateArea(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """  @|
+          |@@O|
+          |   |"""
+    ))
+    Assert.assertEquals(8, goban.numLiberties(Set(Position(2, 2, 2), Position(1, 2, 2))))
+    Assert.assertEquals(3, goban.numLiberties(Set(Position(3, 2, 2))))
+    Assert.assertEquals(3, goban.numLiberties(Set(Position(3, 1, 2))))
