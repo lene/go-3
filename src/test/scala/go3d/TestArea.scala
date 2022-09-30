@@ -70,6 +70,49 @@ class TestArea:
     ))
     Assert.assertEquals(11, goban.areas.head.liberties)
 
+  @Test def testColor(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """   |
+          | @ |
+          |   """,
+    ))
+    Assert.assertEquals(Black, goban.areas.head.color)
+
+  @Test def testColors5DisconnectedStones(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """ @ |
+          |@ @|
+          | @ |""",
+      2 ->
+        """   |
+          | @ |
+          |   |"""
+    ))
+    goban.areas.foreach(area => Assert.assertEquals(Black, area.color))
+
+  @Test def testBothColors(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """ O |
+          |@ @|
+          | O |"""
+    ))
+    Assert.assertEquals(
+      Set(Black, White),
+      goban.areas.foldLeft(Set[Color]())((colors, area) => colors + area.color),
+  )
+
+  @Test def testAreaFailsIfMultipleColors(): Unit =
+    assertThrows[BadColorsForArea](Area(Set(Move(1, 1, 1, Black), Move(1, 1, 2, White)), 1))
+
+  @Test def testAreaFailsIfFieldEmpty(): Unit =
+    assertThrows[BadColorsForArea](Area(Set(Move(1, 1, 1, Empty)), 1))
+
+  @Test def testAreaFailsIfAreaEmpty(): Unit =
+    assertThrows[BadColorsForArea](Area(Set(), 1))
+
 def gobanWithAreasFromStrings(levels: Map[Int, String]): Goban =
   val from = fromStrings(levels)
   Goban(from.size, from.stones)

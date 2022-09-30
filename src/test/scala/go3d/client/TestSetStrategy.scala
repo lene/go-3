@@ -11,7 +11,7 @@ class TestSetStrategy:
     assertCollectionEqual(List(4), bestBy(Seq(1, 1, 2, 3, 4), -_.abs))
 
   @Test def testClosestToCenterStrategy(): Unit =
-    val strategy = getStrategy(3)
+    val strategy = defaultStrategy(3)
     val check = checkStrategyResults.curried(strategy.closestToCenter)
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
     check(
@@ -31,7 +31,7 @@ class TestSetStrategy:
     check(allCornerPoints)(allCornerPoints)
 
   @Test def testOnStarPointsStrategyCornerStarPointsSmallBoard(): Unit =
-    val strategy = getStrategy(3)
+    val strategy = defaultStrategy(3)
     val check = checkStrategyResults.curried(strategy.onStarPoints)
     check(
       List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(
@@ -43,7 +43,7 @@ class TestSetStrategy:
     )
 
   @Test def testOnStarPointsStrategyCornerStarPoints(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.onStarPoints)
     check(
       List((2, 2, 2), (4, 4, 4), (6, 6, 6)))(
@@ -52,27 +52,27 @@ class TestSetStrategy:
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
 
   @Test def testOnStarPointsStrategyMidLines(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.onStarPoints)
     check(List((1, 1, 1), (2, 6, 2), (7, 7, 7)))(List((2, 6, 2)))
 
   @Test def testOnStarPointsStrategyMidFaces(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.onStarPoints)
     check(List((1, 1, 1), (2, 6, 6), (7, 7, 7)))(List((2, 6, 6)))
 
   @Test def testOnStarPointsStrategyCenter(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.onStarPoints)
     check(List((1, 1, 1), (4, 4, 4), (7, 7, 7)))(List((4, 4, 4)))
 
   @Test def testOnStarPointsStrategyOffStarPoints(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.onStarPoints)
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))
 
   @Test def testClosestToStarPointsStrategyCornerStarPointsSmallBoard(): Unit =
-    val strategy = getStrategy(3)
+    val strategy = defaultStrategy(3)
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)
     check(
       List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(
@@ -84,7 +84,7 @@ class TestSetStrategy:
     )
 
   @Test def testClosestToStarPointsStrategyCornerStarPoints(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)
     check(
       List((2, 2, 2), (4, 4, 4), (6, 6, 6)))(
@@ -93,22 +93,22 @@ class TestSetStrategy:
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
 
   @Test def testClosestToStarPointsStrategyMidLines(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)
     check(List((1, 1, 1), (2, 6, 2), (7, 7, 7)))(List((2, 6, 2)))
 
   @Test def testClosestToStarPointsStrategyMidFaces(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)
     check(List((1, 1, 1), (2, 6, 6), (7, 7, 7)))(List((2, 6, 6)))
 
   @Test def testClosestToStarPointsStrategyCenter(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)
     check(List((1, 1, 1), (4, 4, 4), (7, 7, 7)))(List((4, 4, 4)))
 
   @Test def testClosestToStarPointsStrategyOffStarPoints(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((2, 2, 1)))
 
@@ -144,13 +144,13 @@ class TestSetStrategy:
     )
 
   @Test def testMinimizeLibertiesEmptyBoard3(): Unit =
-    val strategy = getStrategy(3)
+    val strategy = defaultStrategy(3)
     val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties)
     val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
   @Test def testMinimizeLibertiesEmptyBoard7(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties)
     val starPoints = StarPoints(7).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
@@ -162,13 +162,13 @@ class TestSetStrategy:
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((1, 1, 1)))
 
   @Test def testMaximizeDistanceEmptyBoard3(): Unit =
-    val strategy = getStrategy(3)
+    val strategy = defaultStrategy(3)
     val check = checkStrategyResults.curried(strategy.maximizeDistance)
     val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
   @Test def testMaximizeDistanceEmptyBoard7(): Unit =
-    val strategy = getStrategy(7)
+    val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.maximizeDistance)
     val starPoints = StarPoints(7).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
@@ -239,7 +239,7 @@ class TestSetStrategy:
       List((2, 3, 3), (3, 2, 3), (3, 3, 2))
     )
 
-def getStrategy(size: Int): SetStrategy =
+def defaultStrategy(size: Int): SetStrategy =
   SetStrategy(newGame(size), Array())
 
 

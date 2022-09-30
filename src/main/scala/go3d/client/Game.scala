@@ -5,7 +5,6 @@ import go3d.{Color, Empty, Game, Move, Position}
 extension (game: Game)
   def totalNumLiberties(color: Color): Int =
     game.goban.emptyPositions.count(game.hasNeighborOfColor(_, color))
-//    game.getFreeNeighbors(color).size
 
   def hasNeighborOfColor(pos: Position, color: Color): Boolean =
     game.goban.neighbors(pos).exists(game.at(_) == color)

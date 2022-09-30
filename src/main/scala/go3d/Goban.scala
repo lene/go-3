@@ -69,13 +69,12 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   def numLiberties(area: Set[Move]): Int = numLiberties(area.map(m => m.position))
 
   @targetName("numLibertiesPosition")
-  def numLiberties(area: Set[Position]): Int =
-    val emptyNeighbors = area.foldLeft(
-      Set[Position]()
-    )(
+  def numLiberties(area: Set[Position]): Int = emptyNeighbors(area).size
+
+  def emptyNeighbors(area: Set[Position]): Set[Position] =
+    area.foldLeft(Set[Position]())(
       (neighbors, position) => neighbors ++ neighborsOfColor(position, Empty)
     )
-    emptyNeighbors.size
 
   @tailrec
   private def hasLiberties(moves: Set[Move]): Boolean =

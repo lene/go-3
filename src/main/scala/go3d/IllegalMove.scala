@@ -13,3 +13,6 @@ class Suicide(move: Move) extends IllegalMove(message = "suicide at "+move.toStr
 class WrongTurn(move: Move) extends IllegalMove(message = "not your turn at "+move.toString)
 class ColorMismatch(messagePrefix: String, color: Color)
   extends IllegalMove(message = messagePrefix+color)
+  
+class BadColorsForArea(colors: Set[Color]) 
+  extends IllegalMove(message = "bad colors for area: "+colors.toString)
