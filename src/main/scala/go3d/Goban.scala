@@ -12,6 +12,10 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   if size % 2 == 0 then throw BadBoardSize(size, "even")
 
   lazy val areas: Set[Area] = calculateAreas()
+  lazy val allNeighbors: Map[Position, Set[Move]] = neighborsMap()
+  lazy val allPositions: Seq[Position] =
+    for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield Position(x, y, z)
+
 
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
@@ -66,15 +70,21 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     // check if part of a connected area
     setStone(Move(move.position, Sentinel)).hasLiberties(toCheck)
 
-  def numLiberties(area: Set[Move]): Int = numLiberties(area.map(m => m.position))
+  def numLiberties(col: Color): Int =
+    emptyPositions.toSet.intersect(neighbors(col)).size
+
+  def hasNeighborOfColor(pos: Position, col: Color): Boolean =
+    allNeighbors.apply(pos).exists(_.color == col)
+
+  def hasEmptyNeighbor(position: Position): Boolean = hasNeighborOfColor(position, Empty)
+
+  def numLiberties(area: Set[Move]): Int = numLiberties(area.map(_.position))
 
   @targetName("numLibertiesPosition")
   def numLiberties(area: Set[Position]): Int = emptyNeighbors(area).size
 
   def emptyNeighbors(area: Set[Position]): Set[Position] =
-    area.foldLeft(Set[Position]())(
-      (neighbors, position) => neighbors ++ neighborsOfColor(position, Empty)
-    )
+    area.flatMap(pos => allNeighbors.apply(pos)).map(_.position).intersect(emptyPositions.toSet)
 
   @tailrec
   private def hasLiberties(moves: Set[Move]): Boolean =
@@ -101,14 +111,19 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       if isNeighbor(position, x, y, z)
     ) yield Position(x, y, z)
 
-  def neighborsOfColor(position: Position, color: Color): Seq[Position] = neighbors(position).filter(at(_) == color)
+  def neighbors(col: Color): Set[Position] =
+    val validAreas = areas.filter(_.color == col)
+    val validStones = validAreas.foldLeft(Set[Move]())((stones, area) => stones ++ area.stones)
+    val neighborStones = validStones.map(_.position).flatMap(allNeighbors.apply)
+    neighborStones.map(_.position)
 
-  def emptyPositions: Seq[Position] = for (p <- allPositions if at(p) == Empty) yield p
+  def neighborsOfColor(position: Position, color: Color): Seq[Position] =
+    neighbors(position).filter(at(_) == color)
 
-  def allPositions: Seq[Position] =
-    for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield Position(x, y, z)
+  def emptyPositions: Seq[Position] = allPositions.filter(at(_) == Empty)
 
-  def hasEmptyNeighbor(position: Position): Boolean = neighbors(position).exists(at(_) == Empty)
+  def neighborsMap(): Map[Position, Set[Move]] =
+    allPositions.map(pos => pos -> neighbors(pos).map(p => Move(p, at(p))).toSet).toMap
 
   def checkAndClear(move: Move): Goban =
     if Set(Empty, Sentinel, move.color).contains(at(move.position)) then return this

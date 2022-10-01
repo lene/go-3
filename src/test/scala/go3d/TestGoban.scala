@@ -246,3 +246,45 @@ class TestGoban:
     Assert.assertEquals(8, goban.numLiberties(Set(Position(2, 2, 2), Position(1, 2, 2))))
     Assert.assertEquals(3, goban.numLiberties(Set(Position(3, 2, 2))))
     Assert.assertEquals(3, goban.numLiberties(Set(Position(3, 1, 2))))
+
+  @Test def testNumLibertiesTotal1Stone(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """   |
+          | @ |
+          |   |"""
+    ))
+    Assert.assertEquals(6, goban.numLiberties(Black))
+    Assert.assertEquals(0, goban.numLiberties(White))
+
+  @Test def testNumLibertiesTotal2DifferentStones(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """   |
+          | @O|
+          |   |"""
+    ))
+    Assert.assertEquals(5, goban.numLiberties(Black))
+    Assert.assertEquals(4, goban.numLiberties(White))
+
+  @Test def testNumLiberties3SeparateAreas(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """  @|
+          |@@O|
+          |   |"""
+    ))
+    Assert.assertEquals(10, goban.numLiberties(Black))
+    Assert.assertEquals(3, goban.numLiberties(White))
+
+  @Test def testFreeNeighbors1Stone(): Unit =
+    val goban = fromStrings(Map(
+      2 ->
+        """   |
+          | @ |
+          |   |"""
+    ))
+    Assert.assertEquals(
+      Set(Position(1, 2, 2), Position(2, 2, 1), Position(2, 1, 2), Position(2, 2, 3), Position(2, 3, 2), Position(3, 2, 2)),
+      goban.neighbors(Black)
+    )
