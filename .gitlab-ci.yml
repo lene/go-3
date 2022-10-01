@@ -2,6 +2,7 @@ stages:
   - test
   - build
   - test built
+  - package
   - release
 
 variables:
@@ -101,23 +102,7 @@ BuildDockerImage:
   stage: test built
   variables:
     BOARD_SIZE: 7
-  timeout: 10 minutes
-  parallel:
-    matrix:
-      - STRATEGY_BLACK:
-        - closestToStarPoints
-        - maximizeDistance
-        - prioritiseCapture
-        - onStarPoints,minimizeOpponentLiberties
-        - onStarPoints,maximizeOwnLiberties
-        - minimizeOpponentLiberties,closestToStarPoints
-        STRATEGY_WHITE:
-        - closestToStarPoints
-        - maximizeDistance
-        - prioritiseCapture
-        - onStarPoints,minimizeOpponentLiberties
-        - onStarPoints,maximizeOwnLiberties
-        - minimizeOpponentLiberties,closestToStarPoints
+  timeout: 1 hour
   script:
     - mkdir -p saves
     - ${INSTALL_DIR}/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log &
@@ -126,16 +111,24 @@ BuildDockerImage:
     - while [ "$GAME_ID" != "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
     - grep -A1 "Server started on" server.log
     - echo ${STRATEGY_BLACK:-random} - ${STRATEGY_WHITE:-random}
-    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY_BLACK:-random} | grep 'Map(' | tee game.log &
+    - ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY_BLACK:-random} | grep 'Map(' &
     - while [ "$GAME_ID" == "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
-    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random} # > /dev/null
+    - /usr/bin/time -o time.log -f "%e\n%U\n%M\n%P" ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random} | tail -n 1 > white.log
     - grep -c "go3d.server.SetServlet" server.log
     - grep -c "go3d.server.PassServlet" server.log
+    - cat white.log
+    - SCORE_BLACK=$(cat white.log | grep -E -o "[0-9]+" | head -n 1)
+    - SCORE_WHITE=$(cat white.log | grep -E -o "[0-9]+" | tail -n 1)
+    - WALL_TIME_WHITE=$(sed '1q;d' time.log)
+    - USER_TIME_WHITE=$(sed '2q;d' time.log)
+    - MEM_WHITE=$(sed '3q;d' time.log)
+    - CPU_PERCENT_WHITE=$(sed '4q;d' time.log)
+    - echo "${STRATEGY_BLACK:-random},${STRATEGY_WHITE:-random},$SCORE_BLACK,$SCORE_WHITE,$WALL_TIME_WHITE,$USER_TIME_WHITE,$MEM_WHITE,$CPU_PERCENT_WHITE" >> results.${STRATEGY_BLACK:-random}.${STRATEGY_WHITE:-random}.csv
   artifacts:
     when: always
     paths:
-      - game.log
       - server.log
+      - results.*.*.csv
 
 .TestDeployable:
   extends: .TestGameplay
@@ -161,6 +154,18 @@ TestDeployable:
 
 TestDockerImage:
   extends: .TestGameplay
+  parallel:
+    matrix:
+      - STRATEGY_BLACK:
+          - onStarPoints,minimizeOpponentLiberties
+          - onStarPoints,maximizeOwnLiberties
+        STRATEGY_WHITE:
+          - closestToStarPoints
+          - maximizeDistance
+          - prioritiseCapture
+          - onStarPoints,minimizeOpponentLiberties
+          - onStarPoints,maximizeOwnLiberties
+          - minimizeOpponentLiberties,closestToStarPoints
   image:
     name: registry.gitlab.com/lilacashes/go-3/server:latest
     entrypoint: [""]
@@ -169,6 +174,18 @@ TestDockerImage:
       artifacts: false
   variables:
     INSTALL_DIR: /go-3
+
+CollectResults:
+  stage: package
+  needs:
+    - TestDockerImage
+  script:
+    - ls -l results.*.*.csv
+    - cat results.*.*.csv >> results.all.csv
+  artifacts:
+    name: all-artifacts
+    paths:
+      - results.all.csv
 
 Upload:
   stage: release
