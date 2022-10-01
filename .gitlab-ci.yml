@@ -104,12 +104,15 @@ BuildDockerImage:
   timeout: 10 minutes
   parallel:
     matrix:
-      - STRATEGY:
-        - closestToCenter
-        - onStarPoints
+      - STRATEGY_BLACK:
         - closestToStarPoints
-        - maximizeOwnLiberties
-        - minimizeOpponentLiberties
+        - maximizeDistance
+        - prioritiseCapture
+        - onStarPoints,minimizeOpponentLiberties
+        - onStarPoints,maximizeOwnLiberties
+        - minimizeOpponentLiberties,closestToStarPoints
+        STRATEGY_WHITE:
+        - closestToStarPoints
         - maximizeDistance
         - prioritiseCapture
         - onStarPoints,minimizeOpponentLiberties
@@ -122,10 +125,10 @@ BuildDockerImage:
     - GAME_ID=""
     - while [ "$GAME_ID" != "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
     - grep -A1 "Server started on" server.log
-    - echo ${STRATEGY:-random}
-    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY:-random} | grep 'Map(' | tee game.log &
+    - echo ${STRATEGY_BLACK:-random} - ${STRATEGY_WHITE:-random}
+    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY_BLACK:-random} | grep 'Map(' | tee game.log &
     - while [ "$GAME_ID" == "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
-    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy random # > /dev/null
+    - time ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random} # > /dev/null
     - grep -c "go3d.server.SetServlet" server.log
     - grep -c "go3d.server.PassServlet" server.log
   artifacts:
@@ -152,6 +155,8 @@ TestDeployable:
   parallel:
     matrix:
       - IMAGE: [$SBT_IMAGE, openjdk:8-jre, openjdk:11-jre, openjdk:16, openjdk:17, openjdk:18]
+        STRATEGY_BLACK: [random]
+        STRATEGY_WHITE: [random]
   image: $IMAGE
 
 TestDockerImage:
