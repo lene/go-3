@@ -17,6 +17,6 @@ class StatusServlet extends BaseServlet:
           StatusResponse(game, game.possibleMoves(p.color), ready, requestInfo.debugInfo)
         case None => StatusResponse(game, List(), false, NullRequestInfo)
     catch
-      case e: AuthorizationMissing => StatusResponse(game, List(), false, NullRequestInfo)
+      case _: AuthorizationMissing => StatusResponse(game, List(), false, NullRequestInfo)
 
   def maxRequestLength: Int = "/".length + IdGenerator.IdLength

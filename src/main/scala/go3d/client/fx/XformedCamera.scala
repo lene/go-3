@@ -11,7 +11,7 @@ case class XformedCamera(zDistance: Double):
 
   def buildCamera(): Xform =
     xform.ry.angle = 320.0
-    xform.rx.angle = 40
+    xform.rx.angle = 20
     xform.children += xform2
     val xform3 = Xform()
     xform3.rotateZ = 180.0

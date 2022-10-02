@@ -25,7 +25,7 @@ abstract class Client extends ClientTrait:
       case e: ConnectException => exit(s"connection problem: ${e.getMessage}", 1)
       case e: NumberFormatException => exit(s"not a number: ${e.getMessage}", 1)
       case e: IOException => exit(s"${e.getMessage}", 1)
-      case e: BadColor => exit(s"not a color, must be either black/b/@ or white/w/O", 1)
+      case _: BadColor => exit(s"not a color, must be either black/b/@ or white/w/O", 1)
       case e: NoSuchElementException => exit(s"missing argument: ${exceptionToParam(e)}", 1)
       case e: IllegalArgumentException => exit(s"missing argument: ${e.getMessage}", 1)
     init()

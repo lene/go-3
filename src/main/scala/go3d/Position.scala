@@ -14,3 +14,4 @@ class Position(val x: Int, val y: Int, val z: Int):
         case _ => false
 
   def -(other: Position): Delta = Delta(x-other.x, y-other.y, z-other.z)
+  def +(other: Position): Delta = Delta(x+other.x, y+other.y, z+other.z)

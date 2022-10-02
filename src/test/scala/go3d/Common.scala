@@ -80,7 +80,7 @@ def fromStrings(levels: Map[Int, String]): Goban =
     for (line, y) <- lines.zipWithIndex do
       for (stone, x) <- line.zipWithIndex do
         goban.stones(x+1)(y+1)(z) = Color(stone)
-  return goban
+  goban
 
 def fromGoban(goban: Goban): Game =
   Game(goban.size, goban, Array(), Map())

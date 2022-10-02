@@ -38,8 +38,8 @@ object AsciiClient extends InteractiveClient:
           s"\"$command\" not understood - use \"set|s\", \"pass|p\", \"status|st\" or \"exit\"!"
         )
     catch
-      case e: Exit => exit(0)
-      case e: InterruptedException => exit(1)
+      case _: Exit => exit(0)
+      case _: InterruptedException => exit(1)
       case e: RequestFailedException => println(e)
     mainLoop(Array())
 
@@ -57,3 +57,4 @@ def colorFromString(string: String): Color =
     case "@"|"black"|"b" => Black
     case "o"|"white"|"w" => White
     case _ => throw BadColor(string(0))
+    

@@ -28,12 +28,11 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def makeMove(move: Move | Pass): Game =
     move match
-      case p: Pass =>
-        return Game(size, goban, moves.appended(move), captures)
+      case _: Pass => Game(size, goban, moves.appended(move), captures)
       case m: Move =>
         checkValid(m)
         val newboard = setStone(m)
-        return Game(size, newboard.goban, moves.appended(move), newboard.captures)
+        Game(size, newboard.goban, moves.appended(move), newboard.captures)
 
   def checkValid(move: Move): Unit =
     if !isDifferentPlayer(move.color) then throw WrongTurn(move)
@@ -62,10 +61,10 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def possibleMoves(color: Color): List[Position] =
     if !isDifferentPlayer(color) then return List()
-    if moves.size >= size*size*size then return List()
+    if moves.length >= size*size*size then return List()
     if moves.isEmpty && color == White then return List()
     if moves.nonEmpty && color == moves.last.color then return List()
-    return goban.emptyPositions.toList.filter(isPossibleMove(_, color))
+    goban.emptyPositions.toList.filter(isPossibleMove(_, color))
 
   def score: Map[Color, Int] =
     var scores = mutable.Map[Color, Int]().withDefaultValue(0)
@@ -107,9 +106,10 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   private def doCaptures(move: Move, board: Goban): Game =
     val newBoard = captureNeighbors(board, board.neighbors(move.position), move.color)
+    val newMoves = moves.appended(move)
     val captured = (board-newBoard).toArray
     val newCaptures = if captured.nonEmpty then captures + (moves.length -> captured) else captures
-    return Game(size, newBoard, moves, newCaptures)
+    Game(size, newBoard, newMoves, newCaptures)
 
   private def captureNeighbors(board: Goban, neighbors: Seq[Position], color: Color): Goban =
     if neighbors.isEmpty then return board
