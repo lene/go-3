@@ -1,11 +1,13 @@
 package go3d.client
 
 import go3d.{Position, newGoban, Goban}
+import go3d.client.fx.{MouseHandler, Xform, XformedCamera}
+
 import scala.annotation.tailrec
 
 import scalafx.application.JFXApp3
 import scalafx.geometry.Insets
-import scalafx.scene.{Scene,PerspectiveCamera}
+import scalafx.scene.{Node,Scene,PerspectiveCamera}
 import scalafx.scene.effect.DropShadow
 import scalafx.scene.layout.HBox
 import scalafx.scene.paint.Color._
@@ -13,27 +15,19 @@ import scalafx.scene.paint._
 import scalafx.scene.text.Text
 import scalafx.scene.shape.{Shape3D,Sphere}
 import scalafx.stage.StageStyle
+import scalafx.Includes.jfxGroup2sfx
 
 object FXClient2 extends JFXApp3:
 
   val sphereRadius = 10
   val sphereTranslation = 25
-  val cameraDistance = 500
-  val globalCamera: PerspectiveCamera = createCamera(cameraDistance)
-  val whiteMaterial: PhongMaterial = new PhongMaterial {
-    diffuseColor = Color.White
-    specularColor = Color.LightBlue
-  }
-  val blackMaterial: PhongMaterial = new PhongMaterial {
-    diffuseColor = Color.Black
-    specularColor = Color.LightBlue
-  }
-  val blueMaterial: PhongMaterial = new PhongMaterial {
-    diffuseColor = Color.Blue
-    specularColor = Color.LightBlue
-  }
+  val cameraBaseDistance = 100
 
   override def start(): Unit =
+
+    val goban = newGoban(7)
+    val mainCamera = XformedCamera(cameraBaseDistance*goban.size)
+
     stage = new JFXApp3.PrimaryStage {
       initStyle(StageStyle.Unified)
       title = "3D Go Board"
@@ -42,37 +36,21 @@ object FXClient2 extends JFXApp3:
         fill = Color.rgb(28, 28, 28)
         content = new HBox {
           padding = Insets(30, 50, 30, 50)
-          children += gobanXform(3, allStones(newGoban(3)))
-          children += buildCamera()
+          children += gobanXform(goban)
+          children += mainCamera.xform
         }
-        camera = globalCamera
+        camera = mainCamera.camera
       }
+      MouseHandler(Scene(scene()), mainCamera).handleMouse()
     }
 
-  private def gobanXform(size: Int, goban: Seq[Shape3D]): Xform =
+  private def gobanXform(goban: Goban): Xform =
+    val stones = allStones(goban)
     val xform = Xform()
-    xform.setTranslate(-size/2, -size, -size/2)
-    goban.foreach(xform.children += _)
+    val center = goban.size*(sphereTranslation+sphereRadius)/2
+    xform.setTranslate(center, -center, -center)
+    stones.foreach(xform.children += _)
     xform
-
-  private def buildCamera(): Xform =
-    val cameraXform = Xform()
-    cameraXform.ry.angle = 320.0
-    cameraXform.rx.angle = 40
-    val cameraXform2 = Xform()
-    cameraXform.children += cameraXform2
-    val cameraXform3 = Xform()
-    cameraXform3.rotateZ = 180.0
-    cameraXform2.children += cameraXform3
-    cameraXform3.children += globalCamera
-    cameraXform
-
-  def createCamera(distance: Double): PerspectiveCamera =
-    new PerspectiveCamera(true) {
-      nearClip = 0.1
-      farClip = 10000.0
-      translateZ = -distance
-    }
 
   def stone(pos: Position, mat: Material): Sphere =
     new Sphere {
@@ -96,6 +74,18 @@ object FXClient2 extends JFXApp3:
     addStone(goban.allPositions, Seq())
 
   def stoneMaterial(col: go3d.Color): Material =
+    val whiteMaterial: PhongMaterial = new PhongMaterial {
+      diffuseColor = Color.White
+      specularColor = Color.LightBlue
+    }
+    val blackMaterial: PhongMaterial = new PhongMaterial {
+      diffuseColor = Color.Black
+      specularColor = Color.LightBlue
+    }
+    val blueMaterial: PhongMaterial = new PhongMaterial {
+      diffuseColor = Color.Blue
+      specularColor = Color.LightBlue
+    }
     col match
       case go3d.Black => blackMaterial
       case go3d.White => whiteMaterial

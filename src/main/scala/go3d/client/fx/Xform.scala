@@ -1,4 +1,4 @@
-package go3d.client
+package go3d.client.fx
 
 import javafx.scene.{transform => jfxst}
 import javafx.{scene => jfxs}
