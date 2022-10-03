@@ -74,7 +74,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     emptyPositions.toSet.intersect(neighbors(col)).size
 
   def hasNeighborOfColor(pos: Position, col: Color): Boolean =
-    allNeighbors.apply(pos).exists(_.color == col)
+    allNeighbors(pos).exists(_.color == col)
 
   def hasEmptyNeighbor(position: Position): Boolean = hasNeighborOfColor(position, Empty)
 
@@ -84,7 +84,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   def numLiberties(area: Set[Position]): Int = emptyNeighbors(area).size
 
   def emptyNeighbors(area: Set[Position]): Set[Position] =
-    area.flatMap(pos => allNeighbors.apply(pos)).map(_.position).intersect(emptyPositions.toSet)
+    area.flatMap(pos => allNeighbors(pos)).map(_.position).intersect(emptyPositions.toSet)
 
   @tailrec
   private def hasLiberties(moves: Set[Move]): Boolean =

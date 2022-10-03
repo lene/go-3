@@ -169,49 +169,7 @@ object FXClient extends JFXApp3:
       }
       camera = newCamera.camera
     }
-def fromStrings(levels: Map[Int, String]): Goban =
-  if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
-  val goban = newGoban((levels.head._2.stripMargin.replace("|", "").split("\n").length))
-  for (z, level) <- levels do
-    val lines = level.stripMargin.replace("|", "").split("\n")
-    for (line, y) <- lines.zipWithIndex do
-      for (stone, x) <- line.zipWithIndex do
-        goban.stones(x+1)(y+1)(z) = go3d.Color(stone)
-  goban
 
 val random: Random = Random()
 def randomMove(possible: Seq[Position]): Position =
   possible(random.nextInt(possible.length.max(1)))
-
-val presetGame = Game(5, fromStrings(Map(
-  1 ->
-    """O   O|
-      | @   |
-      |     |
-      |     |
-      |O   O|""",
-  2 ->
-    """ @   |
-      |@ @  |
-      | @   |
-      |     |
-      |     |""",
-  3 ->
-    """ O   |
-      |O@O  |
-      | O   |
-      |     |
-      |     |""",
-  4 ->
-    """     |
-      | O   |
-      |     |
-      |     |
-      |     |""",
-  5 ->
-    """O   O|
-      |     |
-      |     |
-      |     |
-      |O   O|""",
-)), Array(), Map())

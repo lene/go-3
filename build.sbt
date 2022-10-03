@@ -2,6 +2,7 @@ import sbt.Keys.libraryDependencies
 
 val scala3Version = "3.1.3"
 val circeVersion = "0.14.1"
+val libgdxVersion = "1.11.0"
 
 lazy val root = project
   .in(file("."))
@@ -51,22 +52,31 @@ lazy val root = project
           .map(m => "org.openjfx" % s"javafx-$m" % "16" classifier osName)
       },
 
-      libraryDependencies ++= {
-        val version = "3.3.0"
-        val os = "linux" // TODO: Change to "windows" or "macos" if necessary
+//      libraryDependencies ++= {
+//        val version = "3.3.0"
+//        val os = "linux" // TODO: Change to "windows" or "macos" if necessary
+//
+//        Seq(
+//            "lwjgl",
+//            "lwjgl-glfw",
+//            "lwjgl-opengl"
+//            // TODO: Add more modules here
+//        ).flatMap {
+//            module => {
+//                Seq(
+//                    "org.lwjgl" % module % version,
+//                    "org.lwjgl" % module % version classifier s"natives-$os"
+//                )
+//            }
+//        }
+//    },
+    libraryDependencies ++= Seq(
+        "com.badlogicgames.gdx" % "gdx" % libgdxVersion
+    ),
+    libraryDependencies ++= Seq(
+          "net.sf.proguard" % "proguard-base" % "4.11" % "provided",
+          "com.badlogicgames.gdx" % "gdx-backend-lwjgl3" % libgdxVersion,
+          "com.badlogicgames.gdx" % "gdx-platform" % libgdxVersion classifier "natives-desktop",
+    ),
 
-        Seq(
-            "lwjgl",
-            "lwjgl-glfw",
-            "lwjgl-opengl"
-            // TODO: Add more modules here
-        ).flatMap {
-            module => {
-                Seq(
-                    "org.lwjgl" % module % version,
-                    "org.lwjgl" % module % version classifier s"natives-$os"
-                )
-            }
-        }
-    }
-)
+  )
