@@ -1,6 +1,8 @@
 package go3d.client
 
 import go3d.{Black, Game, Position, White}
+import go3d.server.StatusResponse
+
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.Color
@@ -16,11 +18,10 @@ import com.badlogic.gdx.utils.Timer
 
 import scala.annotation.tailrec
 import scala.jdk.CollectionConverters.*
-import scala.math.Pi
 
-class GDXClient2(game: Game) extends ApplicationListener:
+class GDXClient2(client: BaseClient, boardSize: Int) extends ApplicationListener:
 
-  final val CENTER = (game.size+1)/2
+  final val CENTER = (boardSize+1)/2
   final val STONE_RADIUS = 1
   final val STAR_POINT_RADIUS = 0.08f
   final val SPHERE_DIVISIONS = 32
@@ -39,11 +40,13 @@ class GDXClient2(game: Game) extends ApplicationListener:
     ColorAttribute.createSpecular(new Color(1.0, 1.0, 1.0, 1.0))
   )
   final val GRID_MATERIAL = new Material(
-    ColorAttribute.createAmbient(new Color(0.1, 0.1, 0.1, 0.5)),
-    ColorAttribute.createDiffuse(new Color(0.2, 0.2, 0.2, 0.5)),
-    ColorAttribute.createSpecular(new Color(0.8, 0.8, 0.8, 0.5))
+    ColorAttribute.createAmbient(new Color(0.1, 0.1, 0.1, 0.4)),
+    ColorAttribute.createDiffuse(new Color(0.2, 0.2, 0.2, 0.4)),
+    ColorAttribute.createSpecular(new Color(0.8, 0.8, 0.8, 0.4))
   )
-  final val CAMERA_POSITION: Position = Position(game.size, game.size, game.size)
+  final val CAMERA_POSITION: Position = Position(boardSize, boardSize, boardSize)
+  final val UPDATE_DELAY_SECONDS = 2f
+  final val UPDATE_INTERVAL_SECONDS = 1f
 
   val environment: Environment = createEnvironment
   val modelBuilder = new ModelBuilder
@@ -52,26 +55,33 @@ class GDXClient2(game: Game) extends ApplicationListener:
   var camController: CameraInputController = null
   var models: Map[String, Model] = Map()
   var modelBatch: ModelBatch = null
-  var instances: List[RenderableProvider] = List()
+  var stonesModel: List[RenderableProvider] = List()
+  var gridModel: List[RenderableProvider] = List()
+  var game: Game = null
 
   @Override def create(): Unit =
-    camera = createCamera(CAMERA_POSITION)
+    val status = client.status
 
     modelBatch = new ModelBatch
-    models = createModels()
+    models = createModels(status.game.size)
+    gridModel = createGrid(status.game.size)
 
-    instances = stonesOfColor(game, Black).map(createModel(BLACK, _, STONE_RADIUS)) :++
-      stonesOfColor(game, White).map(createModel(WHITE, _, STONE_RADIUS)) :++
-      createGrid()
+    updateGame(status)
 
+    camera = createCamera(CAMERA_POSITION)
     camController = new CameraInputController(camera)
     Gdx.input.setInputProcessor(camController)
 
-    val delaySeconds = 2f
-    val intervalSeconds = 1f
     Timer.schedule(new Timer.Task {
-      @Override def run(): Unit = print(".")
-    }, delaySeconds, intervalSeconds)
+      @Override def run(): Unit = updateGame(client.status)
+    }, UPDATE_DELAY_SECONDS, UPDATE_INTERVAL_SECONDS)
+
+  private def updateGame(status: StatusResponse): Unit =
+    if game == null || status.game.moves.length != game.moves.length then
+      game = status.game
+      stonesModel = stonesOfColor(game, Black).map(createModel(BLACK, _, STONE_RADIUS, game.size)) :++
+        stonesOfColor(game, White).map(createModel(WHITE, _, STONE_RADIUS, game.size))
+      println(s"Move ${game.moves.length}: ${game.moves.last} ")
 
   private def createCamera(cameraPos: Position): PerspectiveCamera =
     val cam = new PerspectiveCamera(67, Gdx.graphics.getWidth().toFloat, Gdx.graphics.getHeight().toFloat) {
@@ -89,22 +99,25 @@ class GDXClient2(game: Game) extends ApplicationListener:
     localEnv.add(new DirectionalLight().set(0.8, 0.8, 0.8, -1, -0.8, -0.2))
     localEnv
 
-  def createGrid(): List[RenderableProvider] =
-    (1 to game.size).map(y => createModel(GRID, Position(CENTER, y, CENTER), 1)).toList :++
-      (-game.size/2 to game.size/2).map(z => verticalGrid(z)).toList :++
-      createStarPoints()
+  def createGrid(boardSize: Int): List[RenderableProvider] =
+    (1 to boardSize).map(y => horizontalGrid(y, boardSize)).toList :++
+      (-boardSize/2 to boardSize/2).map(z => verticalGrid(z, boardSize)).toList :++
+      createStarPoints(boardSize)
 
-  def verticalGrid(z: Int): ModelInstance =
-    val grid = createModel(GRID, Position(1, 1, 1), 1)
+  def horizontalGrid(y: Int, boardSize: Int): ModelInstance =
+    createModel(GRID, Position(CENTER, y, CENTER), 1, boardSize)
+
+  def verticalGrid(z: Int, boardSize: Int): ModelInstance =
+    val grid = createModel(GRID, Position(1, 1, 1), 1, boardSize)
     grid.transform.setToRotation(0, 0, 1, 90)
     grid.transform.translate(0, z.toFloat, 0)
     grid
 
-  def createStarPoints(): List[RenderableProvider] =
-    if game.size < 7 then List()
-    else StarPoints(game.size).all.map(createModel(STAR_POINT, _, 1)).toList
+  def createStarPoints(boardSize: Int): List[RenderableProvider] =
+    if boardSize < 7 then List()
+    else StarPoints(boardSize).all.map(createModel(STAR_POINT, _, 1, boardSize)).toList
 
-  def createModels(): Map[String, Model] =
+  def createModels(boardSize: Int): Map[String, Model] =
     Map(
       WHITE -> modelBuilder.createSphere(
         1, 1, 1, 2 * SPHERE_DIVISIONS, SPHERE_DIVISIONS,
@@ -115,7 +128,7 @@ class GDXClient2(game: Game) extends ApplicationListener:
         BLACK_MATERIAL, Usage.Position | Usage.Normal
       ),
       GRID -> modelBuilder.createLineGrid(
-        game.size-1, game.size-1, 1, 1,
+        boardSize-1, boardSize-1, 1, 1,
         GRID_MATERIAL, Usage.Position | Usage.Normal
       ),
       STAR_POINT -> modelBuilder.createSphere(
@@ -124,17 +137,18 @@ class GDXClient2(game: Game) extends ApplicationListener:
       ),
     )
 
-  def createModel(name: String, pos: Position, scale: Float): ModelInstance =
+  def createModel(name: String, pos: Position, scale: Float, boardSize: Int): ModelInstance =
     val instance = new ModelInstance(models(name))
     instance.transform.setToTranslationAndScaling(pos.x.toFloat, pos.y.toFloat, pos.z.toFloat, scale, scale, scale)
-    instance.transform.translate(-(game.size+1)/2f, -(game.size+1)/2f, -(game.size+1)/2f)
+    instance.transform.translate(-(boardSize+1)/2f, -(boardSize+1)/2f, -(boardSize+1)/2f)
     instance
 
   @Override def render(): Unit =
     Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight())
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
     modelBatch.begin(camera)
-    modelBatch.render(instances.asJava, environment)
+    modelBatch.render(gridModel.asJava, environment)
+    modelBatch.render(stonesModel.asJava, environment)
     modelBatch.end()
 
   @Override def dispose(): Unit =
@@ -142,7 +156,11 @@ class GDXClient2(game: Game) extends ApplicationListener:
     models.values.foreach(_.dispose())
 
   @Override def resume(): Unit = println("resume")
-  @Override def resize(width: Int, height: Int): Unit = println(s"resize $width/$height")
+  @Override def resize(width: Int, height: Int): Unit =
+    camera.viewportWidth = Gdx.graphics.getWidth().toFloat
+    camera.viewportHeight = Gdx.graphics.getHeight().toFloat
+    camera.update()
+
   @Override def pause(): Unit = println("pause")
 
 def stonesOfColor(game: Game, col: go3d.Color): List[Position] =
