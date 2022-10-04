@@ -67,7 +67,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     goban.emptyPositions.toList.filter(isPossibleMove(_, color))
 
   def score: Map[Color, Int] =
-    var scores = mutable.Map[Color, Int]().withDefaultValue(0)
+    val scores = mutable.Map[Color, Int]().withDefaultValue(0)
     for color <- List(Black, White) do
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
       scores(color) = scores(color) - captures(color)
@@ -76,26 +76,26 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
       boundaryColor(area) match
         case Some(color) => scores(color) = scores(color) + area.size
         case None =>
-    return scores.toMap
+    scores.toMap
 
   private def boundaryColor(area: Set[Move]): Option[Color] =
-    var boundaryColors = mutable.Set[Color]()
+    val boundaryColors = mutable.Set[Color]()
     for stone <- area do
       for neighbor <- goban.neighbors(stone.position) if at(neighbor) != stone.color do
         boundaryColors.add(at(neighbor))
     if boundaryColors.size == 1 then return Some(boundaryColors.head)
-    return None
+    None
 
   private def addToConnectedAreas(emptyPositions: Seq[Position], areas: Set[Set[Move]]): Set[Set[Move]] =
     if emptyPositions.isEmpty then return areas
     val connected = connectedStones(Move(emptyPositions.last, Empty))
-    return addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
+    addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
 
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
     try
       if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))
     catch case e: IllegalMove => return false
-    return true
+    true
 
   private def gameOver(pass: Pass): Boolean = moves.nonEmpty && moves.last.isInstanceOf[Pass]
 
@@ -114,4 +114,4 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
   private def captureNeighbors(board: Goban, neighbors: Seq[Position], color: Color): Goban =
     if neighbors.isEmpty then return board
     val newBoard = board.checkAndClear(Move(neighbors.last, color))
-    return captureNeighbors(newBoard, neighbors.dropRight(1), color)
+    captureNeighbors(newBoard, neighbors.dropRight(1), color)
