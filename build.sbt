@@ -16,6 +16,8 @@ lazy val root = project
 
     scalacOptions ++= Seq("-deprecation", "-explain", "-feature"),
 
+    // Parallel collections
+    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.0.4",
     // Logging
     libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
     libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.7",

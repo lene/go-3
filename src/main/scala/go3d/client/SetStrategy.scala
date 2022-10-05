@@ -1,6 +1,8 @@
 package go3d.client
 
-import scala.annotation.tailrec
+import go3d.{Black, Color, Game, Goban, Move, Position}
+
+import scala.collection.parallel.CollectionConverters._
 
 import go3d.{Black, Color, Game, Move, Position}
 
@@ -79,7 +81,7 @@ case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTime
       bestBy(toUse, p => minLiberties(game.setStone(Move(p, color)), !color))
 
 def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
-  values.groupBy(metric).minBy(_._1)._2
+  values.par.groupBy(metric).minBy(_._1)._2.seq
 
 def minBy[A](values: Seq[A], metric: A => Int): Int = {
   values.groupBy(metric).minBy(_._1)._1
