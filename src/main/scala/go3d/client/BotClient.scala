@@ -23,7 +23,7 @@ object BotClient extends Client:
   //  closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
 
   def mainLoop(args: Array[String]): Unit =
-    print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token}  ")
+    print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")((str) => str)}  ")
     val status = waitUntilReady()
     game = status.game
     print(s"\b Move: ${game.moves.length} ${executionTimeString}\r")
@@ -70,7 +70,8 @@ object BotClient extends Client:
     else if options.contains("game_id") then
       if options.contains("token") then
         client = BaseClient(
-          serverURL, options("game_id").asInstanceOf[String], options("token").asInstanceOf[String]
+          serverURL, options("game_id").asInstanceOf[String], 
+          Some(options("token").asInstanceOf[String])
         )
       else client = BaseClient.register(
         serverURL, options("game_id").asInstanceOf[String],

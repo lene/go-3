@@ -50,7 +50,18 @@ class GDXClient2(client: BaseClient, boardSize: Int) extends ApplicationListener
     if game == null || status.game.moves.length != game.moves.length then
       game = status.game
       stonesModel = builder.createStones(game)
-      println(s"Move ${game.moves.length}: ${game.moves.last} ")
+      println(s"Move ${game.moves.length}: $lastMove $captures")
+
+  private def lastMove: String =
+    if (game == null) || (game.moves.length == 0)
+    then "waiting for game to start"
+    else game.moves.last.toString
+
+  private def captures: String =
+    if game == null then ""
+    else "Captures: " + Seq(Black, White).foldLeft("")(
+      (caps, col) => caps + s"$col: ${game.captures(col)} "
+    )
 
   private def createCamera(cameraPos: Position): PerspectiveCamera =
     val cam = new PerspectiveCamera(67, Gdx.graphics.getWidth().toFloat, Gdx.graphics.getHeight().toFloat) {
@@ -81,6 +92,7 @@ class GDXClient2(client: BaseClient, boardSize: Int) extends ApplicationListener
     builder.dispose()
 
   @Override def resume(): Unit = println("resume")
+
   @Override def resize(width: Int, height: Int): Unit =
     camera.viewportWidth = Gdx.graphics.getWidth().toFloat
     camera.viewportHeight = Gdx.graphics.getHeight().toFloat

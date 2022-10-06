@@ -20,7 +20,7 @@ object AsciiClient extends InteractiveClient:
 
   @tailrec
   def mainLoop(args: Array[String]): Unit =
-    print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token}  ")
+    print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")((str) => str)}  ")
     val status = waitUntilReady()
     println(s"\b \n${status.game.goban}")
     try

@@ -20,7 +20,7 @@ abstract case class InteractiveClient(pollInterval: Int = 500) extends Client:
         nextOption(map ++ Map("server" -> value), tail)
       case "--port" :: value :: tail =>
         nextOption(map ++ Map("port" -> value.toInt), tail)
-      case option :: tail =>
+      case option :: _ =>
         println("Unknown option "+option)
         System.exit(1)
         map
@@ -36,11 +36,16 @@ abstract case class InteractiveClient(pollInterval: Int = 500) extends Client:
     else if options.contains("game_id") then
       if options.contains("token") then
         client = BaseClient(
-          serverURL, options("game_id").asInstanceOf[String], options("token").asInstanceOf[String]
+          serverURL, options("game_id").asInstanceOf[String],
+          Some(options("token").asInstanceOf[String])
         )
-      else client = BaseClient.register(
+      else if options.contains("color") then
+        client = BaseClient.register(
         serverURL, options("game_id").asInstanceOf[String],
         colorFromString(options("color").asInstanceOf[String])
+      )
+      else client = BaseClient(
+        serverURL, options("game_id").asInstanceOf[String], None
       )
     else throw IllegalArgumentException("Either --size or --game-id must be supplied")
 
