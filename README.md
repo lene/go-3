@@ -1,7 +1,10 @@
-The Asian game of Go (also known as Weiqi in Chinese and Baduk in Korean)takes place two-dimensional
-board. Its idea readily extends to three dimensions - placing stones on a cubic lattice. 
+The Asian game of Go (its Japanese name; also known as Weiqi in Chinese and Baduk in Korean) takes 
+place on a two-dimensional board. Its idea readily extends to three dimensions - placing stones on a
+cubic lattice. 
 
-![Example of a game situation on a 7x7x7 three-dimensional Go board](src/doc/resources/2022-10-08-194426_1280x960_scrot.png "3D Go")
+<img src="src/doc/resources/2022-10-08-194426_1280x960_scrot.png" 
+     alt="Example of a game situation on a 7x7x7 three-dimensional Go board"
+     width="826" />
 
 This is a program for playing on such a three-dimensional lattice. 
 
@@ -82,7 +85,9 @@ $ ascii-client --server $SERVER --port 6030 --size $SIZE --color [b|w]
 ```
 This will print a status line with a Game ID and a token:
 
-![Example output after starting the first ASCII client as player Black](src/doc/resources/2022-10-08-210914_1344x2054_scrot.png "Startup line")
+<img src="src/doc/resources/2022-10-08-210914_1344x2054_scrot.png"
+     alt="Example output after starting the first ASCII client as player Black"
+     width="1280" />
 
 You will need to remember the Game ID for another player to join the game. Remember the token if you
 might close down your client and want to reconnect to the same game later on.
@@ -93,29 +98,39 @@ $ ascii-client --server $SERVER --port 6030 --game-id $GAME_ID --color [b|w]
 ```
 This will print a similar line in the just started second line:
 
-![Example output after starting the second ASCII client as player White](src/doc/resources/2022-10-08-211010_1344x2054_scrot.png "Startup line")
+<img src="src/doc/resources/2022-10-08-211010_1344x2054_scrot.png"
+     alt="Example output after starting the second ASCII client as player White"
+     width="1280" />
 
 #### Making moves
 Meanwhile the first client will now show an ASCII representation of an empty 3D Go board, as 
 `$SIZE` 2D board laid out next to each other:
 
-![Example output of the empty 3D Go board](src/doc/resources/2022-10-08-211407_1344x2054_scrot.png "Ready to make a move")
+<img src="src/doc/resources/2022-10-08-211407_1344x2054_scrot.png"
+     alt="Example output of the empty 3D Go board"
+     width="1280" />
 
 Once a client is ready to make a move, the command `s $X $Y $Z` will set a stone at position
 (`$X`, `$Y`, `$Z`), or the command `p` will pass.
 
 To get help, enter any unrecognizable command:
 
-![Entering a bad command to read the help](src/doc/resources/2022-10-08-211922_1344x2054_scrot.png "Help for possible commands")
+<img src="src/doc/resources/2022-10-08-211922_1344x2054_scrot.png"
+     alt="Entering a bad command to read the help"
+     width="1280" />
 
 Once you have set, your client will wait for the opponent to respond:
 
-![Player Black, after setting a stone](src/doc/resources/2022-10-08-212303_1344x2054_scrot.png "Waiting for opponent")
+<img src="src/doc/resources/2022-10-08-212303_1344x2054_scrot.png"
+     alt="Player Black, after setting a stone"
+     width="1280" />
 
 While the other client will now display the updated board with the last set stone, and ask player 
 White to make their move:
 
-![Player White](src/doc/resources/2022-10-08-212507_1344x2054_scrot.png "Updated board, waiting for input")
+<img src="src/doc/resources/2022-10-08-212507_1344x2054_scrot.png"
+     alt="Player White waiting for input"
+     width="1280" />
 
 This will continue until either both players pass or the number of possible moves is exceeded, at 
 which point the client will display each player's score and exit.
@@ -130,7 +145,9 @@ $ gdx-client --server $SERVER --port 6030 --game-id $GAME_ID
 ```
 to get a freely rotatable and zoomable representation of the board akin to this:
 
-![3D representation of the board](src/doc/resources/2022-10-08-213939_1280x960_scrot.png "After setting one Black and one White stone")
+<img src="src/doc/resources/2022-10-08-213939_1280x960_scrot.png"
+     alt="3D representation of the board"
+     width="993" />
 
 #### Reconnecting after a dropped connection
 To reconnect to a game that has already started and the player has been given the authentication
@@ -195,7 +212,7 @@ can be solved with:
 ```shell
 $ cat /proc/sys/fs/inotify/max_user_instances
 128
-$ echo 256 | sudo tee /proc/sys/fs/inotify/max_user_instances             0.000s
+$ echo 256 | sudo tee /proc/sys/fs/inotify/max_user_instances
 256
 ```
 or for a longer term solution (?)
