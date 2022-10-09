@@ -10,7 +10,7 @@ RUN sbt universal:packageBin
 RUN unzip -oq /go-3/target/universal/go-3d-${version}.zip
 RUN mv go-3d-${version}/??? . && rm -r go-3d-*.*.* target
 
-FROM openjdk:16
+FROM openjdk:18
 ARG version=0.7.0
 ENV SAVE_DIR saves
 ENV PORT 6030
