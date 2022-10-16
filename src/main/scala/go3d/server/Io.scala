@@ -9,7 +9,7 @@ import io.circe.syntax.EncoderOps
 
 import java.io.File
 
-case class SaveGame(val game: Game, val players: Map[Color, Player])
+case class SaveGame(game: Game, players: Map[Color, Player])
 
 object Io:
   var baseFolder: String = null
@@ -29,7 +29,7 @@ object Io:
   def writeFile(saveFile: String, content: String): Path =
     val path = Paths.get(baseFolder, saveFile)
     Files.write(path, content.getBytes(StandardCharsets.UTF_8))
-    return path
+    path
 
   def exists(filename: String): Boolean =
     if basePath == null then throw IllegalArgumentException("call Io.init() before using Io")

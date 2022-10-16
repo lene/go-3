@@ -10,7 +10,7 @@ def registerGame(boardSize: Int): String =
   val gameId = IdGenerator.getId
   val game = newGame(boardSize)
   Games = Games + (gameId -> game)
-  return gameId
+  gameId
 
 def readGame(saveFile: java.io.File): SaveGame =
   val source = Source.fromFile(saveFile)
@@ -18,7 +18,7 @@ def readGame(saveFile: java.io.File): SaveGame =
   source.close()
   val result = decode[SaveGame](fileContents)
   if result.isLeft then throw ReadSaveGameError(result.left.getOrElse(null).getMessage)
-  return result.getOrElse(null)
+  result.getOrElse(null)
 
 def restoreGame(saveGame: SaveGame): Unit =
   val gameId = saveGame.players.last._2.gameId

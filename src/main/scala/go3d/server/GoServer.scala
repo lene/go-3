@@ -29,7 +29,7 @@ object GoServer:
     handler.addServletWithMapping(classOf[PassServlet], passRoute)
     handler.addServletWithMapping(classOf[OpenGamesServlet], openGamesRoute)
     handler.addServletWithMapping(classOf[HealthServlet], healthRoute)
-    return server
+    server
 
   def serverPort(server: Server): Int =
     server.getConnectors()(0).asInstanceOf[NetworkConnector].getLocalPort
