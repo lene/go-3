@@ -77,7 +77,7 @@ BuildDeployable:
   stage: build
   needs: []
   script:
-    - sbt universal:packageBin
+    - sbt "Universal / packageBin"
     - mv target/universal/${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip .
   artifacts:
     paths:
@@ -123,7 +123,7 @@ BuildDockerImage:
     - USER_TIME_WHITE=$(sed '2q;d' time.log)
     - MEM_WHITE=$(sed '3q;d' time.log)
     - CPU_PERCENT_WHITE=$(sed '4q;d' time.log)
-    - echo "${STRATEGY_BLACK:-random},${STRATEGY_WHITE:-random},$SCORE_BLACK,$SCORE_WHITE,$WALL_TIME_WHITE,$USER_TIME_WHITE,$MEM_WHITE,$CPU_PERCENT_WHITE" >> results.${STRATEGY_BLACK:-random}.${STRATEGY_WHITE:-random}.csv
+    - echo "${STRATEGY_BLACK:-random};${STRATEGY_WHITE:-random};$SCORE_BLACK;$SCORE_WHITE;$WALL_TIME_WHITE;$USER_TIME_WHITE;$MEM_WHITE;$CPU_PERCENT_WHITE" >> results.${STRATEGY_BLACK:-random}.${STRATEGY_WHITE:-random}.csv
   artifacts:
     when: always
     paths:
@@ -138,8 +138,8 @@ BuildDockerImage:
   variables:
     INSTALL_DIR: ./${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}
   before_script:
-    - apt-get -y update && apt-get -y upgrade && apt-get -y install jq curl || true
-    - microdnf install --nodocs unzip jq && microdnf clean all || true
+    - apt-get -y update && apt-get -y upgrade && apt-get -y install jq curl time || true
+    - microdnf install --nodocs unzip jq time && microdnf clean all || true
     - test -f ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
     - unzip -q ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
 
@@ -147,7 +147,7 @@ TestDeployable:
   extends: .TestDeployable
   parallel:
     matrix:
-      - IMAGE: [$SBT_IMAGE, openjdk:8-jre, openjdk:11-jre, openjdk:16, openjdk:17, openjdk:18]
+      - IMAGE: [$SBT_IMAGE, openjdk:8-jre, openjdk:11-jre, openjdk:16, openjdk:17, openjdk:18, openjdk:19]
         STRATEGY_BLACK: [random]
         STRATEGY_WHITE: [random]
   image: $IMAGE
@@ -163,8 +163,6 @@ TestDockerImage:
           - closestToStarPoints
           - maximizeDistance
           - prioritiseCapture
-          - onStarPoints,minimizeOpponentLiberties
-          - onStarPoints,maximizeOwnLiberties
           - minimizeOpponentLiberties,closestToStarPoints
   image:
     name: registry.gitlab.com/lilacashes/go-3/server:latest

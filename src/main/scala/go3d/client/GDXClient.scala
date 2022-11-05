@@ -1,8 +1,9 @@
 package go3d.client
 
 import go3d.newGame
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
-import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
+import go3d.client.gdx.GobanDisplay
+
+import com.badlogic.gdx.backends.lwjgl3.{Lwjgl3Application, Lwjgl3ApplicationConfiguration}
 
 import scala.annotation.tailrec
 
@@ -13,11 +14,9 @@ object GDXClient extends InteractiveClient:
     final val STENCIL_BITS = 0
     final val NUM_ANTIALIAS_SAMPLES = 4
 
-    def mainLoop(args: Array[String]): Unit = {
-        val status = client.status
+    def mainLoop(args: Array[String]): Unit =
         val config = getConfiguration("3D Go", 1280, 960)
-        new Lwjgl3Application(new GDXClient2(client, status.game.size), config)
-    }
+        new Lwjgl3Application(new GobanDisplay(client), config)
 
     def getConfiguration(appName: String, width: Int, height: Int): Lwjgl3ApplicationConfiguration =
         val config = new Lwjgl3ApplicationConfiguration()

@@ -6,17 +6,17 @@ ARG version=0.7.0
 
 WORKDIR /go-3
 COPY . /go-3
-RUN sbt universal:packageBin
+RUN sbt "Universal / packageBin"
 RUN unzip -oq /go-3/target/universal/go-3d-${version}.zip
 RUN mv go-3d-${version}/??? . && rm -r go-3d-*.*.* target
 
-FROM openjdk:18
+FROM openjdk:19
 ARG version=0.7.0
 ENV SAVE_DIR saves
 ENV PORT 6030
 
 WORKDIR /go-3
-RUN useradd go-3d && chown -R go-3d . && microdnf install jq curl && mkdir -p "${SAVE_DIR}"
+RUN useradd go-3d && chown -R go-3d . && microdnf install jq curl time && mkdir -p "${SAVE_DIR}"
 USER go-3d
 COPY --from=builder /go-3/bin /go-3/bin/
 COPY --from=builder /go-3/lib /go-3/lib/

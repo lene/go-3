@@ -1,12 +1,12 @@
-package go3d.client
+package go3d.client.gdx
 
-import go3d.{Black, Game, Position, White}
-
-import com.badlogic.gdx.graphics.g3d.{Material, Model, ModelInstance, RenderableProvider}
-import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.Color
-import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.graphics.VertexAttributes.Usage
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
+import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
+import com.badlogic.gdx.graphics.g3d.{Material, Model, ModelInstance, RenderableProvider}
+import go3d.client.StarPoints
+import go3d.{Black, Game, Position, White}
 
 import scala.annotation.tailrec
 
@@ -88,8 +88,12 @@ class GeometryBuilder(boardSize: Int):
 
   def createModel(name: String, pos: Position, scale: Float, boardSize: Int): ModelInstance =
     val instance = new ModelInstance(models(name))
-    instance.transform.setToTranslationAndScaling(pos.x.toFloat, pos.y.toFloat, pos.z.toFloat, scale, scale, scale)
-    instance.transform.translate(-(boardSize + 1) / 2f, -(boardSize + 1) / 2f, -(boardSize + 1) / 2f)
+    instance.transform.setToTranslationAndScaling(
+      pos.x.toFloat, pos.y.toFloat, pos.z.toFloat, scale, scale, scale
+    )
+    instance.transform.translate(
+      -(boardSize + 1) / 2f, -(boardSize + 1) / 2f, -(boardSize + 1) / 2f
+    )
     instance
 
 
