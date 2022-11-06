@@ -2,10 +2,11 @@ package go3d.client.gdx
 
 import go3d.client.BaseClient
 import go3d.server.StatusResponse
-import go3d.{Black, Game, Position, White}
+import go3d.{Black, Game, White}
 
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.graphics.g3d.RenderableProvider
+import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.Timer
 
 import scala.annotation.tailrec
@@ -15,7 +16,7 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener:
   final val UPDATE_DELAY_SECONDS = 2f
   final val UPDATE_INTERVAL_SECONDS = 1f
 
-  private lazy val gdxResources = GDXResources(Position(BOARD_SIZE, BOARD_SIZE, BOARD_SIZE))
+  private lazy val gdxResources = GDXResources(BOARD_SIZE)
   private lazy val builder = GeometryBuilder(BOARD_SIZE)
 
   private[this] var stonesModel: List[RenderableProvider] = List()
