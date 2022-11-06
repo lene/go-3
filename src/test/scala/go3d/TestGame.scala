@@ -171,7 +171,7 @@ class TestGame:
     var game = playListOfMoves(5, moves)
     Assert.assertTrue(game.captures.isEmpty)
     game = game.makeMove(Move(3, 1, 1, White))
-    Assert.assertEquals(2, game.captures(Black))
+    Assert.assertEquals(2, game.captures(White))
 
   @Test def testCaptureMinimalEye(): Unit =
     val game = buildAndCaptureEye()
@@ -187,8 +187,9 @@ class TestGame:
       Move(2, 1, 2, Black), Pass(White), Move(1, 2, 2, Black), Pass(White),
       Move(1, 1, 2, Black),
     )
-    val game = playListOfMoves(TestSize, moves)
-    return game
+    playListOfMoves(TestSize, moves)
+
+  final val BLACK_AREA_SIZE = 5
 
   def encircleEye(game: Game): Game =
     val moves = List[Move | Pass](
@@ -201,25 +202,25 @@ class TestGame:
     var nextGame = game
     for move <- moves do
       nextGame = nextGame.makeMove(move)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 1, Black)).size)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 1, Black)).size)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(2, 1, 2, Black)).size)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 2, 2, Black)).size)
-    Assert.assertEquals(5, nextGame.connectedStones(Move(1, 1, 2, Black)).size)
-    return nextGame
+    Assert.assertEquals(BLACK_AREA_SIZE, nextGame.connectedStones(Move(2, 1, 1, Black)).size)
+    Assert.assertEquals(BLACK_AREA_SIZE, nextGame.connectedStones(Move(1, 2, 1, Black)).size)
+    Assert.assertEquals(BLACK_AREA_SIZE, nextGame.connectedStones(Move(2, 1, 2, Black)).size)
+    Assert.assertEquals(BLACK_AREA_SIZE, nextGame.connectedStones(Move(1, 2, 2, Black)).size)
+    Assert.assertEquals(BLACK_AREA_SIZE, nextGame.connectedStones(Move(1, 1, 2, Black)).size)
+    nextGame
 
   def buildAndCaptureEye(): Game =
     val game = encircleEye(buildEye())
-    return game.makeMove(Move(1, 1, 1, White))
+    game.makeMove(Move(1, 1, 1, White))
 
   @Test def testCapturedStonesAreListed(): Unit =
     val game = buildAndCaptureEye()
-    Assert.assertEquals(5, game.captures(Black))
+    Assert.assertEquals(BLACK_AREA_SIZE, game.captures(White))
 
   @Test def testCapturedStonesAreCounted(): Unit =
     val game = buildAndCaptureEye()
-    Assert.assertEquals(5, game.captures(Black))
-    Assert.assertEquals(0, game.captures(White))
+    Assert.assertEquals(BLACK_AREA_SIZE, game.captures(White))
+    Assert.assertEquals(0, game.captures(Black))
 
   @Test def testCapturingStoneWithSettingIntoEyeIsNotSuicide(): Unit =
     val goban = fromStrings(eyeSituation)
@@ -242,7 +243,7 @@ class TestGame:
     val goban = fromStrings(eyeSituation)
     val game = fromGoban(goban).makeMove(Move(2, 2, 2, White))
     Assert.assertEquals(Empty, game.at(2, 2, 3))
-    Assert.assertEquals(1, game.captures(Black))
+    Assert.assertEquals(1, game.captures(White))
     Assert.assertEquals(Move(2, 2, 3, Black), game.lastCapture(0))
     assertThrows[Ko]({game.checkValid(Move(2, 2, 3, Black))})
 
@@ -288,7 +289,7 @@ class TestGame:
              |OOO|
              |OOO|"""
     )
-    var game = fromGoban(fromStrings(finalSituation))
+    val game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(9, game.score(Black))
     Assert.assertEquals(9, game.score(White))
 
@@ -304,7 +305,7 @@ class TestGame:
              |OOO|
              |OOO|"""
     )
-    var game = fromGoban(fromStrings(finalSituation))
+    val game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(13, game.score(Black))
     Assert.assertEquals(13, game.score(White))
 
@@ -320,7 +321,7 @@ class TestGame:
              |OOO|
              |OO |"""
     )
-    var game = fromGoban(fromStrings(finalSituation))
+    val game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(13, game.score(Black))
     Assert.assertEquals(13, game.score(White))
 
@@ -336,7 +337,7 @@ class TestGame:
              |OOO|
              |OO |"""
     )
-    var game = fromGoban(fromStrings(finalSituation))
+    val game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(13, game.score(Black))
     Assert.assertEquals(13, game.score(White))
 
@@ -352,7 +353,7 @@ class TestGame:
              |OOO|
              |OO |"""
     )
-    var game = fromGoban(fromStrings(finalSituation))
+    val game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(9, game.score(Black))
     Assert.assertEquals(13, game.score(White))
 
@@ -362,7 +363,7 @@ class TestGame:
              | @ |
              |   |"""
     )
-    var game = fromGoban(fromStrings(finalSituation))
+    val game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(27, game.score(Black))
     Assert.assertEquals(0, game.score(White))
 
@@ -372,11 +373,24 @@ class TestGame:
              | @ |
              |   |"""
     )
-    var game = fromGoban(fromStrings(finalSituation))
+    val game = fromGoban(fromStrings(finalSituation))
     Assert.assertEquals(1, game.score(Black))
     Assert.assertEquals(1, game.score(White))
 
-  @Test def testIsOver(): Unit =
+  @Test def testScoringCountsCaptures(): Unit =
+    val game = buildAndCaptureEye()
+    Assert.assertEquals(0, game.goban.allPositions.count(game.at(_) == Black))
+    Assert.assertEquals(0, game.score(Black))
+    Assert.assertTrue(game.goban.allPositions.count(game.at(_) == White) > 0)
+    Assert.assertEquals(BLACK_AREA_SIZE, game.captures(White))
+    val expectedScore = game.size * game.size * game.size + BLACK_AREA_SIZE
+    Assert.assertEquals(expectedScore, game.score(White))
+
+  @Test def testToStringContainsCaptures(): Unit =
+    val game = buildAndCaptureEye()
+    Assert.assertTrue(game.toString.contains(Black.toString * BLACK_AREA_SIZE))
+
+  @Test def testIsOverNewGame(): Unit =
     val game = newGame(TestSize)
     Assert.assertFalse(game.isOver)
 

@@ -300,7 +300,7 @@ class TestServer:
     val statusResponse = playListOfMoves(gameData, moves)
     Assert.assertTrue(statusResponse.game.captures.isEmpty)
     val statusResponseAgain = playListOfMoves(gameData,List(Move(3, 1, 1, White)))
-    Assert.assertEquals(2, statusResponseAgain.game.captures(Black))
+    Assert.assertEquals(2, statusResponseAgain.game.captures(White))
 
   @Test def testPlayRandomGame(): Unit =
     val gameData = setUpGame(TestSize)

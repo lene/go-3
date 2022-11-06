@@ -7,7 +7,7 @@ def newGame(size: Int): Game = Game(size, newGoban(size), Array(), Map[Int, Arra
 class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
            val captures: Map[Int, Array[Move]]) extends GoGame:
 
-  def captures(color: Color): Int = captures.values.filter(_(0).color == color).flatten.size
+  def captures(color: Color): Int = captures.values.filter(_(0).color != color).flatten.size
   def lastCapture: Array[Move] = if captures.isEmpty then Array() else captures.last._2
 
   override def equals(obj: Any): Boolean =
@@ -46,8 +46,8 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
         for x <- 0 to size + 1 do
           out += goban.at(x, y, z)
         if z < size then out += "|"
-        else if y == 1 then out += " "+Black.toString*captures(Black)
-        else if y == 3 then out += " "+White.toString*captures(White)
+        else if y == 1 then out += " "+White.toString*captures(Black) // Black captures White stones
+        else if y == 3 then out += " "+Black.toString*captures(White) // White captures Black stones
       out += "\n"
     for (move, caps) <- captures.toSeq.sortBy(x => x._1) do out += s"$move: ${caps.toList}\n"
     out += score.toString
@@ -70,7 +70,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     val scores = mutable.Map[Color, Int]().withDefaultValue(0)
     for color <- List(Black, White) do
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
-      scores(color) = scores(color) - captures(color)
+      scores(color) = scores(color) + captures(color)
     val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
     for area <- emptyAreas do
       boundaryColor(area) match
