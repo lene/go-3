@@ -1,241 +1,231 @@
-# You can override the included template(s) by including variable overrides
-# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
-# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
-# Dependency Scanning customization: https://docs.gitlab.com/ee/user/application_security/dependency_scanning/#customizing-the-dependency-scanning-settings
-# Container Scanning customization: https://docs.gitlab.com/ee/user/application_security/container_scanning/#customizing-the-container-scanning-settings
-# Note that environment variables can be set in several places
-# See https://docs.gitlab.com/ee/ci/variables/#cicd-variable-precedence
 stages:
-- test
-- build
-- test built
-- package
-- release
+  - test
+  - build
+  - test built
+  - package
+  - release
+
 variables:
   TEST_RUN_BOARD_SIZE: 11
   TEST_RUN_MAX_RUNNING_TIME: 60
   DEPLOYABLE_BASE_NAME: go-3d
   DEPLOYABLE_VERSION: 0.7.0
   SBT_IMAGE: hseeberger/scala-sbt:8u312_1.5.5_2.13.7
+
 default:
   retry: 2
+
 include:
-- template: Code-Quality.gitlab-ci.yml
-- template: Security/SAST.gitlab-ci.yml
-- template: Security/Dependency-Scanning.gitlab-ci.yml
-- template: Jobs/Container-Scanning.gitlab-ci.yml
-- template: Security/Secret-Detection.gitlab-ci.yml
+  - template: Code-Quality.gitlab-ci.yml
+  - template: Security/SAST.gitlab-ci.yml
+  - template: Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Jobs/Container-Scanning.gitlab-ci.yml
+  - template: Security/Secret-Detection.gitlab-ci.yml
+
+# This job installs sbt by itself. It is somewhat slower than the ones based on scala-sbt below.
+# I leave it in mostly for documentation how to install the environment.
 Test:Ubuntu:
   image: ubuntu:22.04
   stage: test
   needs: []
   before_script:
-  - apt-get -y update
-  - apt-get -y upgrade
-  - apt-get -y install curl gnupg openjdk-18-jdk
-  - echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" > /etc/apt/sources.list.d/sbt.list
-  - echo "deb https://repo.scala-sbt.org/scalasbt/debian /" > /etc/apt/sources.list.d/sbt_old.list
-  - curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823"
-    | apt-key add
-  - apt-get -y update
-  - apt-get -y install sbt
+    - apt-get -y update
+    - apt-get -y upgrade
+    - apt-get -y install curl gnupg openjdk-18-jdk
+    - echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" > /etc/apt/sources.list.d/sbt.list
+    - echo "deb https://repo.scala-sbt.org/scalasbt/debian /" > /etc/apt/sources.list.d/sbt_old.list
+    - curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | apt-key add
+    - apt-get -y update
+    - apt-get -y install sbt
   script:
-  - sbt test
+    - sbt test
+
+# The following ones use a prepared docker image for sbt.
 Test:SbtImage:
-  image: "$SBT_IMAGE"
+  image: $SBT_IMAGE
   stage: test
   needs: []
   script:
-  - sbt test
+    - sbt test
   artifacts:
     when: always
     reports:
       junit: target/test-reports/**/TEST-*.xml
+
 Run:UseSbtDocker:
-  image: "$SBT_IMAGE"
+  image: $SBT_IMAGE
   stage: test
   needs: []
   script:
-  - sbt "runMain go3d.Runner"
+    - sbt "runMain go3d.Runner"
+
 CheckRunTime:
-  image: "$SBT_IMAGE"
+  image: $SBT_IMAGE
   stage: test
   needs: []
   before_script:
-  - apt-get -y update
-  - apt-get -y install bc time
+    - apt-get -y update
+    - apt-get -y install bc time
   script:
-  - sbt compile
-  - /usr/bin/time -f %U -o runtime.log sbt "runMain go3d.Runner $TEST_RUN_BOARD_SIZE"
-  - echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
-  - if [ $(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l) -eq 1 ]; then
-    exit 1; fi
+    - sbt compile
+    - /usr/bin/time -f %U -o runtime.log sbt "runMain go3d.Runner $TEST_RUN_BOARD_SIZE"
+    - echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
+    - if [ $(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l) -eq 1 ]; then exit 1; fi
   artifacts:
     paths:
-    - runtime.log
+      - runtime.log
+
 BuildDeployable:
-  image: "$SBT_IMAGE"
+  image: $SBT_IMAGE
   stage: build
   needs: []
   script:
-  - sbt "Universal / packageBin"
-  - mv target/universal/${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip .
+    - sbt "Universal / packageBin"
+    - mv target/universal/${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip .
   artifacts:
     paths:
-    - go-3d-*.*.*.zip
+      - go-3d-*.*.*.zip
+
 BuildDockerImage:
   image: docker:19.03.13
   stage: build
   needs: []
   services:
-  - docker:19.03.13-dind
+    - docker:19.03.13-dind
   script:
-  - VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
-  - TAG=${VERSION}-${CI_COMMIT_SHORT_SHA}
-  - REGISTRY=registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}
-  - docker build --build-arg version=${VERSION} -t ${REGISTRY}/server:${TAG} .
-  - test -n "$CI_COMMIT_TAG" && docker tag ${REGISTRY}/server:${TAG} ${REGISTRY}/server:$CI_COMMIT_TAG
-  - docker tag ${REGISTRY}/server:${TAG} ${REGISTRY}/server:latest
-  - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
-  - docker push ${REGISTRY}/server
-".TestGameplay":
+    - VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
+    - TAG=${VERSION}-${CI_COMMIT_SHORT_SHA}
+    - REGISTRY=registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}
+    - docker build --build-arg version=${VERSION} -t ${REGISTRY}/server:${TAG} .
+    - test -n "$CI_COMMIT_TAG" && docker tag ${REGISTRY}/server:${TAG} ${REGISTRY}/server:$CI_COMMIT_TAG
+    - docker tag ${REGISTRY}/server:${TAG} ${REGISTRY}/server:latest
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
+    - docker push ${REGISTRY}/server
+
+.TestGameplay:
   stage: test built
   variables:
     BOARD_SIZE: 7
   timeout: 1 hour
   script:
-  - mkdir -p saves
-  - "${INSTALL_DIR}/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log
-    &"
-  - sleep 5
-  - GAME_ID=""
-  - while [ "$GAME_ID" != "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames
-    | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
-  - grep -A1 "Server started on" server.log
-  - echo ${STRATEGY_BLACK:-random} - ${STRATEGY_WHITE:-random}
-  - "${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE
-    --color b --strategy ${STRATEGY_BLACK:-random} | grep 'Map(' &"
-  - while [ "$GAME_ID" == "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames
-    | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
-  - /usr/bin/time -o time.log -f "%e\n%U\n%M\n%P" ${INSTALL_DIR}/bin/bot-client --server
-    localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random}
-    | tail -n 1 > white.log
-  - grep -c "go3d.server.SetServlet" server.log
-  - grep -c "go3d.server.PassServlet" server.log
-  - cat white.log
-  - SCORE_BLACK=$(cat white.log | grep -E -o "[0-9]+" | head -n 1)
-  - SCORE_WHITE=$(cat white.log | grep -E -o "[0-9]+" | tail -n 1)
-  - WALL_TIME_WHITE=$(sed '1q;d' time.log)
-  - USER_TIME_WHITE=$(sed '2q;d' time.log)
-  - MEM_WHITE=$(sed '3q;d' time.log)
-  - CPU_PERCENT_WHITE=$(sed '4q;d' time.log)
-  - echo "${STRATEGY_BLACK:-random};${STRATEGY_WHITE:-random};$SCORE_BLACK;$SCORE_WHITE;$WALL_TIME_WHITE;$USER_TIME_WHITE;$MEM_WHITE;$CPU_PERCENT_WHITE"
-    >> results.${STRATEGY_BLACK:-random}.${STRATEGY_WHITE:-random}.csv
+    - mkdir -p saves
+    - ${INSTALL_DIR}/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log &
+    - sleep 5
+    - GAME_ID=""
+    - while [ "$GAME_ID" != "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
+    - grep -A1 "Server started on" server.log
+    - echo ${STRATEGY_BLACK:-random} - ${STRATEGY_WHITE:-random}
+    - ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY_BLACK:-random} | grep 'Map(' &
+    - while [ "$GAME_ID" == "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
+    - /usr/bin/time -o time.log -f "%e\n%U\n%M\n%P" ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random} | tail -n 1 > white.log
+    - grep -c "go3d.server.SetServlet" server.log
+    - grep -c "go3d.server.PassServlet" server.log
+    - cat white.log
+    - SCORE_BLACK=$(cat white.log | grep -E -o "[0-9]+" | head -n 1)
+    - SCORE_WHITE=$(cat white.log | grep -E -o "[0-9]+" | tail -n 1)
+    - WALL_TIME_WHITE=$(sed '1q;d' time.log)
+    - USER_TIME_WHITE=$(sed '2q;d' time.log)
+    - MEM_WHITE=$(sed '3q;d' time.log)
+    - CPU_PERCENT_WHITE=$(sed '4q;d' time.log)
+    - echo "${STRATEGY_BLACK:-random};${STRATEGY_WHITE:-random};$SCORE_BLACK;$SCORE_WHITE;$WALL_TIME_WHITE;$USER_TIME_WHITE;$MEM_WHITE;$CPU_PERCENT_WHITE" >> results.${STRATEGY_BLACK:-random}.${STRATEGY_WHITE:-random}.csv
   artifacts:
     when: always
     paths:
-    - server.log
-    - results.*.*.csv
-".TestDeployable":
-  extends: ".TestGameplay"
+      - server.log
+      - results.*.*.csv
+
+.TestDeployable:
+  extends: .TestGameplay
   needs:
-  - job: BuildDeployable
-    artifacts: true
+    - job: BuildDeployable
+      artifacts: true
   variables:
-    INSTALL_DIR: "./${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}"
+    INSTALL_DIR: ./${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}
   before_script:
-  - apt-get -y update && apt-get -y upgrade && apt-get -y install jq curl time ||
-    true
-  - microdnf install --nodocs unzip jq time && microdnf clean all || true
-  - test -f ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
-  - unzip -q ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+    - apt-get -y update && apt-get -y upgrade && apt-get -y install jq curl time || true
+    - microdnf install --nodocs unzip jq time && microdnf clean all || true
+    - test -f ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+    - unzip -q ${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+
 TestDeployable:
-  extends: ".TestDeployable"
+  extends: .TestDeployable
   parallel:
     matrix:
-    - IMAGE:
-      - "$SBT_IMAGE"
-      - openjdk:8-jre
-      - openjdk:11-jre
-      - openjdk:16
-      - openjdk:17
-      - openjdk:18
-      - openjdk:19
-      STRATEGY_BLACK:
-      - random
-      STRATEGY_WHITE:
-      - random
-  image: "$IMAGE"
+      - IMAGE: [$SBT_IMAGE, openjdk:8-jre, openjdk:11-jre, openjdk:16, openjdk:17, openjdk:18, openjdk:19]
+        STRATEGY_BLACK: [random]
+        STRATEGY_WHITE: [random]
+  image: $IMAGE
+
 TestDockerImage:
-  extends: ".TestGameplay"
+  extends: .TestGameplay
   parallel:
     matrix:
-    - STRATEGY_BLACK:
-      - onStarPoints,minimizeOpponentLiberties
-      - onStarPoints,maximizeOwnLiberties
-      STRATEGY_WHITE:
-      - closestToStarPoints
-      - maximizeDistance
-      - prioritiseCapture
-      - minimizeOpponentLiberties,closestToStarPoints
+      - STRATEGY_BLACK:
+          - onStarPoints,minimizeOpponentLiberties
+          - onStarPoints,maximizeOwnLiberties
+        STRATEGY_WHITE:
+          - closestToStarPoints
+          - maximizeDistance
   image:
     name: registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/server:latest
-    entrypoint:
-    - ''
+    entrypoint: [""]
   needs:
-  - job: BuildDockerImage
-    artifacts: false
+    - job: BuildDockerImage
+      artifacts: false
   variables:
-    INSTALL_DIR: "/go-3"
+    INSTALL_DIR: /go-3
+
 CollectResults:
   stage: package
   needs:
-  - TestDockerImage
+    - TestDockerImage
   script:
-  - ls -l results.*.*.csv
-  - cat results.*.*.csv >> results.all.csv
+    - ls -l results.*.*.csv
+    - cat results.*.*.csv >> results.all.csv
   artifacts:
     name: all-artifacts
     paths:
-    - results.all.csv
+      - results.all.csv
+
 Upload:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
-  - job: BuildDeployable
-    artifacts: true
+    - job: BuildDeployable
+      artifacts: true
   rules:
-  - if: "$CI_COMMIT_TAG"
+    - if: $CI_COMMIT_TAG
   before_script:
-  - apk update
-  - apk add curl
+    - apk update
+    - apk add curl
   script:
-  - export DEPLOYABLE_ZIP_FILE=${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
-  - echo curl --header "JOB-TOKEN $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_ZIP_FILE}
-    "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_ZIP_FILE}"
-  - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_ZIP_FILE}
-    "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_ZIP_FILE}"'
+    - export DEPLOYABLE_ZIP_FILE=${DEPLOYABLE_BASE_NAME}-${DEPLOYABLE_VERSION}.zip
+    - echo curl --header "JOB-TOKEN $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_ZIP_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_ZIP_FILE}"
+    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file ${DEPLOYABLE_ZIP_FILE} "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/${DEPLOYABLE_ZIP_FILE}"'
+
 Release:
   stage: release
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   needs:
-  - job: BuildDeployable
-    artifacts: true
+    - job: BuildDeployable
+      artifacts: true
   rules:
-  - if: "$CI_COMMIT_TAG"
+    - if: $CI_COMMIT_TAG
   script:
-  - echo 'running release_job'
+    - echo 'running release_job'
   release:
-    name: Release $CI_COMMIT_TAG
-    description: Created using the release-cli
-    tag_name: "$CI_COMMIT_TAG"
-    ref: "$CI_COMMIT_TAG"
+    name: 'Release $CI_COMMIT_TAG'
+    description: 'Created using the release-cli'
+    tag_name: '$CI_COMMIT_TAG'
+    ref: '$CI_COMMIT_TAG'
+
+# this job is never executed and left in as instruction how to push to github manually
 PushToGithub:
   stage: release
   only:
-  - master
+    - master
   when: manual
   script:
-  - git remote add github git@github.com:lene/go-3.git
-  - git remote show github
-  - git push github master
+    - git remote add github git@github.com:lene/go-3.git
+    - git remote show github
+    - git push github master
