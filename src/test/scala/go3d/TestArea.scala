@@ -1,6 +1,6 @@
 package go3d
 
-import org.junit.{Assert, Test}
+import org.junit.{Assert, Ignore, Test}
 
 class TestArea:
 
@@ -48,7 +48,7 @@ class TestArea:
     ))
     Assert.assertEquals(5, goban.areas.size)
 
-  @Test def testAreas5ConnectedStones(): Unit =
+  @Test def testAreas9ConnectedStones(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
       1 -> """@@ |
              |@ @
@@ -59,7 +59,7 @@ class TestArea:
     ))
     Assert.assertEquals(1, goban.areas.size)
 
-  @Test def testAreas5ConnectedStonesLibertiesCorrect(): Unit =
+  @Test def testAreas9ConnectedStonesLibertiesCorrect(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
       1 -> """@@ |
              |@ @
@@ -112,6 +112,131 @@ class TestArea:
 
   @Test def testAreaFailsIfAreaEmpty(): Unit =
     assertThrows[BadColorsForArea](Area(Set(), 1))
+
+  @Test def testAreasOneStoneAreaSize(): Unit =
+      val goban = gobanWithAreasFromStrings(Map(
+        1 ->
+          """   |
+            | @ |
+            |   """,
+      ))
+      Assert.assertEquals(1, goban.areas.head.size)
+
+  @Test def testAreas5DisconnectedStonesSizes(): Unit =
+      val goban = gobanWithAreasFromStrings(Map(
+        1 ->
+          """ @ |
+            |@ @
+            | @ """,
+        2 ->
+          """   |
+            | @ |
+            |   |"""
+      ))
+      goban.areas.foreach(a => Assert.assertEquals(1, a.size))
+
+  @Test def testBothColorsSizes(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """ O |
+          |@ @|
+          | O |"""
+    ))
+    goban.areas.foreach(a => Assert.assertEquals(1, a.size))
+
+  @Test def testAreas9ConnectedStonesSize(): Unit =
+      val goban = gobanWithAreasFromStrings(Map(
+        1 ->
+          """@@ |
+            |@ @
+            | @@""",
+        2 ->
+          """   |
+            |@@ |
+            | @ |"""
+      ))
+      Assert.assertEquals(9, goban.areas.head.size)
+
+  @Test def testAreasOneStoneOuterHull(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      2 ->
+        """   |
+          | @ |
+          |   """,
+    ))
+    Assert.assertEquals((Position(2, 2, 2), Position(2, 2, 2)), goban.areas.head.outerHull)
+
+  @Test def testAreasTwoStonesOuterHull(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """   |
+          | @ |
+          |   """,
+      2 ->
+        """   |
+          | @ |
+          |   """,
+    ))
+    Assert.assertEquals((Position(2, 2, 1), Position(2, 2, 2)), goban.areas.head.outerHull)
+
+  @Test def testAreasOuterHullEmptySidePieces(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """ @ |
+          | @ |
+          |   """,
+      2 ->
+        """   |
+          | @@|
+          |   """,
+    ))
+    Assert.assertEquals(1, goban.areas.size)
+    Assert.assertEquals((Position(2, 1, 1), Position(3, 2, 2)), goban.areas.head.outerHull)
+
+  @Ignore
+  @Test def testInsideNoInside(): Unit =
+      val goban = gobanWithAreasFromStrings(Map(
+        1 ->
+          """   |
+            | @ |
+            |   |""",
+      ))
+      Assert.assertEquals(Set(), goban.areas.head.inside)
+
+  @Ignore
+  @Test def testInside10ConnectedStones(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """   |
+          |@@ |
+          |   |""",
+      2 ->
+        """@@ |
+          |@ @|
+          | @@|""",
+      3 ->
+        """   |
+          |@@ |
+          |   |"""
+    ))
+    Assert.assertEquals(1, goban.areas.head.inside.size)
+    Assert.assertEquals(Set(Position(2, 2, 2)), goban.areas.head.inside)
+
+  @Ignore
+  @Test def testInside8ConnectedStonesWithFaceBoundary(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """@@ |
+          |@ @
+          | @@""",
+      2 ->
+        """   |
+          |@@ |
+          |   |"""
+    ))
+    Assert.assertEquals(1, goban.areas.head.inside.size)
+    Assert.assertEquals(Set(Position(2, 2, 1)), goban.areas.head.inside)
+
 
 def gobanWithAreasFromStrings(levels: Map[Int, String]): Goban =
   val from = fromStrings(levels)
