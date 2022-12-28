@@ -16,3 +16,4 @@ class ColorMismatch(messagePrefix: String, color: Color)
   
 class BadColorsForArea(colors: Set[Color]) 
   extends IllegalMove(message = "bad colors for area: "+colors.toString)
+class BadArea(stones: Set[Move]) extends IllegalMove(message = "bad area: "+stones.toString)

@@ -34,7 +34,7 @@ case class Area(stones: Set[Move], liberties: Int):
     colors.head
 
   private def outerHull(stoneSet: Set[Position]): (Position, Position) =
-    if stoneSet.isEmpty then throw BadColorsForArea(Set())
+    if stoneSet.isEmpty then throw BadArea(stones)
     if stoneSet.size == 1 then (stoneSet.head, stoneSet.head)
     else
       val (subHullMin, subHullMax) = outerHull(stoneSet.tail)
