@@ -10,7 +10,7 @@ import scala.annotation.tailrec
 
 object BotClient extends Client:
 
-  val PULL_WAIT_MS = 10
+  private val PULL_WAIT_MS = 10
   var executionTimes: List[Long] = List()
   private val random: Random = Random()
   private var strategies: Array[String] = Array()
@@ -39,8 +39,8 @@ object BotClient extends Client:
         over = true
         game = client.pass.game
     catch
-      case e: Exit => exit(0)
-      case e: InterruptedException => exit(1)
+      case _: Exit => exit(0)
+      case _: InterruptedException => exit(1)
       case e: RequestFailedException => println(e); mainLoop(Array())
     finally
       executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)

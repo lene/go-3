@@ -68,7 +68,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def score: Map[Color, Int] =
     val scores = mutable.Map[Color, Int]().withDefaultValue(0)
-    for color <- List(Black, White) do
+    for color <- Seq(Black, White) do
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
       scores(color) = scores(color) + captures(color)
     val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
