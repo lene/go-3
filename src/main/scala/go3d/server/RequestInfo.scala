@@ -13,7 +13,7 @@ object RequestInfo:
     val (pathInfo, debug) = parsePathInfo(request.getPathInfo)
     if pathInfo != null && pathInfo.length > maxLength
       then throw RequestTooLong(maxLength, pathInfo.length)
-    return RequestInfo(
+    RequestInfo(
       headers.toList.toMap,
       if (queryString != null && queryString.nonEmpty) queryString else "/",
       if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/",
@@ -32,24 +32,24 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
     if parts.isEmpty then throw MalformedRequest(path)
     val gameId = parts(0)
     if !(Games contains gameId) then throw NonexistentGame(gameId, Games.keys.toList)
-    return gameId
+    gameId
 
   def getToken: String =
     if !headers.contains("Authentication") then throw AuthorizationMissing(headers)
     val authorizationParts = headers("Authentication").split("\\s+")
     if authorizationParts(0) != "Bearer" then throw AuthorizationMethodWrong(authorizationParts(0))
-    return authorizationParts(1)
+    authorizationParts(1)
 
   def getPlayer: Option[Player] =
     val players = Players(getGameId)
     try
-      for (_, player) <- players do if player.token == getToken then return Some(player)
-    catch case e: AuthorizationError => return None
-    return None
+      players.find(_._2.token == getToken).map(pair => pair._2)
+    catch case _: AuthorizationError => None
 
   def mustGetPlayer: Player =
     val players = Players(getGameId)
-    for (_, player) <- players do if player.token == getToken then return player
-    throw PlayerNotFoundByToken(getGameId, getToken)
+    players.find(_._2.token == getToken).map(pair => pair._2) match
+      case Some(value) => value
+      case None => throw PlayerNotFoundByToken(getGameId, getToken)
 
   def debugInfo: RequestInfo = if debug then this else NullRequestInfo
