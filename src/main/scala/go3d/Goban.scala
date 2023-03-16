@@ -12,7 +12,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   if size % 2 == 0 then throw BadBoardSize(size, "even")
 
   lazy val areas: Set[Area] = calculateAreas()
-  lazy val allNeighbors: Map[Position, Set[Move]] = neighborsMap()
+  private lazy val allNeighbors: Map[Position, Set[Move]] = neighborsMap()
   lazy val allPositions: Seq[Position] =
     for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield Position(x, y, z)
 
@@ -61,12 +61,9 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     if !Set(Black, White).contains(move.color) then
       throw ColorMismatch(s"trying to find liberties for $move - not a stone but", move.color)
     if at(move.position) != move.color then return false
-    var toCheck = Set[Move]()
-    for position <- neighbors(move.position) do
-      at(position) match
-        case Empty => return true
-        case move.color => toCheck = toCheck + Move(position, move.color)
-        case _ =>
+    val neighboring = neighbors(move.position)
+    if neighboring.exists(at(_) == Empty) then return true
+    val toCheck = neighboring.filter(at(_) == move.color).map(Move(_, move.color)).toSet
     // check if part of a connected area
     setStone(Move(move.position, Sentinel)).hasLiberties(toCheck)
 
@@ -78,12 +75,13 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
   def hasEmptyNeighbor(position: Position): Boolean = hasNeighborOfColor(position, Empty)
 
+  @targetName("numLibertiesMove")
   def numLiberties(area: Set[Move]): Int = numLiberties(area.map(_.position))
 
   @targetName("numLibertiesPosition")
   def numLiberties(area: Set[Position]): Int = emptyNeighbors(area).size
 
-  def emptyNeighbors(area: Set[Position]): Set[Position] =
+  private def emptyNeighbors(area: Set[Position]): Set[Position] =
     area.flatMap(pos => allNeighbors(pos)).map(_.position).intersect(emptyPositions.toSet)
 
   @tailrec
@@ -101,7 +99,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       connected = connected ++ setStone(Move(move.position, Sentinel)).connectedStones(Move(position, move.color))
     connected
 
-  def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
+  private def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
 
   def neighbors(position: Position): Seq[Position] =
     for (
@@ -122,7 +120,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
   def emptyPositions: Seq[Position] = allPositions.filter(at(_) == Empty)
 
-  def neighborsMap(): Map[Position, Set[Move]] =
+  private def neighborsMap(): Map[Position, Set[Move]] =
     allPositions.map(pos => pos -> neighbors(pos).map(p => Move(p, at(p))).toSet).toMap
 
   def checkAndClear(move: Move): Goban =
@@ -130,12 +128,12 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return this
     clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, !move.color)), this)
 
-  def isSuicide(move: Move): Boolean =
+  private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
     val wouldBeBoardAfterMove = setStone(move)
-    for position <- neighbors(move.position) do
-      if !wouldBeBoardAfterMove.hasLiberties(Move(position, !move.color)) then return false
-    true
+    neighbors(move.position).forall(
+      p => wouldBeBoardAfterMove.hasLiberties(Move(p, !move.color))
+    )
 
   private def calculateAreas(): Set[Area] =
     @tailrec

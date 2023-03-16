@@ -12,6 +12,9 @@ case class StarPoints(size: Int):
   val midFace: Seq[Position] = alignedToCenter(2)
   val center: Seq[Position] = Vector(Position(centerPos, centerPos, centerPos))
   val all: Seq[Position] = corner ++ midLine ++ midFace ++ center
+  val asSetsByPriority: Seq[Set[Position]] = Seq(
+    corner.toSet, midLine.toSet, midFace.toSet, center.toSet
+  )
 
   private def alignedToCenter(count: Int): Seq[Position] =
     for (

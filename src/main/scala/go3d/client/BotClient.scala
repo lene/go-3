@@ -30,14 +30,7 @@ object BotClient extends Client:
     var over = false
     val startTime = System.currentTimeMillis()
     try
-      val strategy = SetStrategy(game, strategies)
-      val possible = strategy.narrowDown(status.moves, strategies)
-      if possible.nonEmpty then
-        val setPosition = randomMove(possible)
-        game = client.set(setPosition.x, setPosition.y, setPosition.z).game
-      else
-        over = true
-        game = client.pass.game
+      over = makeOneMove(status)
     catch
       case _: Exit => exit(0)
       case _: InterruptedException => exit(1)
@@ -47,7 +40,18 @@ object BotClient extends Client:
     if !over then mainLoop(Array())
     else println(client.status.game)
 
-  def randomMove(possible: Seq[Position]): Position =
+  private def makeOneMove(status: StatusResponse): Boolean =
+    val strategy = SetStrategy(game, strategies)
+    val possible = strategy.narrowDown(status.moves, strategies)
+    if possible.nonEmpty then
+      val setPosition = randomMove(possible)
+      game = client.set(setPosition.x, setPosition.y, setPosition.z).game
+      false
+    else
+      game = client.pass.game
+      true
+
+  private def randomMove(possible: Seq[Position]): Position =
     possible(random.nextInt(possible.length))
 
   def executionTimeString: String =
