@@ -143,7 +143,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
         val firstArea = connectedStones(moves.head)
         areaFromMoves(
           moves -- firstArea,
-          areas + Area(firstArea, numLiberties(firstArea))
+          areas + Area(firstArea, numLiberties(firstArea), this)
         )
 
     val stones = for (p <- allPositions if at(p) == Black || at(p) == White) yield Move(p, at(p))

@@ -1,17 +1,18 @@
 package go3d
 
-case class Area(stones: Set[Move], liberties: Int):
+case class Area(stones: Set[Move], liberties: Int, goban: Goban):
 
   val color: Color = validateColor(stones)
   val size: Int = stones.size
-  lazy val outerHull: (Position, Position) = outerHull(stones.map(_.position))
+  lazy val outerHull: (Position, Position) = outerHullOfSet(stones.map(_.position))
   private lazy val withinOuterHull: Seq[Position] =
     for (
-      x <- outerHull._1.x to outerHull._2.x;
-      y <- outerHull._1.y to outerHull._2.y;
-      z <- outerHull._1.z to outerHull._2.z
+      x <- outerHull(0).x to outerHull(1).x;
+      y <- outerHull(0).y to outerHull(1).y;
+      z <- outerHull(0).z to outerHull(1).z
     ) yield Position(x, y, z)
 
+  def contains: Position => Boolean = stones.map(_.position).contains
 
   /// all `Position`s that lie within the `Area` and are not of `Color` `color`
   lazy val inside: Set[Position] =
@@ -33,11 +34,11 @@ case class Area(stones: Set[Move], liberties: Int):
     if colors.contains(Empty) || colors.size != 1 then throw BadColorsForArea(colors)
     colors.head
 
-  private def outerHull(stoneSet: Set[Position]): (Position, Position) =
+  private def outerHullOfSet(stoneSet: Set[Position]): (Position, Position) =
     if stoneSet.isEmpty then throw BadArea(stones)
     if stoneSet.size == 1 then (stoneSet.head, stoneSet.head)
     else
-      val (subHullMin, subHullMax) = outerHull(stoneSet.tail)
+      val (subHullMin, subHullMax) = outerHullOfSet(stoneSet.tail)
       val currentStone = stoneSet.head
       (
         Position(
@@ -56,4 +57,28 @@ case class Area(stones: Set[Move], liberties: Int):
       value1.z == value2.z && (((value1.x - value2.x).abs == 1) || ((value1.y - value2.y).abs == 1))
 
   private def isInside(position: Position): Boolean =
-    ???
+    if goban.at(position) == color then false
+    else
+      // all paths from `position` end either in a stone of color `color` or the border of the goban
+      ???
+
+  def insideArea(position: Position, alreadyFoundPaths: Set[Position] = Set()): Set[Position] =
+    if goban.at(position) == color then throw BadColorsForArea(Set(color))
+    val neighborsToConsider = goban.neighbors(position).
+      filter(pos => goban.at(pos) != color).
+      filter(!alreadyFoundPaths.contains(_))
+    if neighborsToConsider.exists(p => onBorderOfAreaButNotBoard(p)) then Set()
+    else if neighborsToConsider.isEmpty then alreadyFoundPaths + position
+    else
+      insideArea(neighborsToConsider.head, alreadyFoundPaths + position ++ neighborsToConsider)
+
+  def onBorderOfAreaButNotBoard(position: Position): Boolean =
+    if outerHull(0).x == 1 && outerHull(1).x == goban.size ||
+      outerHull(0).y == 1 && outerHull(1).y == goban.size ||
+      outerHull(0).z == 1 && outerHull(1).z == goban.size then false // outer hull equals board
+    else if position.x == 1 || position.x == goban.size ||
+      position.y == 1 || position.y == goban.size ||
+      position.z == 1 || position.z == goban.size then false // on border of board
+    else position.x == outerHull(0).x || position.x == outerHull(1).x ||
+      position.y == outerHull(0).y || position.y == outerHull(1).y ||
+      position.z == outerHull(0).z || position.z == outerHull(1).z  // on border of outer hull

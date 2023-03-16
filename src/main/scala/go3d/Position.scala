@@ -15,3 +15,5 @@ class Position(val x: Int, val y: Int, val z: Int):
 
   def -(other: Position): Delta = Delta(x-other.x, y-other.y, z-other.z)
   def +(other: Position): Delta = Delta(x+other.x, y+other.y, z+other.z)
+
+  def asTuple: (Int, Int, Int) = (x, y, z)
