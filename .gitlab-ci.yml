@@ -92,11 +92,12 @@ BuildDockerImage:
   script:
     - VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
     - TAG=${VERSION}-${CI_COMMIT_SHORT_SHA}
-    - docker build --build-arg version=${VERSION} -t registry.gitlab.com/lilacashes/go-3/server:${TAG} .
-    - test -n "$CI_COMMIT_TAG" && docker tag registry.gitlab.com/lilacashes/go-3/server:${TAG} registry.gitlab.com/lilacashes/go-3/server:$CI_COMMIT_TAG
-    - docker tag registry.gitlab.com/lilacashes/go-3/server:${TAG} registry.gitlab.com/lilacashes/go-3/server:latest
+    - REGISTRY=registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}
+    - docker build --build-arg version=${VERSION} -t ${REGISTRY}/server:${TAG} .
+    - test -n "$CI_COMMIT_TAG" && docker tag ${REGISTRY}/server:${TAG} ${REGISTRY}/server:$CI_COMMIT_TAG
+    - docker tag ${REGISTRY}/server:${TAG} ${REGISTRY}/server:latest
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
-    - docker push registry.gitlab.com/lilacashes/go-3/server
+    - docker push ${REGISTRY}/server
 
 .TestGameplay:
   stage: test built
@@ -165,7 +166,7 @@ TestDockerImage:
           - prioritiseCapture
           - minimizeOpponentLiberties,closestToStarPoints
   image:
-    name: registry.gitlab.com/lilacashes/go-3/server:latest
+    name: registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/server:latest
     entrypoint: [""]
   needs:
     - job: BuildDockerImage
