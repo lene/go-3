@@ -22,10 +22,10 @@ object logger:
 
 case class SetStrategy(game: Game, strategies: Array[String]):
 
-  val gameSize: Int = game.size
+  private val gameSize: Int = game.size
 
   def narrowDown(possible: Seq[Position], strategies: Array[String]): Seq[Position] =
-    if strategies.isEmpty then possible
+    if strategies.isEmpty || possible.isEmpty then possible
     else
       val nextPossible = strategies.head match
         case "random" => possible
@@ -48,7 +48,7 @@ case class SetStrategy(game: Game, strategies: Array[String]):
     for (points <- Array(stars.corner, stars.midLine, stars.midFace, stars.center))
       val pointsInInput = possible.toSet.intersect(points.toSet)
       if pointsInInput.nonEmpty then return pointsInInput.toList
-    return possible
+    possible
 
   def closestToStarPoints(possible: Seq[Position]): Seq[Position] =
     if StarPoints(gameSize).all.toSet.intersect(possible.toSet).nonEmpty
@@ -58,7 +58,7 @@ case class SetStrategy(game: Game, strategies: Array[String]):
   def maximizeOwnLiberties(possible: Seq[Position]): Seq[Position] =
     bestBy(possible, p => -game.setStone(Move(p, moveColor)).totalNumLiberties(moveColor))
 
-  def moveColor: Color = if game.moves.isEmpty then Black else !game.moves.last.color
+  private def moveColor: Color = if game.moves.isEmpty then Black else !game.moves.last.color
 
   def minimizeOpponentLiberties(possible: Seq[Position]): Seq[Position] =
     val possibleMoves = game.getFreeNeighbors(!moveColor).intersect(possible.toSet)

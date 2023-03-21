@@ -31,9 +31,9 @@ object BotClient extends Client:
     val startTime = System.currentTimeMillis()
     try
       val strategy = SetStrategy(game, strategies)
-      val possible = status.moves
+      val possible = strategy.narrowDown(status.moves, strategies)
       if possible.nonEmpty then
-        val setPosition = randomMove(strategy.narrowDown(possible, strategies))
+        val setPosition = randomMove(possible)
         game = client.set(setPosition.x, setPosition.y, setPosition.z).game
       else
         over = true
