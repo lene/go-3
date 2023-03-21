@@ -3,7 +3,7 @@ package go3d.client
 import go3d.{Game, Position}
 import go3d.server.StatusResponse
 
-import scala.util.Random
+import java.security.SecureRandom
 import requests.RequestFailedException
 
 import scala.annotation.tailrec
@@ -12,7 +12,7 @@ object BotClient extends Client:
 
   private val PULL_WAIT_MS = 10
   var executionTimes: List[Long] = List()
-  private val random: Random = Random()
+  private val random: SecureRandom = SecureRandom()
   private var strategies: Array[String] = Array()
   private var game: Game = null
 

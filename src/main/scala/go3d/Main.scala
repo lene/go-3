@@ -3,7 +3,7 @@ package go3d
 import server.GoServer
 
 import scala.io.StdIn.readLine
-import scala.util.Random
+import java.security.SecureRandom
 
 val Step = 500
 val DefaultBoardSize = 5
@@ -18,7 +18,7 @@ def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int, verbose: Boo
   if !verbose then println(goban)
 
 def randomGame(size: Int): Unit =
-  val random = new Random
+  val random = new SecureRandom()
   var game = newGame(size)
   var color = Black
   val t0 = System.nanoTime()

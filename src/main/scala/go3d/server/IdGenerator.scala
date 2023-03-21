@@ -1,7 +1,7 @@
 package go3d.server
 
 import scala.annotation.tailrec
-import scala.util.Random
+import java.security.SecureRandom
 
 object IdGenerator:
   val IdLength = 6
@@ -11,4 +11,4 @@ object IdGenerator:
     if length <= 0 then str else getBase62(length-1, str+base62(random.nextInt(62)))
 
   private val base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray
-  private val random = new Random
+  private val random = new SecureRandom()
