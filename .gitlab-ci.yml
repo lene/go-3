@@ -25,14 +25,23 @@ include:
 
 # This job installs sbt by itself. It is somewhat slower than the ones based on scala-sbt below.
 # I leave it in mostly for documentation how to install the environment.
-Test:Ubuntu:
-  image: ubuntu:22.04
+Test:Debian:
+  parallel:
+    matrix:
+      - IMAGE:
+        - ubuntu:20.04
+        - ubuntu:22.04
+        - ubuntu:latest
+        - debian:stable-slim
+        - debian:unstable-slim
+        - debian:testing-slim
+  image: $IMAGE
   stage: test
   needs: []
   before_script:
     - apt-get -y update
     - apt-get -y upgrade
-    - apt-get -y install curl gnupg openjdk-18-jdk
+    - apt-get -y install curl gnupg openjdk-17-jdk
     - echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" > /etc/apt/sources.list.d/sbt.list
     - echo "deb https://repo.scala-sbt.org/scalasbt/debian /" > /etc/apt/sources.list.d/sbt_old.list
     - curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | apt-key add
@@ -167,7 +176,7 @@ TestDockerImage:
           - closestToStarPoints
           - maximizeDistance
   image:
-    name: registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/server:latest
+    name: ${DOCKER_IMAGE}:latest
     entrypoint: [""]
   needs:
     - job: BuildDockerImage
