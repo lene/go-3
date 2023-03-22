@@ -10,7 +10,7 @@ variables:
   TEST_RUN_MAX_RUNNING_TIME: 60
   DEPLOYABLE_BASE_NAME: go-3d
   DEPLOYABLE_VERSION: 0.7.1
-  SBT_IMAGE: hseeberger/scala-sbt:8u312_1.5.5_2.13.7
+  SBT_IMAGE: hseeberger/scala-sbt:17.0.2_1.6.2_3.1.1
   DOCKER_IMAGE: registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/server
 
 default:
