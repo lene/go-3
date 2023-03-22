@@ -23,7 +23,7 @@ class TestIo:
     val gameId = registerGame(TestSize)
     val player = registerPlayer(Black, gameId, "mock@")
     Io.saveGame(gameId)
-    Assert.assertTrue(Io.exists(s"$gameId.json"))
+    Assert.assertTrue(XIO.exists(s"$gameId.json"))
 
   @Test def testSaveGameContents(): Unit =
     val gameId = registerGame(TestSize)
@@ -38,13 +38,13 @@ class TestIo:
 
   @Test def testExists(): Unit =
     Io.writeFile("test", "{}")
-    Assert.assertTrue(Io.exists("test"))
-    Assert.assertFalse(Io.exists("this file should not exist"))
+    Assert.assertTrue(XIO.exists("test"))
+    Assert.assertFalse(XIO.exists("this file should not exist"))
 
   @Ignore  
   @Test def testGetListOfJsonFiles(): Unit =
     Io.writeFile("test.json", "{}")
-    Assert.assertTrue(Io.exists("test.json"))
+    Assert.assertTrue(XIO.exists("test.json"))
     val matchingFiles = Io.getListOfFiles(".json").map(f => f.getName)
     Assert.assertEquals(
       java.io.File(Io.baseFolder).listFiles.toList.toString, List("test.json"), matchingFiles

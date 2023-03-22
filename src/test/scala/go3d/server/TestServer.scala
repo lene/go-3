@@ -309,12 +309,12 @@ class TestServer:
   @Test def testPlayRandomGameIsSaved(): Unit =
     val gameData = setUpGame(TestSize)
     playRandomGame(gameData)
-    Assert.assertTrue(Io.exists(gameData.id + ".json"))
+    Assert.assertTrue(XIO.exists(gameData.id + ".json"))
 
   @Test def testSavedRandomGameIsSameAsPlayed(): Unit =
     val gameData = setUpGame(TestSize)
     playRandomGame(gameData)
-    val savedGame = readGame(Io.open(gameData.id + ".json"))
+    val savedGame = readGame(XIO.open(gameData.id + ".json"))
     Assert.assertEquals(Games(gameData.id), savedGame.game)
 
   @Test def testTooLongURLSetsStatus414WhenCreatingGame(): Unit =

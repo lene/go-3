@@ -31,12 +31,6 @@ object Io:
     Files.write(path, content.getBytes(StandardCharsets.UTF_8))
     path
 
-  def exists(filename: String): Boolean =
-    if basePath == null then throw IllegalArgumentException("call Io.init() before using Io")
-    Files.exists(Paths.get(baseFolder, filename))
-
-  def open(filename: String): File = Paths.get(baseFolder, filename).toFile
-
   def getListOfFiles(extension: String): List[File] =
     if basePath == null then throw IllegalArgumentException("call Io.init() before using Io")
     new java.io.File(baseFolder).listFiles.toList.filter(_.getName.endsWith(extension))
