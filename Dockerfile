@@ -15,7 +15,7 @@ ARG version=0.7.1
 ENV SAVE_DIR saves
 ENV PORT 6030
 
-RUN microdnf upgrade 
+RUN microdnf upgrade
 WORKDIR /go-3
 RUN useradd go-3d && chown -R go-3d . && microdnf install jq curl time && mkdir -p "${SAVE_DIR}"
 USER go-3d
