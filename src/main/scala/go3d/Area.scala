@@ -15,8 +15,7 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
   def contains: Position => Boolean = stones.map(_.position).contains
 
   /// all `Position`s that lie within the `Area` and are not of `Color` `color`
-  lazy val inside: Set[Position] =
-    withinOuterHull.filter(isInside).toSet
+  lazy val inside: Set[Position] = allInsideAreas
 
   def isAlive: Boolean =
     if inside.size < 2 then false
@@ -51,16 +50,14 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
           if currentStone.z > subHullMax.z then currentStone.z else subHullMax.z)
       )
 
-  private def areNeighbors(value1: Position, value2: Position): Boolean =
-    value1.x == value2.x && (((value1.y - value2.y).abs == 1) || ((value1.z - value2.z).abs == 1)) ||
-      value1.y == value2.y && (((value1.x - value2.x).abs == 1) || ((value1.z - value2.z).abs == 1)) ||
-      value1.z == value2.z && (((value1.x - value2.x).abs == 1) || ((value1.y - value2.y).abs == 1))
-
-  private def isInside(position: Position): Boolean =
-    if goban.at(position) == color then false
-    else
-      // all paths from `position` end either in a stone of color `color` or the border of the goban
-      ???
+  def allInsideAreas: Set[Position] =
+    withinOuterHull.filter(
+      p => goban.at(p) != color
+    ).map(
+      insideArea(_)
+    ).foldLeft(Set())(
+      (acc, area) => acc ++ area
+    )
 
   def insideArea(position: Position, alreadyFoundPaths: Set[Position] = Set()): Set[Position] =
     if goban.at(position) == color then throw BadColorsForArea(Set(color))
@@ -69,8 +66,7 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
       filter(!alreadyFoundPaths.contains(_))
     if neighborsToConsider.exists(p => onBorderOfAreaButNotBoard(p)) then Set()
     else if neighborsToConsider.isEmpty then alreadyFoundPaths + position
-    else
-      insideArea(neighborsToConsider.head, alreadyFoundPaths + position ++ neighborsToConsider)
+    else insideArea(neighborsToConsider.head, alreadyFoundPaths + position ++ neighborsToConsider)
 
   def onBorderOfAreaButNotBoard(position: Position): Boolean =
     if outerHull(0).x == 1 && outerHull(1).x == goban.size ||
@@ -82,3 +78,5 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
     else position.x == outerHull(0).x || position.x == outerHull(1).x ||
       position.y == outerHull(0).y || position.y == outerHull(1).y ||
       position.z == outerHull(0).z || position.z == outerHull(1).z  // on border of outer hull
+
+def areNeighbors(pos1: Position, pos2: Position): Boolean = (pos1-pos2).abs == 1

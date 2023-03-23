@@ -36,12 +36,11 @@ class TestIo:
     Assert.assertTrue(value.players.nonEmpty)
     Assert.assertTrue(value.players.contains(Black))
 
-  @Test def testExists(): Unit =
+  @Test def testExistsToGainTrustInTestsThatUseIt(): Unit =
     Io.writeFile("test", "{}")
     Assert.assertTrue(XIO.exists("test"))
     Assert.assertFalse(XIO.exists("this file should not exist"))
 
-  @Ignore  
   @Test def testGetListOfJsonFiles(): Unit =
     Io.writeFile("test.json", "{}")
     Assert.assertTrue(XIO.exists("test.json"))
