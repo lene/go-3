@@ -16,12 +16,12 @@ lazy val root = project
     scalacOptions ++= Seq("-deprecation", "-explain", "-feature"),
 
     // Logging
-    libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.4",
-    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.2.3",
+    libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.6",
     // JUnit
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     // requests
-    libraryDependencies += "com.lihaoyi" %% "requests" % "0.6.9",
+    libraryDependencies += "com.lihaoyi" %% "requests" % "0.8.0",
     // newer jetty versions require both code changes and Java >= 11
     libraryDependencies ++= Seq(
         "org.eclipse.jetty" % "jetty-servlet" % "9.4.42.v20210604",
