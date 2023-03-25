@@ -24,8 +24,8 @@ lazy val root = project
     libraryDependencies += "com.lihaoyi" %% "requests" % "0.8.0",
     // newer jetty versions require both code changes and Java >= 11
     libraryDependencies ++= Seq(
-        "org.eclipse.jetty" % "jetty-servlet" % "9.4.42.v20210604",
-        "org.eclipse.jetty" % "jetty-server" % "9.4.42.v20210604",
+        "org.eclipse.jetty" % "jetty-servlet" % "9.4.51.v20230217",
+        "org.eclipse.jetty" % "jetty-server" % "9.4.51.v20230217",
     ),
     // circe
     libraryDependencies ++= Seq(
