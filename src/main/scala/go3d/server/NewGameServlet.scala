@@ -9,7 +9,7 @@ class NewGameServlet extends BaseServlet with LazyLogging:
       val boardSize = getBoardSize(requestInfo.path)
       val gameId = registerGame(boardSize)
       response.setStatus(HttpServletResponse.SC_OK)
-      logger.info(s"$gameId, $boardSize")
+      logger.info(s"$gameId, $boardSize".replaceAll("[\r\n]"," "))
       GameCreatedResponse(gameId, boardSize)
 
   def maxRequestLength: Int = "/".length + 2
