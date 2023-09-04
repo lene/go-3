@@ -3,20 +3,21 @@ package go3d.server
 import go3d.{Color, Game}
 import org.eclipse.jetty.server.{NetworkConnector, Server}
 import org.eclipse.jetty.servlet.ServletHandler
+import com.typesafe.scalalogging.LazyLogging
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
 import io.circe.syntax.EncoderOps
 
-object GoServer:
+object GoServer extends LazyLogging:
 
-  val DefaultPort = 6030 // "Go3D"
-  val newRoute = "/new/*"
-  val registerRoute = "/register/*"
-  val statusRoute = "/status/*"
-  val setRoute = "/set/*"
-  val passRoute = "/pass/*"
-  val openGamesRoute = "/openGames"
-  val healthRoute = "/health"
+  private val DefaultPort = 6030 // "Go3D"
+  private val newRoute = "/new/*"
+  private val registerRoute = "/register/*"
+  private val statusRoute = "/status/*"
+  private val setRoute = "/set/*"
+  private val passRoute = "/pass/*"
+  private val openGamesRoute = "/openGames"
+  private val healthRoute = "/health"
 
   def createServer(port: Int): Server =
     val server = new Server(port)
@@ -36,17 +37,20 @@ object GoServer:
 
   def loadGames(baseDir: String): Unit =
     Io.init(baseDir)
-    for saveFile <- Io.getListOfFiles(".json") do
+    for saveFile <- Io.getListOfFiles(".json").sorted do
       try
         restoreGame(readGame(saveFile))
+        logger.debug(s"Loaded ${saveFile.getName}")
       catch
-        case e: ReadSaveGameError => println(s"${saveFile.getName}: ${e.message}")
-        case e: JsonDecodeError => println(s"${saveFile.getName}: ${e.message}")
-    println(Games)
+        case e: ReadSaveGameError => logger.warn(s"${saveFile.getName}: ${e.message}")
+        case e: JsonDecodeError => logger.warn(s"${saveFile.getName}: ${e.message}")
+    logger.info(s"${Games.size} games loaded")
 
   def run(port: Int = DefaultPort): Unit =
     val goServer = createServer(port)
     goServer.start()
-    println(s"Server started on ${serverPort(goServer)} with routes:")
-    println(s"$newRoute, $registerRoute, $statusRoute, $setRoute, $passRoute, $openGamesRoute, $healthRoute")
+    logger.info(s"Server started on ${serverPort(goServer)} with routes:")
+    logger.info(
+      s"$newRoute, $registerRoute, $statusRoute, $setRoute, $passRoute, $openGamesRoute, $healthRoute"
+    )
     goServer.join()

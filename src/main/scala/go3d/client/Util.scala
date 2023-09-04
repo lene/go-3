@@ -58,7 +58,7 @@ object Util {
     var game = newGame(boardSize)
     for move <- moves do
       game = game.makeMove(move)
-      if verbose then println(move.toString + "\n" + game)
+      if verbose then logger.info(move.toString + "\n" + game)
     game
 
 }

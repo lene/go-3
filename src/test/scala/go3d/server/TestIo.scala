@@ -21,13 +21,13 @@ class TestIo:
 
   @Test def testSaveGameWritesFile(): Unit =
     val gameId = registerGame(TestSize)
-    val player = registerPlayer(Black, gameId, "mock@")
+    registerPlayer(Black, gameId, "mock@")
     Io.saveGame(gameId)
     Assert.assertTrue(XIO.exists(s"$gameId.json"))
 
   @Test def testSaveGameContents(): Unit =
     val gameId = registerGame(TestSize)
-    val player = registerPlayer(Black, gameId, "mock@")
+    registerPlayer(Black, gameId, "mock@")
     val path = Io.saveGame(gameId)
     val restored = decode[SaveGame](Source.fromFile(path.toFile).getLines.mkString)
     Assert.assertTrue(restored.isRight)

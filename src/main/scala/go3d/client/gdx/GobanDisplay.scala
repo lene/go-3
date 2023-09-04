@@ -3,15 +3,15 @@ package go3d.client.gdx
 import go3d.client.BaseClient
 import go3d.server.StatusResponse
 import go3d.{Black, Game, White}
-
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.graphics.g3d.RenderableProvider
 import com.badlogic.gdx.math.Vector3
 import com.badlogic.gdx.utils.Timer
+import com.typesafe.scalalogging.LazyLogging
 
 import scala.annotation.tailrec
 
-class GobanDisplay(client: BaseClient) extends ApplicationListener:
+class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogging:
   final val BOARD_SIZE: Int = client.status.game.size
   final val UPDATE_DELAY_SECONDS = 2f
   final val UPDATE_INTERVAL_SECONDS = 1f
@@ -32,7 +32,7 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener:
     def doUpdate(): Unit =
       game = Some(status.game)
       stonesModel = builder.createStones(status.game)
-      println(s"Move ${status.game.moves.length}: $lastMove $captures")
+      logger.info(s"Move ${status.game.moves.length}: $lastMove $captures")
     game match
       case None => doUpdate()
       case Some(g) => if status.game.moves.length != g.moves.length then doUpdate()
@@ -55,8 +55,8 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener:
     gdxResources.dispose()
     builder.dispose()
 
-  @Override def resume(): Unit = println("resume")
+  @Override def resume(): Unit = logger.info("resume")
 
   @Override def resize(width: Int, height: Int): Unit = gdxResources.resize()
 
-  @Override def pause(): Unit = println("pause")
+  @Override def pause(): Unit = logger.info("pause")

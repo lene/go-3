@@ -1,11 +1,11 @@
 package go3d.client
 
+import com.typesafe.scalalogging.LazyLogging
 import go3d.server.StatusResponse
 
-abstract case class InteractiveClient(pollInterval: Int = 500) extends Client:
+abstract case class InteractiveClient(pollInterval: Int = 500) extends Client with LazyLogging:
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
-    def isSwitch(s : String) = (s(0) == '-')
     list match
       case Nil => map
       case "--size" :: value :: tail =>
@@ -21,7 +21,7 @@ abstract case class InteractiveClient(pollInterval: Int = 500) extends Client:
       case "--port" :: value :: tail =>
         nextOption(map ++ Map("port" -> value.toInt), tail)
       case option :: _ =>
-        println("Unknown option "+option)
+        logger.error(s"Unknown option $option")
         System.exit(1)
         map
 

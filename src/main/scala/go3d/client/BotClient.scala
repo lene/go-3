@@ -1,5 +1,6 @@
 package go3d.client
 
+import com.typesafe.scalalogging.LazyLogging
 import go3d.{Game, Position}
 import go3d.server.StatusResponse
 
@@ -8,7 +9,7 @@ import requests.RequestFailedException
 
 import scala.annotation.tailrec
 
-object BotClient extends Client:
+object BotClient extends Client with LazyLogging:
 
   private val PULL_WAIT_MS = 10
   var executionTimes: List[Long] = List()
@@ -23,10 +24,12 @@ object BotClient extends Client:
   //  closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
 
   def mainLoop(args: Array[String]): Unit =
-    print(s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")((str) => str)}  ")
+    logger.info(
+      s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")((str) => str)}"
+    )
     val status = waitUntilReady()
     game = status.game
-    print(s"\b Move: ${game.moves.length} ${executionTimeString}\r")
+    logger.info(s"Move: ${game.moves.length} ${executionTimeString}")
     var over = false
     val startTime = System.currentTimeMillis()
     try
@@ -34,11 +37,11 @@ object BotClient extends Client:
     catch
       case _: Exit => exit(0)
       case _: InterruptedException => exit(1)
-      case e: RequestFailedException => println(e); mainLoop(Array())
+      case e: RequestFailedException => logger.warn(e.message); mainLoop(Array())
     finally
       executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
     if !over then mainLoop(Array())
-    else println(client.status.game)
+    else logger.info(s"${client.status.game}")
 
   private def makeOneMove(status: StatusResponse): Boolean =
     val strategy = SetStrategy(game, strategies)
@@ -85,7 +88,6 @@ object BotClient extends Client:
     strategies = options("strategy").asInstanceOf[String].split(',')
 
   @tailrec def nextOption(map : OptionMap, list: List[String]) : OptionMap =
-    def isSwitch(s : String) = (s(0) == '-')
     list match
       case Nil => map
       case "--size" :: value :: tail =>
@@ -103,7 +105,7 @@ object BotClient extends Client:
       case "--strategy" :: value :: tail =>
         nextOption(map ++ Map("strategy" -> value), tail)
       case option :: tail =>
-        println("Unknown option "+option)
+        logger.error(s"Unknown option $option")
         System.exit(1)
         map
 

@@ -4,18 +4,21 @@ import server.GoServer
 
 import scala.io.StdIn.readLine
 import java.security.SecureRandom
+import com.typesafe.scalalogging.Logger
 
 val Step = 500
 val DefaultBoardSize = 5
+
+def logger = Logger("go3d")
 
 def replayGame(goban: Game, moves: List[Move | Pass], delayMs: Int, verbose: Boolean = false): Unit =
   var board = goban
   for move <- moves do
     board = board.makeMove(move)
     if verbose then
-      println(s"$move\n$goban")
+      Console.println(s"$move\n$goban")
       Thread.sleep(delayMs)
-  if !verbose then println(goban)
+  if !verbose then Console.println(goban)
 
 def randomGame(size: Int): Unit =
   val random = new SecureRandom()
@@ -33,23 +36,23 @@ def randomGame(size: Int): Unit =
     color = !color
   val totalMs = (System.nanoTime()-t0)/1000000
   Console.println(s"overall: ${totalMs/1000.0}s, ${totalMs/(size*size*size)}ms/move")
-  println(game)
-  println(game.score)
+  Console.println(game)
+  Console.println(game.score)
 
 def playGame(boardSize: Int): Unit =
   val game = newGame(boardSize)
   try
     val finished_game = makeMove(game, Black)
-    println(finished_game.score)
-  catch case e: GameOver => println(s"game over. score: ${e.game.score}")
+    logger.info(s"${finished_game.score}")
+  catch case e: GameOver => logger.info(s"game over. score: ${e.game.score}")
 
 def makeMove(game: Game, color: Color): Game =
-  if game.moves.size >= game.size*game.size*game.size then return game
-  println(game)
+  if game.moves.length >= game.size*game.size*game.size then return game
+  logger.info(s"$game")
   val move = readMove(
-    s"move ${game.moves.size+1} - $color set stone at: ", game.possibleMoves(color).toSet, color
+    s"move ${game.moves.length+1} - $color set stone at: ", game.possibleMoves(color).toSet, color
   )
-  return makeMove(game.makeMove(move), !color)
+  makeMove(game.makeMove(move), !color)
 
 def readMove(message: String, possibleMoves: Set[Position], color: Color): Move| Pass =
   val input = readLine(message)
@@ -59,27 +62,26 @@ def readMove(message: String, possibleMoves: Set[Position], color: Color): Move|
     Move(pos, color)
   catch
     case e: IllegalMove =>
-      println(e.message)
+      logger.warn(e.message)
       readMove(message, possibleMoves, color)
     case e: NumberFormatException =>
       if e.getMessage.endsWith("p\"") then return Pass(color)
-      println(s"Not a number: ${e.getMessage}")
+      logger.warn(s"Not a number: ${e.getMessage}")
       readMove(message, possibleMoves, color)
     case e: ArrayIndexOutOfBoundsException =>
-      println(s"Not three numbers, only ${e.getMessage}")
+      logger.warn(s"Not three numbers, only ${e.getMessage}")
       readMove(message, possibleMoves, color)
-    case e: InterruptedException =>
-      println("Goodbye.")
+    case _: InterruptedException =>
+      logger.info("Goodbye.")
       System.exit(1)
       Move(1, 1, 1, Black)
 
 object Runner:
   type OptionMap = Map[String, Int|String]
-  val DefaultServerPort = 3333
-  val DefaultSaveDir = "./Go3D-Savegames"
+  private val DefaultServerPort = 3333
+  private val DefaultSaveDir = "./Go3D-Savegames"
 
   def nextOption(map : OptionMap, list: List[String]) : OptionMap =
-    def isSwitch(s : String) = (s(0) == '-')
     list match
       case Nil => map
       case "--benchmark" :: value :: tail =>
@@ -100,9 +102,9 @@ object Runner:
         if option.matches("\\d+") then
           nextOption(map ++ Map("benchmark_size" -> option.toInt), tail)
         else
-          println("Unknown option "+option)
+          logger.error(s"Unknown option ${option.filter(_ >= ' ')}")
           System.exit(1)
-          return map
+          map
 
   def main(args: Array[String]): Unit =
     val options = nextOption(Map(), args.toList)
@@ -113,6 +115,7 @@ object Runner:
     else if options.contains("server") then {
       val port = options.getOrElse("port", DefaultServerPort).asInstanceOf[Int]
       val saveDir = options.getOrElse("save_dir", DefaultSaveDir).asInstanceOf[String]
+      logger.info(s"Starting server on port $port, saving games to $saveDir")
       GoServer.loadGames(saveDir)
       GoServer.run(port)
     } else randomGame(DefaultBoardSize)

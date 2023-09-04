@@ -1,5 +1,6 @@
 package go3d.client
 
+import com.typesafe.scalalogging.LazyLogging
 import go3d.BadColor
 import go3d.server.StatusResponse
 
@@ -15,7 +16,7 @@ trait ClientTrait:
   def waitUntilReady(): StatusResponse
   def init(): Unit
 
-abstract class Client extends ClientTrait:
+abstract class Client extends ClientTrait with LazyLogging:
 
   def main(args: Array[String]): Unit =
     try
@@ -38,7 +39,7 @@ abstract class Client extends ClientTrait:
       "--" + e.getMessage.substring("key not found: ".length).replace('_', '-')
 
   def exit(message: String, status: Int): Unit =
-    if message.nonEmpty then println(message)
+    if message.nonEmpty then logger.info(message)
     System.exit(status)
   def exit(status: Int): Unit = exit("", status)
 

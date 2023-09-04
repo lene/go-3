@@ -49,14 +49,14 @@ def setListOfStones(boardSize: Int, moves: List[Move | Pass]): Goban =
   var goban = newGoban(boardSize)
   for move <- moves do
     move match
-      case p: Pass =>
+      case _: Pass =>
       case m: Move => goban = goban.setStone(m)
   goban
 
 def checkStonesOnBoard(game: GoGame, moves: List[Move | Pass]): Unit =
   for move <- moves do
     move match
-      case p: Pass =>
+      case _: Pass =>
       case m: Move => Assert.assertEquals(m.color, game.at(m.position))
 
 def assertCollectionEqual[T](expected: Seq[T], actual: Seq[T]): Unit =
