@@ -20,6 +20,8 @@ abstract class Client extends ClientTrait:
   def main(args: Array[String]): Unit =
     try
       parseArgs(args)
+      init()
+      mainLoop(args)
     catch
       case e: UnknownHostException => exit(s"unknown host: ${e.getMessage}", 1)
       case e: ConnectException => exit(s"connection problem: ${e.getMessage}", 1)
@@ -28,8 +30,7 @@ abstract class Client extends ClientTrait:
       case _: BadColor => exit(s"not a color, must be either black/b/@ or white/w/O", 1)
       case e: NoSuchElementException => exit(s"missing argument: ${exceptionToParam(e)}", 1)
       case e: IllegalArgumentException => exit(s"missing argument: ${e.getMessage}", 1)
-    init()
-    mainLoop(args)
+      case e: Throwable => exit(s"unexpected error: ${e.getMessage}", 1)
 
   def init(): Unit = {}
 
