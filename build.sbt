@@ -1,15 +1,15 @@
 import sbt.Keys.libraryDependencies
 
-val scala3Version = "3.2.2"
+val scala3Version = "3.3.0"
 val circeVersion = "0.14.1"
-val libgdxVersion = "1.11.0"
+val libgdxVersion = "1.12.0"
 
 lazy val root = project
   .in(file("."))
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.1",
+    version := "0.7.2",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -17,7 +17,7 @@ lazy val root = project
 
     // Logging
     libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.6",
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.7",
     // JUnit
     libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
     // requests
@@ -36,7 +36,7 @@ lazy val root = project
     // libGDX
     libraryDependencies ++= Seq(
         "com.badlogicgames.gdx" % "gdx" % libgdxVersion,
-        "net.sf.proguard" % "proguard-base" % "4.11" % "provided",
+        "net.sf.proguard" % "proguard-base" % "6.2.2" % "provided",
         "com.badlogicgames.gdx" % "gdx-backend-lwjgl3" % libgdxVersion,
         "com.badlogicgames.gdx" % "gdx-platform" % libgdxVersion classifier "natives-desktop",
     )
