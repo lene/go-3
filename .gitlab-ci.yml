@@ -111,6 +111,13 @@ BuildDockerImage:
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
     - docker push ${DOCKER_IMAGE}
 
+container_scanning:
+  stage: build
+  needs:
+    - BuildDockerImage
+  variables:
+    CS_IMAGE: ${DOCKER_IMAGE}:latest
+
 .TestGameplay:
   stage: test built
   variables:
