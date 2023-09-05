@@ -48,3 +48,7 @@ class TestIo:
     Assert.assertEquals(
       java.io.File(Io.baseFolder).listFiles.toList.toString, List("test.json"), matchingFiles
     )
+
+  @Test def testGuardAgainstPathTraversal(): Unit =
+    assertThrows[IllegalArgumentException]({Io.writeFile("../test.json", "{}")})
+    assertThrows[IllegalArgumentException]({Io.writeFile("/tmp/test.json", "{}")})
