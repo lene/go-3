@@ -10,8 +10,7 @@
 # $2 -- URL to which the push is being done
 #
 
-remote="$1"
-url="$2"
+GITLAB_PROJECT_ID=6643214
 
 status=0
 
@@ -19,7 +18,7 @@ status=0
 if [ -n "${GITLAB_ACCESS_TOKEN}" ]; then
   CONTENT="$(cat .gitlab-ci.yml)"
   jq --null-input --arg yaml "$CONTENT" '.content=$yaml' | \
-  curl -s "https://gitlab.com/api/v4/ci/lint" \
+  curl -s "https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/ci/lint" \
     --header 'Content-Type: application/json' --header "PRIVATE-TOKEN: $GITLAB_ACCESS_TOKEN" \
     --data @- | \
     jq .valid | grep true || status=1
