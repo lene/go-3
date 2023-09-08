@@ -15,5 +15,5 @@ abstract class MakeMoveServlet extends BaseServlet with MakeMove with LazyLoggin
     Io.saveGame(gameId)
     response.setStatus(HttpServletResponse.SC_OK)
     logger.info(s"${requestInfo.path}, $color".replaceAll("[\r\n]"," "))
-    StatusResponse(newGame, newGame.possibleMoves(color), false, requestInfo.debugInfo)
+    StatusResponse(newGame, newGame.possibleMoves(color), false, newGame.isOver, requestInfo.debugInfo)
 

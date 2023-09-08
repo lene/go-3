@@ -213,19 +213,21 @@ implicit val decodePlayerRegisteredResponse: Decoder[PlayerRegisteredResponse] =
 
 implicit val encodeStatusResponse: Encoder[StatusResponse] =
   (response: StatusResponse) => Json.obj(
-    ("game", response.game.asJson),
-    ("moves", response.moves.asJson),
-    ("ready", Json.fromBoolean(response.ready)),
-    ("debug", response.debug.asJson)
-  )
+      ("game", response.game.asJson),
+      ("moves", response.moves.asJson),
+      ("ready", Json.fromBoolean(response.ready)),
+      ("over", Json.fromBoolean(response.over)),
+      ("debug", response.debug.asJson)
+    )
 
 implicit val decodeStatusResponse: Decoder[StatusResponse] =
   (c: HCursor) => for
     game <- c.downField("game").as[Game]
     moves <- c.downField("moves").as[List[Position]]
     ready <- c.downField("ready").as[Boolean]
+    over <- c.downField("over").as[Boolean]
     debug <- c.downField("debug").as[RequestInfo]
-  yield StatusResponse(game, moves, ready, debug)
+  yield StatusResponse(game, moves, ready, over, debug)
 
 implicit val encodeOpenGamesResponse: Encoder[GameListResponse] =
   (response: GameListResponse) => Json.obj(("ids", response.ids.asJson))

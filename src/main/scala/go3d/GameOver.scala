@@ -1,3 +1,3 @@
 package go3d
 
-class GameOver(val game: Game) extends RuntimeException
+class GameOver(val game: Game) extends GoException

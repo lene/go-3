@@ -4,8 +4,8 @@ import com.typesafe.scalalogging.Logger
 
 import javax.servlet.http.HttpServletResponse
 
-class getColorServlet extends BaseServlet:
-  def logger: Logger = Logger[getColorServlet]
+class GetColorServlet extends BaseServlet:
+  def logger: Logger = Logger[GetColorServlet]
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     val gameId = requestInfo.getGameId
@@ -15,9 +15,9 @@ class getColorServlet extends BaseServlet:
       requestInfo.getPlayer match
         case Some(p) =>
           val ready = game.isTurn(p.color) && Players(gameId).size == 2
-          StatusResponse(game, game.possibleMoves(p.color), ready, requestInfo.debugInfo)
-        case None => StatusResponse(game, List(), false, NullRequestInfo)
+          StatusResponse(game, game.possibleMoves(p.color), ready, game.isOver, requestInfo.debugInfo)
+        case None => errorResponse(game)
     catch
-      case e: AuthorizationMissing => StatusResponse(game, List(), false, NullRequestInfo)
+      case e: AuthorizationMissing => errorResponse(game)
 
   def maxRequestLength: Int = "/".length + IdGenerator.IdLength

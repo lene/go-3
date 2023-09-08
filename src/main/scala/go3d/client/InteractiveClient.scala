@@ -1,7 +1,7 @@
 package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
-import go3d.server.StatusResponse
+import go3d.server.{StatusResponse, emptyResponse}
 
 abstract case class InteractiveClient(pollInterval: Int = 500) extends Client with LazyLogging:
 
@@ -51,7 +51,7 @@ abstract case class InteractiveClient(pollInterval: Int = 500) extends Client wi
 
 
   override  def waitUntilReady(): StatusResponse =
-    var status = StatusResponse(null, null, false, null)
+    var status = emptyResponse
     var index = 0
     while !status.ready do
       index = index+1

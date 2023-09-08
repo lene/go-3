@@ -1,12 +1,12 @@
 package go3d.server
 
-import go3d._
-import io.circe.parser._
+import go3d.*
+import io.circe.parser.*
 import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.ServletHandler
-import org.junit._
-import requests._
+import org.junit.*
+import requests.{RequestFailedException, *}
 
 import java.io.IOException
 import java.nio.file.Files
@@ -21,7 +21,9 @@ case class GameData(id: String, token: Map[Color, String]):
     this(gameId, Map(Black -> blackToken, White -> whiteToken))
 
   def status(color: Color): StatusResponse =
-    getSR(s"${GameData.ServerURL}/status/${id}", Map("Authentication" -> s"Bearer ${token(color)}"))
+    getSR(
+      s"${GameData.ServerURL}/status/${id}", Map("Authentication" -> s"Bearer ${token(color)}")
+    )
   def status(): StatusResponse = getSR(s"${GameData.ServerURL}/status/${id}", Map())
 
   def set(color: Color, x: Int, y: Int, z: Int): StatusResponse =
@@ -388,11 +390,6 @@ class TestServer:
   @Test def testHealthFailsWithExtraData(): Unit =
     assertFailsWithStatus(s"http://localhost:$TestPort/health/xyz", 404)
 
-  @Test def testRegisterWithDebug(): Unit =
-    val newGameResponse = GameData.create(TestSize)
-    val registerResponse = getPRR(s"${GameData.ServerURL}/register/${newGameResponse.id}/@/d")
-    Assert.assertTrue(registerResponse.debug.headers.nonEmpty)
-
   @Test def testRegisterWithoutDebugDoesNotPassDebugInfo(): Unit =
     val newGameResponse = GameData.create(TestSize)
     val registerResponse = getPRR(s"${GameData.ServerURL}/register/${newGameResponse.id}/@")
@@ -457,7 +454,7 @@ class TestServer:
   @Test def testGetStatusWithDebugWithoutAuthDoesNotPassDebugInfo(): Unit =
     val gameData = setUpGame(TestSize)
     val statusResponse = getSR(s"${GameData.ServerURL}/status/${gameData.id}/d", Map())
-    Assert.assertFalse(statusResponse.debug.headers.nonEmpty)
+    Assert.assertFalse(statusResponse.toString, statusResponse.debug.headers.nonEmpty)
 
   @Test def testGetOpenGamesReturnsResponse(): Unit =
     val response = getOGR(s"${GameData.ServerURL}/openGames")
@@ -483,19 +480,56 @@ class TestServer:
 
   @Test def testGetOpenGamesDoesNotReturnGameWithNoBlackPlayer(): Unit =
     val newGameResponse = GameData.create(3)
-    val whiteRegistered = GameData.register(newGameResponse.id, White)
+    GameData.register(newGameResponse.id, White)
     val response = getOGR(s"${GameData.ServerURL}/openGames")
     Assert.assertFalse(response.ids.isEmpty)
     Assert.assertFalse(response.ids.contains(newGameResponse.id))
 
   @Test def testGetOpenGamesDoesNotReturnGameWithTwoPlayers(): Unit =
     val newGameResponse = GameData.create(3)
-    val blackRegistered = GameData.register(newGameResponse.id, Black)
-    val whiteRegistered = GameData.register(newGameResponse.id, White)
+    GameData.register(newGameResponse.id, Black)
+    GameData.register(newGameResponse.id, White)
     val response = getOGR(s"${GameData.ServerURL}/openGames")
     Assert.assertFalse(response.ids.isEmpty)
     Assert.assertFalse(response.ids.contains(newGameResponse.id))
 
+  @Test def testDoublePassReturnsGameOver(): Unit =
+    val gameData: GameData = setUpGame(3)
+    gameData.pass(Black)
+    val statusResponse = gameData.pass(White)
+    Assert.assertTrue(statusResponse.toString, statusResponse.over)
+
+  @Test def testSubsequentStatusRequestAfterDoublePassReturnsGameOver(): Unit =
+    val gameData: GameData = setUpGame(3)
+    gameData.pass(Black)
+    gameData.pass(White)
+    val statusResponse = gameData.status()
+    Assert.assertTrue(statusResponse.toString, statusResponse.over)
+
+  @Test def testGameOverAfterFullNumberOfMoves(): Unit =
+    val gameData: GameData = setUpGame(3)
+    var color = Black
+    for (x <- 1 to 3; y <- 1 to 3; z <- 1 to 3)
+      try gameData.set(Move(Position(x, y, z), color))
+      catch case _: RequestFailedException => gameData.pass(color)
+      color = !color
+
+    val statusResponse = gameData.status()
+    Assert.assertTrue(statusResponse.toString, statusResponse.over)
+
+  @Test def testSettingTheSameColorTwiceGivesError(): Unit =
+    val gameData: GameData = setUpGame(3)
+    gameData.set(Move(Position(1, 1, 1), Black))
+    assertThrows[RequestFailedException]({gameData.set(Move(Position(1, 1, 1), Black))})
+
+  @Test def testSettingTheSameColorTwiceGivesSensibleErrorMessage(): Unit =
+    val gameData: GameData = setUpGame(3)
+    gameData.set(Move(Position(1, 1, 1), Black))
+    try
+      gameData.set(Move(Position(1, 1, 2), Black))
+    catch
+      case e: RequestFailedException =>
+        Assert.assertFalse(e.response.text().matches("i have no idea what happened"))
 
   def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
@@ -503,7 +537,7 @@ class TestServer:
       statusResponse = move match
         case m: Move => gameData.set(m)
         case p: Pass => gameData.pass(p.color)
-    return statusResponse
+    statusResponse
 
 def randomChoice[T](elements: List[T]): T = elements((new Random).nextInt(elements.length))
 
@@ -539,17 +573,17 @@ def setUpGame(size: Int): GameData =
   val blackRegistered = GameData.register(newGameResponse.id, Black)
   val whiteRegistered = GameData.register(newGameResponse.id, White)
   val tokens = Map(Black -> blackRegistered.authToken, White -> whiteRegistered.authToken)
-  return GameData(newGameResponse.id, tokens)
+  GameData(newGameResponse.id, tokens)
 
 def gameWithBlackAt111(size: Int): StatusResponse =
   setUpGame(size).set(Move(Position(1, 1, 1), Black))
 
-def playRandomGame(gameData: GameData) =
+def playRandomGame(gameData: GameData): Unit =
     var gameOver = false
     var color = Black
     while !gameOver do
       val statusResponse = gameData.status(color)
-      if statusResponse.ready && statusResponse.game.possibleMoves(color).length > 0 then
+      if statusResponse.ready && statusResponse.game.possibleMoves(color).nonEmpty then
         val move = Move(randomChoice(statusResponse.game.possibleMoves(color)), color)
         gameOver = gameData.set(move).game.isOver
       else

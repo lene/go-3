@@ -2,7 +2,7 @@ package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
 import go3d.{Game, Position}
-import go3d.server.StatusResponse
+import go3d.server.{StatusResponse, emptyResponse}
 
 import java.security.SecureRandom
 import requests.RequestFailedException
@@ -110,7 +110,7 @@ object BotClient extends Client with LazyLogging:
         map
 
   def waitUntilReady(): StatusResponse =
-    var status = StatusResponse(null, null, false, null)
+    var status = emptyResponse
     while !status.ready do
       status = client.status
       if !status.ready then Thread.sleep(PULL_WAIT_MS)

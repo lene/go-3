@@ -20,7 +20,7 @@ object RequestInfo:
       debug
     )
 
-  def parsePathInfo(pathInfo: String): (String, Boolean) =
+  private def parsePathInfo(pathInfo: String): (String, Boolean) =
     if pathInfo != null && pathInfo.endsWith("/d") then (pathInfo.dropRight(2), true)
     else (pathInfo, false)
 
@@ -34,12 +34,6 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
     if !(Games contains gameId) then throw NonexistentGame(gameId, Games.keys.toList)
     gameId
 
-  def getToken: String =
-    if !headers.contains("Authentication") then throw AuthorizationMissing(headers)
-    val authorizationParts = headers("Authentication").split("\\s+")
-    if authorizationParts(0) != "Bearer" then throw AuthorizationMethodWrong(authorizationParts(0))
-    authorizationParts(1)
-
   def getPlayer: Option[Player] =
     val players = Players(getGameId)
     try
@@ -52,4 +46,14 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
       case Some(value) => value
       case None => throw PlayerNotFoundByToken(getGameId, getToken)
 
-  def debugInfo: RequestInfo = if debug then this else NullRequestInfo
+  private def getToken: String =
+    if !headers.contains("Authentication") then throw AuthorizationMissing(headers)
+    val authorizationParts = headers("Authentication").split("\\s+")
+    if authorizationParts(0) != "Bearer" then throw AuthorizationMethodWrong(authorizationParts(0))
+    authorizationParts(1)
+
+  private def isAuthorized: Boolean =
+    try getToken.nonEmpty
+    catch case _: AuthorizationError => false
+
+  def debugInfo: RequestInfo = if debug && isAuthorized then this else NullRequestInfo
