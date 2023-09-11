@@ -27,6 +27,6 @@ abstract class BaseServlet extends HttpServlet with ServletOutput:
       case e: go3d.GameOver => error(response, e, HttpServletResponse.SC_GONE)
       case e: GoException => error(response, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR)
 
-def error(response: HttpServletResponse, e: GoException, statusCode: Int): ErrorResponse =
+def error(response: HttpServletResponse, e: GoException, statusCode: Int): Unit =
   response.setStatus(statusCode)
-  ErrorResponse(s"${e.getClass.getSimpleName}: $e")
+  response.getWriter.println(s"${e.getClass.getSimpleName}: $e")

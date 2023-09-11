@@ -1,3 +1,3 @@
 package go3d
 
-class GameOver(val game: Game) extends GoException
+class GameOver(val game: Game) extends GoException("Game Over")

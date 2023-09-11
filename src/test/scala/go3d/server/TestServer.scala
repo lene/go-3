@@ -522,14 +522,51 @@ class TestServer:
     gameData.set(Move(Position(1, 1, 1), Black))
     assertThrows[RequestFailedException]({gameData.set(Move(Position(1, 1, 1), Black))})
 
-  @Test def testSettingTheSameColorTwiceGivesSensibleErrorMessage(): Unit =
+  @Test def testSettingTheSameColorTwiceErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)
     gameData.set(Move(Position(1, 1, 1), Black))
     try
       gameData.set(Move(Position(1, 1, 2), Black))
     catch
       case e: RequestFailedException =>
-        Assert.assertFalse(e.response.text().matches("i have no idea what happened"))
+        Assert.assertEquals(400, e.response.statusCode)
+        Assert.assertTrue(e.response.text().contains(classOf[NotReadyToSet].getSimpleName))
+
+  @Test def testSettingToSuicideErrorMessageContainsWhy(): Unit =
+    val gameData: GameData = setUpGame(3)
+    playListOfMoves(
+      gameData, List(
+        Move(Position(1, 1, 2), Black), Pass(White),
+        Move(Position(1, 2, 1), Black), Pass(White),
+        Move(Position(2, 1, 1), Black)
+      )
+    )
+    try
+      gameData.set(Move(Position(1, 1, 1), White))
+    catch
+      case e: RequestFailedException =>
+        Assert.assertEquals(400, e.response.statusCode)
+        Assert.assertTrue(e.response.text().contains(classOf[Suicide].getSimpleName))
+
+  @Test def testSettingOutsideBoardErrorMessageContainsWhy(): Unit =
+    val gameData: GameData = setUpGame(3)
+    try
+      gameData.set(Move(Position(1, 1, 4), Black))
+    catch
+      case e: RequestFailedException =>
+        Assert.assertEquals(400, e.response.statusCode)
+        Assert.assertTrue(e.response.text().contains(classOf[OutsideBoard].getSimpleName))
+
+  @Test def testSettingAfterGameOverErrorMessageContainsWhy(): Unit =
+    val gameData: GameData = setUpGame(3)
+    gameData.pass(Black)
+    gameData.pass(White)
+    try
+      gameData.set(Move(Position(1, 1, 1), Black))
+    catch
+      case e: RequestFailedException =>
+        Assert.assertEquals(400, e.response.statusCode)
+        Assert.assertTrue(e.response.text().contains(classOf[GameOver].getSimpleName))
 
   def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
@@ -560,7 +597,7 @@ def getSR(url: String, header: Map[String, String]): StatusResponse =
   val json = response.text()
   val result = decode[StatusResponse](json)
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  return result.getOrElse(null)
+  result.getOrElse(null)
 
 def getOGR(url: String): GameListResponse =
   val json = getJson(url).mkString
