@@ -168,7 +168,7 @@ TestDeployable:
   extends: .TestDeployable
   parallel:
     matrix:
-      - IMAGE: [$SBT_IMAGE, openjdk:11-jre, openjdk:16, openjdk:17, openjdk:18, openjdk:19]
+      - IMAGE: [$SBT_IMAGE, openjdk:11-jre, openjdk:16, openjdk:17, openjdk:18, openjdk:19, openjdk:20]
         STRATEGY_BLACK: [random]
         STRATEGY_WHITE: [random]
   image: $IMAGE
