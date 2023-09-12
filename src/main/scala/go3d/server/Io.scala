@@ -2,7 +2,6 @@ package go3d.server
 
 import go3d.{Color, Game}
 
-import scala.collection.mutable
 import java.nio.file.{Files, Path, Paths}
 import java.nio.charset.StandardCharsets
 import io.circe.syntax.EncoderOps
@@ -45,3 +44,4 @@ object Io:
       if pathAsFile.getCanonicalPath != pathAsFile.getAbsolutePath
       then throw IllegalArgumentException(s"Path traversal attempt? $path")
     catch case e: IOException => throw IllegalArgumentException(s"Path traversal attempt? $path", e)
+

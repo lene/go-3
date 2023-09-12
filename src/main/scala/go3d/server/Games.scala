@@ -3,13 +3,35 @@ package go3d.server
 import go3d.{Game, newGame, Black, White}
 import scala.io.Source
 import io.circe.parser._
+import com.typesafe.scalalogging.Logger
 
-var Games: Map[String, Game] = Map()
+
+object Games:
+  private val activeGames: collection.mutable.Map[String, Game] = collection.mutable.Map()
+  private val archivedGames: collection.mutable.Map[String, Game] = collection.mutable.Map()
+
+  def apply(gameId: String): Game =
+    if activeGames contains gameId then activeGames(gameId) else archivedGames(gameId)
+
+  def add(gameId: String, game: Game): Unit =
+    activeGames += (gameId -> game)
+    if game.isOver then archive(gameId)
+
+  def contains(gameId: String): Boolean = activeGames.contains(gameId) || archivedGames.contains(gameId)
+  def size: Int = activeGames.size
+  def keys: Iterable[String] = activeGames.keys
+
+  private def archive(gameId: String): Unit =
+    // logger declared inline to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
+    Logger(Games.getClass).info(s"Archiving $gameId")
+    archivedGames += (gameId -> activeGames(gameId))
+    activeGames -= gameId
+
 
 def registerGame(boardSize: Int): String =
   val gameId = IdGenerator.getId
   val game = newGame(boardSize)
-  Games = Games + (gameId -> game)
+  Games.add(gameId, game)
   gameId
 
 def readGame(saveFile: java.io.File): SaveGame =
@@ -23,7 +45,7 @@ def readGame(saveFile: java.io.File): SaveGame =
 def restoreGame(saveGame: SaveGame): Unit =
   val gameId = saveGame.players.last._2.gameId
   Players(gameId) = saveGame.players
-  Games = Games + (gameId -> saveGame.game)
+  Games.add(gameId, saveGame.game)
 
 def openGames(): Array[String] =
   Players.filter(p => p._2.contains(Black) && !p._2.contains(White)).keys.toArray

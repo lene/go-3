@@ -11,7 +11,7 @@ abstract class MakeMoveServlet extends BaseServlet with MakeMove with LazyLoggin
     val game = Games(gameId)
     if !game.isTurn(color) then throw NotReadyToSet(gameId, color)
     val newGame = game.makeMove(makeMove(requestInfo.path, color))
-    Games = Games + (gameId -> newGame)
+    Games.add(gameId, newGame)
     Io.saveGame(gameId)
     response.setStatus(HttpServletResponse.SC_OK)
     logger.info(s"${requestInfo.path}, $color".replaceAll("[\r\n]"," "))
