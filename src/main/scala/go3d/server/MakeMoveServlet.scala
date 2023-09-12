@@ -2,6 +2,7 @@ package go3d.server
 
 import javax.servlet.http.HttpServletResponse
 import com.typesafe.scalalogging.LazyLogging
+import go3d.GameOver
 
 abstract class MakeMoveServlet extends BaseServlet with MakeMove with LazyLogging:
 
@@ -9,6 +10,7 @@ abstract class MakeMoveServlet extends BaseServlet with MakeMove with LazyLoggin
     val gameId = requestInfo.getGameId
     val color = requestInfo.mustGetPlayer.color
     val game = Games(gameId)
+    if game.isOver then throw GameOver(game)
     if !game.isTurn(color) then throw NotReadyToSet(gameId, color)
     val newGame = game.makeMove(makeMove(requestInfo.path, color))
     Games.add(gameId, newGame)

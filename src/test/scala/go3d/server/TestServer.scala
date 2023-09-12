@@ -10,6 +10,7 @@ import requests.{RequestFailedException, *}
 
 import java.io.IOException
 import java.nio.file.Files
+import javax.servlet.http.HttpServletResponse
 import scala.io.Source
 import scala.reflect.ClassTag
 import scala.util.Random
@@ -73,7 +74,10 @@ class TestServer:
     assertThrows[IOException]({getJson(s"http://localhost:$TestPort/new/27")})
 
   @Test def testNewGameWithBadSizeSetsStatus400(): Unit =
-    assertFailsWithStatus(s"http://localhost:$TestPort/new/27", 400)
+    assertFailsWithStatus(
+      s"http://localhost:$TestPort/new/27",
+      HttpServletResponse.SC_BAD_REQUEST
+    )
 
   @Test def testRegisterOnePlayer(): Unit =
     val newGameResponse = GameData.create(TestSize)
@@ -83,7 +87,10 @@ class TestServer:
 
   @Test def testRegisterBadColorSetsStatus400(): Unit =
     val newGameResponse = GameData.create(TestSize)
-    assertFailsWithStatus(s"${GameData.ServerURL}/register/${newGameResponse.id}/X", 400)
+    assertFailsWithStatus(
+      s"${GameData.ServerURL}/register/${newGameResponse.id}/X",
+      HttpServletResponse.SC_BAD_REQUEST
+    )
 
   @Test def testRegisterTwoPlayers(): Unit =
     val newGameResponse = GameData.create(TestSize)
@@ -197,7 +204,8 @@ class TestServer:
   @Test def testSetStoneWhenNotReadySetsStatus400(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/set/${gameData.id}/1/1/1", 400,
+      s"http://localhost:$TestPort/set/${gameData.id}/1/1/1",
+      HttpServletResponse.SC_BAD_REQUEST,
       Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
@@ -209,7 +217,8 @@ class TestServer:
   @Test def testPassWhenNotReadySetsStatus400(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/pass/${gameData.id}", 400,
+      s"http://localhost:$TestPort/pass/${gameData.id}",
+      HttpServletResponse.SC_BAD_REQUEST,
       Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
@@ -529,7 +538,7 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 2), Black))
     catch
       case e: RequestFailedException =>
-        Assert.assertEquals(400, e.response.statusCode)
+        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
         Assert.assertTrue(e.response.text().contains(classOf[NotReadyToSet].getSimpleName))
 
   @Test def testSettingToSuicideErrorMessageContainsWhy(): Unit =
@@ -545,7 +554,7 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 1), White))
     catch
       case e: RequestFailedException =>
-        Assert.assertEquals(400, e.response.statusCode)
+        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
         Assert.assertTrue(e.response.text().contains(classOf[Suicide].getSimpleName))
 
   @Test def testSettingOutsideBoardErrorMessageContainsWhy(): Unit =
@@ -554,7 +563,7 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 4), Black))
     catch
       case e: RequestFailedException =>
-        Assert.assertEquals(400, e.response.statusCode)
+        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
         Assert.assertTrue(e.response.text().contains(classOf[OutsideBoard].getSimpleName))
 
   @Test def testSettingAfterGameOverErrorMessageContainsWhy(): Unit =
@@ -565,7 +574,7 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 1), Black))
     catch
       case e: RequestFailedException =>
-        Assert.assertEquals(400, e.response.statusCode)
+        Assert.assertEquals(HttpServletResponse.SC_GONE, e.response.statusCode)
         Assert.assertTrue(e.response.text().contains(classOf[GameOver].getSimpleName))
 
   def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
