@@ -134,9 +134,8 @@ container_scanning:
     - ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY_BLACK:-random} | grep 'Map(' &
     - while [ "$GAME_ID" == "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
     - /usr/bin/time -o time.log -f "%e\n%U\n%M\n%P" ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random} | tail -n 1 > white.log
-    - if [[ "$IMAGE" =~ ^openjdk:8.* ]]; then exit 0; fi  # Jetty bug on Java 8 prevents logging properly
     - grep -c "go3d.server.SetServlet" server.log
-    - grep -c "go3d.server.PassServlet" server.log
+    - grep -c "go3d.server.PassServlet" server.log || true
     - cat white.log
     - SCORE_BLACK=$(cat white.log | grep -E -o "[0-9]+" | head -n 1)
     - SCORE_WHITE=$(cat white.log | grep -E -o "[0-9]+" | tail -n 1)
@@ -149,6 +148,7 @@ container_scanning:
     when: always
     paths:
       - server.log
+      - white.log
       - results.*.*.csv
 
 .TestDeployable:

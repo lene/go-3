@@ -22,7 +22,7 @@ abstract case class InteractiveClient(pollInterval: Int = 500) extends Client wi
         nextOption(map ++ Map("port" -> value.toInt), tail)
       case option :: _ =>
         logger.error(s"Unknown option $option")
-        System.exit(1)
+        exit(1)
         map
 
   def parseArgs(args: Array[String]): Unit =

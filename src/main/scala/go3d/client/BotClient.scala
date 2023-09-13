@@ -7,6 +7,7 @@ import go3d.server.{StatusResponse, emptyResponse}
 import java.security.SecureRandom
 import requests.RequestFailedException
 
+import javax.servlet.http.HttpServletResponse
 import scala.annotation.tailrec
 
 object BotClient extends Client with LazyLogging:
@@ -37,21 +38,35 @@ object BotClient extends Client with LazyLogging:
     catch
       case _: Exit => exit(0)
       case _: InterruptedException => exit(1)
-      case e: RequestFailedException => logger.warn(e.message); mainLoop(Array())
+      case e: RequestFailedException => checkFailedRequest(e)
     finally
       executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
     if !over then mainLoop(Array())
     else logger.info(s"${client.status.game}")
+
+  private def checkFailedRequest(e: RequestFailedException): Unit =
+    logger.warn(e.message)
+    if e.response.statusCode == HttpServletResponse.SC_GONE then exit(0)
+    mainLoop(Array())
+
 
   private def makeOneMove(status: StatusResponse): Boolean =
     val strategy = SetStrategy(game, strategies)
     val possible = strategy.narrowDown(status.moves, strategies)
     if possible.nonEmpty then
       val setPosition = randomMove(possible)
-      game = client.set(setPosition.x, setPosition.y, setPosition.z).game
+      val status = client.set(setPosition.x, setPosition.y, setPosition.z)
+      if status.over then
+        logger.info(s"Game over: ${status.game}")
+        exit(0)
+      game = status.game
       false
     else
-      game = client.pass.game
+      val status = client.pass
+      if status.over then
+        logger.info(s"Game over: ${status.game}")
+        exit(0)
+        game = status.game
       true
 
   private def randomMove(possible: Seq[Position]): Position =
@@ -106,12 +121,15 @@ object BotClient extends Client with LazyLogging:
         nextOption(map ++ Map("strategy" -> value), tail)
       case option :: tail =>
         logger.error(s"Unknown option $option")
-        System.exit(1)
+        exit(1)
         map
 
   def waitUntilReady(): StatusResponse =
     var status = emptyResponse
     while !status.ready do
       status = client.status
+      if status.over then
+        logger.info(s"Game over: ${status.game}")
+        exit(0)
       if !status.ready then Thread.sleep(PULL_WAIT_MS)
     status

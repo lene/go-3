@@ -29,7 +29,7 @@ object AsciiClient extends InteractiveClient with LazyLogging:
     try
       val input = readLine("your input: ")
       val Array(command, args) = (input+" ").split("\\s+", 2)
-      command match
+      val statusResponse: StatusResponse = command match
         case "set"|"s" => set(args)
         case "pass"|"p" => pass
         case "status"|"st" => getStatus
@@ -40,8 +40,9 @@ object AsciiClient extends InteractiveClient with LazyLogging:
           )
           throw Exit()
         case _ => logger.warn(
-          s"\"$command\" not understood - use \"set|s\", \"pass|p\", \"status|st\" or \"exit\"!"
-        )
+            s"\"$command\" not understood - use \"set|s\", \"pass|p\", \"status|st\" or \"exit\"!"
+          ); null
+      if statusResponse.over then exit(0)
     catch
       case _: Exit => exit(0)
       case _: InterruptedException => exit(1)
