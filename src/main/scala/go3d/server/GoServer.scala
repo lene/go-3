@@ -44,7 +44,7 @@ object GoServer extends LazyLogging:
       catch
         case e: ReadSaveGameError => logger.warn(s"${saveFile.getName}: ${e.message}")
         case e: JsonDecodeError => logger.warn(s"${saveFile.getName}: ${e.message}")
-    logger.info(s"${Games.size} games loaded")
+    logger.info(s"${Games.numActiveGames} active games loaded, ${Games.numArchivedGames} archived")
 
   def run(port: Int = DefaultPort): Unit =
     val goServer = createServer(port)

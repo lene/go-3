@@ -51,16 +51,19 @@ object TestServer:
 
 class TestServer:
 
-  var jetty: Server = null
+  var jetty: Option[Server] = None
+  var tempDir: Option[String] = None
 
   @Before def startJetty(): Unit =
     System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
-    jetty = GoServer.createServer(TestPort)
-    jetty.start()
+    jetty = Some(GoServer.createServer(TestPort))
+    jetty.foreach(_.start)
 
-  @Before def setupTempDir(): Unit = Io.init(Files.createTempDirectory("go3d").toString)
+  @Before def setupTempDir(): Unit =
+    tempDir = Some(Files.createTempDirectory("go3d").toString)
+    Io.init(tempDir.get)
 
-  @After def stopJetty(): Unit = if jetty != null then jetty.stop()
+  @After def stopJetty(): Unit = jetty.foreach(_.stop)
 
   @Test def testNewGame(): Unit =
     val response = GameData.create(TestSize)
@@ -577,7 +580,32 @@ class TestServer:
         Assert.assertEquals(HttpServletResponse.SC_GONE, e.response.statusCode)
         Assert.assertTrue(e.response.text().contains(classOf[GameOver].getSimpleName))
 
-  def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
+  @Test def testAddedGameIsWritten(): Unit =
+    val gameData: GameData = setUpGame(3)
+    Assert.assertTrue(Io.getActiveGames.contains(gameData.id))
+
+  @Test def testFinishedGameIsNoLongerActive(): Unit =
+    val gameData: GameData = setUpGame(3)
+    val previousNumberOfActiveGames = Games.numActiveGames
+    gameData.pass(Black)
+    gameData.pass(White)
+    Assert.assertEquals(previousNumberOfActiveGames - 1, Games.numActiveGames)
+
+@Test def testFinishedGameIsListedAsArchived(): Unit =
+  val gameData: GameData = setUpGame(3)
+  val previousNumberOfArchivedGames = Games.numArchivedGames
+  gameData.pass(Black)
+  gameData.pass(White)
+  Assert.assertEquals(previousNumberOfArchivedGames + 1, Games.numArchivedGames)
+
+@Test def testFinishedGameIsArchivedOnDisk(): Unit =
+  val gameData: GameData = setUpGame(3)
+  gameData.pass(Black)
+  gameData.pass(White)
+  Assert.assertTrue(Io.getArchivedGames.contains(gameData.id))
+
+
+def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
     for move <- moves do
       statusResponse = move match

@@ -11,7 +11,7 @@ class RegisterPlayerServlet extends BaseServlet with LazyLogging:
     val gameId = requestInfo.getGameId
     val color = getColor(requestInfo)
     val token = generateAuthToken(gameId, color)
-    val player = registerPlayer(color, gameId, token)
+    registerPlayer(color, gameId, token)
     val ready = (color == Black) && Players(gameId).contains(White)
     Io.saveGame(gameId)
     response.setStatus(HttpServletResponse.SC_OK)

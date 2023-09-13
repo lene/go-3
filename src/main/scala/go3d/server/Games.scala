@@ -2,13 +2,14 @@ package go3d.server
 
 import go3d.{Game, newGame, Black, White}
 import scala.io.Source
+import scala.collection.mutable
 import io.circe.parser._
 import com.typesafe.scalalogging.Logger
 
 
 object Games:
-  private val activeGames: collection.mutable.Map[String, Game] = collection.mutable.Map()
-  private val archivedGames: collection.mutable.Map[String, Game] = collection.mutable.Map()
+  private val activeGames: mutable.Map[String, Game] = mutable.Map()
+  private val archivedGames: mutable.Map[String, Game] = mutable.Map()
 
   def apply(gameId: String): Game =
     if activeGames contains gameId then activeGames(gameId) else archivedGames(gameId)
@@ -18,14 +19,16 @@ object Games:
     if game.isOver then archive(gameId)
 
   def contains(gameId: String): Boolean = activeGames.contains(gameId) || archivedGames.contains(gameId)
-  def size: Int = activeGames.size
-  def keys: Iterable[String] = activeGames.keys
+  def numActiveGames: Int = activeGames.size
+  def activeGameIds: Iterable[String] = activeGames.keys
+  def numArchivedGames: Int = archivedGames.size
 
   private def archive(gameId: String): Unit =
     // logger declared inline to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
     Logger(Games.getClass).info(s"Archiving $gameId")
     archivedGames += (gameId -> activeGames(gameId))
     activeGames -= gameId
+    Io.archiveGame(gameId)
 
 
 def registerGame(boardSize: Int): String =

@@ -1,5 +1,12 @@
 package go3d.server
 
-class TestGames {
+import org.junit.{Assert, Before, Test}
 
-}
+import java.nio.file.Files
+
+class TestGames:
+  @Before def initIo(): Unit = Io.init(Files.createTempDirectory("go3d").toString)
+
+  @Test def testAddedGameIsStored(): Unit =
+    val gameId = registerGame(3)
+    Assert.assertTrue(Games.contains(gameId))
