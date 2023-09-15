@@ -13,4 +13,5 @@ object XIO:
 
   def open(filename: String): File = Paths.get(Io.baseFolder, filename).toFile
 
+  def files: List[File] = Io.getListOfFiles(".json")
 

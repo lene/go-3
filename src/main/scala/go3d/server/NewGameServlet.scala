@@ -7,7 +7,7 @@ class NewGameServlet extends BaseServlet with LazyLogging:
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
       val boardSize = getBoardSize(requestInfo.path)
-      val gameId = registerGame(boardSize)
+      val gameId = Games.register(boardSize)
       response.setStatus(HttpServletResponse.SC_OK)
       logger.info(s"$gameId, $boardSize".replaceAll("[\r\n]"," "))
       GameCreatedResponse(gameId, boardSize)

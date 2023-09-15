@@ -2,9 +2,7 @@ package go3d.server
 
 import go3d.*
 import io.circe.parser.*
-import org.eclipse.jetty.http.HttpStatus
 import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.servlet.ServletHandler
 import org.junit.*
 import requests.{RequestFailedException, *}
 
@@ -29,12 +27,34 @@ case class GameData(id: String, token: Map[Color, String]):
 
   def set(color: Color, x: Int, y: Int, z: Int): StatusResponse =
     getSR(
-      s"${GameData.ServerURL}/set/${id}/${x}/${y}/${z}", Map("Authentication" -> s"Bearer ${token(color)}")
+      s"${GameData.ServerURL}/set/${id}/${x}/${y}/${z}",
+      Map("Authentication" -> s"Bearer ${token(color)}")
     )
   def set(move: Move): StatusResponse = set(move.color, move.x, move.y, move.z)
 
   def pass(color: Color): StatusResponse =
     getSR(s"${GameData.ServerURL}/pass/${id}", Map("Authentication" -> s"Bearer ${token(color)}"))
+
+  def playRandomGame(finish: Boolean): Unit =
+    var gameOver = false
+    var color = Black
+    var numMoves = 0
+
+    def setOrPass(statusResponse: StatusResponse): StatusResponse =
+      if statusResponse.ready && statusResponse.game.possibleMoves(color).nonEmpty then
+        set(Move(randomChoice(statusResponse.game.possibleMoves(color)), color))
+      else
+        pass(color)
+
+
+    while !gameOver do
+      val statusResponse = status(color)
+      val boardSize: Int = statusResponse.game.size
+      val maxNumMoves = boardSize * boardSize * boardSize
+      val newStatusResponse = setOrPass(statusResponse)
+      gameOver = if finish then newStatusResponse.game.isOver else numMoves >= maxNumMoves - 2
+      color = !color
+      numMoves += 1
 
 object GameData:
   val ServerURL = s"http://localhost:$TestPort"
@@ -318,16 +338,16 @@ class TestServer:
 
   @Test def testPlayRandomGame(): Unit =
     val gameData = setUpGame(TestSize)
-    playRandomGame(gameData)
+    gameData.playRandomGame(true)
 
   @Test def testPlayRandomGameIsSaved(): Unit =
     val gameData = setUpGame(TestSize)
-    playRandomGame(gameData)
-    Assert.assertTrue(XIO.exists(gameData.id + ".json"))
+    gameData.playRandomGame(false)
+    Assert.assertTrue(s"${gameData.id} in ${XIO.files}?", XIO.exists(gameData.id + ".json"))
 
   @Test def testSavedRandomGameIsSameAsPlayed(): Unit =
     val gameData = setUpGame(TestSize)
-    playRandomGame(gameData)
+    gameData.playRandomGame(false)
     val savedGame = readGame(XIO.open(gameData.id + ".json"))
     Assert.assertEquals(Games(gameData.id), savedGame.game)
 
@@ -580,8 +600,13 @@ class TestServer:
         Assert.assertEquals(HttpServletResponse.SC_GONE, e.response.statusCode)
         Assert.assertTrue(e.response.text().contains(classOf[GameOver].getSimpleName))
 
-  @Test def testAddedGameIsWritten(): Unit =
+  @Test def testAddedGameIsNotWrittenBeforeFirstMove(): Unit =
     val gameData: GameData = setUpGame(3)
+    Assert.assertFalse(Io.getActiveGames.contains(gameData.id))
+
+  @Test def testAddedGameIsWrittenAfterFirstMove(): Unit =
+    val gameData: GameData = setUpGame(3)
+    gameData.set(Move(Position(1, 1, 1), Black))
     Assert.assertTrue(Io.getActiveGames.contains(gameData.id))
 
   @Test def testFinishedGameIsNoLongerActive(): Unit =
@@ -598,11 +623,12 @@ class TestServer:
   gameData.pass(White)
   Assert.assertEquals(previousNumberOfArchivedGames + 1, Games.numArchivedGames)
 
-@Test def testFinishedGameIsArchivedOnDisk(): Unit =
+@Test def testFinishedGameIsMovedToArchiveFolder(): Unit =
   val gameData: GameData = setUpGame(3)
   gameData.pass(Black)
   gameData.pass(White)
   Assert.assertTrue(Io.getArchivedGames.contains(gameData.id))
+  Assert.assertFalse(Io.getActiveGames.contains(gameData.id))
 
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
@@ -651,18 +677,6 @@ def setUpGame(size: Int): GameData =
 
 def gameWithBlackAt111(size: Int): StatusResponse =
   setUpGame(size).set(Move(Position(1, 1, 1), Black))
-
-def playRandomGame(gameData: GameData): Unit =
-    var gameOver = false
-    var color = Black
-    while !gameOver do
-      val statusResponse = gameData.status(color)
-      if statusResponse.ready && statusResponse.game.possibleMoves(color).nonEmpty then
-        val move = Move(randomChoice(statusResponse.game.possibleMoves(color)), color)
-        gameOver = gameData.set(move).game.isOver
-      else
-        gameOver = gameData.pass(color).game.isOver
-      color = !color
 
 def assertFailsWithStatus(url: String, expectedStatus: Int,
                           headers: Map[String, String] = Map()): Unit =

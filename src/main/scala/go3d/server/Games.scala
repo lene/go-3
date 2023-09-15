@@ -14,8 +14,15 @@ object Games:
   def apply(gameId: String): Game =
     if activeGames contains gameId then activeGames(gameId) else archivedGames(gameId)
 
+  def register(boardSize: Int): String =
+    val gameId = IdGenerator.getId
+    val game = newGame(boardSize)
+    activeGames += (gameId -> game)
+    gameId
+
   def add(gameId: String, game: Game): Unit =
     activeGames += (gameId -> game)
+    Io.saveGame(gameId)
     if game.isOver then archive(gameId)
 
   def contains(gameId: String): Boolean = activeGames.contains(gameId) || archivedGames.contains(gameId)
@@ -29,13 +36,6 @@ object Games:
     archivedGames += (gameId -> activeGames(gameId))
     activeGames -= gameId
     Io.archiveGame(gameId)
-
-
-def registerGame(boardSize: Int): String =
-  val gameId = IdGenerator.getId
-  val game = newGame(boardSize)
-  Games.add(gameId, game)
-  gameId
 
 def readGame(saveFile: java.io.File): SaveGame =
   val source = Source.fromFile(saveFile)

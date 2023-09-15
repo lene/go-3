@@ -16,17 +16,17 @@ class TestIo:
     assertThrows[NoSuchElementException]({Io.saveGame(gameId)})
 
   @Test def testSaveGameFailsNonexistentPlayers(): Unit =
-    val gameId = registerGame(TestSize)
+    val gameId = Games.register(TestSize)
     assertThrows[NoSuchElementException]({Io.saveGame(gameId)})
 
   @Test def testSaveGameWritesFile(): Unit =
-    val gameId = registerGame(TestSize)
+    val gameId = Games.register(TestSize)
     registerPlayer(Black, gameId, "mock@")
     Io.saveGame(gameId)
     Assert.assertTrue(XIO.exists(s"$gameId.json"))
 
   @Test def testSaveGameContents(): Unit =
-    val gameId = registerGame(TestSize)
+    val gameId = Games.register(TestSize)
     registerPlayer(Black, gameId, "mock@")
     val path = Io.saveGame(gameId)
     val restored = decode[SaveGame](Source.fromFile(path.toFile).getLines.mkString)

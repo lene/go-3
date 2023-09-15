@@ -8,5 +8,5 @@ class TestGames:
   @Before def initIo(): Unit = Io.init(Files.createTempDirectory("go3d").toString)
 
   @Test def testAddedGameIsStored(): Unit =
-    val gameId = registerGame(3)
+    val gameId = Games.register(3)
     Assert.assertTrue(Games.contains(gameId))
