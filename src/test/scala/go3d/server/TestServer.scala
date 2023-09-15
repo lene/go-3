@@ -81,7 +81,7 @@ class TestServer:
 
   @Before def setupTempDir(): Unit =
     tempDir = Some(Files.createTempDirectory("go3d").toString)
-    Io.init(tempDir.get)
+    Games.init(tempDir.get)
 
   @After def stopJetty(): Unit = jetty.foreach(_.stop)
 
@@ -343,12 +343,12 @@ class TestServer:
   @Test def testPlayRandomGameIsSaved(): Unit =
     val gameData = setUpGame(TestSize)
     gameData.playRandomGame(false)
-    Assert.assertTrue(s"${gameData.id} in ${XIO.files}?", XIO.exists(gameData.id + ".json"))
+    Assert.assertTrue(s"${gameData.id} in ${IOForTests.files}?", IOForTests.exists(gameData.id + ".json"))
 
   @Test def testSavedRandomGameIsSameAsPlayed(): Unit =
     val gameData = setUpGame(TestSize)
     gameData.playRandomGame(false)
-    val savedGame = readGame(XIO.open(gameData.id + ".json"))
+    val savedGame = Games.readGame(IOForTests.open(gameData.id + ".json"))
     Assert.assertEquals(Games(gameData.id), savedGame.game)
 
   @Test def testTooLongURLSetsStatus414WhenCreatingGame(): Unit =
@@ -602,12 +602,12 @@ class TestServer:
 
   @Test def testAddedGameIsNotWrittenBeforeFirstMove(): Unit =
     val gameData: GameData = setUpGame(3)
-    Assert.assertFalse(Io.getActiveGames.contains(gameData.id))
+    Assert.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
   @Test def testAddedGameIsWrittenAfterFirstMove(): Unit =
     val gameData: GameData = setUpGame(3)
     gameData.set(Move(Position(1, 1, 1), Black))
-    Assert.assertTrue(Io.getActiveGames.contains(gameData.id))
+    Assert.assertTrue(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
   @Test def testFinishedGameIsNoLongerActive(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -627,8 +627,8 @@ class TestServer:
   val gameData: GameData = setUpGame(3)
   gameData.pass(Black)
   gameData.pass(White)
-  Assert.assertTrue(Io.getArchivedGames.contains(gameData.id))
-  Assert.assertFalse(Io.getActiveGames.contains(gameData.id))
+  Assert.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id))
+  Assert.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =

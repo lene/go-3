@@ -30,3 +30,4 @@ go-3d-*.*.*/
 Go3D-Savegames/
 results/
 saves/
+*.xz

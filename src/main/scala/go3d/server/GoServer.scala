@@ -35,16 +35,7 @@ object GoServer extends LazyLogging:
   def serverPort(server: Server): Int =
     server.getConnectors()(0).asInstanceOf[NetworkConnector].getLocalPort
 
-  def loadGames(baseDir: String): Unit =
-    Io.init(baseDir)
-    for saveFile <- Io.getListOfFiles(".json").sorted do
-      try
-        restoreGame(readGame(saveFile))
-        logger.debug(s"Loaded ${saveFile.getName}")
-      catch
-        case e: ReadSaveGameError => logger.warn(s"${saveFile.getName}: ${e.message}")
-        case e: JsonDecodeError => logger.warn(s"${saveFile.getName}: ${e.message}")
-    logger.info(s"${Games.numActiveGames} active games loaded, ${Games.numArchivedGames} archived")
+  def loadGames(baseDir: String): Unit = Games.loadGames(baseDir)
 
   def run(port: Int = DefaultPort): Unit =
     val goServer = createServer(port)

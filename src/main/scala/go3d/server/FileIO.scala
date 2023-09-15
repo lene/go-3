@@ -9,18 +9,13 @@ import io.circe.syntax.EncoderOps
 
 case class SaveGame(game: Game, players: Map[Color, Player])
 
-object Io:
-  var baseFolder: String = null
-  var basePath: Path = null
+class FileIO(val baseFolder: String):
 
-  def init(dir: String): Unit =
-    baseFolder = dir
-    basePath = Paths.get(baseFolder)
-    if !Files.exists(basePath) || !Files.isDirectory(basePath)
-    then throw IllegalArgumentException(s"$dir not a directory")
+  private val basePath: Path = Paths.get(baseFolder)
+  if !Files.exists(basePath) || !Files.isDirectory(basePath)
+  then throw IllegalArgumentException(s"$baseFolder not a directory")
 
   def saveGame(gameId: String): Path =
-    if basePath == null then throw IllegalArgumentException("call Io.init() before using Io")
     if !Files.exists(basePath) then Files.createDirectory(basePath)
     writeFile(s"$gameId.json", SaveGame(Games(gameId), Players(gameId)).asJson.noSpaces)
 
@@ -30,7 +25,6 @@ object Io:
     Files.write(path, content.getBytes(StandardCharsets.UTF_8))
 
   def getListOfFiles(extension: String): List[File] =
-    if basePath == null then throw IllegalArgumentException("call Io.init() before using Io")
     File(baseFolder).listFiles.filter(_.getName.endsWith(extension)).toList
 
   def getActiveGames: List[String] =
