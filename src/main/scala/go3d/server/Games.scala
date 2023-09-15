@@ -1,6 +1,6 @@
 package go3d.server
 
-import go3d.{Game, newGame, Black, White}
+import go3d.{Game, newGame, Color}
 import scala.io.Source
 import scala.collection.mutable
 import io.circe.parser._
@@ -14,7 +14,6 @@ object Games:
   var fileIO: Option[FileIO] = None
 
   def init(baseDir: String): Unit =
-//    if fileIO.isDefined then throw new IllegalStateException("Games already initialized")
     fileIO = Some(FileIO(baseDir))
 
   def checkInitialized(): Unit =
@@ -42,22 +41,30 @@ object Games:
     activeGames += (gameId -> game)
     gameId
 
+  def registerPlayer(gameId: String, color: Color, token: String): Unit =
+    Players.register(gameId, color, token)
+
   def add(gameId: String, game: Game): Unit =
     activeGames += (gameId -> game)
     fileIO.foreach(_.saveGame(gameId))
     if game.isOver then archive(gameId)
 
-  def contains(gameId: String): Boolean = activeGames.contains(gameId) || archivedGames.contains(gameId)
+  def contains(gameId: String): Boolean =
+    activeGames.contains(gameId) || archivedGames.contains(gameId)
   def numActiveGames: Int = activeGames.size
   def activeGameIds: Iterable[String] = activeGames.keys
   def numArchivedGames: Int = archivedGames.size
 
+  def isReady(gameId: String): Boolean =
+    activeGames.contains(gameId) && Players.isReady(gameId)
+    
   private def archive(gameId: String): Unit =
     // logger declared inline to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
     Logger(Games.getClass).info(s"Archiving $gameId")
     archivedGames += (gameId -> activeGames(gameId))
     activeGames -= gameId
     fileIO.foreach(_.archiveGame(gameId))
+    Players.unregister(gameId)
 
   private[server] def readGame(saveFile: java.io.File): SaveGame =
     val source = Source.fromFile(saveFile)
@@ -71,6 +78,3 @@ object Games:
     val gameId = saveGame.players.last._2.gameId
     Players(gameId) = saveGame.players
     add(gameId, saveGame.game)
-
-def openGames(): Array[String] =
-  Players.filter(p => p._2.contains(Black) && !p._2.contains(White)).keys.toArray

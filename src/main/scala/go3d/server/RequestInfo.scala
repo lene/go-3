@@ -1,5 +1,7 @@
 package go3d.server
 
+import go3d.GameOver
+
 import java.util.Collections
 import javax.servlet.http.HttpServletRequest
 
@@ -35,14 +37,15 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
     gameId
 
   def getPlayer: Option[Player] =
-    val players = Players(getGameId)
-    try
-      players.find(_._2.token == getToken).map(pair => pair._2)
-    catch case _: AuthorizationError => None
-
+    val players = Players.get(getGameId)
+    players.flatMap({
+      try _.find(_._2.token == getToken).map(pair => pair._2)
+      catch case _: AuthorizationError => _ => None
+    })
   def mustGetPlayer: Player =
-    val players = Players(getGameId)
-    players.find(_._2.token == getToken).map(pair => pair._2) match
+    val players = Players.get(getGameId)
+    if players.isEmpty then throw GameOver(Games(getGameId))
+    players.get.find(_._2.token == getToken).map(pair => pair._2) match
       case Some(value) => value
       case None => throw PlayerNotFoundByToken(getGameId, getToken)
 

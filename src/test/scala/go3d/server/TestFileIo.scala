@@ -25,7 +25,7 @@ class TestFileIo:
 
   @Test def testSaveGameWritesFile(): Unit =
     val gameId = Games.register(TestSize)
-    registerPlayer(Black, gameId, "mock@")
+    Games.registerPlayer(gameId, Black, "mock@")
     TestFileIo.fileIO.get.saveGame(gameId)
     Assert.assertTrue(
       s"$gameId in ${IOForTests.files}?",
@@ -34,7 +34,7 @@ class TestFileIo:
 
   @Test def testSaveGameContents(): Unit =
     val gameId = Games.register(TestSize)
-    registerPlayer(Black, gameId, "mock@")
+    Games.registerPlayer(gameId, Black, "mock@")
     val path = TestFileIo.fileIO.get.saveGame(gameId)
 
     val source = Source.fromFile(path.toFile)

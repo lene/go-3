@@ -19,7 +19,7 @@ class StatusServlet extends BaseServlet:
   private def statusForRequest(requestInfo: RequestInfo, gameId: String, game: Game) =
     requestInfo.getPlayer match
       case Some(p) =>
-        val ready = game.isTurn(p.color) && Players(gameId).size == 2
+        val ready = game.isTurn(p.color) && Games.isReady(gameId)
         StatusResponse(game, game.possibleMoves(p.color), ready, game.isOver, requestInfo.debugInfo)
       case None => StatusResponse(game, List(), false, game.isOver, requestInfo.debugInfo)
 

@@ -11,9 +11,8 @@ class RegisterPlayerServlet extends BaseServlet with LazyLogging:
     val gameId = requestInfo.getGameId
     val color = getColor(requestInfo)
     val token = generateAuthToken(gameId, color)
-    registerPlayer(color, gameId, token)
+    Games.registerPlayer(gameId, color, token)
     val ready = (color == Black) && Players(gameId).contains(White)
-//    Io.saveGame(gameId)
     response.setStatus(HttpServletResponse.SC_OK)
     logger.info(s"$gameId, $color, $token".replaceAll("[\r\n]"," "))
     PlayerRegisteredResponse(Games(gameId), color, token, ready, requestInfo.debugInfo)
@@ -27,6 +26,5 @@ class RegisterPlayerServlet extends BaseServlet with LazyLogging:
     if parts.length < 2 then throw MalformedRequest(requestInfo.path)
     val color = Color(parts(1)(0))
     val gameId = requestInfo.getGameId
-    if Players.contains(gameId) && Players(gameId).contains(color) then
-      throw DuplicateColor(gameId, color)
+    if Players.isDuplicate(gameId, color) then throw DuplicateColor(gameId, color)
     color

@@ -1,13 +1,9 @@
 package go3d.server
 
-import go3d.{Color, Game}
-
 import java.io.{File, IOException}
 import java.nio.file.{Files, Path, Paths}
 import java.nio.charset.StandardCharsets
 import io.circe.syntax.EncoderOps
-
-case class SaveGame(game: Game, players: Map[Color, Player])
 
 class FileIO(val baseFolder: String):
 

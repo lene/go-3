@@ -12,13 +12,13 @@ import javax.servlet.http.HttpServletResponse
       --color w --strategy random
 **/
 class OpenGamesServlet extends BaseServlet:
-  def logger = Logger[OpenGamesServlet]
+  def logger: Logger = Logger[OpenGamesServlet]
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     try
       Thread.sleep(100) // very basic DoS protection
       response.setStatus(HttpServletResponse.SC_OK)
-      GameListResponse(openGames())
+      GameListResponse(Players.openGames())
     catch
       case _ => ErrorResponse("unknown error")
 
