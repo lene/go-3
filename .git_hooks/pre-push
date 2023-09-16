@@ -11,17 +11,21 @@
 #
 
 GITLAB_PROJECT_ID=6643214
+CI_LINT_OUTPUT=/tmp/gitlab-ci-lint.json
 
 status=0
-
 
 if [ -n "${GITLAB_ACCESS_TOKEN}" ]; then
   CONTENT="$(cat .gitlab-ci.yml)"
   jq --null-input --arg yaml "$CONTENT" '.content=$yaml' | \
   curl -s "https://gitlab.com/api/v4/projects/${GITLAB_PROJECT_ID}/ci/lint" \
     --header 'Content-Type: application/json' --header "PRIVATE-TOKEN: $GITLAB_ACCESS_TOKEN" \
-    --data @- | \
-    jq .valid | grep true || status=1
+    --data @- > $CI_LINT_OUTPUT
+  if [ "$(jq -r .valid <"$CI_LINT_OUTPUT")" != "true" ]; then
+    status=1
+    echo "errors: $(jq .errors < "$CI_LINT_OUTPUT")"
+    echo "warnings: $(jq .warnings < "$CI_LINT_OUTPUT")"
+  fi
 else
   echo "please export GITLAB_ACCESS_TOKEN"
   exit 1
