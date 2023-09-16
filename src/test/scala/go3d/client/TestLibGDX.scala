@@ -6,14 +6,14 @@ import go3d.server.StatusResponse
 import com.badlogic.gdx.Version
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 
-import org.junit.{Assert, Ignore, Test}
+import org.junit.jupiter.api.{Assertions, Test, Disabled}
 
 class TestLibGDX:
 
   @Test def testVersion(): Unit =
-    Assert.assertTrue(Version.isHigherEqual(1, 11, 0))
+    Assertions.assertTrue(Version.isHigherEqual(1, 11, 0))
 
-  @Ignore("Only run this with \"sbt test\"")
+  @Disabled("Only run this with \"sbt test\"")
   @Test def testInstantiateClient(): Unit =
     /**
       Running this in sbt repeatedly causes:

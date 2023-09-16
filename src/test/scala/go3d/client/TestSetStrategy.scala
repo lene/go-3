@@ -1,7 +1,7 @@
 package go3d.client
 
 import go3d._
-import org.junit.{Assert, BeforeClass, Test}
+import org.junit.jupiter.api.{Assertions, Test}
 
 
 class TestSetStrategy:
@@ -126,8 +126,8 @@ class TestSetStrategy:
   @Test def testMaximizeLiberties2(): Unit =
     val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))
     val strategy = SetStrategy(game, Array())
-    Assert.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions).contains(Position(2, 2, 2)))
-    Assert.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions).contains(Position(1, 1, 1)))
+    Assertions.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions).contains(Position(2, 2, 2)))
+    Assertions.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions).contains(Position(1, 1, 1)))
 
   @Test def testMinimizeLiberties(): Unit =
     val game = playListOfMoves(3, List(Move(3, 3, 3, Black)))

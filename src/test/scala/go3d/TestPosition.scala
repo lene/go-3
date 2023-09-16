@@ -1,6 +1,6 @@
 package go3d
 
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.{Assertions, Test}
 
 class TestPosition:
   @Test def testPosition(): Unit =
@@ -15,19 +15,19 @@ class TestPosition:
     assertThrows[OutsideBoard]({Position(1, 1, 0)})
 
   @Test def testEqual(): Unit =
-    Assert.assertTrue(Position(1, 1, 1) == Position(1, 1, 1))
+    Assertions.assertTrue(Position(1, 1, 1) == Position(1, 1, 1))
 
   @Test def testNotEqual(): Unit =
-    Assert.assertFalse(Position(1, 1, 1) == Position(1, 1, 2))
+    Assertions.assertFalse(Position(1, 1, 1) == Position(1, 1, 2))
 
   @Test def testMinus(): Unit =
-    Assert.assertEquals(Delta(-1, -1, -1), Position(1, 1, 1) - Position(2, 2, 2))
-    Assert.assertEquals(Delta(1, 1, 1), Position(2, 2, 2) - Position(1, 1, 1))
+    Assertions.assertEquals(Delta(-1, -1, -1), Position(1, 1, 1) - Position(2, 2, 2))
+    Assertions.assertEquals(Delta(1, 1, 1), Position(2, 2, 2) - Position(1, 1, 1))
 
   @Test def testDistance(): Unit =
-    Assert.assertEquals(3, (Position(1, 1, 1) - Position(2, 2, 2)).abs)
-    Assert.assertEquals(3, (Position(2, 2, 2) - Position(1, 1, 1)).abs)
-    Assert.assertEquals(0, (Position(2, 2, 2) - Position(2, 2, 2)).abs)
+    Assertions.assertEquals(3, (Position(1, 1, 1) - Position(2, 2, 2)).abs)
+    Assertions.assertEquals(3, (Position(2, 2, 2) - Position(1, 1, 1)).abs)
+    Assertions.assertEquals(0, (Position(2, 2, 2) - Position(2, 2, 2)).abs)
 
   @Test def testLoopOverNeighbors(): Unit =
     val center = Position(2, 3, 4)
@@ -42,4 +42,4 @@ class TestPosition:
     assertPositionsEqual(
       List((1, 3, 4), (3, 3, 4), (2, 2, 4), (2, 4, 4), (2, 3, 3), (2, 3, 5)), neighbors
     )
-    Assert.assertFalse(neighbors.contains(Position(2, 3, 4)))
+    Assertions.assertFalse(neighbors.contains(Position(2, 3, 4)))

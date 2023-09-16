@@ -1,6 +1,6 @@
 package go3d
 
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.{Assertions, Test}
 
 class TestLiberties:
 
@@ -27,7 +27,7 @@ class TestLiberties:
       Move(2, 2, 2, Black)
     )
     goban.stones(3)(2)(2) = White
-    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 2, 2, Black)))
+    Assertions.assertFalse(goban.hasLiberties(Move(2, 2, 2, Black)), "\n"+goban.toString)
 
   @Test def testLibertiesOnFace(): Unit =
     val goban = newGoban(TestSize)
@@ -37,7 +37,7 @@ class TestLiberties:
       Move(2, 2, 1, Black)
     )
     goban.stones(3)(2)(1) = White
-    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 2, 1, Black)))
+    Assertions.assertFalse(goban.hasLiberties(Move(2, 2, 1, Black)), "\n"+goban.toString)
 
   @Test def testLibertiesOnEdge(): Unit =
     val goban = newGoban(TestSize)
@@ -47,7 +47,7 @@ class TestLiberties:
       Move(2, 1, 1, Black)
     )
     goban.stones(2)(1)(2) = White
-    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(2, 1, 1, Black)))
+    Assertions.assertFalse(goban.hasLiberties(Move(2, 1, 1, Black)), "\n"+goban.toString)
 
   @Test def testLibertiesInCorner(): Unit =
     val goban = newGoban(TestSize)
@@ -57,7 +57,7 @@ class TestLiberties:
       Move(1, 1, 1, Black)
     )
     goban.stones(1)(1)(2) = White
-    Assert.assertFalse("\n"+goban.toString, goban.hasLiberties(Move(1, 1, 1, Black)))
+    Assertions.assertFalse(goban.hasLiberties(Move(1, 1, 1, Black)), "\n"+goban.toString)
 
   @Test def testLibertiesWithNeighbor(): Unit =
     val goban = newGoban(TestSize)
@@ -103,7 +103,7 @@ class TestLiberties:
       (1, 3, 1) :: (2, 2, 1) :: (3, 1, 1) :: (1, 3, 2) :: (2, 2, 2) :: (3, 1, 2) :: (1, 1, 3) ::
         (2, 1, 3) :: (1, 2, 3) :: Nil, White
     )
-    Assert.assertTrue(goban.hasLiberties(Move(2, 1, 1, Black)))
+    Assertions.assertTrue(goban.hasLiberties(Move(2, 1, 1, Black)))
     goban.stones(1)(1)(1) = White
     checkNoLiberties(goban,
       Move(2, 1, 1, Black) :: Move(1, 2, 1, Black) :: Move(1, 1, 2, Black) ::
@@ -117,10 +117,10 @@ def directlySetListOfStonesAndCheckLiberties(goban: Goban, positions: List[(Int,
                                              color: Color, toCheck: Move): Unit =
   for pos <- positions do
     goban.stones(pos(0))(pos(1))(pos(2)) = color
-    Assert.assertTrue(goban.hasLiberties(toCheck))
+    Assertions.assertTrue(goban.hasLiberties(toCheck))
 
 def checkHasLiberties(goban: Goban, stones: List[Move], message: String = ""): Unit =
-  for stone <- stones do Assert.assertTrue(message, goban.hasLiberties(stone))
+  for stone <- stones do Assertions.assertTrue(goban.hasLiberties(stone), message)
 
 def checkNoLiberties(goban: Goban, stones: List[Move], message: String = ""): Unit =
-  for stone <- stones do Assert.assertFalse(message, goban.hasLiberties(stone))
+  for stone <- stones do Assertions.assertFalse(goban.hasLiberties(stone), message)

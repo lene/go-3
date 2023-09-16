@@ -1,6 +1,6 @@
 import sbt.Keys.libraryDependencies
 
-val scala3Version = "3.3.0"
+val scala3Version = "3.3.1"
 val circeVersion = "0.14.1"
 val libgdxVersion = "1.12.0"
 
@@ -19,7 +19,11 @@ lazy val root = project
     libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
     libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.4.7",
     // JUnit
-    libraryDependencies += "com.novocode" % "junit-interface" % "0.11" % "test",
+    libraryDependencies ++= Seq(
+          "net.aichler" % "jupiter-interface" % JupiterKeys.jupiterVersion.value % Test
+    ),
+    // ScalaTest
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.15" % "test",
     // requests
     libraryDependencies += "com.lihaoyi" %% "requests" % "0.8.0",
     // newer jetty versions require both code changes and Java >= 11

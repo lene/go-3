@@ -1,9 +1,9 @@
 package go3d.client
 
-import org.junit.{After, Assert, Before, Test}
+import org.junit.jupiter.api.{Assertions, Test}
 
 class TestBaseClient:
 
   @Test def testTokenExpandsToAuthHeader(): Unit =
     val client = BaseClient("", "", Some("test"))
-    Assert.assertEquals(Map("Authentication" -> s"Bearer test"), client.headers)
+    Assertions.assertEquals(Map("Authentication" -> s"Bearer test"), client.headers)

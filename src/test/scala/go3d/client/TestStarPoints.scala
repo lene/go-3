@@ -1,7 +1,7 @@
 package go3d.client
 
 import go3d._
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
 class TestStarPoints:
   @Test def testCorners(): Unit =

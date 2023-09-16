@@ -1,19 +1,19 @@
 package go3d
 
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.{Assertions, Test}
 
 class TestConstants:
   @Test def testMinBoardSize(): Unit =
-    Assert.assertEquals(MinBoardSize, 3)
+    Assertions.assertEquals(MinBoardSize, 3)
 
   @Test def testMaxBoardSize(): Unit =
-    Assert.assertEquals(MaxBoardSize, 25)
+    Assertions.assertEquals(MaxBoardSize, 25)
 
   @Test def testMaxHandicaps(): Unit =
-    Assert.assertEquals(MaxHandicaps, 27)
+    Assertions.assertEquals(MaxHandicaps, 27)
 
   @Test def testMaxPlayers(): Unit =
-    Assert.assertEquals(MaxPlayers, 2)
+    Assertions.assertEquals(MaxPlayers, 2)
 
   @Test def testDefaultPlayers(): Unit =
-    Assert.assertEquals(DefaultPlayers, 2)
+    Assertions.assertEquals(DefaultPlayers, 2)

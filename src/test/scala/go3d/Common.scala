@@ -1,6 +1,6 @@
 package go3d
 
-import org.junit.Assert
+import org.junit.jupiter.api.Assertions
 
 import scala.reflect.ClassTag
 
@@ -57,20 +57,24 @@ def checkStonesOnBoard(game: GoGame, moves: List[Move | Pass]): Unit =
   for move <- moves do
     move match
       case _: Pass =>
-      case m: Move => Assert.assertEquals(m.color, game.at(m.position))
+      case m: Move => Assertions.assertEquals(m.color, game.at(m.position))
 
+// TODO replace with Assertions.assertEquals
 def assertCollectionEqual[T](expected: Seq[T], actual: Seq[T]): Unit =
-  Assert.assertTrue(s"$actual != ${expected}", expected.sortBy(_.toString) == actual.sortBy(_.toString))
+  Assertions.assertTrue(
+    expected.sortBy(_.toString) == actual.sortBy(_.toString), s"$actual != ${expected}"
+  )
 
 def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]): Unit =
   assertCollectionEqual(for (p <- expected) yield Position(p._1, p._2, p._3), actual)
 
+// TODO replace with Assertions.assertThrows
 def assertThrows[E](f: => Unit)(implicit eType:ClassTag[E]): Unit =
   try f
   catch
     case _: E => return
-    case e: Any => Assert.fail(s"Expected ${eType.runtimeClass.getName} got ${e.getClass}")
-  Assert.fail(s"Expected ${eType.runtimeClass.getName}")
+    case e: Any => Assertions.fail(s"Expected ${eType.runtimeClass.getName} got ${e.getClass}")
+  Assertions.fail(s"Expected ${eType.runtimeClass.getName}")
 
 def fromStrings(levels: Map[Int, String]): Goban =
   if levels.isEmpty then throw IllegalArgumentException("nothing to generate")

@@ -2,14 +2,14 @@ package go3d.server
 
 import go3d.*
 import io.circe.parser.*
-import org.junit.{Assert, BeforeClass, Test}
+import org.junit.jupiter.api.{Assertions, Test, BeforeAll}
 
 import scala.io.Source
 import java.nio.file.{Files, Paths}
 
 object TestFileIo:
   var fileIO: Option[FileIO] = None
-  @BeforeClass def initIo(): Unit =
+  @BeforeAll def initIo(): Unit =
     Games.init(Files.createTempDirectory("go3d").toString)
     fileIO = Games.fileIO
 
@@ -27,9 +27,9 @@ class TestFileIo:
     val gameId = Games.register(TestSize)
     Games.registerPlayer(gameId, Black, "mock@")
     TestFileIo.fileIO.get.saveGame(gameId)
-    Assert.assertTrue(
-      s"$gameId in ${IOForTests.files}?",
-      Files.exists(Paths.get(TestFileIo.fileIO.get.baseFolder, s"$gameId.json"))
+    Assertions.assertTrue(
+      Files.exists(Paths.get(TestFileIo.fileIO.get.baseFolder, s"$gameId.json")),
+      s"$gameId in ${IOForTests.files}?"
     )
 
   @Test def testSaveGameContents(): Unit =
@@ -42,24 +42,24 @@ class TestFileIo:
     source.close()
 
     val restored = decode[SaveGame](fileContents)
-    Assert.assertTrue(restored.isRight)
+    Assertions.assertTrue(restored.isRight)
     val value = restored.getOrElse(null)
-    Assert.assertEquals(TestSize, value.game.size)
-    Assert.assertTrue(value.players.nonEmpty)
-    Assert.assertTrue(value.players.contains(Black))
+    Assertions.assertEquals(TestSize, value.game.size)
+    Assertions.assertTrue(value.players.nonEmpty)
+    Assertions.assertTrue(value.players.contains(Black))
 
   @Test def testExistsToGainTrustInTestsThatUseIt(): Unit =
     TestFileIo.fileIO.get.writeFile("test", "{}")
-    Assert.assertTrue(IOForTests.exists("test"))
-    Assert.assertFalse(IOForTests.exists("this file should not exist"))
+    Assertions.assertTrue(IOForTests.exists("test"))
+    Assertions.assertFalse(IOForTests.exists("this file should not exist"))
 
   @Test def testGetListOfJsonFiles(): Unit =
     TestFileIo.fileIO.get.writeFile("test.json", "{}")
-    Assert.assertTrue(IOForTests.exists("test.json"))
+    Assertions.assertTrue(IOForTests.exists("test.json"))
     val matchingFiles = TestFileIo.fileIO.get.getListOfFiles(".json").map(f => f.getName)
-    Assert.assertEquals(
-      java.io.File(TestFileIo.fileIO.get.baseFolder).listFiles.toList.toString,
-      List("test.json"), matchingFiles
+    Assertions.assertEquals(
+      List("test.json"), matchingFiles,
+      java.io.File(TestFileIo.fileIO.get.baseFolder).listFiles.toList.toString
     )
 
   @Test def testGuardAgainstPathTraversal(): Unit =

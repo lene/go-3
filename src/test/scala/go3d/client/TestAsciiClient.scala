@@ -1,9 +1,7 @@
 package go3d.client
 
 import go3d._
-import go3d.server.GoServer
-import org.eclipse.jetty.server.Server
-import org.junit.{After, Assert, Before, Test}
+import org.junit.jupiter.api.Test
 import java.net.UnknownHostException
 
 val ClientTestPort = 64556

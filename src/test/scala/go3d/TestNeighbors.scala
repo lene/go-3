@@ -1,6 +1,6 @@
 package go3d
 
-import org.junit.{Assert, Test}
+import org.junit.jupiter.api.Test
 
 class TestNeighbors:
 

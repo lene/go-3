@@ -3,7 +3,7 @@ package go3d.server
 import go3d.*
 import io.circe.parser.*
 import org.eclipse.jetty.server.Server
-import org.junit.*
+import org.junit.jupiter.api.{Assertions, Test, BeforeEach, AfterEach, BeforeAll}
 import requests.{RequestFailedException, *}
 
 import java.io.IOException
@@ -63,7 +63,7 @@ object GameData:
     getPRR(s"$ServerURL/register/$id/$color")
 
 object TestServer:
-  @BeforeClass def quietLogging(): Unit =
+  @BeforeAll def quietLogging(): Unit =
     import ch.qos.logback.classic.{Level, Logger}
     import org.slf4j.LoggerFactory
     val root = org.slf4j.Logger.ROOT_LOGGER_NAME
@@ -74,22 +74,22 @@ class TestServer:
   var jetty: Option[Server] = None
   var tempDir: Option[String] = None
 
-  @Before def startJetty(): Unit =
+  @BeforeEach def startJetty(): Unit =
     System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
     jetty = Some(GoServer.createServer(TestPort))
     jetty.foreach(_.start)
 
-  @Before def setupTempDir(): Unit =
+  @BeforeEach def setupTempDir(): Unit =
     tempDir = Some(Files.createTempDirectory("go3d").toString)
     Games.init(tempDir.get)
 
-  @After def stopJetty(): Unit = jetty.foreach(_.stop)
+  @AfterEach def stopJetty(): Unit = jetty.foreach(_.stop)
 
   @Test def testNewGame(): Unit =
     val response = GameData.create(TestSize)
-    Assert.assertNotNull(response.id)
-    Assert.assertNotEquals("", response.id)
-    Assert.assertEquals(TestSize, response.size)
+    Assertions.assertNotNull(response.id)
+    Assertions.assertNotEquals("", response.id)
+    Assertions.assertEquals(TestSize, response.size)
 
   @Test def testNewGameFailsWithBadSize(): Unit =
     assertThrows[IOException]({getJson(s"http://localhost:$TestPort/new/1")})
@@ -105,8 +105,8 @@ class TestServer:
   @Test def testRegisterOnePlayer(): Unit =
     val newGameResponse = GameData.create(TestSize)
     val registerResponse = GameData.register(newGameResponse.id, Black)
-    Assert.assertEquals(TestSize, registerResponse.game.size)
-    Assert.assertEquals(Black, registerResponse.color)
+    Assertions.assertEquals(TestSize, registerResponse.game.size)
+    Assertions.assertEquals(Black, registerResponse.color)
 
   @Test def testRegisterBadColorSetsStatus400(): Unit =
     val newGameResponse = GameData.create(TestSize)
@@ -119,30 +119,30 @@ class TestServer:
     val newGameResponse = GameData.create(TestSize)
     GameData.register(newGameResponse.id, Black)
     val registerResponse = GameData.register(newGameResponse.id, White)
-    Assert.assertEquals(TestSize, registerResponse.game.size)
-    Assert.assertEquals(White, registerResponse.color)
+    Assertions.assertEquals(TestSize, registerResponse.game.size)
+    Assertions.assertEquals(White, registerResponse.color)
 
   @Test def testRegisterTwoPlayersBlackLastSetsReady(): Unit =
     val newGameResponse = GameData.create(TestSize)
     GameData.register(newGameResponse.id, White)
     val registerResponse = GameData.register(newGameResponse.id, Black)
-    Assert.assertTrue(registerResponse.ready)
+    Assertions.assertTrue(registerResponse.ready)
 
   @Test def testRegisterTwoPlayersWhiteLastDoesNotSetReady(): Unit =
     val newGameResponse = GameData.create(TestSize)
     GameData.register(newGameResponse.id, Black)
     val registerResponse = GameData.register(newGameResponse.id, White)
-    Assert.assertFalse(registerResponse.ready)
+    Assertions.assertFalse(registerResponse.ready)
 
   @Test def testRegisterOnlyBlackDoesNotSetReady(): Unit =
     val newGameResponse = GameData.create(TestSize)
     val registerResponse = GameData.register(newGameResponse.id, Black)
-    Assert.assertFalse(registerResponse.ready)
+    Assertions.assertFalse(registerResponse.ready)
 
   @Test def testRegisterOnlyWhiteDoesNotSetReady(): Unit =
     val newGameResponse = GameData.create(TestSize)
     val registerResponse = GameData.register(newGameResponse.id, White)
-    Assert.assertFalse(registerResponse.ready)
+    Assertions.assertFalse(registerResponse.ready)
 
   @Test def testRegisterOnlyBlackDoesNotReturnReadyStatus(): Unit =
     val newGameResponse = GameData.create(TestSize)
@@ -151,7 +151,7 @@ class TestServer:
       s"${GameData.ServerURL}/status/${newGameResponse.id}",
       Map("Authentication" -> s"Bearer ${registerResponse.authToken}")
     )
-    Assert.assertFalse(statusResponse.ready)
+    Assertions.assertFalse(statusResponse.ready)
 
   @Test def testRegisterOnlyWhiteDoesNotReturnReadyStatus(): Unit =
     val newGameResponse = GameData.create(TestSize)
@@ -160,7 +160,7 @@ class TestServer:
       s"${GameData.ServerURL}/status/${newGameResponse.id}",
       Map("Authentication" -> s"Bearer ${registerResponse.authToken}")
     )
-    Assert.assertFalse(statusResponse.ready)
+    Assertions.assertFalse(statusResponse.ready)
 
   @Test def testRegisterSamePlayerTwiceFails(): Unit =
     val newGameResponse = GameData.create(TestSize)
@@ -174,22 +174,22 @@ class TestServer:
   @Test def testGetStatusAfterBothRegisteredForBlackIsReady(): Unit =
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(Black)
-    Assert.assertTrue(statusResponse.ready)
+    Assertions.assertTrue(statusResponse.ready)
 
   @Test def testGetStatusAfterBothRegisteredForWhiteIsNotReady(): Unit =
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(White)
-    Assert.assertFalse(statusResponse.toString, statusResponse.ready)
+    Assertions.assertFalse(statusResponse.ready, statusResponse.toString)
 
   @Test def testGetStatusAfterBothRegisteredForBlackHasPossibleMoves(): Unit =
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(Black)
-    Assert.assertTrue(statusResponse.moves.nonEmpty)
+    Assertions.assertTrue(statusResponse.moves.nonEmpty)
 
   @Test def testGetStatusAfterBothRegisteredForWhiteHasNoPossibleMoves(): Unit =
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(White)
-    Assert.assertTrue(statusResponse.moves.toString, statusResponse.moves.isEmpty)
+    Assertions.assertTrue(statusResponse.moves.isEmpty, statusResponse.moves.toString)
 
   @Test def testSetStoneWithoutAuthFails(): Unit =
     val gameData = setUpGame(TestSize)
@@ -209,19 +209,19 @@ class TestServer:
 
   @Test def testSetStoneForBlackAtReadyStatusReturnsUpdatedBoard(): Unit =
     val setResponse = gameWithBlackAt111(TestSize)
-    Assert.assertEquals(Black, setResponse.game.at(1, 1, 1))
+    Assertions.assertEquals(Black, setResponse.game.at(1, 1, 1))
 
   @Test def testSetStoneForBlackAtReadyStatusReturnsStatusNotReady(): Unit =
     val setResponse = gameWithBlackAt111(TestSize)
-    Assert.assertFalse(setResponse.ready)
+    Assertions.assertFalse(setResponse.ready)
 
   @Test def testSetStoneForBlackAtReadyStatusReturnsNoPossibleMoves(): Unit =
     val setResponse = gameWithBlackAt111(TestSize)
-    Assert.assertTrue(setResponse.moves.isEmpty)
+    Assertions.assertTrue(setResponse.moves.isEmpty)
 
   @Test def testSetStoneWhenNotReadyFails(): Unit =
     val gameData = setUpGame(TestSize)
-    Assert.assertFalse(gameData.status(White).ready)
+    Assertions.assertFalse(gameData.status(White).ready)
     assertThrows[RequestFailedException]({gameData.set(White, 1, 1, 1)})
 
   @Test def testSetStoneWhenNotReadySetsStatus400(): Unit =
@@ -234,7 +234,7 @@ class TestServer:
 
   @Test def testPassWhenNotReadyFails(): Unit =
     val gameData = setUpGame(TestSize)
-    Assert.assertFalse(gameData.status(White).ready)
+    Assertions.assertFalse(gameData.status(White).ready)
     assertThrows[RequestFailedException]({gameData.pass(White)})
 
   @Test def testPassWhenNotReadySetsStatus400(): Unit =
@@ -251,7 +251,7 @@ class TestServer:
     val pos = statusResponse.moves.last
     val setResponse = gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(Black)
-    Assert.assertFalse(statusResponseAgain.ready)
+    Assertions.assertFalse(statusResponseAgain.ready)
 
   @Test def testGetStatusForBlackAfterBlackSetStoneReturnsStatusNoPossibleMoves(): Unit =
     val gameData = setUpGame(TestSize)
@@ -259,7 +259,7 @@ class TestServer:
     val pos = statusResponse.moves.last
     val setResponse = gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(Black)
-    Assert.assertTrue(statusResponseAgain.moves.isEmpty)
+    Assertions.assertTrue(statusResponseAgain.moves.isEmpty)
 
   @Test def testGetStatusForWhiteAfterBlackSetStoneReturnsReady(): Unit =
     val gameData = setUpGame(TestSize)
@@ -267,7 +267,7 @@ class TestServer:
     val pos = statusResponse.moves.last
     val setResponse = gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(White)
-    Assert.assertTrue(statusResponseAgain.ready)
+    Assertions.assertTrue(statusResponseAgain.ready)
 
   @Test def testGetStatusForWhiteAfterBlackSetStoneReturnsUpdatedBoard(): Unit =
     val gameData = setUpGame(TestSize)
@@ -275,7 +275,7 @@ class TestServer:
     val pos = statusResponse.moves.last
     val setResponse = gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(White)
-    Assert.assertEquals(Black, statusResponseAgain.game.at(pos))
+    Assertions.assertEquals(Black, statusResponseAgain.game.at(pos))
 
   @Test def testGetStatusForWhiteAfterBlackSetStoneReturnsPossibleMoves(): Unit =
     val gameData = setUpGame(TestSize)
@@ -283,42 +283,42 @@ class TestServer:
     val pos = statusResponse.moves.last
     val setResponse = gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(White)
-    Assert.assertTrue(statusResponseAgain.moves.nonEmpty)
+    Assertions.assertTrue(statusResponseAgain.moves.nonEmpty)
 
   @Test def testGetStatusWithoutAuthReturnsBoardButNothingElse(): Unit =
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status()
-    Assert.assertFalse(statusResponse.ready)
+    Assertions.assertFalse(statusResponse.ready)
     val setResponse = gameData.set(Black, 1, 1, 1)
     val statusResponseAgain = gameData.status()
-    Assert.assertFalse(statusResponseAgain.ready)
-    Assert.assertEquals(0, statusResponseAgain.moves.length)
-    Assert.assertEquals(Black, statusResponseAgain.game.at(1, 1, 1))
+    Assertions.assertFalse(statusResponseAgain.ready)
+    Assertions.assertEquals(0, statusResponseAgain.moves.length)
+    Assertions.assertEquals(Black, statusResponseAgain.game.at(1, 1, 1))
 
   @Test def testPassReturnsNonReadyStatus(): Unit =
     val gameData = setUpGame(TestSize)
     val passResponse = gameData.pass(Black)
-    Assert.assertFalse(passResponse.ready)
-    Assert.assertTrue(passResponse.moves.isEmpty)
+    Assertions.assertFalse(passResponse.ready)
+    Assertions.assertTrue(passResponse.moves.isEmpty)
 
   @Test def testPassTwiceReturnsGameOver(): Unit =
     val gameData = setUpGame(TestSize)
     val pass1Response = gameData.pass(Black)
     val pass2Response = gameData.pass(White)
-    Assert.assertTrue(pass2Response.game.isOver)
+    Assertions.assertTrue(pass2Response.game.isOver)
 
   @Test def testPlayListOfMoves(): Unit =
     val gameData = setUpGame(TestSize)
     playListOfMoves(gameData, CaptureMoves.dropRight(1))
     val game = gameData.status().game
     for move <- CaptureMoves.dropRight(1) do
-      Assert.assertEquals(move.toString+"\n"+game.toString, move.color, game.at(move.position))
+      Assertions.assertEquals(move.color, game.at(move.position), move.toString+"\n"+game.toString)
 
   @Test def testCaptureStone(): Unit =
     val gameData = setUpGame(TestSize)
     playListOfMoves(gameData, CaptureMoves)
     val game = gameData.status().game
-    Assert.assertEquals("\n"+game.toString, Empty, game.at(Position(2, 2, 1)))
+    Assertions.assertEquals(Empty, game.at(Position(2, 2, 1)), "\n"+game.toString)
 
   @Test def testCaptureTwoDisjointStonesWithOneMove(): Unit =
     val moves = List[Move | Pass](
@@ -332,9 +332,9 @@ class TestServer:
     )
     val gameData = setUpGame(5)
     val statusResponse = playListOfMoves(gameData, moves)
-    Assert.assertTrue(statusResponse.game.captures.isEmpty)
+    Assertions.assertTrue(statusResponse.game.captures.isEmpty)
     val statusResponseAgain = playListOfMoves(gameData,List(Move(3, 1, 1, White)))
-    Assert.assertEquals(2, statusResponseAgain.game.captures(White))
+    Assertions.assertEquals(2, statusResponseAgain.game.captures(White))
 
   @Test def testPlayRandomGame(): Unit =
     val gameData = setUpGame(TestSize)
@@ -343,13 +343,15 @@ class TestServer:
   @Test def testPlayRandomGameIsSaved(): Unit =
     val gameData = setUpGame(TestSize)
     gameData.playRandomGame(false)
-    Assert.assertTrue(s"${gameData.id} in ${IOForTests.files}?", IOForTests.exists(gameData.id + ".json"))
+    Assertions.assertTrue(
+      IOForTests.exists(gameData.id + ".json"), s"${gameData.id} in ${IOForTests.files}?"
+    )
 
   @Test def testSavedRandomGameIsSameAsPlayed(): Unit =
     val gameData = setUpGame(TestSize)
     gameData.playRandomGame(false)
     val savedGame = Games.readGame(IOForTests.open(gameData.id + ".json"))
-    Assert.assertEquals(Games(gameData.id), savedGame.game)
+    Assertions.assertEquals(Games(gameData.id), savedGame.game)
 
   @Test def testTooLongURLSetsStatus414WhenCreatingGame(): Unit =
     assertFailsWithStatus(s"http://localhost:$TestPort/new/123", 414)
@@ -417,7 +419,7 @@ class TestServer:
 
   @Test def testHealth(): Unit =
     val response = requests.get(s"http://localhost:$TestPort/health")
-    Assert.assertEquals("1", response.text())
+    Assertions.assertEquals("1", response.text())
 
   @Test def testHealthFailsWithExtraData(): Unit =
     assertFailsWithStatus(s"http://localhost:$TestPort/health/xyz", 404)
@@ -425,7 +427,7 @@ class TestServer:
   @Test def testRegisterWithoutDebugDoesNotPassDebugInfo(): Unit =
     val newGameResponse = GameData.create(TestSize)
     val registerResponse = getPRR(s"${GameData.ServerURL}/register/${newGameResponse.id}/@")
-    Assert.assertFalse(registerResponse.debug.headers.nonEmpty)
+    Assertions.assertFalse(registerResponse.debug.headers.nonEmpty)
 
   @Test def testSetStoneWithDebug(): Unit =
     val gameData = setUpGame(TestSize)
@@ -433,7 +435,7 @@ class TestServer:
       s"${GameData.ServerURL}/set/${gameData.id}/1/1/1/d",
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
-    Assert.assertTrue(setResponse.debug.headers.nonEmpty)
+    Assertions.assertTrue(setResponse.debug.headers.nonEmpty)
 
   @Test def testSetStoneWithoutDebugDoesNotPassDebugInfo(): Unit =
     val gameData = setUpGame(TestSize)
@@ -441,7 +443,7 @@ class TestServer:
       s"${GameData.ServerURL}/set/${gameData.id}/1/1/1",
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
-    Assert.assertFalse(setResponse.debug.headers.nonEmpty)
+    Assertions.assertFalse(setResponse.debug.headers.nonEmpty)
 
   @Test def testSetStoneWithDebugOnBigField(): Unit =
     val gameData = setUpGame(11)
@@ -449,7 +451,7 @@ class TestServer:
       s"${GameData.ServerURL}/set/${gameData.id}/11/11/11/d",
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
-    Assert.assertTrue(setResponse.debug.headers.nonEmpty)
+    Assertions.assertTrue(setResponse.debug.headers.nonEmpty)
 
   @Test def testPassWithDebug(): Unit =
     val gameData = setUpGame(TestSize)
@@ -457,7 +459,7 @@ class TestServer:
       s"${GameData.ServerURL}/pass/${gameData.id}/d",
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
-    Assert.assertTrue(passResponse.debug.headers.nonEmpty)
+    Assertions.assertTrue(passResponse.debug.headers.nonEmpty)
 
   @Test def testPassWithoutDebugDoesNotPassDebugInfo(): Unit =
     val gameData = setUpGame(TestSize)
@@ -465,7 +467,7 @@ class TestServer:
       s"${GameData.ServerURL}/pass/${gameData.id}",
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
-    Assert.assertFalse(passResponse.debug.headers.nonEmpty)
+    Assertions.assertFalse(passResponse.debug.headers.nonEmpty)
 
   @Test def testGetStatusWithDebug(): Unit =
     val gameData = setUpGame(TestSize)
@@ -473,7 +475,7 @@ class TestServer:
       s"${GameData.ServerURL}/status/${gameData.id}/d",
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
-    Assert.assertTrue(statusResponse.debug.headers.nonEmpty)
+    Assertions.assertTrue(statusResponse.debug.headers.nonEmpty)
 
   @Test def testGetStatusWithoutDebugDoesNotPassDebugInfo(): Unit =
     val gameData = setUpGame(TestSize)
@@ -481,16 +483,16 @@ class TestServer:
       s"${GameData.ServerURL}/status/${gameData.id}",
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
-    Assert.assertFalse(statusResponse.debug.headers.nonEmpty)
+    Assertions.assertFalse(statusResponse.debug.headers.nonEmpty)
 
   @Test def testGetStatusWithDebugWithoutAuthDoesNotPassDebugInfo(): Unit =
     val gameData = setUpGame(TestSize)
     val statusResponse = getSR(s"${GameData.ServerURL}/status/${gameData.id}/d", Map())
-    Assert.assertFalse(statusResponse.toString, statusResponse.debug.headers.nonEmpty)
+    Assertions.assertFalse(statusResponse.debug.headers.nonEmpty, statusResponse.toString)
 
   @Test def testGetOpenGamesReturnsResponse(): Unit =
     val response = getOGR(s"${GameData.ServerURL}/openGames")
-    Assert.assertTrue(response.isInstanceOf[GameListResponse])
+    Assertions.assertTrue(response.isInstanceOf[GameListResponse])
 
   @Test def testGetOpenGamesReturns404IfRouteHasTrailingSlash(): Unit =
     assertThrows[java.io.FileNotFoundException] {
@@ -500,43 +502,43 @@ class TestServer:
   @Test def testGetOpenGamesDoesNotReturnGameWithNoPlayer(): Unit =
     val newGameResponse = GameData.create(3)
     val response = getOGR(s"${GameData.ServerURL}/openGames")
-    Assert.assertFalse(response.ids.isEmpty)
-    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+    Assertions.assertFalse(response.ids.isEmpty)
+    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
 
   @Test def testGetOpenGamesReturnsOneRegisteredGame(): Unit =
     val newGameResponse = GameData.create(3)
     val blackRegistered = GameData.register(newGameResponse.id, Black)
     val response = getOGR(s"${GameData.ServerURL}/openGames")
-    Assert.assertFalse(response.ids.isEmpty)
-    Assert.assertTrue(response.ids.contains(newGameResponse.id))
+    Assertions.assertFalse(response.ids.isEmpty)
+    Assertions.assertTrue(response.ids.contains(newGameResponse.id))
 
   @Test def testGetOpenGamesDoesNotReturnGameWithNoBlackPlayer(): Unit =
     val newGameResponse = GameData.create(3)
     GameData.register(newGameResponse.id, White)
     val response = getOGR(s"${GameData.ServerURL}/openGames")
-    Assert.assertFalse(response.ids.isEmpty)
-    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+    Assertions.assertFalse(response.ids.isEmpty)
+    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
 
   @Test def testGetOpenGamesDoesNotReturnGameWithTwoPlayers(): Unit =
     val newGameResponse = GameData.create(3)
     GameData.register(newGameResponse.id, Black)
     GameData.register(newGameResponse.id, White)
     val response = getOGR(s"${GameData.ServerURL}/openGames")
-    Assert.assertFalse(response.ids.isEmpty)
-    Assert.assertFalse(response.ids.contains(newGameResponse.id))
+    Assertions.assertFalse(response.ids.isEmpty)
+    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
 
   @Test def testDoublePassReturnsGameOver(): Unit =
     val gameData: GameData = setUpGame(3)
     gameData.pass(Black)
     val statusResponse = gameData.pass(White)
-    Assert.assertTrue(statusResponse.toString, statusResponse.over)
+    Assertions.assertTrue(statusResponse.over, statusResponse.toString)
 
   @Test def testSubsequentStatusRequestAfterDoublePassReturnsGameOver(): Unit =
     val gameData: GameData = setUpGame(3)
     gameData.pass(Black)
     gameData.pass(White)
     val statusResponse = gameData.status()
-    Assert.assertTrue(statusResponse.toString, statusResponse.over)
+    Assertions.assertTrue(statusResponse.over, statusResponse.toString)
 
   @Test def testGameOverAfterFullNumberOfMoves(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -547,7 +549,7 @@ class TestServer:
       color = !color
 
     val statusResponse = gameData.status()
-    Assert.assertTrue(statusResponse.toString, statusResponse.over)
+    Assertions.assertTrue(statusResponse.over, statusResponse.toString)
 
   @Test def testSettingTheSameColorTwiceGivesError(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -561,8 +563,8 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 2), Black))
     catch
       case e: RequestFailedException =>
-        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
-        Assert.assertTrue(e.response.text().contains(classOf[NotReadyToSet].getSimpleName))
+        Assertions.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
+        Assertions.assertTrue(e.response.text().contains(classOf[NotReadyToSet].getSimpleName))
 
   @Test def testSettingToSuicideErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -577,8 +579,8 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 1), White))
     catch
       case e: RequestFailedException =>
-        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
-        Assert.assertTrue(e.response.text().contains(classOf[Suicide].getSimpleName))
+        Assertions.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
+        Assertions.assertTrue(e.response.text().contains(classOf[Suicide].getSimpleName))
 
   @Test def testSettingOutsideBoardErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -586,8 +588,8 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 4), Black))
     catch
       case e: RequestFailedException =>
-        Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
-        Assert.assertTrue(e.response.text().contains(classOf[OutsideBoard].getSimpleName))
+        Assertions.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
+        Assertions.assertTrue(e.response.text().contains(classOf[OutsideBoard].getSimpleName))
 
   @Test def testSettingAfterGameOverErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -597,38 +599,38 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 1), Black))
     catch
       case e: RequestFailedException =>
-        Assert.assertEquals(HttpServletResponse.SC_GONE, e.response.statusCode)
-        Assert.assertTrue(e.response.text().contains(classOf[GameOver].getSimpleName))
+        Assertions.assertEquals(HttpServletResponse.SC_GONE, e.response.statusCode)
+        Assertions.assertTrue(e.response.text().contains(classOf[GameOver].getSimpleName))
 
   @Test def testAddedGameIsNotWrittenBeforeFirstMove(): Unit =
     val gameData: GameData = setUpGame(3)
-    Assert.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
+    Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
   @Test def testAddedGameIsWrittenAfterFirstMove(): Unit =
     val gameData: GameData = setUpGame(3)
     gameData.set(Move(Position(1, 1, 1), Black))
-    Assert.assertTrue(Games.fileIO.get.getActiveGames.contains(gameData.id))
+    Assertions.assertTrue(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
   @Test def testFinishedGameIsNoLongerActive(): Unit =
     val gameData: GameData = setUpGame(3)
     val previousNumberOfActiveGames = Games.numActiveGames
     gameData.pass(Black)
     gameData.pass(White)
-    Assert.assertEquals(previousNumberOfActiveGames - 1, Games.numActiveGames)
+    Assertions.assertEquals(previousNumberOfActiveGames - 1, Games.numActiveGames)
 
-@Test def testFinishedGameIsListedAsArchived(): Unit =
-  val gameData: GameData = setUpGame(3)
-  val previousNumberOfArchivedGames = Games.numArchivedGames
-  gameData.pass(Black)
-  gameData.pass(White)
-  Assert.assertEquals(previousNumberOfArchivedGames + 1, Games.numArchivedGames)
+  @Test def testFinishedGameIsListedAsArchived(): Unit =
+    val gameData: GameData = setUpGame(3)
+    val previousNumberOfArchivedGames = Games.numArchivedGames
+    gameData.pass(Black)
+    gameData.pass(White)
+    Assertions.assertEquals(previousNumberOfArchivedGames + 1, Games.numArchivedGames)
 
-@Test def testFinishedGameIsMovedToArchiveFolder(): Unit =
-  val gameData: GameData = setUpGame(3)
-  gameData.pass(Black)
-  gameData.pass(White)
-  Assert.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id))
-  Assert.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
+  @Test def testFinishedGameIsMovedToArchiveFolder(): Unit =
+    val gameData: GameData = setUpGame(3)
+    gameData.pass(Black)
+    gameData.pass(White)
+    Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id))
+    Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
@@ -682,11 +684,11 @@ def assertFailsWithStatus(url: String, expectedStatus: Int,
                           headers: Map[String, String] = Map()): Unit =
   try
     val response = requests.get(url, headers = headers)
-    Assert.fail("request unexpectedly succeeded")
+    Assertions.fail("request unexpectedly succeeded")
   catch
-    case e: RequestFailedException => Assert.assertEquals(
-      e.response.text(), expectedStatus, e.response.statusCode
+    case e: RequestFailedException => Assertions.assertEquals(
+      expectedStatus, e.response.statusCode, e.response.text()
     )
-    case e: Throwable => Assert.fail(
+    case e: Throwable => Assertions.fail(
       s"expected RequestFailedException, got ${e.getClass.getSimpleName}"
     )
