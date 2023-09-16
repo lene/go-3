@@ -51,7 +51,7 @@ object BotClient extends Client with LazyLogging:
 
 
   private def makeOneMove(status: StatusResponse): Boolean =
-    val strategy = SetStrategy(game, strategies)
+    val strategy = SetStrategy(game)
     val possible = strategy.narrowDown(status.moves, strategies)
     if possible.nonEmpty then
       val setPosition = randomMove(possible)

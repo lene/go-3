@@ -20,7 +20,7 @@ val logger = Logger[SetStrategy]
 object logger:
   def info(msg: String): Unit = println(msg)
 
-case class SetStrategy(game: Game, strategies: Array[String]):
+case class SetStrategy(game: Game):
 
   private val gameSize: Int = game.size
 
