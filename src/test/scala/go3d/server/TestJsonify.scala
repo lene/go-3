@@ -105,13 +105,14 @@ class TestJsonify:
     Assertions.assertEquals(gobanToStrings(goban).toList, definition.toList)
 
   @Test def testFromStringsWithTooFewLevels(): Unit =
-    assertThrows[JsonDecodeError](
-      {gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   "))}
+    Assertions.assertThrows(
+      classOf[JsonDecodeError], () => gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   "))
     )
 
   @Test def testFromStringsWithTruncatedLastLevel(): Unit =
-    assertThrows[JsonDecodeError](
-      {gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n "))}
+    Assertions.assertThrows(
+      classOf[JsonDecodeError],
+      () => gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n "))
     )
 
   @Test def testUseCirceForEmptyGobanJson(): Unit =

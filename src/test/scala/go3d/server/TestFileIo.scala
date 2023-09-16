@@ -17,11 +17,15 @@ class TestFileIo:
 
   @Test def testSaveGameFailsNonexistentGame(): Unit =
     val gameId = "mock"
-    assertThrows[NoSuchElementException]({TestFileIo.fileIO.get.saveGame(gameId)})
+    Assertions.assertThrows(
+      classOf[NoSuchElementException], () => TestFileIo.fileIO.get.saveGame(gameId)
+    )
 
   @Test def testSaveGameFailsNonexistentPlayers(): Unit =
     val gameId = Games.register(TestSize)
-    assertThrows[NoSuchElementException]({TestFileIo.fileIO.get.saveGame(gameId)})
+    Assertions.assertThrows(
+      classOf[NoSuchElementException], () => TestFileIo.fileIO.get.saveGame(gameId)
+    )
 
   @Test def testSaveGameWritesFile(): Unit =
     val gameId = Games.register(TestSize)
@@ -63,9 +67,11 @@ class TestFileIo:
     )
 
   @Test def testGuardAgainstPathTraversal(): Unit =
-    assertThrows[IllegalArgumentException](
-      {TestFileIo.fileIO.get.writeFile("../test.json", "{}")}
+    Assertions.assertThrows(
+      classOf[IllegalArgumentException],
+      () => TestFileIo.fileIO.get.writeFile("../test.json", "{}")
     )
-    assertThrows[IllegalArgumentException](
-      {TestFileIo.fileIO.get.writeFile("/tmp/test.json", "{}")}
+    Assertions.assertThrows(
+      classOf[IllegalArgumentException],
+      () => TestFileIo.fileIO.get.writeFile("/tmp/test.json", "{}")
     )

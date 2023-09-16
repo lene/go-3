@@ -7,8 +7,8 @@ class TestLiberties:
   @Test def testLibertiesFailIfWrongColor(): Unit =
     var goban = newGoban(TestSize)
     goban = goban.setStone(Move(2, 2, 2, Black))
-    assertThrows[ColorMismatch]({goban.hasLiberties(Move(2, 2, 2, Empty))})
-    assertThrows[ColorMismatch]({goban.hasLiberties(Move(2, 2, 2, Sentinel))})
+    Assertions.assertThrows(classOf[ColorMismatch], () => goban.hasLiberties(Move(2, 2, 2, Empty)))
+    Assertions.assertThrows(classOf[ColorMismatch], () => goban.hasLiberties(Move(2, 2, 2, Sentinel)))
 
   @Test def testLibertiesOneStone(): Unit =
     val goban = newGoban(TestSize)

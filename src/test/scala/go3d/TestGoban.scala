@@ -29,13 +29,13 @@ class TestGoban:
         for z <- 1 to TestSize do Assertions.assertEquals(Empty, goban.stones(x)(y)(z))
 
   @Test def testBoardSizeTooSmall(): Unit =
-    assertThrows[BadBoardSize]({newGoban(1)})
+    Assertions.assertThrows(classOf[BadBoardSize], () => newGoban(1))
 
   @Test def testBoardSizeTooBig(): Unit =
-    assertThrows[BadBoardSize]({newGoban(MaxBoardSize+2)})
+    Assertions.assertThrows(classOf[BadBoardSize], () => newGoban(MaxBoardSize+2))
 
   @Test def testBoardSizeEven(): Unit =
-    assertThrows[BadBoardSize]({newGoban(4)})
+    Assertions.assertThrows(classOf[BadBoardSize], () => newGoban(4))
 
   @Test def testEmptyBoardAt(): Unit =
     val empty = newGoban(TestSize)
@@ -55,8 +55,8 @@ class TestGoban:
 
   @Test def testSetStoneWithMoveOutsideBoard(): Unit =
     val empty = newGoban(TestSize)
-    assertThrows[OutsideBoard](
-      {empty.setStone(Move(TestSize+2, TestSize+2, TestSize+2, Black))}
+    Assertions.assertThrows(
+      classOf[OutsideBoard], () => empty.setStone(Move(TestSize+2, TestSize+2, TestSize+2, Black))
     )
 
   @Test def testSetStoneWithInts(): Unit =
@@ -69,19 +69,25 @@ class TestGoban:
 
   @Test def testSetStoneWithIntsOutsideBoard(): Unit =
     val empty = newGoban(TestSize)
-    assertThrows[OutsideBoard](
-      {empty.setStone(TestSize+2, TestSize+2, TestSize+2, Black)}
+    Assertions.assertThrows(
+      classOf[OutsideBoard], () => empty.setStone(TestSize+2, TestSize+2, TestSize+2, Black)
     )
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val board = newGoban(TestSize).setStone(Move(2, 2, 2, Black))
-    assertThrows[PositionOccupied]({board.checkValid(Move(2, 2, 2, White))})
+    Assertions.assertThrows(classOf[PositionOccupied], () => board.checkValid(Move(2, 2, 2, White)))
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = newGoban(TestSize)
-    assertThrows[OutsideBoard]({empty.checkValid(Move(TestSize+1, 2, 2, White))})
-    assertThrows[OutsideBoard]({empty.checkValid(Move(2, TestSize+1, 2, White))})
-    assertThrows[OutsideBoard]({empty.checkValid(Move(2, 2, TestSize+1, White))})
+    Assertions.assertThrows(
+      classOf[OutsideBoard], () => empty.checkValid(Move(TestSize+1, 2, 2, White))
+    )
+    Assertions.assertThrows(
+      classOf[OutsideBoard], () => empty.checkValid(Move(2, TestSize+1, 2, White))
+    )
+    Assertions.assertThrows(
+      classOf[OutsideBoard], () => empty.checkValid(Move(2, 2, TestSize+1, White))
+    )
 
   @Test def testDeepCopy2D(): Unit =
     val original = Array(Array(1, 2), Array(3,4))

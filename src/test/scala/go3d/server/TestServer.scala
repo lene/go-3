@@ -92,9 +92,15 @@ class TestServer:
     Assertions.assertEquals(TestSize, response.size)
 
   @Test def testNewGameFailsWithBadSize(): Unit =
-    assertThrows[IOException]({getJson(s"http://localhost:$TestPort/new/1")})
-    assertThrows[IOException]({getJson(s"http://localhost:$TestPort/new/4")})
-    assertThrows[IOException]({getJson(s"http://localhost:$TestPort/new/27")})
+    Assertions.assertThrows(
+      classOf[IOException], () => getJson(s"http://localhost:$TestPort/new/1")
+    )
+    Assertions.assertThrows(
+      classOf[IOException], () => getJson(s"http://localhost:$TestPort/new/4")
+    )
+    Assertions.assertThrows(
+      classOf[IOException], () => getJson(s"http://localhost:$TestPort/new/27")
+    )
 
   @Test def testNewGameWithBadSizeSetsStatus400(): Unit =
     assertFailsWithStatus(
@@ -165,11 +171,15 @@ class TestServer:
   @Test def testRegisterSamePlayerTwiceFails(): Unit =
     val newGameResponse = GameData.create(TestSize)
     GameData.register(newGameResponse.id, Black)
-    assertThrows[IOException]({GameData.register(newGameResponse.id, Black)})
+    Assertions.assertThrows(
+      classOf[IOException], () => GameData.register(newGameResponse.id, Black)
+    )
 
   @Test def testRegisterAtNonexistentGameFails(): Unit =
     val newGameResponse = GameData.create(TestSize)
-    assertThrows[IOException]({GameData.register(newGameResponse.id + "NOPE!", Black)})
+    Assertions.assertThrows(
+      classOf[IOException], () => GameData.register(newGameResponse.id + "NOPE!", Black)
+    )
 
   @Test def testGetStatusAfterBothRegisteredForBlackIsReady(): Unit =
     val gameData = setUpGame(TestSize)
@@ -193,9 +203,10 @@ class TestServer:
 
   @Test def testSetStoneWithoutAuthFails(): Unit =
     val gameData = setUpGame(TestSize)
-    assertThrows[RequestFailedException]({getSR(
-      s"http://localhost:$TestPort/set/${gameData.id}/1/1/1", Map()
-    )})
+    Assertions.assertThrows(
+      classOf[RequestFailedException],
+      () => getSR(s"http://localhost:$TestPort/set/${gameData.id}/1/1/1", Map())
+    )
 
   @Test def testSetStoneWithoutAuthSetsStatus401(): Unit =
     val gameData = setUpGame(TestSize)
@@ -222,7 +233,9 @@ class TestServer:
   @Test def testSetStoneWhenNotReadyFails(): Unit =
     val gameData = setUpGame(TestSize)
     Assertions.assertFalse(gameData.status(White).ready)
-    assertThrows[RequestFailedException]({gameData.set(White, 1, 1, 1)})
+    Assertions.assertThrows(
+      classOf[RequestFailedException], () => gameData.set(White, 1, 1, 1)
+    )
 
   @Test def testSetStoneWhenNotReadySetsStatus400(): Unit =
     val gameData = setUpGame(TestSize)
@@ -235,7 +248,7 @@ class TestServer:
   @Test def testPassWhenNotReadyFails(): Unit =
     val gameData = setUpGame(TestSize)
     Assertions.assertFalse(gameData.status(White).ready)
-    assertThrows[RequestFailedException]({gameData.pass(White)})
+    Assertions.assertThrows(classOf[RequestFailedException], () => gameData.pass(White))
 
   @Test def testPassWhenNotReadySetsStatus400(): Unit =
     val gameData = setUpGame(TestSize)
@@ -495,9 +508,10 @@ class TestServer:
     Assertions.assertTrue(response.isInstanceOf[GameListResponse])
 
   @Test def testGetOpenGamesReturns404IfRouteHasTrailingSlash(): Unit =
-    assertThrows[java.io.FileNotFoundException] {
-      getOGR(s"${GameData.ServerURL}/openGames/")
-    }
+    Assertions.assertThrows(
+      classOf[java.io.FileNotFoundException],
+      () => getOGR(s"${GameData.ServerURL}/openGames/")
+    )
 
   @Test def testGetOpenGamesDoesNotReturnGameWithNoPlayer(): Unit =
     val newGameResponse = GameData.create(3)
@@ -554,7 +568,10 @@ class TestServer:
   @Test def testSettingTheSameColorTwiceGivesError(): Unit =
     val gameData: GameData = setUpGame(3)
     gameData.set(Move(Position(1, 1, 1), Black))
-    assertThrows[RequestFailedException]({gameData.set(Move(Position(1, 1, 1), Black))})
+    Assertions.assertThrows(
+      classOf[RequestFailedException], () => gameData.set(Move(Position(1, 1, 1), Black))
+    )
+
 
   @Test def testSettingTheSameColorTwiceErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)

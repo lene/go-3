@@ -24,4 +24,4 @@ class TestColor:
     Color('O')
     Color('·')
   
-  @Test def testBadColor(): Unit = assertThrows[BadColor]({Color('+')})
+  @Test def testBadColor(): Unit = Assertions.assertThrows(classOf[BadColor], () =>Color('+'))

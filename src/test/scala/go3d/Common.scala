@@ -67,13 +67,6 @@ def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]):
     )
   assertCollectionEqual(for (p <- expected) yield Position(p._1, p._2, p._3), actual)
 
-def assertThrows[E](f: => Unit)(implicit eType:ClassTag[E]): Unit =
-  try f
-  catch
-    case _: E => return
-    case e: Any => Assertions.fail(s"Expected ${eType.runtimeClass.getName} got ${e.getClass}")
-  Assertions.fail(s"Expected ${eType.runtimeClass.getName}")
-
 def fromStrings(levels: Map[Int, String]): Goban =
   if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
   val goban = newGoban((levels.head._2.stripMargin.replace("|", "").split("\n").length))

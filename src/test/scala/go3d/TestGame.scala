@@ -34,13 +34,19 @@ class TestGame:
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val board = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
-    assertThrows[PositionOccupied]({board.makeMove(Move(2, 2, 2, White))})
+    Assertions.assertThrows(classOf[PositionOccupied], () => board.makeMove(Move(2, 2, 2, White)))
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = newGame(TestSize)
-    assertThrows[OutsideBoard]({empty.makeMove(Move(TestSize+1, 2, 2, White))})
-    assertThrows[OutsideBoard]({empty.makeMove(Move(2, TestSize+1, 2, White))})
-    assertThrows[OutsideBoard]({empty.makeMove(Move(2, 2, TestSize+1, White))})
+    Assertions.assertThrows(
+      classOf[OutsideBoard], () => empty.makeMove(Move(TestSize+1, 2, 2, White))
+    )
+    Assertions.assertThrows(
+      classOf[OutsideBoard], () => empty.makeMove(Move(2, TestSize+1, 2, White))
+    )
+    Assertions.assertThrows(
+      classOf[OutsideBoard], () => empty.makeMove(Move(2, 2, TestSize+1, White))
+    )
 
   @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
     val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
@@ -50,7 +56,7 @@ class TestGame:
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
     val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
-    assertThrows[WrongTurn]({firstMove.makeMove(Move(2, 2, 1, Black))})
+    Assertions.assertThrows(classOf[WrongTurn], () => firstMove.makeMove(Move(2, 2, 1, Black)))
 
   @Test def testSetAndPassSucceeds(): Unit =
     val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
@@ -232,7 +238,7 @@ class TestGame:
 
   @Test def testSettingStoneIntoNotEncircledEyeIsSuicide(): Unit =
     val game = buildEye()
-    assertThrows[Suicide]({game.checkValid(Move(1, 1, 1, White))})
+    Assertions.assertThrows(classOf[Suicide], () => game.checkValid(Move(1, 1, 1, White)))
 
   @Test def testDetectKo(): Unit =
     val goban = fromStrings(eyeSituation)
@@ -240,7 +246,7 @@ class TestGame:
     Assertions.assertEquals(Empty, game.at(2, 2, 3))
     Assertions.assertEquals(1, game.captures(White))
     Assertions.assertEquals(Move(2, 2, 3, Black), game.lastCapture(0))
-    assertThrows[Ko]({game.checkValid(Move(2, 2, 3, Black))})
+    Assertions.assertThrows(classOf[Ko], () => game.checkValid(Move(2, 2, 3, Black)))
 
   @Test def testPossibleMovesForBlackEmptyBoard(): Unit =
     val empty = newGame(TestSize)

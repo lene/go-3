@@ -12,7 +12,7 @@ class TestPosition:
       Position(x, y, z)
 
   @Test def testPositionTooSmall(): Unit =
-    assertThrows[OutsideBoard]({Position(1, 1, 0)})
+    Assertions.assertThrows(classOf[OutsideBoard], () => Position(1, 1, 0))
 
   @Test def testEqual(): Unit =
     Assertions.assertTrue(Position(1, 1, 1) == Position(1, 1, 1))

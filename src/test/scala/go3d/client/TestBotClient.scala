@@ -7,36 +7,42 @@ import java.net.UnknownHostException
 class TestBotClient:
 
   @Test def testBadColor(): Unit =
-    assertThrows[BadColor]({
+    Assertions.assertThrows(
+      classOf[BadColor], () => {
       BotClient.parseArgs(Array(
         "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--color", "bx"
       ))
     })
 
   @Test def testUnknownHost(): Unit =
-    assertThrows[UnknownHostException]({
+    Assertions.assertThrows(
+      classOf[UnknownHostException], () => {
       BotClient.parseArgs(Array(
         "--server", "doesnt exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
       ))
     })
 
   @Test def testMissingArguments(): Unit =
-    assertThrows[NoSuchElementException]({
+    Assertions.assertThrows(
+      classOf[NoSuchElementException], () => {
       BotClient.parseArgs(Array(
         "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
       ))
     })
-    assertThrows[NoSuchElementException]({
+    Assertions.assertThrows(
+      classOf[NoSuchElementException], () => {
       BotClient.parseArgs(Array(
         "--server", "localhost", "--size", "3", "--color", "b"
       ))
     })
-    assertThrows[NoSuchElementException]({
+    Assertions.assertThrows(
+      classOf[NoSuchElementException], () => {
       BotClient.parseArgs(Array(
         "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3"
       ))
     })
-    assertThrows[IllegalArgumentException]({
+    Assertions.assertThrows(
+      classOf[IllegalArgumentException], () => {
       AsciiClient.parseArgs(Array(
         "--server", "localhost", "--port", ClientTestPort.toString, "--color", "b"
       ))
