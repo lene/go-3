@@ -13,8 +13,7 @@ object Games:
   private val archivedGames: mutable.Map[String, Game] = mutable.Map()
   var fileIO: Option[FileIO] = None
 
-  def init(baseDir: String): Unit =
-    fileIO = Some(FileIO(baseDir))
+  def init(baseDir: String): Unit = fileIO = Some(FileIO(baseDir))
 
   def checkInitialized(): Unit =
     if fileIO.isEmpty then throw new IllegalStateException("Games not initialized")
@@ -53,10 +52,9 @@ object Games:
     activeGames.contains(gameId) || archivedGames.contains(gameId)
   def numActiveGames: Int = activeGames.size
   def activeGameIds: Iterable[String] = activeGames.keys
-  def numArchivedGames: Int = archivedGames.size
-
-  def isReady(gameId: String): Boolean =
-    activeGames.contains(gameId) && Players.isReady(gameId)
+  def numArchivedGames: Int = fileIO.fold(0)(_.getArchivedGames.size)
+  def archivedGameIds: Iterable[String] = fileIO.get.getArchivedGames
+  def isReady(gameId: String): Boolean = activeGames.contains(gameId) && Players.isReady(gameId)
     
   private def archive(gameId: String): Unit =
     // logger declared inline to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer

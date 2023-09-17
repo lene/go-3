@@ -646,7 +646,7 @@ class TestServer:
     val gameData: GameData = setUpGame(3)
     gameData.pass(Black)
     gameData.pass(White)
-    Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id))
+    Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id), s"${Games.fileIO.get.getArchivedGames} does not contain ${gameData.id}")
     Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
 
