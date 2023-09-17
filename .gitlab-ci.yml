@@ -253,6 +253,8 @@ CreateTag:
       when: on_success
   needs:
     - TagIsNewAndConsistent
+    - TestDockerImage
+    - TestDeployable
   before_script:
     - apk update
     - apk add git
@@ -287,6 +289,9 @@ PushToGithub:
   rules:
     - if: "$CI_COMMIT_TAG"
       when: on_success
+  needs:
+    - TestDockerImage
+    - TestDeployable
   before_script:
     - apk update
     - apk add openssh-client git sshpass
@@ -345,6 +350,8 @@ CreateGitlabRelease:
   needs:
     - job: BuildDeployable
       artifacts: true
+    - TestDockerImage
+    - TestDeployable
   rules:
     - if: $CI_COMMIT_TAG
   script:
