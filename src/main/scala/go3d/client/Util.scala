@@ -1,6 +1,6 @@
 package go3d.client
 
-import go3d.{newGame, Game, Goban, Move, Pass, newGoban, Black, White, Position}
+import go3d.{Game, Goban, Move, Pass, newGoban, Black, White, Position}
 
 object Util {
   def gameWithCornerStones(size: Int): Game =
@@ -55,7 +55,7 @@ object Util {
     goban
 
   def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass], verbose: Boolean = false): Game =
-    var game = newGame(boardSize)
+    var game = Game.start(boardSize)
     for move <- moves do
       game = game.makeMove(move)
       if verbose then logger.info(move.toString + "\n" + game)

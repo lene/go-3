@@ -239,7 +239,7 @@ class TestSetStrategy:
       List((2, 3, 3), (3, 2, 3), (3, 3, 2))
     )
 
-def defaultStrategy(size: Int): SetStrategy = SetStrategy(newGame(size))
+def defaultStrategy(size: Int): SetStrategy = SetStrategy(Game.start(size))
 
 def checkStrategyResults(
   strategy: Seq[Position] => Seq[Position],

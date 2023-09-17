@@ -9,12 +9,13 @@ class NewGameServlet extends BaseServlet with LazyLogging:
       val boardSize = getBoardSize(requestInfo.path)
       val gameId = Games.register(boardSize)
       response.setStatus(HttpServletResponse.SC_OK)
-      logger.info(s"$gameId, $boardSize".replaceAll("[\r\n]"," "))
+      logger.info(s"New game $gameId, size $boardSize".replaceAll("[\r\n]"," "))
       GameCreatedResponse(gameId, boardSize)
 
   def maxRequestLength: Int = "/".length + 2
 
   private def getBoardSize(pathInfo: String): Int =
-    if pathInfo == null || pathInfo.isEmpty then return go3d.DefaultBoardSize
+    if pathInfo == null || pathInfo.isEmpty then throw IllegalArgumentException("Missing path info")
     val parts = pathInfo.stripPrefix("/").split('/')
-    if parts.isEmpty then go3d.DefaultBoardSize else parts(0).toInt
+    if parts.isEmpty then throw IllegalArgumentException("Missing board size")
+    parts(0).toInt

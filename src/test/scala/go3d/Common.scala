@@ -39,7 +39,7 @@ val eyeSituation = Map(
 )
 
 def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass], verbose: Boolean = false): Game =
-  var game = newGame(boardSize)
+  var game = Game.start(boardSize)
   for move <- moves do
     game = game.makeMove(move)
     if verbose then println(move.toString+"\n"+game)

@@ -1,6 +1,6 @@
 package go3d.server
 
-import go3d.{Game, newGame, Color}
+import go3d.{Game, Color}
 import scala.io.Source
 import scala.collection.mutable
 import io.circe.parser._
@@ -37,7 +37,7 @@ object Games:
 
   def register(boardSize: Int): String =
     val gameId = IdGenerator.getId
-    val game = newGame(boardSize)
+    val game = Game.start(boardSize)
     activeGames += (gameId -> game)
     gameId
 

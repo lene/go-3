@@ -5,39 +5,39 @@ import org.junit.jupiter.api.{Assertions, Test}
 class TestGame:
 
   @Test def testGameCtorBasic(): Unit =
-    val game = newGame(TestSize)
+    val game = Game.start(TestSize)
     Assertions.assertEquals(TestSize, game.size)
 
   @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
-    val game = newGame(TestSize)
+    val game = Game.start(TestSize)
     Assertions.assertEquals(Math.pow(TestSize, 3).toInt+7, game.toString.count(_ == ' '))
 
   @Test def testEmptyBoardToStringSentinels(): Unit =
-    val game = newGame(TestSize)
+    val game = Game.start(TestSize)
     Assertions.assertEquals(
       2*(TestSize+2)*TestSize + 2*TestSize*TestSize,
       game.toString.count(_ == '·')
     )
 
   @Test def testEmptyBoardToStringNewlines(): Unit =
-    val game = newGame(TestSize)
+    val game = Game.start(TestSize)
     Assertions.assertTrue(TestSize+2 <= game.toString.count(_ == '\n'))
 
   @Test def testEmptyBoardAt(): Unit =
-    val empty = newGame(TestSize)
+    val empty = Game.start(TestSize)
     for p <- empty.goban.allPositions do
       Assertions.assertEquals(Empty, empty.at(p))
 
   @Test def testSetStone(): Unit =
-    val board = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
+    val board = Game.start(TestSize).makeMove(Move(2, 2, 2, Black))
     Assertions.assertEquals(board.at(Position(2, 2, 2)), Black, "\n"+board.toString)
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
-    val board = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
+    val board = Game.start(TestSize).makeMove(Move(2, 2, 2, Black))
     Assertions.assertThrows(classOf[PositionOccupied], () => board.makeMove(Move(2, 2, 2, White)))
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
-    val empty = newGame(TestSize)
+    val empty = Game.start(TestSize)
     Assertions.assertThrows(
       classOf[OutsideBoard], () => empty.makeMove(Move(TestSize+1, 2, 2, White))
     )
@@ -49,23 +49,23 @@ class TestGame:
     )
 
   @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
-    val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
+    val firstMove = Game.start(TestSize).makeMove(Move(2, 2, 2, Black))
     val secondMove = firstMove.makeMove(Move(2, 2, 1, White))
     Assertions.assertEquals(secondMove.at(Position(2, 2, 2)), Black, "\n"+secondMove.toString)
     Assertions.assertEquals(secondMove.at(Position(2, 2, 1)), White, "\n"+secondMove.toString)
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
-    val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
+    val firstMove = Game.start(TestSize).makeMove(Move(2, 2, 2, Black))
     Assertions.assertThrows(classOf[WrongTurn], () => firstMove.makeMove(Move(2, 2, 1, Black)))
 
   @Test def testSetAndPassSucceeds(): Unit =
-    val firstMove = newGame(TestSize).makeMove(Move(2, 2, 2, Black))
+    val firstMove = Game.start(TestSize).makeMove(Move(2, 2, 2, Black))
     val secondMove = firstMove.makeMove(Pass(White))
     Assertions.assertEquals(secondMove.at(Position(2, 2, 2)), Black, "\n"+secondMove.toString)
     Assertions.assertEquals(secondMove.at(Position(2, 2, 1)), Empty, "\n"+secondMove.toString)
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
-    val firstMove = newGame(TestSize).makeMove(Pass(Black))
+    val firstMove = Game.start(TestSize).makeMove(Pass(Black))
     Assertions.assertTrue(firstMove.makeMove(Pass(White)).isOver)
 
   @Test def testPlayListOfMoves(): Unit =
@@ -249,15 +249,15 @@ class TestGame:
     Assertions.assertThrows(classOf[Ko], () => game.checkValid(Move(2, 2, 3, Black)))
 
   @Test def testPossibleMovesForBlackEmptyBoard(): Unit =
-    val empty = newGame(TestSize)
+    val empty = Game.start(TestSize)
     Assertions.assertEquals(TestSize*TestSize*TestSize, empty.possibleMoves(Black).length)
 
   @Test def testPossibleMovesForWhiteEmptyBoard(): Unit =
-    val empty = newGame(TestSize)
+    val empty = Game.start(TestSize)
     Assertions.assertTrue(empty.possibleMoves(White).isEmpty)
 
   @Test def testPossibleMovesAfterOneMove(): Unit =
-    val board = newGame(TestSize).makeMove(Move(1, 1, 1, Black))
+    val board = Game.start(TestSize).makeMove(Move(1, 1, 1, Black))
     Assertions.assertEquals(TestSize*TestSize*TestSize-1, board.possibleMoves(White).length)
     Assertions.assertEquals(0, board.possibleMoves(Black).length)
 
@@ -392,29 +392,29 @@ class TestGame:
     Assertions.assertTrue(game.toString.contains(Black.toString * BLACK_AREA_SIZE))
 
   @Test def testIsOverNewGame(): Unit =
-    val game = newGame(TestSize)
+    val game = Game.start(TestSize)
     Assertions.assertFalse(game.isOver)
 
   @Test def testIsOverAfterSinglePass(): Unit =
-    val game = newGame(TestSize).makeMove(Pass(Black))
+    val game = Game.start(TestSize).makeMove(Pass(Black))
     Assertions.assertFalse(game.isOver)
 
   @Test def testIsOverAfterDoublePass(): Unit =
-    val game = newGame(TestSize).makeMove(Pass(Black)).makeMove(Pass(White))
+    val game = Game.start(TestSize).makeMove(Pass(Black)).makeMove(Pass(White))
     Assertions.assertTrue(game.isOver)
 
   @Test def testIsTurnEmptyBoard(): Unit =
-    val game = newGame(TestSize)
+    val game = Game.start(TestSize)
     Assertions.assertTrue(game.isTurn(Black))
     Assertions.assertFalse(game.isTurn(White))
 
   @Test def testIsTurnAfterBlackSet(): Unit =
-    val game = newGame(TestSize).makeMove(Pass(Black))
+    val game = Game.start(TestSize).makeMove(Pass(Black))
     Assertions.assertFalse(game.isTurn(Black))
     Assertions.assertTrue(game.isTurn(White))
 
   @Test def testIsTurnAfterWhiteSet(): Unit =
-    val game = newGame(TestSize).makeMove(Pass(Black)).makeMove(Pass(White))
+    val game = Game.start(TestSize).makeMove(Pass(Black)).makeMove(Pass(White))
     Assertions.assertTrue(game.isTurn(Black))
     Assertions.assertFalse(game.isTurn(White))
 

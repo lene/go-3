@@ -1,11 +1,8 @@
 package go3d.client
 
-import go3d.newGame
 import go3d.client.gdx.GobanDisplay
 
 import com.badlogic.gdx.backends.lwjgl3.{Lwjgl3Application, Lwjgl3ApplicationConfiguration}
-
-import scala.annotation.tailrec
 
 object GDXClient extends InteractiveClient:
 

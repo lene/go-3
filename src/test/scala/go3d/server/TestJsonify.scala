@@ -135,7 +135,7 @@ class TestJsonify:
     Assertions.assertEquals(goban, decoded)
 
   @Test def testUseCirceForEmptyGameJson(): Unit =
-    val game = newGame(TestSize)
+    val game = Game.start(TestSize)
     val json = game.asJson.noSpaces
     val decoded = decode[Game](json).getOrElse(null)
     Assertions.assertEquals(game, decoded, json)
@@ -183,7 +183,7 @@ class TestJsonify:
 
   @Test def testUseCirceForPlayerRegisteredResponseJson(): Unit =
     val response = PlayerRegisteredResponse(
-      newGame(TestSize), Black, "token", true,
+      Game.start(TestSize), Black, "token", true,
       RequestInfo(Map("header name" -> "header value"), "query", "path", false)
     )
     val json = response.asJson.noSpaces
@@ -192,7 +192,7 @@ class TestJsonify:
 
   @Test def testUseCirceForStatusResponseJson(): Unit =
     val response = StatusResponse(
-      newGame(TestSize), List(Position(1, 1, 1)), true, false,
+      Game.start(TestSize), List(Position(1, 1, 1)), true, false,
       RequestInfo(Map("header name" -> "header value"), "query", "path", false)
     )
     val json = response.asJson.noSpaces
