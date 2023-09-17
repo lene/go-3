@@ -5,11 +5,11 @@ import org.junit.jupiter.api.{Assertions, Test}
 class TestGoban:
 
   @Test def testGameCtorBasic(): Unit =
-    val goban = newGoban(TestSize)
+    val goban = Goban.start(TestSize)
     Assertions.assertEquals(TestSize, goban.size)
 
   @Test def testMemoryAllocation(): Unit =
-    val goban = newGoban(TestSize)
+    val goban = Goban.start(TestSize)
     Assertions.assertEquals(TestSize+2, goban.stones.length)
     Assertions.assertEquals(TestSize+2, goban.stones(0).length)
     Assertions.assertEquals(TestSize+2, goban.stones(TestSize+1).length)
@@ -17,7 +17,7 @@ class TestGoban:
     Assertions.assertEquals(TestSize+2, goban.stones(TestSize+1)(TestSize+1).length)
 
   @Test def testSentinels(): Unit =
-    val goban = newGoban(TestSize)
+    val goban = Goban.start(TestSize)
     Assertions.assertEquals(Sentinel, goban.stones(0)(0)(0))
     Assertions.assertEquals(Sentinel, goban.stones(TestSize+1)(TestSize+1)(TestSize+1))
     for x <- 1 to TestSize do
@@ -29,20 +29,20 @@ class TestGoban:
         for z <- 1 to TestSize do Assertions.assertEquals(Empty, goban.stones(x)(y)(z))
 
   @Test def testBoardSizeTooSmall(): Unit =
-    Assertions.assertThrows(classOf[BadBoardSize], () => newGoban(1))
+    Assertions.assertThrows(classOf[BadBoardSize], () => Goban.start(1))
 
   @Test def testBoardSizeTooBig(): Unit =
-    Assertions.assertThrows(classOf[BadBoardSize], () => newGoban(MaxBoardSize+2))
+    Assertions.assertThrows(classOf[BadBoardSize], () => Goban.start(MaxBoardSize+2))
 
   @Test def testBoardSizeEven(): Unit =
-    Assertions.assertThrows(classOf[BadBoardSize], () => newGoban(4))
+    Assertions.assertThrows(classOf[BadBoardSize], () => Goban.start(4))
 
   @Test def testEmptyBoardAt(): Unit =
-    val empty = newGoban(TestSize)
+    val empty = Goban.start(TestSize)
     for p <- empty.allPositions do Assertions.assertEquals(Empty, empty.at(p))
 
   @Test def testAtWithIntsOnBorder(): Unit =
-    val empty = newGoban(TestSize)
+    val empty = Goban.start(TestSize)
     for x <- 0 to TestSize+1
       y <- 0 to TestSize+1 by TestSize+1
       z <- 0 to TestSize+1 by TestSize+1
@@ -50,35 +50,35 @@ class TestGoban:
       Assertions.assertEquals(Sentinel, empty.at(x, y, z))
 
   @Test def testSetStoneWithMove(): Unit =
-    val board = newGoban(TestSize).setStone(Move(2, 2, 2, Black))
+    val board = Goban.start(TestSize).setStone(Move(2, 2, 2, Black))
     Assertions.assertEquals(board.at(Position(2, 2, 2)), Black)
 
   @Test def testSetStoneWithMoveOutsideBoard(): Unit =
-    val empty = newGoban(TestSize)
+    val empty = Goban.start(TestSize)
     Assertions.assertThrows(
       classOf[OutsideBoard], () => empty.setStone(Move(TestSize+2, TestSize+2, TestSize+2, Black))
     )
 
   @Test def testSetStoneWithInts(): Unit =
-    val board = newGoban(TestSize).setStone(2, 2, 2, Black)
+    val board = Goban.start(TestSize).setStone(2, 2, 2, Black)
     Assertions.assertEquals(board.at(Position(2, 2, 2)), Black)
 
   @Test def testSetStoneWithIntsOnBorder(): Unit =
-    val empty = newGoban(TestSize).setStone(0, 0, 0, Sentinel)
+    val empty = Goban.start(TestSize).setStone(0, 0, 0, Sentinel)
     Assertions.assertEquals(empty.at(0, 0, 0), Sentinel)
 
   @Test def testSetStoneWithIntsOutsideBoard(): Unit =
-    val empty = newGoban(TestSize)
+    val empty = Goban.start(TestSize)
     Assertions.assertThrows(
       classOf[OutsideBoard], () => empty.setStone(TestSize+2, TestSize+2, TestSize+2, Black)
     )
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
-    val board = newGoban(TestSize).setStone(Move(2, 2, 2, Black))
+    val board = Goban.start(TestSize).setStone(Move(2, 2, 2, Black))
     Assertions.assertThrows(classOf[PositionOccupied], () => board.checkValid(Move(2, 2, 2, White)))
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
-    val empty = newGoban(TestSize)
+    val empty = Goban.start(TestSize)
     Assertions.assertThrows(
       classOf[OutsideBoard], () => empty.checkValid(Move(TestSize+1, 2, 2, White))
     )
@@ -102,7 +102,7 @@ class TestGoban:
     Assertions.assertEquals(1, original(0)(0)(0))
 
   @Test def testClone(): Unit =
-    val original = newGoban(TestSize)
+    val original = Goban.start(TestSize)
     val cloned = original.clone()
     cloned.setStone(1, 1, 1, Black)
     Assertions.assertEquals(Empty, original.at(1, 1, 1))

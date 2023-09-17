@@ -46,7 +46,7 @@ def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass], verbose: Boole
   game
 
 def setListOfStones(boardSize: Int, moves: List[Move | Pass]): Goban =
-  var goban = newGoban(boardSize)
+  var goban = Goban.start(boardSize)
   for move <- moves do
     move match
       case _: Pass =>
@@ -69,7 +69,7 @@ def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]):
 
 def fromStrings(levels: Map[Int, String]): Goban =
   if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
-  val goban = newGoban((levels.head._2.stripMargin.replace("|", "").split("\n").length))
+  val goban = Goban.start((levels.head._2.stripMargin.replace("|", "").split("\n").length))
   for (z, level) <- levels do
     val lines = level.stripMargin.replace("|", "").split("\n")
     for (line, y) <- lines.zipWithIndex do

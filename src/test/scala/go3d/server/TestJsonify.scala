@@ -116,7 +116,7 @@ class TestJsonify:
     )
 
   @Test def testUseCirceForEmptyGobanJson(): Unit =
-    val goban = newGoban(TestSize)
+    val goban = Goban.start(TestSize)
     val json = goban.asJson.noSpaces
     val decoded = decode[Goban](json).getOrElse(null)
     Assertions.assertEquals(goban, decoded)

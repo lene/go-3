@@ -1,6 +1,6 @@
 package go3d.server
 
-import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position, newGoban}
+import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position}
 import io.circe._
 import io.circe.parser._
 import io.circe.syntax._
@@ -88,7 +88,7 @@ def gobanFromStrings(levels: Array[String]): Goban =
   if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
   val size = levels(0).stripMargin.replace("|", "").split("\n").length
   if levels.length != size then throw JsonDecodeError(s"${levels.length} != $size")
-  val goban = newGoban(size)
+  val goban = Goban.start(size)
   for (level, z) <- levels.zipWithIndex do
     val lines = level.stripMargin.replace("|", "").split("\n")
     if lines.length != size then throw JsonDecodeError(s"${lines.toString}: ${lines.length} != $size")

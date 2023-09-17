@@ -3,7 +3,7 @@ package go3d
 import collection.mutable
 
 object Game:
-  def start(size: Int): Game = Game(size, newGoban(size), Array(), Map[Int, Array[Move]]())
+  def start(size: Int): Game = Game(size, Goban.start(size), Array(), Map[Int, Array[Move]]())
 
 class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
            val captures: Map[Int, Array[Move]]) extends GoGame:

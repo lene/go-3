@@ -639,4 +639,4 @@ def gobanWithAreasFromStrings(levels: Map[Int, String]): Goban =
   val from = fromStrings(levels)
   Goban(from.size, from.stones)
 
-def defaultGoban: Goban = newGoban(3)
+def defaultGoban: Goban = Goban.start(3)

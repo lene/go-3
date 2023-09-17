@@ -1,6 +1,6 @@
 package go3d.client
 
-import go3d.{Game, Goban, Move, Pass, newGoban, Black, White, Position}
+import go3d.{Game, Goban, Move, Pass, Black, White, Position}
 
 object Util {
   def gameWithCornerStones(size: Int): Game =
@@ -46,7 +46,7 @@ object Util {
 
   def fromStrings(levels: Map[Int, String]): Goban =
     if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
-    val goban = newGoban((levels.head._2.stripMargin.replace("|", "").split("\n").length))
+    val goban = Goban.start((levels.head._2.stripMargin.replace("|", "").split("\n").length))
     for (z, level) <- levels do
       val lines = level.stripMargin.replace("|", "").split("\n")
       for (line, y) <- lines.zipWithIndex do

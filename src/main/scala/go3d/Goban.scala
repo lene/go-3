@@ -3,7 +3,8 @@ package go3d
 import scala.annotation.{tailrec, targetName}
 import scala.reflect.ClassTag
 
-def newGoban(size: Int): Goban = Goban(size, initializeBoard(size))
+object Goban:
+  def start(size: Int): Goban = Goban(size, initializeBoard(size))
 
 class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
