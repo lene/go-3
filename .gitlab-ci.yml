@@ -138,11 +138,11 @@ BuildDeployable:
       - go-3d-*.*.*.zip
 
 BuildDockerImage:
-  image: docker:19.03.13
+  image: docker:24.0.5
   stage: build
   needs: []
   services:
-    - docker:19.03.13-dind
+    - docker:24.0.5-dind
   script:
     - VERSION=$(grep 'version :=' build.sbt | cut -d '"' -f 2)
     - TAG=${VERSION}-${CI_COMMIT_SHORT_SHA}
