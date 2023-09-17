@@ -2,7 +2,7 @@
 # docker run [--net=host] -t registry.gitlab.com/lilacashes/go-3/server:latest
 
 FROM hseeberger/scala-sbt:17.0.2_1.6.2_3.1.1 AS builder
-ARG version=0.7.4
+ARG version=0.7.5
 
 WORKDIR /go-3
 COPY . /go-3
@@ -11,7 +11,7 @@ RUN unzip -oq /go-3/target/universal/go-3d-${version}.zip
 RUN mv go-3d-${version}/??? . && rm -r go-3d-*.*.* target
 
 FROM openjdk:19
-ARG version=0.7.4
+ARG version=0.7.5
 ENV SAVE_DIR saves
 ENV PORT 6030
 
