@@ -67,7 +67,7 @@ Run:UseSbtDocker:
   stage: test
   needs: []
   script:
-    - sbt "runMain go3d.Runner"
+    - sbt "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
 
 CheckRunTime:
   image: $SBT_IMAGE
@@ -78,7 +78,7 @@ CheckRunTime:
     - apt-get -y install bc time
   script:
     - sbt compile
-    - /usr/bin/time -f %U -o runtime.log sbt "runMain go3d.Runner $TEST_RUN_BOARD_SIZE"
+    - /usr/bin/time -f %U -o runtime.log sbt "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
     - echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
     - if [ $(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l) -eq 1 ]; then exit 1; fi
   artifacts:
@@ -166,7 +166,7 @@ container_scanning:
   timeout: 1 hour
   script:
     - mkdir -p saves
-    - ${INSTALL_DIR}/bin/runner --server --port 6030 --save-dir saves 2>&1 > server.log &
+    - ${INSTALL_DIR}/bin/go-server --port 6030 --save-dir saves 2>&1 > server.log &
     - sleep 5
     - GAME_ID=""
     - while [ "$GAME_ID" != "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
