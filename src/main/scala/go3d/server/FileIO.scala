@@ -1,7 +1,7 @@
 package go3d.server
 
 import java.io.{File, IOException}
-import java.nio.file.{Files, Path, Paths}
+import java.nio.file.{Files, Path, Paths, StandardCopyOption}
 import java.nio.charset.StandardCharsets
 import io.circe.syntax.EncoderOps
 
@@ -35,7 +35,16 @@ class FileIO(val baseFolder: String):
   def archiveGame(gameId: String): Unit =
     val file = Paths.get(baseFolder, s"$gameId.json").toFile
     if !Files.exists(archivePath) then Files.createDirectory(archivePath)
-    Files.move(file.toPath, archivePath.resolve(file.getName))
+    val archivedFilePath = archivePath.resolve(file.getName)
+    if Files.exists(file.toPath) && Files.exists(archivedFilePath) then
+      if !getFileContents(archivedFilePath.toString).sameElements(getFileContents(file.toString)) then
+        throw IllegalArgumentException(s"$file and $archivedFilePath have different content")
+      Files.delete(file.toPath)
+    else Files.move(file.toPath, archivedFilePath, StandardCopyOption.REPLACE_EXISTING)
+
+  def getFileContents(filepath: String): Array[String] =
+    val path = Paths.get(filepath)
+    Files.readAllLines(path, StandardCharsets.UTF_8).toArray(Array.empty[String])
 
   private def guardAgainstAbsolutePath(path: String): Unit =
     val pathAsFile: File = File(path)

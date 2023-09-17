@@ -5,7 +5,7 @@ import io.circe.parser.*
 import org.junit.jupiter.api.{Assertions, Test, BeforeAll}
 
 import scala.io.Source
-import java.nio.file.{Files, Paths}
+import java.nio.file.{Files, Paths, StandardCopyOption}
 
 object TestFileIo:
   var fileIO: Option[FileIO] = None
@@ -53,16 +53,16 @@ class TestFileIo:
     Assertions.assertTrue(value.players.contains(Black))
 
   @Test def testExistsToGainTrustInTestsThatUseIt(): Unit =
-    TestFileIo.fileIO.get.writeFile("test", "{}")
-    Assertions.assertTrue(IOForTests.exists("test"))
+    TestFileIo.fileIO.get.writeFile("test.json", "{}")
+    Assertions.assertTrue(IOForTests.exists("test.json"))
     Assertions.assertFalse(IOForTests.exists("this file should not exist"))
 
   @Test def testGetListOfJsonFiles(): Unit =
     TestFileIo.fileIO.get.writeFile("test.json", "{}")
     Assertions.assertTrue(IOForTests.exists("test.json"))
     val matchingFiles = TestFileIo.fileIO.get.getListOfFiles(".json").map(f => f.getName)
-    Assertions.assertEquals(
-      List("test.json"), matchingFiles,
+    Assertions.assertTrue(
+      matchingFiles.contains("test.json"),
       java.io.File(TestFileIo.fileIO.get.baseFolder).listFiles.toList.toString
     )
 
@@ -74,4 +74,47 @@ class TestFileIo:
     Assertions.assertThrows(
       classOf[IllegalArgumentException],
       () => TestFileIo.fileIO.get.writeFile("/tmp/test.json", "{}")
+    )
+
+  @Test def testGetFileContents(): Unit =
+    val randomContent = IdGenerator.getId
+    val gameId = IdGenerator.getId
+    TestFileIo.fileIO.get.writeFile(s"$gameId.json", s"{$randomContent}")
+    val file = Paths.get(TestFileIo.fileIO.get.baseFolder, s"$gameId.json").toString
+    val writtenContent = TestFileIo.fileIO.get.getFileContents(file)
+    Assertions.assertEquals(1, writtenContent.length)
+    Assertions.assertEquals(s"{$randomContent}", writtenContent(0))
+
+  @Test def testArchivedFileIsFineIfExistsWithSameContent(): Unit =
+    val randomContent = IdGenerator.getId
+    val gameId = IdGenerator.getId
+    TestFileIo.fileIO.get.writeFile(s"$gameId.json", s"{$randomContent}")
+    val originalPath = Paths.get(TestFileIo.fileIO.get.baseFolder, s"$gameId.json")
+    val archivePath = Paths.get(TestFileIo.fileIO.get.baseFolder, "archived")
+    val archivedPath = Paths.get(archivePath.toString, s"$gameId.json")
+    if !Files.exists(archivePath) then Files.createDirectory(archivePath)
+    Files.copy(originalPath, archivedPath, StandardCopyOption.REPLACE_EXISTING)
+    TestFileIo.fileIO.get.archiveGame(gameId)
+
+  @Test def testArchivedFileRemovesOriginalFileIfExistsWithSameContent(): Unit =
+    val randomContent = IdGenerator.getId
+    val gameId = IdGenerator.getId
+    TestFileIo.fileIO.get.writeFile(s"$gameId.json", s"{$randomContent}")
+    val originalPath = Paths.get(TestFileIo.fileIO.get.baseFolder, s"$gameId.json")
+    val archivePath = Paths.get(TestFileIo.fileIO.get.baseFolder, "archived")
+    val archivedPath = Paths.get(archivePath.toString, s"$gameId.json")
+    if !Files.exists(archivePath) then Files.createDirectory(archivePath)
+    Files.copy(originalPath, archivedPath)
+    TestFileIo.fileIO.get.archiveGame(gameId)
+    Assertions.assertFalse(Files.exists(originalPath))
+
+  @Test def testArchivedFileThrowsExceptionIfExistsWithDifferentContent(): Unit =
+    val randomContent = IdGenerator.getId
+    val gameId = IdGenerator.getId
+    TestFileIo.fileIO.get.writeFile(s"$gameId.json", s"{$randomContent}")
+    TestFileIo.fileIO.get.archiveGame(gameId)
+    val differentRandomContent = IdGenerator.getId
+    TestFileIo.fileIO.get.writeFile(s"$gameId.json", s"{$differentRandomContent}")
+    Assertions.assertThrows(
+      classOf[IllegalArgumentException], () => TestFileIo.fileIO.get.archiveGame(gameId)
     )
