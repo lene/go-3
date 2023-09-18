@@ -62,6 +62,34 @@ Test:SbtImage:
     reports:
       junit: target/test-reports/**/TEST-*.xml
 
+CheckCoverage:
+  image: $SBT_IMAGE
+  stage: test
+  needs: []
+  before_script:
+    - apt-get -y update
+    - apt-get -y install bc
+  script:
+    - 'curl -o coverage.log --location --header "PRIVATE-TOKEN: $GITLAB_ACCESS_TOKEN" "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/jobs/artifacts/${CI_COMMIT_REF_NAME}/raw/coverage.log?job=${CI_JOB_NAME}"'
+    - . coverage.log || true
+    - statement_rate_old=${statement_rate:-0}
+    - branch_rate_old=${branch_rate:-0}
+    - sbt clean coverage test || true
+    - sbt coverageReport
+    - REPORT=$(head -n 2 target/scala-3.*.*/scoverage-report/scoverage.xml | tail -n 1 | xargs)
+    - for word in $REPORT; do echo $word; done | grep rate | tr - _ > coverage.log
+    - . coverage.log
+    - echo "statement_rate_old=$statement_rate_old, statement_rate=$statement_rate"
+    - echo "branch_rate_old=$branch_rate_old, branch_rate=$branch_rate"
+    - if [ $(echo "$statement_rate_old > $statement_rate" | bc -l) -eq 1 ]; then exit 1; fi
+    - if [ $(echo "$branch_rate_old > $branch_rate" | bc -l) -eq 1 ]; then exit 1; fi
+  artifacts:
+    when: always
+    reports:
+      junit: target/test-reports/**/TEST-*.xml
+    paths:
+      - coverage.log
+
 Run:UseSbtDocker:
   image: $SBT_IMAGE
   stage: test

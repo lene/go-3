@@ -5,8 +5,6 @@ import com.typesafe.scalalogging.Logger
 import go3d.Game
 
 class StatusServlet extends BaseServlet:
-  def logger: Logger = Logger[StatusServlet]
-
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     val gameId = requestInfo.getGameId
     val game = Games(gameId)

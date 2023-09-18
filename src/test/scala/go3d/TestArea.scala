@@ -207,6 +207,33 @@ class TestArea:
       ))
       Assertions.assertEquals(Set(), goban.areas.head.inside)
 
+  @Test def testToString(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """   |
+          | @ |
+          |   |""",
+    ))
+    Assertions.assertTrue(goban.areas.head.toString.contains(Position(2, 2, 1).toString))
+
+  @Test def testContainsPositive(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """   |
+          | @ |
+          |   |""",
+    ))
+    Assertions.assertTrue(goban.areas.head.contains(Position(2, 2, 1)))
+
+  @Test def testContainsNegative(): Unit =
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """   |
+          | @ |
+          |   |""",
+    ))
+    Assertions.assertFalse(goban.areas.head.contains(Position(2, 2, 2)))
+
   @Disabled("Needs investigation")
   @Test def testInside10ConnectedStones(): Unit =
     val goban = gobanWithAreasFromStrings(Map(

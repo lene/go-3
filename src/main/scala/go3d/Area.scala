@@ -55,16 +55,16 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
       p => goban.at(p) != color
     ).map(
       insideArea(_)
-    ).foldLeft(Set())(
+    ).foldLeft(Set.empty)(
       (acc, area) => acc ++ area
     )
 
-  def insideArea(position: Position, alreadyFoundPaths: Set[Position] = Set()): Set[Position] =
+  def insideArea(position: Position, alreadyFoundPaths: Set[Position] = Set.empty): Set[Position] =
     if goban.at(position) == color then throw BadColorsForArea(Set(color))
     val neighborsToConsider = goban.neighbors(position).
       filter(pos => goban.at(pos) != color).
       filter(!alreadyFoundPaths.contains(_))
-    if neighborsToConsider.exists(p => onBorderOfAreaButNotBoard(p)) then Set()
+    if neighborsToConsider.exists(p => onBorderOfAreaButNotBoard(p)) then Set.empty
     else if neighborsToConsider.isEmpty then alreadyFoundPaths + position
     else insideArea(neighborsToConsider.head, alreadyFoundPaths + position ++ neighborsToConsider)
 
