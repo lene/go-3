@@ -24,6 +24,7 @@ lazy val root = project
     ),
     // ScalaTest
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.15" % "test",
+    libraryDependencies += "org.rogach" %% "scallop" % "5.0.0",
     // requests
     libraryDependencies += "com.lihaoyi" %% "requests" % "0.8.0",
     // newer jetty versions require both code changes and Java >= 11

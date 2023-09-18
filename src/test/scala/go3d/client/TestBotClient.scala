@@ -3,6 +3,7 @@ package go3d.client
 import go3d._
 import org.junit.jupiter.api.{Assertions, Test}
 import java.net.UnknownHostException
+import org.rogach.scallop.exceptions.{RequiredOptionNotFound, ValidationFailure}
 
 class TestBotClient:
 
@@ -22,31 +23,63 @@ class TestBotClient:
       ))
     })
 
-  @Test def testMissingArguments(): Unit =
+  @Test def testMissingServer(): Unit =
     Assertions.assertThrows(
       classOf[NoSuchElementException], () => {
       BotClient.parseArgs(Array(
         "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
       ))
     })
+
+  @Test def testMissingPort(): Unit =
     Assertions.assertThrows(
       classOf[NoSuchElementException], () => {
       BotClient.parseArgs(Array(
         "--server", "localhost", "--size", "3", "--color", "b"
       ))
     })
+
+  @Test def testMissingColor(): Unit =
     Assertions.assertThrows(
-      classOf[NoSuchElementException], () => {
+      classOf[ValidationFailure], () => {
       BotClient.parseArgs(Array(
         "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3"
       ))
     })
+
+  @Test def testMissingSize(): Unit =
     Assertions.assertThrows(
-      classOf[IllegalArgumentException], () => {
+      classOf[ValidationFailure], () => {
       AsciiClient.parseArgs(Array(
         "--server", "localhost", "--port", ClientTestPort.toString, "--color", "b"
       ))
     })
+
+  @Test def testConflictingArguments(): Unit =
+    Assertions.assertThrows(
+      classOf[ValidationFailure], () => {
+        AsciiClient.parseArgs(Array(
+          "--server", "localhost", "--port", ClientTestPort.toString,
+          "--size", "3", "--game-id", "1"
+        ))
+      })
+
+  @Test def testStrategyIsParsed(): Unit =
+    BotClient.parseArgs(Array(
+      "--server", "localhost", "--port", ClientTestPort.toString, "--game-id", "",  "--token", "",
+      "--strategy", "random"
+    ))
+    Assertions.assertTrue(Array("random").sameElements(BotClient.strategies))
+
+  @Test def testStrategyWithMultipleElementsIsParsed(): Unit =
+    BotClient.parseArgs(Array(
+      "--server", "localhost", "--port", ClientTestPort.toString, "--game-id", "",  "--token", "",
+      "--strategy", "closestToStarPoints,prioritiseCapture"
+    ))
+    Assertions.assertTrue(
+      Array("closestToStarPoints","prioritiseCapture").sameElements(BotClient.strategies)
+    )
+
 
   @Test def testExecutionTimeString(): Unit =
     Assertions.assertEquals("", BotClient.executionTimeString)

@@ -1,54 +1,42 @@
 package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
+import org.rogach.scallop._
+import org.rogach.scallop.exceptions.RequiredOptionNotFound
+import java.util.NoSuchElementException
+
+import go3d.client.BotClient.{client, strategies}
 import go3d.server.{StatusResponse, emptyResponse}
+
+class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
+  val size = opt[Int](required = false)
+  val color = opt[String](required = false)
+  val gameId = opt[String](required = false)
+  val token = opt[String](required = false)
+  val server = opt[String](required = true)
+  val port = opt[Int](required = true)
+  requireOne(size, gameId)
+  dependsOnAll(size, List(color))
+  dependsOnAll(token, List(gameId))
+  verify()
+
+  override def onError(e: Throwable): Unit = e match
+    case RequiredOptionNotFound(optionName) => throw NoSuchElementException(optionName)
+    case other => throw other
 
 abstract case class InteractiveClient(pollInterval: Int = 500) extends Client with LazyLogging:
 
-  def nextOption(map : OptionMap, list: List[String]) : OptionMap =
-    list match
-      case Nil => map
-      case "--size" :: value :: tail =>
-        nextOption(map ++ Map("size" -> value.toInt), tail)
-      case "--color" :: value :: tail =>
-        nextOption(map ++ Map("color" -> value), tail)
-      case "--game-id" :: value :: tail =>
-        nextOption(map ++ Map("game_id" -> value), tail)
-      case "--token" :: value :: tail =>
-        nextOption(map ++ Map("token" -> value), tail)
-      case "--server" ::  value :: tail =>
-        nextOption(map ++ Map("server" -> value), tail)
-      case "--port" :: value :: tail =>
-        nextOption(map ++ Map("port" -> value.toInt), tail)
-      case option :: _ =>
-        logger.error(s"Unknown option $option")
-        exit(1)
-        map
-
   def parseArgs(args: Array[String]): Unit =
-    val options = nextOption(Map(), args.toList)
-    val serverURL = s"http://${options("server")}:${options("port")}"
-    if options.contains("size") then
-      client = BaseClient.create(
-        serverURL, options("size").asInstanceOf[Int],
-        colorFromString(options("color").asInstanceOf[String])
-      )
-    else if options.contains("game_id") then
-      if options.contains("token") then
-        client = BaseClient(
-          serverURL, options("game_id").asInstanceOf[String],
-          Some(options("token").asInstanceOf[String])
-        )
-      else if options.contains("color") then
-        client = BaseClient.register(
-        serverURL, options("game_id").asInstanceOf[String],
-        colorFromString(options("color").asInstanceOf[String])
-      )
-      else client = BaseClient(
-        serverURL, options("game_id").asInstanceOf[String], None
-      )
-    else throw IllegalArgumentException("Either --size or --game-id must be supplied")
-
+    val conf = new ClientCLIConf(args.toList)
+    val serverURL = s"http://${conf.server()}:${conf.port()}"
+    if conf.size.isSupplied then
+      client = BaseClient.create(serverURL, conf.size(), colorFromString(conf.color()))
+    else if conf.gameId.isSupplied then
+      if conf.token.isSupplied then
+        client = BaseClient(serverURL, conf.gameId(), conf.token.toOption)
+      else if conf.color.isSupplied then
+        client = BaseClient.register(serverURL, conf.gameId(), colorFromString(conf.color()))
+      else client = BaseClient(serverURL, conf.gameId(), None)
 
   override  def waitUntilReady(): StatusResponse =
     var status = emptyResponse

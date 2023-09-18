@@ -4,6 +4,7 @@ import go3d.{Black, Game, Move}
 import org.eclipse.jetty.server.{NetworkConnector, Server}
 import org.eclipse.jetty.servlet.ServletHandler
 import com.typesafe.scalalogging.LazyLogging
+import org.rogach.scallop._
 
 import java.security.SecureRandom
 import scala.annotation.tailrec
@@ -48,53 +49,43 @@ object GoServer extends LazyLogging:
 
   def main(args: Array[String]): Unit =
 
-    type OptionMap = Map[String, Int | String]
     val DefaultSaveDir = "saves"
 
-    def randomGame(size: Int): Unit =
+    class Conf(args: Seq[String]) extends ScallopConf(args):
+      val benchmark = opt[Int](descr = "Benchmark game of given size")
+      val printStepSize = opt[Int](default = Some(100), descr = "Print information every N steps")
+      val port = opt[Int](default = Some(DefaultPort), descr = "Port to listen on")
+      val saveDir = opt[String](
+        default = Some(DefaultSaveDir), descr = "Directory to save games to"
+      )
+      conflicts(benchmark, List(port, saveDir))
+      dependsOnAll(printStepSize, List(benchmark))
+      verify()
+
+    def randomGame(size: Int, print_step_size: Int): Unit =
       val random = new SecureRandom()
-      val Step = 10
       var game = Game.start(size)
       var color = Black
-      val t0 = System.nanoTime()
-      var tStep0 = t0
+      val startTime = System.nanoTime()
+      var startTimeForMoves = startTime
       while game.possibleMoves(color).nonEmpty && game.moves.length <= size*size*size do
         val move = Move(game.possibleMoves(color)(random.nextInt(game.possibleMoves(color).length)), color)
         game = game.makeMove(move)
-        if game.moves.length % Step == 0 || game.moves.length == size*size*size then
-          val stepMs = (System.nanoTime()-tStep0)/1000000
-          logger.info(s"${game.moves.length}/${size*size*size} (${stepMs/Step}ms/move)")
-          tStep0 = System.nanoTime()
+        if game.moves.length % print_step_size == 0 || game.moves.length == size*size*size then
+          val stepMs = (System.nanoTime()-startTimeForMoves)/1000000
+          logger.info(s"${game.moves.length}/${size*size*size} (${stepMs/print_step_size}ms/move)")
+          startTimeForMoves = System.nanoTime()
         color = !color
-      val totalMs = (System.nanoTime()-t0)/1000000
-      logger.info(s"overall: ${totalMs/1000.0}s, ${totalMs/(size*size*size)}ms/move")
+      val totalSeconds = (System.nanoTime()-startTime)/1000000000.0
+      logger.info(s"overall: ${totalSeconds}s, ${totalSeconds*1000.0/(size*size*size)}ms/move")
       logger.info(game.toString)
       logger.info(game.score.toString)
 
-    @tailrec
-    def nextOption(map: OptionMap, list: List[String]): OptionMap =
-      list match
-        case Nil => map
-        case "--benchmark" :: value :: tail =>
-          nextOption(map ++ Map("benchmark_size" -> value.toInt), tail)
-        case "--port" :: value :: tail =>
-          nextOption(map ++ Map("port" -> value.toInt), tail)
-        case "--save-dir" :: value :: tail =>
-          nextOption(map ++ Map("save_dir" -> value), tail)
-        case option :: tail =>
-          if option.matches("\\d+") then
-            nextOption(map ++ Map("benchmark_size" -> option.toInt), tail)
-          else
-            logger.error(s"Unknown option ${option.filter(_ >= ' ')}")
-            System.exit(1)
-            map
-
-    val options = nextOption(Map(), args.toList)
-    if options.contains("benchmark_size") then
-      randomGame(options("benchmark_size").asInstanceOf[Int])
+    val conf = Conf(args.toList)
+    if conf.benchmark.isSupplied then randomGame(conf.benchmark(), conf.printStepSize())
     else
-      val port = options.getOrElse("port", DefaultPort).asInstanceOf[Int]
-      val saveDir = options.getOrElse("save_dir", DefaultSaveDir).asInstanceOf[String]
-      logger.info(s"Starting server on port $port, saving games to $saveDir")
-      GoServer.loadGames(saveDir)
-      GoServer.run(port)
+        val port = conf.port()
+        val saveDir = conf.saveDir()
+        logger.info(s"Starting server on port $port, saving games to $saveDir")
+        GoServer.loadGames(saveDir)
+        GoServer.run(port)

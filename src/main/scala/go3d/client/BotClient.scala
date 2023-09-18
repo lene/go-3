@@ -1,21 +1,41 @@
 package go3d.client
 
-import com.typesafe.scalalogging.LazyLogging
 import go3d.{Game, Position}
 import go3d.server.{StatusResponse, emptyResponse}
-
-import java.security.SecureRandom
+import com.typesafe.scalalogging.LazyLogging
+import org.rogach.scallop._
+import org.rogach.scallop.exceptions.RequiredOptionNotFound
 import requests.RequestFailedException
 
+import java.security.SecureRandom
+import java.util.NoSuchElementException
 import javax.servlet.http.HttpServletResponse
 import scala.annotation.tailrec
+
+class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
+  val size = opt[Int](required = false)
+  val color = opt[String](required = false)
+  val gameId = opt[String](required = false)
+  val token = opt[String](required = false)
+  val server = opt[String](required = true)
+  val port = opt[Int](required = true)
+  val strategy = opt[String](required = false)
+  requireOne(size, gameId)
+  dependsOnAll(size, List(color))
+  dependsOnAll(token, List(gameId))
+  verify()
+
+  override def onError(e: Throwable): Unit = e match {
+    case RequiredOptionNotFound(optionName) => throw NoSuchElementException(optionName)
+    case other => throw other
+  }
 
 object BotClient extends Client with LazyLogging:
 
   private val PULL_WAIT_MS = 10
   var executionTimes: List[Long] = List()
   private val random: SecureRandom = SecureRandom()
-  private var strategies: Array[String] = Array()
+  private[client] var strategies: Array[String] = Array()
   private var game: Game = null
 
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
@@ -80,49 +100,15 @@ object BotClient extends Client with LazyLogging:
       f"(${last}ms last/${avg}ms avg)  "
 
   def parseArgs(args: Array[String]): Unit =
-    val options = nextOption(Map(), args.toList)
-    val serverURL = s"http://${options("server")}:${options("port")}"
-    if options.contains("size") && options.contains("game_id") then
-      throw IllegalArgumentException("--size and --game-id are mutually exclusive")
-    if options.contains("size") then
-      client = BaseClient.create(
-        serverURL, options("size").asInstanceOf[Int],
-        colorFromString(options("color").asInstanceOf[String])
-      )
-    else if options.contains("game_id") then
-      if options.contains("token") then
-        client = BaseClient(
-          serverURL, options("game_id").asInstanceOf[String], 
-          Some(options("token").asInstanceOf[String])
-        )
-      else client = BaseClient.register(
-        serverURL, options("game_id").asInstanceOf[String],
-        colorFromString(options("color").asInstanceOf[String])
-      )
-    else throw IllegalArgumentException("Either --size or --game-id must be supplied")
-    strategies = options("strategy").asInstanceOf[String].split(',')
-
-  @tailrec def nextOption(map : OptionMap, list: List[String]) : OptionMap =
-    list match
-      case Nil => map
-      case "--size" :: value :: tail =>
-        nextOption(map ++ Map("size" -> value.toInt), tail)
-      case "--color" :: value :: tail =>
-        nextOption(map ++ Map("color" -> value), tail)
-      case "--game-id" :: value :: tail =>
-        nextOption(map ++ Map("game_id" -> value), tail)
-      case "--token" :: value :: tail =>
-        nextOption(map ++ Map("token" -> value), tail)
-      case "--server" ::  value :: tail =>
-        nextOption(map ++ Map("server" -> value), tail)
-      case "--port" :: value :: tail =>
-        nextOption(map ++ Map("port" -> value.toInt), tail)
-      case "--strategy" :: value :: tail =>
-        nextOption(map ++ Map("strategy" -> value), tail)
-      case option :: tail =>
-        logger.error(s"Unknown option $option")
-        exit(1)
-        map
+    val conf = new BotClientCLIConf(args.toList)
+    val serverURL = s"http://${conf.server()}:${conf.port()}"
+    if conf.size.isSupplied then
+      client = BaseClient.create(serverURL, conf.size(), colorFromString(conf.color()))
+    else if conf.gameId.isSupplied then
+      if conf.token.isSupplied then
+        client = BaseClient(serverURL, conf.gameId(), conf.token.toOption)
+      else client = BaseClient.register(serverURL, conf.gameId(), colorFromString(conf.color()))
+    strategies = conf.strategy().split(',')
 
   def waitUntilReady(): StatusResponse =
     var status = emptyResponse
