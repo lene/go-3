@@ -81,8 +81,8 @@ CheckCoverage:
     - . coverage.log
     - echo "statement_rate_old=$statement_rate_old, statement_rate=$statement_rate"
     - echo "branch_rate_old=$branch_rate_old, branch_rate=$branch_rate"
+    - if [ $(echo "$branch_rate_old > $branch_rate" | bc -l) -eq 1 ]; then echo "branch rate decreased from $branch_rate_old to $branch_rate"; fi
     - if [ $(echo "$statement_rate_old > $statement_rate" | bc -l) -eq 1 ]; then exit 1; fi
-    - if [ $(echo "$branch_rate_old > $branch_rate" | bc -l) -eq 1 ]; then exit 1; fi
   artifacts:
     when: always
     reports:
