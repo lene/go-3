@@ -11,7 +11,7 @@ class TestSetStrategy:
     Assertions.assertEquals(List(4), bestBy(Seq(1, 1, 2, 3, 4), -_.abs))
 
   @Test def testClosestToCenterStrategy(): Unit =
-    val strategy = defaultStrategy(3)
+    val strategy = SetStrategy(3, Array("closestToCenter"))
     val check = checkStrategyResults.curried(strategy.closestToCenter)
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
     check(
@@ -114,8 +114,8 @@ class TestSetStrategy:
 
   @Test def testMaximizeLiberties(): Unit =
     val game = playListOfMoves(3, List(Move(3, 3, 3, Black)))
-    val strategy = SetStrategy(game)
-    val check = checkStrategyResults.curried(strategy.maximizeOwnLiberties)
+    val strategy = SetStrategy(3, Array("maximizeOwnLiberties"))
+    val check = checkStrategyResults.curried(strategy.maximizeOwnLiberties(_, game))
     check(List((2, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(List((2, 2, 2)))
     check(
       List((2, 2, 3), (2, 3, 2), (3, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(
@@ -125,14 +125,14 @@ class TestSetStrategy:
 
   @Test def testMaximizeLiberties2(): Unit =
     val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))
-    val strategy = SetStrategy(game)
-    Assertions.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions).contains(Position(2, 2, 2)))
-    Assertions.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions).contains(Position(1, 1, 1)))
+    val strategy = SetStrategy(3, Array("maximizeOwnLiberties"))
+    Assertions.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions, game).contains(Position(2, 2, 2)))
+    Assertions.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions, game).contains(Position(1, 1, 1)))
 
   @Test def testMinimizeLiberties(): Unit =
     val game = playListOfMoves(3, List(Move(3, 3, 3, Black)))
-    val strategy = SetStrategy(game)
-    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties)
+    val strategy = SetStrategy(3, Array("minimizeOpponentLiberties"))
+    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, game))
     check(List((2, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(List((2, 3, 3), (3, 2, 3), (3, 3, 2)))
     check(
       List((2, 2, 3), (2, 3, 2), (3, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(
@@ -144,45 +144,45 @@ class TestSetStrategy:
     )
 
   @Test def testMinimizeLibertiesEmptyBoard3(): Unit =
-    val strategy = defaultStrategy(3)
-    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties)
+    val strategy = SetStrategy(3, Array("minimizeOpponentLiberties"))
+    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, Game.start(3)))
     val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
   @Test def testMinimizeLibertiesEmptyBoard7(): Unit =
-    val strategy = defaultStrategy(7)
-    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties)
+    val strategy = SetStrategy(7, Array("minimizeOpponentLiberties"))
+    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, Game.start(7)))
     val starPoints = StarPoints(7).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
   @Test def testMaximizeDistance(): Unit =
     val game = playListOfMoves(3, List(Move(3, 3, 3, Black)))
-    val strategy = SetStrategy(game)
-    val check = checkStrategyResults.curried(strategy.maximizeDistance)
+    val strategy = SetStrategy(3, Array("maximizeDistance"))
+    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, game))
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((1, 1, 1)))
 
   @Test def testMaximizeDistanceEmptyBoard3(): Unit =
-    val strategy = defaultStrategy(3)
-    val check = checkStrategyResults.curried(strategy.maximizeDistance)
+    val strategy = SetStrategy(3, Array("maximizeDistance"))
+    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, Game.start(7)))
     val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
   @Test def testMaximizeDistanceEmptyBoard7(): Unit =
-    val strategy = defaultStrategy(7)
-    val check = checkStrategyResults.curried(strategy.maximizeDistance)
+    val strategy = SetStrategy(7, Array("maximizeDistance"))
+    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, Game.start(7)))
     val starPoints = StarPoints(7).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
   @Test def testMaximizeDistance2(): Unit =
     val game = playListOfMoves(3, List(Move(3, 3, 3, Black), Pass(White), Move(1, 1, 1, Black)))
-    val strategy = SetStrategy(game)
-    val check = checkStrategyResults.curried(strategy.maximizeDistance)
+    val strategy = SetStrategy(3, Array("maximizeDistance"))
+    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, game))
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
 
   @Test def testMaximizeDistance3(): Unit =
     val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))
-    val strategy = SetStrategy(game)
-    val check = checkStrategyResults.curried(strategy.maximizeDistance)
+    val strategy = SetStrategy(3, Array("maximizeDistance"))
+    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, game))
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((1, 1, 1), (3, 3, 3)))
 
   @Test def testPrioritiseCapture6Liberties(): Unit =
@@ -239,7 +239,7 @@ class TestSetStrategy:
       List((2, 3, 3), (3, 2, 3), (3, 3, 2))
     )
 
-def defaultStrategy(size: Int): SetStrategy = SetStrategy(Game.start(size))
+def defaultStrategy(size: Int): SetStrategy = SetStrategy(size, Array("random"))
 
 def checkStrategyResults(
   strategy: Seq[Position] => Seq[Position],
@@ -249,7 +249,7 @@ def checkStrategyResults(
 
 def check3BoardForPossibleMoves(moves: List[Move|Pass], expected: List[(Int, Int, Int)]): Unit =
   val game = playListOfMoves(3, moves)
-  val strategy = SetStrategy(game)
-  val check = checkStrategyResults.curried(strategy.prioritiseCapture)
+  val strategy = SetStrategy(3, Array("prioritiseCapture"))
+  val check = checkStrategyResults.curried(strategy.prioritiseCapture(_, game))
   val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z)).toSet -- moves.collect { case m: Move => m }.map(m => (m.x, m.y, m.z))
   check(starPoints.toList)(expected)

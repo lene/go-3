@@ -1,6 +1,8 @@
 package go3d.client
 
-import go3d.{Black, Color, Game, Goban, Move, Position}
+import go3d.{Black, Color, Game, Move, Position}
+
+import scala.annotation.tailrec
 /*
     Following lines are disabled, because when running tests instantiating a Logger outside of the
     Server thread leads to a race condition:
@@ -20,24 +22,27 @@ val logger = Logger[SetStrategy]
 object logger:
   def info(msg: String): Unit = println(msg)
 
-case class SetStrategy(game: Game):
+case class SetStrategy(gameSize: Int, strategies: Array[String]):
 
-  private val gameSize: Int = game.size
-
-  def narrowDown(possible: Seq[Position], strategies: Array[String]): Seq[Position] =
-    if strategies.isEmpty || possible.isEmpty then possible
-    else
-      val nextPossible = strategies.head match
-        case "random" => possible
-        case "closestToCenter" => closestToCenter(possible)
-        case "onStarPoints" => onStarPoints(possible)
-        case "closestToStarPoints" => closestToStarPoints(possible)
-        case "maximizeOwnLiberties" => maximizeOwnLiberties(possible)
-        case "minimizeOpponentLiberties" => minimizeOpponentLiberties(possible)
-        case "maximizeDistance" => maximizeDistance(possible)
-        case "prioritiseCapture" => prioritiseCapture(possible)
-        case s => throw IllegalArgumentException(s"narrowDown(): $s not implemented")
-      narrowDown(nextPossible, strategies.tail)
+  def narrowDown(possible: Seq[Position], game: Game): Seq[Position] =
+    @tailrec
+    def iterateThroughStrategies(
+        possible: Seq[Position], game: Game, strategies: Array[String]
+    ): Seq[Position] =
+      if strategies.isEmpty || possible.isEmpty then possible
+      else
+        val nextPossible = strategies.head match
+          case "random" => possible
+          case "closestToCenter" => closestToCenter(possible)
+          case "onStarPoints" => onStarPoints(possible)
+          case "closestToStarPoints" => closestToStarPoints(possible)
+          case "maximizeOwnLiberties" => maximizeOwnLiberties(possible, game)
+          case "minimizeOpponentLiberties" => minimizeOpponentLiberties(possible, game)
+          case "maximizeDistance" => maximizeDistance(possible, game)
+          case "prioritiseCapture" => prioritiseCapture(possible, game)
+          case s => throw IllegalArgumentException(s"narrowDown(): $s not implemented")
+        iterateThroughStrategies(nextPossible, game, strategies.tail)
+    iterateThroughStrategies(possible, game, strategies)
 
   def closestToCenter(possible: Seq[Position]): Seq[Position] =
     val center = Position(gameSize/2+1, gameSize/2+1, gameSize/2+1)
@@ -55,31 +60,35 @@ case class SetStrategy(game: Game):
     then onStarPoints(possible)
     else bestBy(possible, minDistanceToPointList(_, StarPoints(gameSize).all))
 
-  def maximizeOwnLiberties(possible: Seq[Position]): Seq[Position] =
-    bestBy(possible, p => -game.setStone(Move(p, moveColor)).totalNumLiberties(moveColor))
+  def maximizeOwnLiberties(possible: Seq[Position], game: Game): Seq[Position] =
+    val color = moveColor(game)
+    bestBy(possible, p => -game.setStone(Move(p, color)).totalNumLiberties(color))
 
-  private def moveColor: Color = if game.moves.isEmpty then Black else !game.moves.last.color
+  private def moveColor(game: Game): Color =
+    if game.moves.isEmpty then Black else !game.moves.last.color
 
-  def minimizeOpponentLiberties(possible: Seq[Position]): Seq[Position] =
-    val possibleMoves = game.getFreeNeighbors(!moveColor).intersect(possible.toSet)
+  def minimizeOpponentLiberties(possible: Seq[Position], game: Game): Seq[Position] =
+    val color = moveColor(game)
+    val possibleMoves = game.getFreeNeighbors(!color).intersect(possible.toSet)
     if possibleMoves.isEmpty
     then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
-    else bestBy(possibleMoves.toList, p => game.setStone(Move(p, moveColor)).totalNumLiberties(!moveColor))
+    else bestBy(possibleMoves.toList, p => game.setStone(Move(p, color)).totalNumLiberties(!color))
 
-  def maximizeDistance(possible: Seq[Position]): Seq[Position] =
-    val opponentStones = game.getStones(!moveColor)
+  def maximizeDistance(possible: Seq[Position], game: Game): Seq[Position] =
+    val opponentStones = game.getStones(!moveColor(game))
     if opponentStones.isEmpty
     then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
     else bestBy(possible, -minDistanceToPointList(_, opponentStones))
 
-  def prioritiseCapture(possible: Seq[Position]): Seq[Position] =
-    val opponentStones = game.getStones(!moveColor)
+  def prioritiseCapture(possible: Seq[Position], game: Game): Seq[Position] =
+    val color = moveColor(game)
+    val opponentStones = game.getStones(!color)
     if opponentStones.isEmpty
     then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
     else
-      val opponentNeighbors = game.getFreeNeighbors(!moveColor)
+      val opponentNeighbors = game.getFreeNeighbors(!color)
       val possibleMoves = possible.toSet.intersect(opponentNeighbors).toList
-      bestBy(possibleMoves, p => minLiberties(game.setStone(Move(p, moveColor)), !moveColor))
+      bestBy(possibleMoves, p => minLiberties(game.setStone(Move(p, color)), !color))
 
 def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
   values.groupBy(metric).minBy(_._1)._2

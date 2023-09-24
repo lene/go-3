@@ -37,6 +37,7 @@ object BotClient extends Client with LazyLogging:
   private val random: SecureRandom = SecureRandom()
   private[client] var strategies: Array[String] = Array()
   private var game: Game = null
+  private var strategy: Option[SetStrategy] = None
 
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
@@ -50,6 +51,7 @@ object BotClient extends Client with LazyLogging:
     )
     val status = waitUntilReady()
     game = status.game
+    if args.nonEmpty then strategy = Some(SetStrategy(game.size, strategies))
     logger.info(s"Move: ${game.moves.length} ${executionTimeString}")
     var over = false
     val startTime = System.currentTimeMillis()
@@ -71,8 +73,7 @@ object BotClient extends Client with LazyLogging:
 
 
   private def makeOneMove(status: StatusResponse): Boolean =
-    val strategy = SetStrategy(game)
-    val possible = strategy.narrowDown(status.moves, strategies)
+    val possible = strategy.map(_.narrowDown(status.moves, game)).getOrElse(status.moves)
     if possible.nonEmpty then
       val setPosition = randomMove(possible)
       val status = client.set(setPosition.x, setPosition.y, setPosition.z)
