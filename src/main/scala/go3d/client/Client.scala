@@ -27,14 +27,14 @@ abstract class Client extends ClientTrait with LazyLogging:
       case e: NumberFormatException => exit(s"not a number: ${e.getMessage}", 1)
       case e: IOException => exit(s"${e.getMessage}", 1)
       case _: BadColor => exit(s"not a color, must be either black/b/@ or white/w/O", 1)
-      case e: NoSuchElementException => exit(s"missing argument: ${exceptionToParam(e)}", 1)
+      case e: NoSuchElementException => exit(s"missing argument: --${e.getMessage}", 1)
       case e: IllegalArgumentException => exit(s"missing argument: ${e.getMessage}", 1)
-      case e: Throwable => exit(s"unexpected error: ${e.getMessage}", 1)
+      case e: Throwable => exit(s"unexpected error: ${e.getMessage} ${e.getStackTrace.mkString("\n")}", 1)
 
   def init(): Unit = {}
 
   protected def exceptionToParam(e: NoSuchElementException): String =
-      "--" + e.getMessage.substring("key not found: ".length).replace('_', '-')
+      "--" + e.getMessage //.substring("key not found: ".length).replace('_', '-')
 
   def exit(message: String, status: Int): Unit =
     if message.nonEmpty then logger.info(message)

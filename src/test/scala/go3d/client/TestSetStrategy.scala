@@ -239,6 +239,15 @@ class TestSetStrategy:
       List((2, 3, 3), (3, 2, 3), (3, 3, 2))
     )
 
+  @Test def testNarrowDownRandom(): Unit =
+    val game = Game.start(3)
+    val strategy = SetStrategy(3, Array("random"))
+    val check = checkStrategyResults.curried(strategy.narrowDown(_, game))
+    check(
+      List((1, 1, 1), (1, 1, 2), (1, 2, 1), (1, 2, 2), (2, 1, 1), (2, 1, 2), (2, 2, 1), (2, 2, 2))
+    )(
+      List((1, 1, 1), (1, 1, 2), (1, 2, 1), (1, 2, 2), (2, 1, 1), (2, 1, 2), (2, 2, 1), (2, 2, 2))
+    )
 def defaultStrategy(size: Int): SetStrategy = SetStrategy(size, Array("random"))
 
 def checkStrategyResults(

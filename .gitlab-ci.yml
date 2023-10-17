@@ -41,7 +41,7 @@ Test:Debian:
   before_script:
     - apt-get -y update
     - apt-get -y upgrade
-    - apt-get -y install curl gnupg openjdk-19-jdk # 19 is the latest openjdk version in debian stable
+    - apt-get -y install curl gnupg openjdk-17-jdk # 17 is the latest openjdk version in debian stable
     - echo "deb https://repo.scala-sbt.org/scalasbt/debian all main" > /etc/apt/sources.list.d/sbt.list
     - echo "deb https://repo.scala-sbt.org/scalasbt/debian /" > /etc/apt/sources.list.d/sbt_old.list
     - curl -sL "https://keyserver.ubuntu.com/pks/lookup?op=get&search=0x2EE0EA64E40A89B84B2DF73499E82A75642AC823" | apt-key add
@@ -200,19 +200,21 @@ container_scanning:
     - while [ "$GAME_ID" != "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
     - grep -A1 "Server started on" server.log
     - echo ${STRATEGY_BLACK:-random} - ${STRATEGY_WHITE:-random}
-    - ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY_BLACK:-random} | grep 'Map(' &
+    - ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY_BLACK:-random} --max-thinking-time-ms 1000 | grep 'Map(' &
     - while [ "$GAME_ID" == "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
-    - /usr/bin/time -o time.log -f "%e\n%U\n%M\n%P" ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random} | tail -n 1 > white.log
+    - /usr/bin/time -o time.log -f "%e\n%U\n%M\n%P" ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random} --max-thinking-time-ms 1000 | tee white.log
     - grep -c "go3d.server.SetServlet" server.log
     - grep -c "go3d.server.PassServlet" server.log || true
     - cat white.log
-    - SCORE_BLACK=$(cat white.log | grep -E -o "[0-9]+" | head -n 1)
+    - SCORE_BLACK=$(cat white.log | grep -E -o "[0-9]+" | tail -n 2 | head -n 1)
     - SCORE_WHITE=$(cat white.log | grep -E -o "[0-9]+" | tail -n 1)
     - WALL_TIME_WHITE=$(sed '1q;d' time.log)
     - USER_TIME_WHITE=$(sed '2q;d' time.log)
     - MEM_WHITE=$(sed '3q;d' time.log)
     - CPU_PERCENT_WHITE=$(sed '4q;d' time.log)
-    - echo "${STRATEGY_BLACK:-random};${STRATEGY_WHITE:-random};$SCORE_BLACK;$SCORE_WHITE;$WALL_TIME_WHITE;$USER_TIME_WHITE;$MEM_WHITE;$CPU_PERCENT_WHITE" >> results.${STRATEGY_BLACK:-random}.${STRATEGY_WHITE:-random}.csv
+    - CSV_LINE="${STRATEGY_BLACK:-random};${STRATEGY_WHITE:-random};$SCORE_BLACK;$SCORE_WHITE;$WALL_TIME_WHITE;$USER_TIME_WHITE;$MEM_WHITE;$CPU_PERCENT_WHITE"
+    - echo $CSV_LINE
+    - echo "$CSV_LINE" >> results.${STRATEGY_BLACK:-random}.${STRATEGY_WHITE:-random}.csv
   artifacts:
     when: always
     paths:
@@ -257,6 +259,7 @@ TestDockerImage:
       - STRATEGY_BLACK:
           - onStarPoints,minimizeOpponentLiberties
           - onStarPoints,maximizeOwnLiberties
+          - prioritiseCapture,closestToStarPoints
         STRATEGY_WHITE:
           - closestToStarPoints
           - maximizeDistance

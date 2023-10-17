@@ -3,6 +3,8 @@ package go3d.client
 import go3d.{Black, Color, Game, Move, Position}
 
 import scala.annotation.tailrec
+import scala.util.Random
+
 /*
     Following lines are disabled, because when running tests instantiating a Logger outside of the
     Server thread leads to a race condition:
@@ -16,13 +18,40 @@ import scala.annotation.tailrec
       succeeds.
     I cannot find how to fix this, so I am disabling logging for now, by using the alternate
     declaration below.
-import com.typesafe.scalalogging.Logger
-val logger = Logger[SetStrategy]
- */
 object logger:
   def info(msg: String): Unit = println(msg)
+ */
+import com.typesafe.scalalogging.Logger
 
-case class SetStrategy(gameSize: Int, strategies: Array[String]):
+case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0):
+
+  private val logger = Logger[SetStrategy]
+
+  class ThinkingTimeLimiter(val maxThinkingTimeMs: Int):
+    private var lastThinkingTimeMs: Int = 1
+    private var numPreviousElements = 0
+
+    def subsetToSatisfyMaxThinkingTime(possible: Seq[Position]): Seq[Position] =
+      val baseSize = if numPreviousElements == 0 then possible.size else numPreviousElements
+      numPreviousElements = numElementsToSatisfyMaxThinkingTime(possible, baseSize)
+      Random.shuffle(possible).take(numPreviousElements)
+
+    private def numElementsToSatisfyMaxThinkingTime(possible: Seq[Position], baseSize: Int) =
+      if maxThinkingTimeMs <= 0
+      then possible.size
+      else
+        val targetSize = (baseSize * maxThinkingTimeMs / lastThinkingTimeMs.max(1)).max(1).min(possible.size)
+        logger.info(s"Previous thinking time: $lastThinkingTimeMs ms")
+        logger.info(s"Randomly choosing $targetSize out of ${possible.size} to satisfy max thinking time of $maxThinkingTimeMs ms")
+        targetSize
+
+    def recordThinkingTime(f: => Seq[Position]): Seq[Position] =
+      val startTime = System.currentTimeMillis()
+      val possiblePositions = f
+      lastThinkingTimeMs = (System.currentTimeMillis() - startTime).toInt
+      possiblePositions
+
+  private val thinkingTimeLimiter = ThinkingTimeLimiter(maxThinkingTimeMs)
 
   def narrowDown(possible: Seq[Position], game: Game): Seq[Position] =
     @tailrec
@@ -42,7 +71,10 @@ case class SetStrategy(gameSize: Int, strategies: Array[String]):
           case "prioritiseCapture" => prioritiseCapture(possible, game)
           case s => throw IllegalArgumentException(s"narrowDown(): $s not implemented")
         iterateThroughStrategies(nextPossible, game, strategies.tail)
-    iterateThroughStrategies(possible, game, strategies)
+
+    val subset = thinkingTimeLimiter.subsetToSatisfyMaxThinkingTime(possible)
+    thinkingTimeLimiter.recordThinkingTime({iterateThroughStrategies(subset, game, strategies)})
+
 
   def closestToCenter(possible: Seq[Position]): Seq[Position] =
     val center = Position(gameSize/2+1, gameSize/2+1, gameSize/2+1)
@@ -88,7 +120,8 @@ case class SetStrategy(gameSize: Int, strategies: Array[String]):
     else
       val opponentNeighbors = game.getFreeNeighbors(!color)
       val possibleMoves = possible.toSet.intersect(opponentNeighbors).toList
-      bestBy(possibleMoves, p => minLiberties(game.setStone(Move(p, color)), !color))
+      val toUse = if possibleMoves.isEmpty then possible else possibleMoves
+      bestBy(toUse, p => minLiberties(game.setStone(Move(p, color)), !color))
 
 def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
   values.groupBy(metric).minBy(_._1)._2

@@ -20,15 +20,15 @@ case class GDXResources(boardSize: Int):
   private val modelBatch = new ModelBatch
 
   def render(models: List[RenderableProvider]*): Unit =
-    Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth(), Gdx.graphics.getHeight())
+    Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth, Gdx.graphics.getHeight)
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
     modelBatch.begin(camera)
     models.foreach(model => modelBatch.render(model.asJava, environment))
     modelBatch.end()
 
   def resize(): Unit =
-    camera.viewportWidth = Gdx.graphics.getWidth().toFloat
-    camera.viewportHeight = Gdx.graphics.getHeight().toFloat
+    camera.viewportWidth = Gdx.graphics.getWidth.toFloat
+    camera.viewportHeight = Gdx.graphics.getHeight.toFloat
     camera.update()
 
   def dispose(): Unit = modelBatch.dispose()
@@ -40,7 +40,7 @@ case class GDXResources(boardSize: Int):
     localEnv
 
   private def createCamera(cameraPos: Vector3): PerspectiveCamera =
-    val cam = new PerspectiveCamera(67, Gdx.graphics.getWidth().toFloat, Gdx.graphics.getHeight().toFloat) {
+    val cam = new PerspectiveCamera(67, Gdx.graphics.getWidth.toFloat, Gdx.graphics.getHeight.toFloat) {
       near = 1.0
       far = 300.0
     }

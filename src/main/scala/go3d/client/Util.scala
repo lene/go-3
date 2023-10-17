@@ -54,11 +54,10 @@ object Util {
           goban.stones(x + 1)(y + 1)(z) = go3d.Color(stone)
     goban
 
-  def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass], verbose: Boolean = false): Game =
+  private def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass]): Game =
     var game = Game.start(boardSize)
     for move <- moves do
       game = game.makeMove(move)
-      if verbose then logger.info(move.toString + "\n" + game)
     game
 
 }
