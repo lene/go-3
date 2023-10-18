@@ -257,12 +257,12 @@ TestDockerImage:
   parallel:
     matrix:
       - STRATEGY_BLACK:
+          - closestToStarPoints
+          - maximizeDistance
+        STRATEGY_WHITE:
           - onStarPoints,minimizeOpponentLiberties
           - onStarPoints,maximizeOwnLiberties
           - prioritiseCapture,closestToStarPoints
-        STRATEGY_WHITE:
-          - closestToStarPoints
-          - maximizeDistance
   image:
     name: ${DOCKER_IMAGE}:latest
     entrypoint: [""]
