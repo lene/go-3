@@ -348,6 +348,7 @@ PushToGithub:
     - git remote show github
     - BRANCH=${CI_COMMIT_BRANCH:-master}
     - git checkout $BRANCH
+    - git pull github $BRANCH
     - git push github $BRANCH
     - git push github $CI_COMMIT_TAG
 
