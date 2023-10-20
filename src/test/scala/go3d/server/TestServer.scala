@@ -3,14 +3,13 @@ package go3d.server
 import go3d.*
 import io.circe.parser.*
 import org.eclipse.jetty.server.Server
-import org.junit.jupiter.api.{Assertions, Test, BeforeEach, AfterEach, BeforeAll}
+import org.junit.jupiter.api.{Assertions, Test, BeforeEach, AfterEach, BeforeAll, AfterAll}
 import requests.{RequestFailedException, *}
 
 import java.io.IOException
 import java.nio.file.Files
 import javax.servlet.http.HttpServletResponse
 import scala.io.Source
-import scala.reflect.ClassTag
 import scala.util.Random
 
 val TestPort = 64555
@@ -68,6 +67,17 @@ object TestServer:
     import org.slf4j.LoggerFactory
     val root = org.slf4j.Logger.ROOT_LOGGER_NAME
     LoggerFactory.getLogger(root).asInstanceOf[Logger].setLevel(Level.WARN)
+
+  var shutdown: Option[cats.effect.IO[Unit]] = None
+  @BeforeAll def startHttp4s(): Unit =
+    import cats.effect.unsafe.implicits.global
+    import scala.util.Try
+    val server = GoServer.server(TestPort+1)
+    shutdown = Try {server.allocated.unsafeRunSync()._2}.toOption
+
+  @AfterAll def stopHttp4s(): Unit =
+    import cats.effect.unsafe.implicits.global
+    shutdown.foreach(_.unsafeRunSync())
 
 class TestServer:
 
@@ -650,7 +660,11 @@ class TestServer:
     Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
   @Test def testHttp4sServiceRuns(): Unit =
-    val response = Source.fromURL("http://localhost:6031/hello/world").mkString
+    val response = Source.fromURL(s"http://localhost:${TestPort+1}/hello/world").mkString
+    Assertions.assertEquals("Hello, world.", response)
+
+  @Test def testHttp4sServiceRunsForSubpath(): Unit =
+    val response = Source.fromURL(s"http://localhost:${TestPort+1}/api/hello/world").mkString
     Assertions.assertEquals("Hello, world.", response)
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
