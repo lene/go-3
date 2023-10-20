@@ -5,23 +5,6 @@ import go3d.{Black, Color, Game, Move, Position}
 import scala.annotation.tailrec
 import scala.util.Random
 
-/*
-    Following lines are disabled, because when running tests instantiating a Logger outside of the
-    Server thread leads to a race condition:
-    - if two Loggers are instantiated at the same time in different threads, an error
-        java.lang.ClassCastException: class org.slf4j.helpers.SubstituteLogger cannot be cast to
-        class ch.qos.logback.classic.Logger (org.slf4j.helpers.SubstituteLogger and
-        ch.qos.logback.classic.Logger are in unnamed module of loader
-        sbt.internal.LayeredClassLoader @4acf1e69)
-      results.
-    - if either TestSetStrategy or TestServer finishes before the other is started, the test suite
-      succeeds.
-    I cannot find how to fix this, so I am disabling logging for now, by using the alternate
-    declaration below.
-object logger:
-  def info(msg: String): Unit = println(msg)
- */
-
 case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0):
 
   private val thinkingTimeLimiter = ThinkingTimeLimiter(maxThinkingTimeMs)

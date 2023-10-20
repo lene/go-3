@@ -3,7 +3,7 @@ package go3d.server
 import go3d.*
 import io.circe.parser.*
 import org.eclipse.jetty.server.Server
-import org.junit.jupiter.api.{Assertions, Test, BeforeEach, AfterEach, BeforeAll, AfterAll}
+import org.junit.jupiter.api.{AfterAll, AfterEach, Assertions, BeforeAll, BeforeEach, Test}
 import requests.{RequestFailedException, *}
 
 import java.io.IOException
@@ -62,9 +62,11 @@ object GameData:
     getPRR(s"$ServerURL/register/$id/$color")
 
 object TestServer:
+
+  import ch.qos.logback.classic.{Level, Logger}
+  import org.slf4j.LoggerFactory
+
   @BeforeAll def quietLogging(): Unit =
-    import ch.qos.logback.classic.{Level, Logger}
-    import org.slf4j.LoggerFactory
     val root = org.slf4j.Logger.ROOT_LOGGER_NAME
     LoggerFactory.getLogger(root).asInstanceOf[Logger].setLevel(Level.WARN)
 
@@ -659,13 +661,17 @@ class TestServer:
     Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id), s"${Games.fileIO.get.getArchivedGames} does not contain ${gameData.id}")
     Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
-  @Test def testHttp4sServiceRuns(): Unit =
-    val response = Source.fromURL(s"http://localhost:${TestPort+1}/hello/world").mkString
-    Assertions.assertEquals("Hello, world.", response)
-
   @Test def testHttp4sServiceRunsForSubpath(): Unit =
     val response = Source.fromURL(s"http://localhost:${TestPort+1}/api/hello/world").mkString
     Assertions.assertEquals("Hello, world.", response)
+
+  @Test def testHttp4sServiceRunsForOtherService(): Unit =
+    val response = Source.fromURL(s"http://localhost:${TestPort+1}/api/tweets/popular").mkString
+    Assertions.assertEquals("""[{"id":1,"message":"hello world"}]""", response)
+
+  @Test def testHealth2(): Unit =
+    val response = requests.get(s"http://localhost:${TestPort+1}/health")
+    Assertions.assertEquals("1", response.text())
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null

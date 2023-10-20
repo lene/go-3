@@ -17,9 +17,7 @@ import cats.syntax.all._
 import cats.effect.unsafe.implicits.global
 import com.comcast.ip4s._
 import org.http4s.ember.server._
-import org.http4s.implicits._
 import org.http4s.server.Router
-import scala.concurrent.duration._
 
 object GoServer extends LazyLogging:
 
@@ -36,24 +34,28 @@ object GoServer extends LazyLogging:
     case GET -> Root / "hello" / name =>
       Ok(s"Hello, $name.")
   }
-
   case class Tweet(id: Int, message: String)
-
-  implicit def tweetEncoder: EntityEncoder[IO, Tweet] = ???
-  implicit def tweetsEncoder: EntityEncoder[IO, Seq[Tweet]] = ???
+  import io.circe.generic.auto._
+  import org.http4s.circe._
+  implicit def tweetEncoder: EntityEncoder[IO, Tweet] = jsonEncoderOf[IO, Tweet]
+  implicit def tweetsEncoder: EntityEncoder[IO, Seq[Tweet]] = jsonEncoderOf[IO, Seq[Tweet]]
   def getTweet(tweetId: Int): IO[Tweet] = IO(Tweet(tweetId, "hello world"))
-  def getPopularTweets(): IO[Seq[Tweet]] = ???
-
+  def getPopularTweets(): IO[Seq[Tweet]] = IO(Seq(Tweet(1, "hello world")))
   val tweetService = HttpRoutes.of[IO] {
-    case GET -> Root / "tweets" / "popular" =>
-      getPopularTweets().flatMap(Ok(_))
-    case GET -> Root / "tweets" / IntVar(tweetId) =>
-      getTweet(tweetId).flatMap(Ok(_))
+    case GET -> Root / "tweets" / "popular" => getPopularTweets().flatMap(Ok(_))
+    case GET -> Root / "tweets" / IntVar(tweetId) => getTweet(tweetId).flatMap(Ok(_))
   }
-  val services = tweetService <+> helloWorldService
-  val httpApp = Router("/" -> helloWorldService, "/api" -> services).orNotFound
+
+  implicit def healthEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[IO, Int]
+  def getHealth(): IO[Int] = IO(1)
+
+  val goService = HttpRoutes.of[IO] {
+    case GET -> Root / "health" => getHealth().flatMap(Ok(_))
+  }
+
+  val services = tweetService <+> helloWorldService <+> goService
+  val httpApp = Router("/" -> goService, "/api" -> services).orNotFound
   def server(port: Int) =
-    logger.error(s"starting server on port $port")
     EmberServerBuilder
     .default[IO]
     .withHost(ipv4"0.0.0.0")
