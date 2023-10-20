@@ -1,6 +1,5 @@
 package go3d.server
 
-import com.typesafe.scalalogging.Logger
 import javax.servlet.http.HttpServletResponse
 
 /**
@@ -12,7 +11,6 @@ import javax.servlet.http.HttpServletResponse
       --color w --strategy random
 **/
 class OpenGamesServlet extends BaseServlet:
-  def logger: Logger = Logger[OpenGamesServlet]
 
   def generateOutput(requestInfo: RequestInfo, response: HttpServletResponse): GoResponse =
     try
