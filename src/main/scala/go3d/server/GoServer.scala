@@ -9,6 +9,18 @@ import org.rogach.scallop._
 import java.security.SecureRandom
 import scala.annotation.tailrec
 
+// http4s
+import cats.effect._
+import org.http4s._
+import org.http4s.dsl.io._
+import cats.syntax.all._
+import cats.effect.unsafe.implicits.global
+import com.comcast.ip4s._
+import org.http4s.ember.server._
+import org.http4s.implicits._
+import org.http4s.server.Router
+import scala.concurrent.duration._
+
 object GoServer extends LazyLogging:
 
   private val DefaultPort = 6030 // "Go3D"
@@ -19,6 +31,33 @@ object GoServer extends LazyLogging:
   private val passRoute = "/pass/*"
   private val openGamesRoute = "/openGames"
   private val healthRoute = "/health"
+
+  val helloWorldService = HttpRoutes.of[IO] {
+    case GET -> Root / "hello" / name =>
+      Ok(s"Hello, $name.")
+  }
+
+  case class Tweet(id: Int, message: String)
+
+  implicit def tweetEncoder: EntityEncoder[IO, Tweet] = ???
+  implicit def tweetsEncoder: EntityEncoder[IO, Seq[Tweet]] = ???
+  def getTweet(tweetId: Int): IO[Tweet] = IO(Tweet(tweetId, "hello world"))
+  def getPopularTweets(): IO[Seq[Tweet]] = ???
+
+  val tweetService = HttpRoutes.of[IO] {
+    case GET -> Root / "tweets" / "popular" =>
+      getPopularTweets().flatMap(Ok(_))
+    case GET -> Root / "tweets" / IntVar(tweetId) =>
+      getTweet(tweetId).flatMap(Ok(_))
+  }
+  val services = tweetService <+> helloWorldService
+  val httpApp = Router("/" -> helloWorldService, "/api" -> services).orNotFound
+  val server = EmberServerBuilder
+    .default[IO]
+    .withHost(ipv4"0.0.0.0")
+    .withPort(port"6031")
+    .withHttpApp(httpApp)
+    .build
 
   def createServer(port: Int): Server =
     val server = new Server(port)
@@ -84,8 +123,10 @@ object GoServer extends LazyLogging:
     val conf = Conf(args.toList)
     if conf.benchmark.isSupplied then randomGame(conf.benchmark(), conf.printStepSize())
     else
-        val port = conf.port()
-        val saveDir = conf.saveDir()
-        logger.info(s"Starting server on port $port, saving games to $saveDir")
-        GoServer.loadGames(saveDir)
-        GoServer.run(port)
+      val port = conf.port()
+      val saveDir = conf.saveDir()
+      logger.info(s"Starting server on port $port, saving games to $saveDir")
+      GoServer.loadGames(saveDir)
+      GoServer.run(port)
+
+      val shutdown = server.allocated.unsafeRunSync()._2

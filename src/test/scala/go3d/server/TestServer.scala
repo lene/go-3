@@ -649,6 +649,9 @@ class TestServer:
     Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id), s"${Games.fileIO.get.getArchivedGames} does not contain ${gameData.id}")
     Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
+  @Test def testHttp4sServiceRuns(): Unit =
+    val response = Source.fromURL("http://localhost:6031/hello/world").mkString
+    Assertions.assertEquals("Hello, world.", response)
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null

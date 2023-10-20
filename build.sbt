@@ -3,6 +3,7 @@ import sbt.Keys.libraryDependencies
 val scala3Version = "3.3.1"
 val circeVersion = "0.14.1"
 val libgdxVersion = "1.12.0"
+val http4sVersion = "0.23.23"
 
 lazy val root = project
   .in(file("."))
@@ -32,6 +33,11 @@ lazy val root = project
     libraryDependencies ++= Seq(
         "org.eclipse.jetty" % "jetty-servlet" % "9.4.51.v20230217",
         "org.eclipse.jetty" % "jetty-server" % "9.4.51.v20230217",
+    ),
+    libraryDependencies ++= Seq(
+        "org.http4s" %% "http4s-ember-client" % http4sVersion,
+        "org.http4s" %% "http4s-ember-server" % http4sVersion,
+        "org.http4s" %% "http4s-dsl"          % http4sVersion,
     ),
     // circe
     libraryDependencies ++= Seq(
