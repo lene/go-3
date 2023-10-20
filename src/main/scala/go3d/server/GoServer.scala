@@ -52,17 +52,19 @@ object GoServer extends LazyLogging:
   }
   val services = tweetService <+> helloWorldService
   val httpApp = Router("/" -> helloWorldService, "/api" -> services).orNotFound
-  val server = EmberServerBuilder
+  def server(port: Int) =
+    logger.error(s"starting server on port $port")
+    EmberServerBuilder
     .default[IO]
     .withHost(ipv4"0.0.0.0")
-    .withPort(port"6031")
+    .withPort(Port.fromInt(port).getOrElse(throw new Exception(s"invalid port $port")))
     .withHttpApp(httpApp)
     .build
 
   def createServer(port: Int): Server =
-    val server = new Server(port)
+    val jetty = new Server(port)
     val handler = new ServletHandler()
-    server.setHandler(handler)
+    jetty.setHandler(handler)
     handler.addServletWithMapping(classOf[NewGameServlet], newRoute)
     handler.addServletWithMapping(classOf[RegisterPlayerServlet], registerRoute)
     handler.addServletWithMapping(classOf[StatusServlet], statusRoute)
@@ -70,7 +72,7 @@ object GoServer extends LazyLogging:
     handler.addServletWithMapping(classOf[PassServlet], passRoute)
     handler.addServletWithMapping(classOf[OpenGamesServlet], openGamesRoute)
     handler.addServletWithMapping(classOf[HealthServlet], healthRoute)
-    server
+    jetty
 
   def serverPort(server: Server): Int =
     server.getConnectors()(0).asInstanceOf[NetworkConnector].getLocalPort
@@ -127,6 +129,6 @@ object GoServer extends LazyLogging:
       val saveDir = conf.saveDir()
       logger.info(s"Starting server on port $port, saving games to $saveDir")
       GoServer.loadGames(saveDir)
+      server(port+1).allocated.unsafeRunSync()
       GoServer.run(port)
 
-      val shutdown = server.allocated.unsafeRunSync()._2
