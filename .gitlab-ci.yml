@@ -176,9 +176,10 @@ BuildDockerImage:
     - TAG=${VERSION}-${CI_COMMIT_SHORT_SHA}
     - docker build --build-arg version=${VERSION} -t ${DOCKER_IMAGE}:${TAG} .
     - test -n "$CI_COMMIT_TAG" && docker tag ${DOCKER_IMAGE}:${TAG} ${DOCKER_IMAGE}:$CI_COMMIT_TAG
+    - docker tag ${DOCKER_IMAGE}:${TAG} ${DOCKER_IMAGE}:${VERSION}
     - docker tag ${DOCKER_IMAGE}:${TAG} ${DOCKER_IMAGE}:latest
     - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} registry.gitlab.com
-    - docker push ${DOCKER_IMAGE}
+    - docker push --all-tags ${DOCKER_IMAGE}
 
 container_scanning:
   stage: build
