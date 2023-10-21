@@ -21,3 +21,9 @@ class OpenGamesServlet extends BaseServlet:
       case _ => ErrorResponse("unknown error")
 
   def maxRequestLength: Int = 0
+
+import cats.effect.IO
+object OpenGamesHandler:
+  def handle(): GoResponse =
+    Thread.sleep(100) // very basic DoS protection
+    GameListResponse(Players.openGames())

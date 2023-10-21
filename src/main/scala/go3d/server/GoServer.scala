@@ -30,32 +30,34 @@ object GoServer extends LazyLogging:
   private val openGamesRoute = "/openGames"
   private val healthRoute = "/health"
 
-  val helloWorldService = HttpRoutes.of[IO] {
-    case GET -> Root / "hello" / name =>
-      Ok(s"Hello, $name.")
-  }
   case class Tweet(id: Int, message: String)
   import io.circe.generic.auto._
   import org.http4s.circe._
   implicit def tweetEncoder: EntityEncoder[IO, Tweet] = jsonEncoderOf[IO, Tweet]
   implicit def tweetsEncoder: EntityEncoder[IO, Seq[Tweet]] = jsonEncoderOf[IO, Seq[Tweet]]
-  def getTweet(tweetId: Int): IO[Tweet] = IO(Tweet(tweetId, "hello world"))
-  def getPopularTweets(): IO[Seq[Tweet]] = IO(Seq(Tweet(1, "hello world")))
-  val tweetService = HttpRoutes.of[IO] {
-    case GET -> Root / "tweets" / "popular" => getPopularTweets().flatMap(Ok(_))
+  private def getTweet(tweetId: Int): IO[Tweet] = IO(Tweet(tweetId, "hello world"))
+  private def getPopularTweets: IO[Seq[Tweet]] = IO(Seq(Tweet(1, "hello world")))
+  private val tweetService = HttpRoutes.of[IO] {
+    case GET -> Root / "tweets" / "popular" => getPopularTweets.flatMap(Ok(_))
     case GET -> Root / "tweets" / IntVar(tweetId) => getTweet(tweetId).flatMap(Ok(_))
   }
 
   implicit def healthEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[IO, Int]
-  def getHealth(): IO[Int] = IO(1)
-
-  val goService = HttpRoutes.of[IO] {
-    case GET -> Root / "health" => getHealth().flatMap(Ok(_))
+  private def getHealth: Int = 1
+  import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
+  private val goService = HttpRoutes.of[IO] {
+    case GET -> Root / "health" =>
+      IO(getHealth).
+        flatMap(Ok(_))
+    case GET -> Root / "openGames" =>
+      IO(OpenGamesHandler.handle()).
+        flatMap(Ok(_)).
+        orElse(InternalServerError("unknown error"))
   }
 
-  val services = tweetService <+> helloWorldService <+> goService
-  val httpApp = Router("/" -> goService, "/api" -> services).orNotFound
-  def server(port: Int) =
+  private val services = tweetService <+> goService
+  private val httpApp = Router("/" -> goService, "/api" -> services).orNotFound
+  def server(port: Int): Resource[IO, org.http4s.server.Server] =
     EmberServerBuilder
     .default[IO]
     .withHost(ipv4"0.0.0.0")
