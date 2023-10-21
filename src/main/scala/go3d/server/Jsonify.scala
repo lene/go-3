@@ -44,9 +44,7 @@ implicit val decodeMove: Decoder[Move] =
     col <- c.downField("color").as[Color]
   yield new Move(pos, col)
 
-implicit val encodeMovePass: Encoder[Move | Pass] = new Encoder[Move | Pass] {
-  final def apply(move: Move | Pass): Json = encodeHasColor(move)
-}
+implicit val encodeMovePass: Encoder[Move | Pass] = (move: Move | Pass) => encodeHasColor(move)
 
 implicit val decodeMovePass: Decoder[Move | Pass] =
   (c: HCursor) =>
@@ -58,12 +56,11 @@ implicit val decodeMovePass: Decoder[Move | Pass] =
       yield new Move(pos, col)
     else
       for
-        pass <- c.downField("pass").as[Boolean]
+        _ <- c.downField("pass").as[Boolean]
         col <- c.downField("color").as[Color]
       yield new Pass(col)
 
 implicit val encodeHasColor: Encoder[HasColor] =
-  (move: HasColor) => move match
     case m: Move => encodeMove(m)
     case p: Pass => Json.obj(
       ("pass", Json.fromBoolean(true)),
@@ -80,7 +77,7 @@ implicit val decodeHasColor: Decoder[HasColor] =
       yield new Move(pos, col)
     else
       for
-        pass <- c.downField("pass").as[Boolean]
+        _ <- c.downField("pass").as[Boolean]
         col <- c.downField("color").as[Color]
       yield new Pass(col)
 
@@ -114,7 +111,7 @@ implicit val encodeGoban: Encoder[Goban] =
 
 implicit val decodeGoban: Decoder[Goban] =
   (c: HCursor) => for
-    size <- c.downField("size").as[Int]
+    _ <- c.downField("size").as[Int]
     stones <- c.downField("stones").as[Array[String]]
   yield gobanFromStrings(stones)
 
@@ -238,12 +235,12 @@ implicit val decodeOpenGamesResponse: Decoder[GameListResponse] =
   yield GameListResponse(ids)
 
 implicit val encodeGoResponse: Encoder[GoResponse] =
-  (response: GoResponse) => response match
     case r: StatusResponse => encodeStatusResponse(r)
     case r: PlayerRegisteredResponse => encodePlayerRegisteredResponse(r)
     case r: ErrorResponse => encodeErrorResponse(r)
     case r: GameCreatedResponse => encodeGameCreatedResponse(r)
     case r: GameListResponse => encodeOpenGamesResponse(r)
+
 
 //def getResponse[T<:GoResponse](url: String)(implicit cType:ClassTag[T]): T =
 //  val json = Source.fromURL(url).mkString

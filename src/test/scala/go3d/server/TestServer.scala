@@ -57,6 +57,7 @@ case class GameData(id: String, token: Map[Color, String]):
 
 object GameData:
   val ServerURL = s"http://localhost:$TestPort"
+  val Http4sServerURL = s"http://localhost:${TestPort+1}"
   def create(size: Int): GameCreatedResponse = getGCR(s"$ServerURL/new/$size")
   def register(id: String, color: Color): PlayerRegisteredResponse =
     getPRR(s"$ServerURL/register/$id/$color")
@@ -662,16 +663,54 @@ class TestServer:
     Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
   @Test def testHttp4sServiceRunsForSubpath(): Unit =
-    val response = Source.fromURL(s"http://localhost:${TestPort+1}/api/hello/world").mkString
-    Assertions.assertEquals("Hello, world.", response)
+    val response = Source.fromURL(s"http://localhost:${TestPort+1}/api/tweets/1").mkString
+    Assertions.assertEquals("""{"id":1,"message":"hello world"}""", response)
 
   @Test def testHttp4sServiceRunsForOtherService(): Unit =
     val response = Source.fromURL(s"http://localhost:${TestPort+1}/api/tweets/popular").mkString
     Assertions.assertEquals("""[{"id":1,"message":"hello world"}]""", response)
 
-  @Test def testHealth2(): Unit =
+  @Test def testHttp4sHealth(): Unit =
     val response = requests.get(s"http://localhost:${TestPort+1}/health")
     Assertions.assertEquals("1", response.text())
+
+  @Test def testGetHttp4sOpenGamesReturnsResponse(): Unit =
+    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
+    Assertions.assertTrue(response.isInstanceOf[GameListResponse])
+
+  @Test def testGetHttp4sOpenGamesReturns404IfRouteHasTrailingSlash(): Unit =
+    Assertions.assertThrows(
+      classOf[java.io.FileNotFoundException],
+      () => getOGR(s"${GameData.Http4sServerURL}/openGames/")
+    )
+
+  @Test def testGetHttp4sOpenGamesDoesNotReturnGameWithNoPlayer(): Unit =
+    val newGameResponse = GameData.create(3)
+    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
+    Assertions.assertFalse(response.ids.isEmpty)
+    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetHttp4sOpenGamesReturnsOneRegisteredGame(): Unit =
+    val newGameResponse = GameData.create(3)
+    GameData.register(newGameResponse.id, Black)
+    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
+    Assertions.assertFalse(response.ids.isEmpty)
+    Assertions.assertTrue(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetHttp4sOpenGamesDoesNotReturnGameWithNoBlackPlayer(): Unit =
+    val newGameResponse = GameData.create(3)
+    GameData.register(newGameResponse.id, White)
+    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
+    Assertions.assertFalse(response.ids.isEmpty)
+    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
+
+  @Test def testGetHttp4sOpenGamesDoesNotReturnGameWithTwoPlayers(): Unit =
+    val newGameResponse = GameData.create(3)
+    GameData.register(newGameResponse.id, Black)
+    GameData.register(newGameResponse.id, White)
+    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
+    Assertions.assertFalse(response.ids.isEmpty)
+    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
@@ -689,13 +728,13 @@ def getPRR(url: String): PlayerRegisteredResponse =
   val json = getJson(url).mkString
   val result = decode[PlayerRegisteredResponse](json)
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  return result.getOrElse(null)
+  result.getOrElse(null)
 
 def getGCR(url: String): GameCreatedResponse =
   val json = getJson(url).mkString
   val result = decode[GameCreatedResponse](json)
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  return result.getOrElse(null)
+  result.getOrElse(null)
 
 def getSR(url: String, header: Map[String, String]): StatusResponse =
   val response = requests.get(url, headers = header)
@@ -708,7 +747,7 @@ def getOGR(url: String): GameListResponse =
   val json = getJson(url).mkString
   val result = decode[GameListResponse](json)
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  return result.getOrElse(null)
+  result.getOrElse(null)
 
 def setUpGame(size: Int): GameData =
   val newGameResponse = GameData.create(size)
@@ -723,7 +762,7 @@ def gameWithBlackAt111(size: Int): StatusResponse =
 def assertFailsWithStatus(url: String, expectedStatus: Int,
                           headers: Map[String, String] = Map()): Unit =
   try
-    val response = requests.get(url, headers = headers)
+    requests.get(url, headers = headers)
     Assertions.fail("request unexpectedly succeeded")
   catch
     case e: RequestFailedException => Assertions.assertEquals(
