@@ -51,13 +51,13 @@ Set `$SAVE_DIR` to the folder to save games in and `$PORT` to the port the serve
 ### From docker image
 ```
 $ docker run [--net=host] [--env SAVE_DIR=$SAVE_DIR] [--env PORT=$PORT] \
-    -t registry.gitlab.com/lilacashes/go-3/server:latest
+    -t registry.gitlab.com/go-3/go-3/server:latest
 ```
 Depending on your Docker configuration, the `--net=host` may be necessary or not.
 
 ### From a local install
 ``` 
-$ runner --server [--port $PORT] [--save-dir $SAVE_DIR]
+$ go-server [--port $PORT] [--save-dir $SAVE_DIR]
 ```
 
 ## Client
@@ -164,18 +164,24 @@ $ bot-client --server $SERVER --port 6030 \
             [--size $SIZE --color b|w ] | \ 
             [--game-id $GAME_ID --color b|w] |\
             [--game-id $GAME_ID --token $TOKEN] 
-            --strategy $STRATEGY 
+            --strategy $STRATEGY [--max-thinking-time-ms $MILLISECONDS]
 ```
 where `$STRATEGY` currently can be any, or any combination, of:
 * `random`: set stones at random (an awful strategy!)
 * `closestToCenter`: set as close to the center as possible
 * `onStarPoints` : try to set on the star points first. If all are occupied, try the next strategy.
 * `closestToStarPoints`: try to set as close to star points as possible
-* `maximizeOwnLiberties`: have as many liberties as possible with every move
-* `minimizeOpponentLiberties`: take away the opponent's liberties
+* `maximizeOwnLiberties`: have as many liberties (counted over all stones) as possible with every 
+  move
+* `minimizeOpponentLiberties`: take away the opponent's liberties (counted over all opponent's 
+  stones)
 * `maximizeDistance`: set stones as far away as possible from others
 * `prioritiseCapture`: try to capture opponent stones, setting a stone next to an opponent's stone 
-   with the fewest liberties
+  with the fewest liberties
+
+and `$MILLISECONDS` is the approximate(!) maximum time in milliseconds the bot will take to
+make a move. The time is limited by randomly choosing a selection from all possible moves, and 
+executing the strategy on those. The default is not to limit the thinking time.
 
 If you combine multiple strategies (by giving a comma separated list as input to `--strategy`), the
 strategies are evaluated one after the other, the next strategy executed on the moves that are 
