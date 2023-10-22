@@ -11,12 +11,28 @@ object RequestInfo:
   def apply(request: HttpServletRequest, maxLength: Int): RequestInfo =
     val headerNames = Collections.list(request.getHeaderNames).toArray
     val headers = for (name <- headerNames) yield (name.toString, request.getHeader(name.toString))
-    val queryString = request.getQueryString
-    val (pathInfo, debug) = parsePathInfo(request.getPathInfo)
+    fromRaw(
+      headers.toList.toMap, request.getQueryString,
+      request.getPathInfo, maxLength
+    )
+
+  import cats.effect.IO
+  import org.http4s.Request
+  def apply(request: Request[IO], maxLength: Int=100): RequestInfo =
+    val headers = request.headers.headers.map(h => (h.name.toString, h.value)).toMap
+    fromRaw(
+      headers, request.uri.query.toString,
+      request.pathInfo.toString.split("/").tail.tail.mkString("/"), maxLength
+    )
+
+  private def fromRaw(
+    headers: Map[String, String], queryString: String, rawPathInfo: String, maxLength: Int
+  ): RequestInfo =
+    val (pathInfo, debug) = parsePathInfo(rawPathInfo)
     if pathInfo != null && pathInfo.length > maxLength
-      then throw RequestTooLong(maxLength, pathInfo.length)
+    then throw RequestTooLong(maxLength, pathInfo.length)
     RequestInfo(
-      headers.toList.toMap,
+      headers,
       if (queryString != null && queryString.nonEmpty) queryString else "/",
       if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/",
       debug
