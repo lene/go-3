@@ -1,9 +1,10 @@
 package go3d.server
 
 import go3d.GoException
+import io.circe.syntax.EncoderOps
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest, HttpServletResponse}
-import io.circe.syntax.EncoderOps
+import scala.util.{Failure, Success, Try}
 
 abstract class BaseServlet extends HttpServlet with ServletOutput:
   override protected def doGet(request: HttpServletRequest, response: HttpServletResponse): Unit =
@@ -30,3 +31,25 @@ abstract class BaseServlet extends HttpServlet with ServletOutput:
 def error(response: HttpServletResponse, e: GoException, statusCode: Int): Unit =
   response.setStatus(statusCode)
   response.getWriter.println(s"${e.getClass.getSimpleName}: $e")
+
+import cats.effect.IO
+import org.http4s.{Response, Status}
+import org.http4s.dsl.io._
+import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
+import org.http4s.headers.Authorization
+trait HandleTrait:
+  def handle: GoResponse
+abstract class BaseHandler extends HandleTrait:
+  def response: IO[Response[IO]] =
+    Try(handle) match
+      case Success(body) => Ok(body)
+      case Failure(e: go3d.BadBoardSize) => BadRequest(e.getMessage)
+      case Failure(e: go3d.BadColor) => BadRequest(e.getMessage)
+      case Failure(e: DuplicateColor) => BadRequest(e.getMessage)
+      case Failure(e: NotReadyToSet) => BadRequest(e.getMessage)
+      case Failure(e: NonexistentGame) => NotFound(e.getMessage)
+      case Failure(e: AuthorizationError) => IO(Response[IO](status = Status.Unauthorized))
+      case Failure(e: ServerException) => InternalServerError(e.getMessage)
+      case Failure(e: go3d.IllegalMove) => BadRequest(e.getMessage)
+      case Failure(e: go3d.GameOver) => Gone(e.getMessage)
+      case Failure(e) => InternalServerError(e.getMessage)

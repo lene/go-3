@@ -46,17 +46,12 @@ object GoServer extends LazyLogging:
   private def getHealth: Int = 1
   import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
   private val goService = HttpRoutes.of[IO] {
-    case GET -> Root / "health" =>
-      IO(getHealth).
-        flatMap(Ok(_))
-    case GET -> Root / "openGames" =>
-      IO(OpenGamesHandler.handle()).
-        flatMap(Ok(_)).
-        orElse(InternalServerError("unknown error"))
+    case GET -> Root / "health" => IO(getHealth).flatMap(Ok(_))
+    case GET -> Root / "openGames" => OpenGamesHandler().response
+    case GET -> Root / "new" / IntVar(boardSize) => NewGameHandler(boardSize).response
   }
 
-  private val services = tweetService <+> goService
-  private val httpApp = Router("/" -> goService, "/api" -> services).orNotFound
+  private val httpApp = Router("/" -> goService).orNotFound
   def server(port: Int): Resource[IO, org.http4s.server.Server] =
     EmberServerBuilder
     .default[IO]
@@ -78,12 +73,12 @@ object GoServer extends LazyLogging:
     handler.addServletWithMapping(classOf[HealthServlet], healthRoute)
     jetty
 
-  def serverPort(server: Server): Int =
+  private def serverPort(server: Server): Int =
     server.getConnectors()(0).asInstanceOf[NetworkConnector].getLocalPort
 
-  def loadGames(baseDir: String): Unit = Games.loadGames(baseDir)
+  private def loadGames(baseDir: String): Unit = Games.loadGames(baseDir)
 
-  def run(port: Int = DefaultPort): Unit =
+  private def run(port: Int = DefaultPort): Unit =
     val goServer = createServer(port)
     goServer.start()
     logger.info(s"Server started on ${serverPort(goServer)} with routes:")
@@ -97,10 +92,14 @@ object GoServer extends LazyLogging:
     val DefaultSaveDir = "saves"
 
     class Conf(args: Seq[String]) extends ScallopConf(args):
-      val benchmark = opt[Int](descr = "Benchmark game of given size")
-      val printStepSize = opt[Int](default = Some(100), descr = "Print information every N steps")
-      val port = opt[Int](default = Some(DefaultPort), descr = "Port to listen on")
-      val saveDir = opt[String](
+      val benchmark: ScallopOption[Int] = opt[Int](descr = "Benchmark game of given size")
+      val printStepSize: ScallopOption[Int] = opt[Int](
+        default = Some(100), descr = "Print information every N steps"
+      )
+      val port: ScallopOption[Int] = opt[Int](
+        default = Some(DefaultPort), descr = "Port to listen on"
+      )
+      val saveDir: ScallopOption[String] = opt[String](
         default = Some(DefaultSaveDir), descr = "Directory to save games to"
       )
       conflicts(benchmark, List(port, saveDir))

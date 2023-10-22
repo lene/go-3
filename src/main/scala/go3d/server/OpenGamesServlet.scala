@@ -23,7 +23,9 @@ class OpenGamesServlet extends BaseServlet:
   def maxRequestLength: Int = 0
 
 import cats.effect.IO
-object OpenGamesHandler:
-  def handle(): GoResponse =
+import org.http4s.Response
+import org.http4s.dsl.io._
+class OpenGamesHandler extends BaseHandler:
+  def handle: GoResponse =
     Thread.sleep(100) // very basic DoS protection
     GameListResponse(Players.openGames())

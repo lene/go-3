@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServletResponse
 import scala.io.Source
 import scala.util.Random
 
+import org.http4s.dsl
+
 val TestPort = 64555
 
 case class GameData(id: String, token: Map[Color, String]):
@@ -662,16 +664,8 @@ class TestServer:
     Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id), s"${Games.fileIO.get.getArchivedGames} does not contain ${gameData.id}")
     Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
-  @Test def testHttp4sServiceRunsForSubpath(): Unit =
-    val response = Source.fromURL(s"http://localhost:${TestPort+1}/api/tweets/1").mkString
-    Assertions.assertEquals("""{"id":1,"message":"hello world"}""", response)
-
-  @Test def testHttp4sServiceRunsForOtherService(): Unit =
-    val response = Source.fromURL(s"http://localhost:${TestPort+1}/api/tweets/popular").mkString
-    Assertions.assertEquals("""[{"id":1,"message":"hello world"}]""", response)
-
   @Test def testHttp4sHealth(): Unit =
-    val response = requests.get(s"http://localhost:${TestPort+1}/health")
+    val response = requests.get(s"${GameData.Http4sServerURL}/health")
     Assertions.assertEquals("1", response.text())
 
   @Test def testGetHttp4sOpenGamesReturnsResponse(): Unit =
@@ -711,6 +705,29 @@ class TestServer:
     val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
     Assertions.assertFalse(response.ids.isEmpty)
     Assertions.assertFalse(response.ids.contains(newGameResponse.id))
+
+  @Test def testHttp4sNewGame(): Unit =
+    val response = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
+    Assertions.assertNotNull(response.id)
+    Assertions.assertNotEquals("", response.id)
+    Assertions.assertEquals(TestSize, response.size)
+
+  @Test def testHttp4sNewGameFailsWithBadSize(): Unit =
+    Assertions.assertThrows(
+      classOf[IOException], () => getJson(s"${GameData.Http4sServerURL}/new/1")
+    )
+    Assertions.assertThrows(
+      classOf[IOException], () => getJson(s"${GameData.Http4sServerURL}/new/4")
+    )
+    Assertions.assertThrows(
+      classOf[IOException], () => getJson(s"${GameData.Http4sServerURL}/new/27")
+    )
+
+  @Test def testHttp4sNewGameWithBadSizeSetsStatus400(): Unit =
+    assertFailsWithStatus(
+      s"${GameData.Http4sServerURL}/new/27",
+      dsl.io.BadRequest.code
+    )
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
