@@ -19,3 +19,9 @@ class NewGameServlet extends BaseServlet with LazyLogging:
     val parts = pathInfo.stripPrefix("/").split('/')
     if parts.isEmpty then throw IllegalArgumentException("Missing board size")
     parts(0).toInt
+
+class NewGameHandler(val boardSize: Int) extends BaseHandler with LazyLogging:
+  def handle: GoResponse =
+    val gameId = Games.register(boardSize)
+    logger.info(s"New game $gameId, size $boardSize".replaceAll("[\r\n]", " "))
+    GameCreatedResponse(gameId, boardSize)
