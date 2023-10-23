@@ -6,11 +6,10 @@ import com.typesafe.scalalogging.LazyLogging
 import org.rogach.scallop._
 import org.rogach.scallop.exceptions.RequiredOptionNotFound
 import requests.RequestFailedException
+import org.http4s.Status
 
 import java.security.SecureRandom
 import java.util.NoSuchElementException
-import javax.servlet.http.HttpServletResponse
-import scala.annotation.tailrec
 
 class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val size = opt[Int](required = false)
@@ -70,7 +69,7 @@ object BotClient extends Client with LazyLogging:
 
   private def checkFailedRequest(e: RequestFailedException): Unit =
     logger.warn(e.message)
-    if e.response.statusCode == HttpServletResponse.SC_GONE then exit(0)
+    if e.response.statusCode == Status.Gone.code then exit(0)
     mainLoop(Array())
 
 

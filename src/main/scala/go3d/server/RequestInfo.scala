@@ -2,22 +2,13 @@ package go3d.server
 
 import go3d.GameOver
 
-import java.util.Collections
-import javax.servlet.http.HttpServletRequest
+import cats.effect.IO
+import org.http4s.Request
 
 val NullRequestInfo = RequestInfo(Map(), "", "", false)
 
 object RequestInfo:
-  def apply(request: HttpServletRequest, maxLength: Int): RequestInfo =
-    val headerNames = Collections.list(request.getHeaderNames).toArray
-    val headers = for (name <- headerNames) yield (name.toString, request.getHeader(name.toString))
-    fromRaw(
-      headers.toList.toMap, request.getQueryString,
-      request.getPathInfo, maxLength
-    )
 
-  import cats.effect.IO
-  import org.http4s.Request
   def apply(request: Request[IO], maxLength: Int=100): RequestInfo =
     val headers = request.headers.headers.map(h => (h.name.toString, h.value)).toMap
     fromRaw(

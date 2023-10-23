@@ -29,11 +29,6 @@ lazy val root = project
     libraryDependencies += "org.rogach" %% "scallop" % "5.0.0",
     // requests
     libraryDependencies += "com.lihaoyi" %% "requests" % "0.8.0",
-    // newer jetty versions require both code changes and Java >= 11
-    libraryDependencies ++= Seq(
-        "org.eclipse.jetty" % "jetty-servlet" % "9.4.51.v20230217",
-        "org.eclipse.jetty" % "jetty-server" % "9.4.51.v20230217",
-    ),
     libraryDependencies ++= Seq(
         "org.http4s" %% "http4s-ember-client" % http4sVersion,
         "org.http4s" %% "http4s-ember-server" % http4sVersion,
