@@ -2,9 +2,6 @@ package go3d.server
 
 import go3d.{Color, Game, Position}
 
-import java.util.Collections
-import javax.servlet.http.HttpServletRequest
-
 class GoResponse
 case class ErrorResponse(err: String) extends GoResponse
 case class GameCreatedResponse(id: String, size: Int) extends GoResponse

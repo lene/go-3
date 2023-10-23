@@ -1,13 +1,10 @@
 package go3d.server
 
 import go3d.{Black, Game, Move}
-import org.eclipse.jetty.server.{NetworkConnector, Server}
-import org.eclipse.jetty.servlet.ServletHandler
 import com.typesafe.scalalogging.LazyLogging
 import org.rogach.scallop._
 
 import java.security.SecureRandom
-import scala.annotation.tailrec
 
 // http4s
 import cats.effect._
@@ -22,31 +19,24 @@ import org.http4s.server.Router
 object GoServer extends LazyLogging:
 
   private val DefaultPort = 6030 // "Go3D"
-  private val newRoute = "/new/*"
-  private val registerRoute = "/register/*"
-  private val statusRoute = "/status/*"
-  private val setRoute = "/set/*"
-  private val passRoute = "/pass/*"
-  private val openGamesRoute = "/openGames"
-  private val healthRoute = "/health"
 
   import org.http4s.circe.jsonEncoderOf
   implicit def healthEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[IO, Int]
   private def getHealth: Int = 1
 
   private val goService = HttpRoutes.of[IO] {
-    case GET -> Root / "new" / IntVar(boardSize) => NewGameHandler(boardSize).response
+    case GET -> Root / "new" / IntVar(boardSize) => StartNewGame(boardSize).response
     case request @ GET -> Root / "register" / gameId / color =>
-      RegisterPlayerHandler(gameId, color(0), request).response
-    case request @ GET -> Root / "status" / gameId => StatusHandler(gameId, request).response
-    case request @ GET -> Root / "status" / gameId / "d" => StatusHandler(gameId, request).response
+      RegisterPlayer(gameId, color(0), request).response
+    case request @ GET -> Root / "status" / gameId => GetStatus(gameId, request).response
+    case request @ GET -> Root / "status" / gameId / "d" => GetStatus(gameId, request).response
     case request @ GET -> Root / "set" / gameId / IntVar(x) / IntVar(y) / IntVar(z) =>
-      SetHandler(gameId, request, x, y, z).response
+      DoSet(gameId, request, x, y, z).response
     case request @ GET -> Root / "set" / gameId / IntVar(x) / IntVar(y) / IntVar(z) / "d" =>
-      SetHandler(gameId, request, x, y, z).response
-    case request @ GET -> Root / "pass" / gameId => PassHandler(gameId, request).response
-    case request @ GET -> Root / "pass" / gameId / "d" => PassHandler(gameId, request).response
-    case GET -> Root / "openGames" => OpenGamesHandler().response
+      DoSet(gameId, request, x, y, z).response
+    case request @ GET -> Root / "pass" / gameId => DoPass(gameId, request).response
+    case request @ GET -> Root / "pass" / gameId / "d" => DoPass(gameId, request).response
+    case GET -> Root / "openGames" => ListOpenGames().response
     case GET -> Root / "health" => IO(getHealth).flatMap(Ok(_))
   }
 
@@ -59,32 +49,7 @@ object GoServer extends LazyLogging:
     .withHttpApp(httpApp)
     .build
 
-  def createServer(port: Int): Server =
-    val jetty = new Server(port)
-    val handler = new ServletHandler()
-    jetty.setHandler(handler)
-    handler.addServletWithMapping(classOf[NewGameServlet], newRoute)
-    handler.addServletWithMapping(classOf[RegisterPlayerServlet], registerRoute)
-    handler.addServletWithMapping(classOf[StatusServlet], statusRoute)
-    handler.addServletWithMapping(classOf[SetServlet], setRoute)
-    handler.addServletWithMapping(classOf[PassServlet], passRoute)
-    handler.addServletWithMapping(classOf[OpenGamesServlet], openGamesRoute)
-    handler.addServletWithMapping(classOf[HealthServlet], healthRoute)
-    jetty
-
-  private def serverPort(server: Server): Int =
-    server.getConnectors()(0).asInstanceOf[NetworkConnector].getLocalPort
-
   private def loadGames(baseDir: String): Unit = Games.loadGames(baseDir)
-
-  private def run(port: Int = DefaultPort): Unit =
-    val goServer = createServer(port)
-    goServer.start()
-    logger.info(s"Server started on ${serverPort(goServer)} with routes:")
-    logger.info(
-      s"$newRoute, $registerRoute, $statusRoute, $setRoute, $passRoute, $openGamesRoute, $healthRoute"
-    )
-    goServer.join()
 
   def main(args: Array[String]): Unit =
 
@@ -131,6 +96,8 @@ object GoServer extends LazyLogging:
       val saveDir = conf.saveDir()
       logger.info(s"Starting server on port $port, saving games to $saveDir")
       GoServer.loadGames(saveDir)
-      server(port+1).allocated.unsafeRunSync()
-      GoServer.run(port)
-
+      val shutdown = server(port).allocated.unsafeRunSync()._2
+//      server(port).use(_ => IO.never).as(ExitCode.Success)
+      while true do
+        Thread.sleep(1000)
+        if false then shutdown.unsafeRunSync()

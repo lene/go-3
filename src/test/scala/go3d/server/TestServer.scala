@@ -2,17 +2,14 @@ package go3d.server
 
 import go3d.*
 import io.circe.parser.*
-import org.eclipse.jetty.server.Server
-import org.junit.jupiter.api.{AfterAll, AfterEach, Assertions, BeforeAll, BeforeEach, Test}
+import org.junit.jupiter.api.{AfterAll, Assertions, BeforeAll, BeforeEach, Test}
 import requests.{RequestFailedException, *}
+import org.http4s.Status
 
 import java.io.IOException
 import java.nio.file.Files
-import javax.servlet.http.HttpServletResponse
 import scala.io.Source
 import scala.util.Random
-
-import org.http4s.dsl
 
 val TestPort = 64555
 
@@ -110,8 +107,7 @@ class TestServer:
 
   @Test def testNewGameWithBadSizeSetsStatus400(): Unit =
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/new/27",
-      HttpServletResponse.SC_BAD_REQUEST
+      s"http://localhost:$TestPort/new/27", Status.BadRequest.code
     )
 
   @Test def testRegisterOnePlayer(): Unit =
@@ -123,8 +119,7 @@ class TestServer:
   @Test def testRegisterBadColorSetsStatus400(): Unit =
     val newGameResponse = GameData.create(TestSize)
     assertFailsWithStatus(
-      s"${GameData.ServerURL}/register/${newGameResponse.id}/X",
-      HttpServletResponse.SC_BAD_REQUEST
+      s"${GameData.ServerURL}/register/${newGameResponse.id}/X", Status.BadRequest.code
     )
 
   @Test def testRegisterTwoPlayers(): Unit =
@@ -247,7 +242,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/set/${gameData.id}/1/1/1",
-      HttpServletResponse.SC_BAD_REQUEST,
+      Status.BadRequest.code,
       Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
@@ -260,7 +255,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
       s"http://localhost:$TestPort/pass/${gameData.id}",
-      HttpServletResponse.SC_BAD_REQUEST,
+      Status.BadRequest.code,
       Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
@@ -585,7 +580,7 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 2), Black))
     catch
       case e: RequestFailedException =>
-        Assertions.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
+        Assertions.assertEquals(Status.BadRequest.code, e.response.statusCode)
         Assertions.assertTrue(e.response.text().contains(classOf[NotReadyToSet].getSimpleName), e.response.text())
 
   @Test def testSettingToSuicideErrorMessageContainsWhy(): Unit =
@@ -601,7 +596,7 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 1), White))
     catch
       case e: RequestFailedException =>
-        Assertions.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
+        Assertions.assertEquals(Status.BadRequest.code, e.response.statusCode)
         Assertions.assertTrue(e.response.text().contains(classOf[Suicide].getSimpleName), e.response.text())
 
   @Test def testSettingOutsideBoardErrorMessageContainsWhy(): Unit =
@@ -610,7 +605,7 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 4), Black))
     catch
       case e: RequestFailedException =>
-        Assertions.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
+        Assertions.assertEquals(Status.BadRequest.code, e.response.statusCode)
         Assertions.assertTrue(e.response.text().contains(classOf[OutsideBoard].getSimpleName))
 
   @Test def testSettingAfterGameOverErrorMessageContainsWhy(): Unit =
@@ -621,7 +616,7 @@ class TestServer:
       gameData.set(Move(Position(1, 1, 1), Black))
     catch
       case e: RequestFailedException =>
-        Assertions.assertEquals(HttpServletResponse.SC_GONE, e.response.statusCode)
+        Assertions.assertEquals(Status.Gone.code, e.response.statusCode)
         Assertions.assertTrue(e.response.text().contains(classOf[GameOver].getSimpleName))
 
   @Test def testAddedGameIsNotWrittenBeforeFirstMove(): Unit =
