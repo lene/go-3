@@ -54,10 +54,9 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
 
   def getPlayer: Option[Player] =
     val players = Players.get(getGameId)
-    players.flatMap({
-      try _.find(_._2.token == getToken).map(pair => pair._2)
-      catch case _: AuthorizationError => _ => None
-    })
+    try players.flatMap(_.find(_._2.token == getToken).map(pair => pair._2))
+    catch case e: AuthorizationError => None
+
   def mustGetPlayer: Player =
     val players = Players.get(getGameId)
     if players.isEmpty then throw GameOver(Games(getGameId))

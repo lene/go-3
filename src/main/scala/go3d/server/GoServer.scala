@@ -33,13 +33,19 @@ object GoServer extends LazyLogging:
   import org.http4s.circe.jsonEncoderOf
   implicit def healthEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[IO, Int]
   private def getHealth: Int = 1
-  import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
+
   private val goService = HttpRoutes.of[IO] {
     case GET -> Root / "new" / IntVar(boardSize) => NewGameHandler(boardSize).response
     case request @ GET -> Root / "register" / gameId / color =>
       RegisterPlayerHandler(gameId, color(0), request).response
-    case request @ GET -> Root / "status" / gameId =>
-      StatusHandler(gameId, request).response
+    case request @ GET -> Root / "status" / gameId => StatusHandler(gameId, request).response
+    case request @ GET -> Root / "status" / gameId / "d" => StatusHandler(gameId, request).response
+    case request @ GET -> Root / "set" / gameId / IntVar(x) / IntVar(y) / IntVar(z) =>
+      SetHandler(gameId, request, x, y, z).response
+    case request @ GET -> Root / "set" / gameId / IntVar(x) / IntVar(y) / IntVar(z) / "d" =>
+      SetHandler(gameId, request, x, y, z).response
+    case request @ GET -> Root / "pass" / gameId => PassHandler(gameId, request).response
+    case request @ GET -> Root / "pass" / gameId / "d" => PassHandler(gameId, request).response
     case GET -> Root / "openGames" => OpenGamesHandler().response
     case GET -> Root / "health" => IO(getHealth).flatMap(Ok(_))
   }
