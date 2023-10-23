@@ -11,4 +11,12 @@ class SetServlet extends MakeMoveServlet:
     val parts = pathInfo.stripPrefix("/").split('/')
     if parts.length < 4 then throw MalformedRequest(pathInfo)
     val (x, y, z) = (parts(1).toInt, parts(2).toInt, parts(3).toInt)
-    return Move(x, y, z, color)
+    Move(x, y, z, color)
+
+import cats.effect.IO
+import org.http4s.Request
+class SetHandler(
+    override val gameId: String, override val request: Request[IO],
+    val x: Int, val y: Int, val z: Int
+) extends MakeMoveHandler(gameId, request):
+  def makeMove(pathInfo: String, color: Color): Move = Move(x, y, z, color)

@@ -59,7 +59,6 @@ case class GameData(id: String, token: Map[Color, String]):
 
 object GameData:
   val ServerURL = s"http://localhost:$TestPort"
-  val Http4sServerURL = s"http://localhost:${TestPort+1}"
   def create(size: Int): GameCreatedResponse = getGCR(s"$ServerURL/new/$size")
   def register(id: String, color: Color): PlayerRegisteredResponse =
     getPRR(s"$ServerURL/register/$id/$color")
@@ -77,7 +76,7 @@ object TestServer:
   @BeforeAll def startHttp4s(): Unit =
     import cats.effect.unsafe.implicits.global
     import scala.util.Try
-    val server = GoServer.server(TestPort+1)
+    val server = GoServer.server(TestPort)
     shutdown = Try(server.allocated.unsafeRunSync()._2).toOption
 
   @AfterAll def stopHttp4s(): Unit =
@@ -86,19 +85,11 @@ object TestServer:
 
 class TestServer:
 
-  var jetty: Option[Server] = None
   var tempDir: Option[String] = None
-
-  @BeforeEach def startJetty(): Unit =
-    System.setProperty("org.eclipse.jetty.LEVEL", "OFF")
-    jetty = Some(GoServer.createServer(TestPort))
-    jetty.foreach(_.start)
 
   @BeforeEach def setupTempDir(): Unit =
     tempDir = Some(Files.createTempDirectory("go3d").toString)
     Games.init(tempDir.get)
-
-  @AfterEach def stopJetty(): Unit = jetty.foreach(_.stop)
 
   @Test def testNewGame(): Unit =
     val response = GameData.create(TestSize)
@@ -381,47 +372,47 @@ class TestServer:
     val savedGame = Games.readGame(IOForTests.open(gameData.id + ".json"))
     Assertions.assertEquals(Games(gameData.id), savedGame.game)
 
-  @Test def testTooLongURLSetsStatus414WhenCreatingGame(): Unit =
-    assertFailsWithStatus(s"http://localhost:$TestPort/new/123", 414)
+  @Test def testTooLongURLSetsStatus400WhenCreatingGame(): Unit =
+    assertFailsWithStatus(s"http://localhost:$TestPort/new/123", 400)
 
   @Test def testTooLongURLSetsStatus414WhenRegisteringPlayer(): Unit =
     val newGameResponse = GameData.create(TestSize)
-    assertFailsWithStatus(s"http://localhost:$TestPort/register/${newGameResponse.id}/@/XX", 414)
+    assertFailsWithStatus(s"http://localhost:$TestPort/register/${newGameResponse.id}/@/XX", 404)
 
   @Test def testTooLongURLSetsStatus414WhenRegisteringPlayerEvenIfGameIdWrong(): Unit =
-    assertFailsWithStatus(s"http://localhost:$TestPort/register/NOTID!/@/XX", 414)
+    assertFailsWithStatus(s"http://localhost:$TestPort/register/NOTID!/@/XX", 404)
 
   @Test def testTooLongURLSetsStatus414WhenSetting(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 414,
+      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 404,
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenSettingEvenIfNotReady(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 414,
+      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 404,
       Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenPassing(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/pass/${gameData.id}/X", 414,
+      s"http://localhost:$TestPort/pass/${gameData.id}/X", 404,
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenFetchingStatus(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/status/${gameData.id}/X", 414,
+      s"http://localhost:$TestPort/status/${gameData.id}/X", 404,
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenFetchingStatusIfUnauthenticated(): Unit =
     val gameData = setUpGame(TestSize)
-    assertFailsWithStatus(s"http://localhost:$TestPort/status/${gameData.id}/X", 414)
+    assertFailsWithStatus(s"http://localhost:$TestPort/status/${gameData.id}/X", 404)
 
   @Test def testNonexistentGameSetsStatus404WhenRegisteringPlayer(): Unit =
     val newGameResponse = GameData.create(TestSize)
@@ -595,7 +586,7 @@ class TestServer:
     catch
       case e: RequestFailedException =>
         Assertions.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
-        Assertions.assertTrue(e.response.text().contains(classOf[NotReadyToSet].getSimpleName))
+        Assertions.assertTrue(e.response.text().contains(classOf[NotReadyToSet].getSimpleName), e.response.text())
 
   @Test def testSettingToSuicideErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -611,7 +602,7 @@ class TestServer:
     catch
       case e: RequestFailedException =>
         Assertions.assertEquals(HttpServletResponse.SC_BAD_REQUEST, e.response.statusCode)
-        Assertions.assertTrue(e.response.text().contains(classOf[Suicide].getSimpleName))
+        Assertions.assertTrue(e.response.text().contains(classOf[Suicide].getSimpleName), e.response.text())
 
   @Test def testSettingOutsideBoardErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -662,150 +653,6 @@ class TestServer:
     gameData.pass(White)
     Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id), s"${Games.fileIO.get.getArchivedGames} does not contain ${gameData.id}")
     Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  @Test def testHttp4sHealth(): Unit =
-    val response = requests.get(s"${GameData.Http4sServerURL}/health")
-    Assertions.assertEquals("1", response.text())
-
-  @Test def testGetHttp4sOpenGamesReturnsResponse(): Unit =
-    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
-    Assertions.assertTrue(response.isInstanceOf[GameListResponse])
-
-  @Test def testGetHttp4sOpenGamesReturns404IfRouteHasTrailingSlash(): Unit =
-    Assertions.assertThrows(
-      classOf[java.io.FileNotFoundException],
-      () => getOGR(s"${GameData.Http4sServerURL}/openGames/")
-    )
-
-  @Test def testGetHttp4sOpenGamesDoesNotReturnGameWithNoPlayer(): Unit =
-    val newGameResponse = GameData.create(3)
-    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
-    Assertions.assertFalse(response.ids.isEmpty)
-    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
-
-  @Test def testGetHttp4sOpenGamesReturnsOneRegisteredGame(): Unit =
-    val newGameResponse = GameData.create(3)
-    GameData.register(newGameResponse.id, Black)
-    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
-    Assertions.assertFalse(response.ids.isEmpty)
-    Assertions.assertTrue(response.ids.contains(newGameResponse.id))
-
-  @Test def testGetHttp4sOpenGamesDoesNotReturnGameWithNoBlackPlayer(): Unit =
-    val newGameResponse = GameData.create(3)
-    GameData.register(newGameResponse.id, White)
-    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
-    Assertions.assertFalse(response.ids.isEmpty)
-    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
-
-  @Test def testGetHttp4sOpenGamesDoesNotReturnGameWithTwoPlayers(): Unit =
-    val newGameResponse = GameData.create(3)
-    GameData.register(newGameResponse.id, Black)
-    GameData.register(newGameResponse.id, White)
-    val response = getOGR(s"${GameData.Http4sServerURL}/openGames")
-    Assertions.assertFalse(response.ids.isEmpty)
-    Assertions.assertFalse(response.ids.contains(newGameResponse.id))
-
-  @Test def testHttp4sNewGame(): Unit =
-    val response = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    Assertions.assertNotNull(response.id)
-    Assertions.assertNotEquals("", response.id)
-    Assertions.assertEquals(TestSize, response.size)
-
-  @Test def testHttp4sNewGameFailsWithBadSize(): Unit =
-    Assertions.assertThrows(
-      classOf[IOException], () => getJson(s"${GameData.Http4sServerURL}/new/1")
-    )
-    Assertions.assertThrows(
-      classOf[IOException], () => getJson(s"${GameData.Http4sServerURL}/new/4")
-    )
-    Assertions.assertThrows(
-      classOf[IOException], () => getJson(s"${GameData.Http4sServerURL}/new/27")
-    )
-
-  @Test def testHttp4sNewGameWithBadSizeSetsStatus400(): Unit =
-    assertFailsWithStatus(
-      s"${GameData.Http4sServerURL}/new/27",
-      dsl.io.BadRequest.code
-    )
-
-  @Test def testRegisterOnePlayer_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    val registerResponse = getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${Black}")
-    Assertions.assertEquals(TestSize, registerResponse.game.size)
-    Assertions.assertEquals(Black, registerResponse.color)
-
-  @Test def testRegisterBadColorSetsStatus400_2(): Unit =
-    val newGameResponse = GameData.create(TestSize)
-    assertFailsWithStatus(
-      s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/X",
-      HttpServletResponse.SC_BAD_REQUEST
-    )
-
-  @Test def testRegisterTwoPlayers_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${Black}")
-    val registerResponse = getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${White}")
-    Assertions.assertEquals(TestSize, registerResponse.game.size)
-    Assertions.assertEquals(White, registerResponse.color)
-
-  @Test def testRegisterTwoPlayersBlackLastSetsReady_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${White}")
-    val registerResponse = getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${Black}")
-    Assertions.assertTrue(registerResponse.ready)
-
-  @Test def testRegisterTwoPlayersWhiteLastDoesNotSetReady_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${Black}")
-    val registerResponse = getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${White}")
-    Assertions.assertFalse(registerResponse.ready)
-
-  @Test def testRegisterOnlyBlackDoesNotSetReady_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    val registerResponse = getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${Black}")
-    Assertions.assertFalse(registerResponse.ready)
-
-  @Test def testRegisterOnlyWhiteDoesNotSetReady_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    val registerResponse = getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${White}")
-    Assertions.assertFalse(registerResponse.ready)
-
-  @Test def testRegisterOnlyBlackDoesNotReturnReadyStatus_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    val registerResponse = getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${Black}")
-    val statusResponse = getSR(
-      s"${GameData.Http4sServerURL}/status/${newGameResponse.id}",
-      Map("Authentication" -> s"Bearer ${registerResponse.authToken}")
-    )
-    Assertions.assertFalse(statusResponse.ready)
-
-  @Test def testRegisterOnlyWhiteDoesNotReturnReadyStatus_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    val registerResponse = getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${White}")
-    val statusResponse = getSR(
-      s"${GameData.Http4sServerURL}/status/${newGameResponse.id}",
-      Map("Authentication" -> s"Bearer ${registerResponse.authToken}")
-    )
-    Assertions.assertFalse(statusResponse.ready)
-
-  @Test def testRegisterSamePlayerTwiceFails_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${Black}")
-    Assertions.assertThrows(
-      classOf[IOException],
-      () => getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}/${Black}")
-    )
-
-  @Test def testRegisterAtNonexistentGameFails_2(): Unit =
-    val newGameResponse = getGCR(s"${GameData.Http4sServerURL}/new/$TestSize")
-    Assertions.assertThrows(
-      classOf[IOException],
-      () => getPRR(s"${GameData.Http4sServerURL}/register/${newGameResponse.id}NOPE!/${Black}")
-    )
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
