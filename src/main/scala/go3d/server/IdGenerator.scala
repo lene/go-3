@@ -1,7 +1,7 @@
 package go3d.server
 
-import scala.annotation.tailrec
 import java.security.SecureRandom
+import scala.annotation.tailrec
 
 object IdGenerator:
   val IdLength = 6

@@ -2,9 +2,9 @@ package go3d.server.http4s
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import go3d.server.http4s.BaseHandler
-import go3d.server.{Games, GoResponse, RequestInfo, StatusResponse}
 import org.http4s.Request
+
+import go3d.server.{Games, GoResponse, RequestInfo, StatusResponse}
 
 case class GetStatus(gameId: String, request: Request[IO]) extends BaseHandler with LazyLogging:
   def handle: GoResponse =

@@ -1,15 +1,12 @@
 package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
+import requests.*
+import scala.io.StdIn.readLine
+import scala.annotation.tailrec
+
 import go3d.server.StatusResponse
 import go3d.{BadColor, Black, Color, White}
-
-import java.io.IOException
-import java.net.{ConnectException, UnknownHostException}
-import scala.io.StdIn.readLine
-import requests.*
-
-import scala.annotation.tailrec
 
 class Exit extends RuntimeException
 

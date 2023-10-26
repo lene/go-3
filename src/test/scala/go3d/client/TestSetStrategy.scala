@@ -1,7 +1,8 @@
 package go3d.client
 
-import go3d._
 import org.junit.jupiter.api.{Assertions, Test}
+
+import go3d._
 
 
 class TestSetStrategy:

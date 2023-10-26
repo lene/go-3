@@ -1,29 +1,11 @@
 package go3d.client
 
-import go3d.Position
-
+import com.typesafe.scalalogging.LazyLogging
 import scala.util.Random
 
-/*
-    Following lines are disabled, because when running tests instantiating a Logger outside of the
-    Server thread leads to a race condition:
-    - if two Loggers are instantiated at the same time in different threads, an error
-        java.lang.ClassCastException: class org.slf4j.helpers.SubstituteLogger cannot be cast to
-        class ch.qos.logback.classic.Logger (org.slf4j.helpers.SubstituteLogger and
-        ch.qos.logback.classic.Logger are in unnamed module of loader
-        sbt.internal.LayeredClassLoader @4acf1e69)
-      results.
-    - if either TestSetStrategy or TestServer finishes before the other is started, the test suite
-      succeeds.
-    I cannot find how to fix this, so I am disabling logging for now, by using the alternate
-    declaration below.
-import com.typesafe.scalalogging.Logger
-val logger = Logger[ThinkingTimeLimiter]
-*/
-object logger:
-  def info(msg: String): Unit = println(msg)
+import go3d.Position
 
-class ThinkingTimeLimiter(val maxThinkingTimeMs: Int):
+class ThinkingTimeLimiter(val maxThinkingTimeMs: Int) extends LazyLogging:
 
   private var lastThinkingTimeMs: Int = 1
   private var numPreviousElements = 0

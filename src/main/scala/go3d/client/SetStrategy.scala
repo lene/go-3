@@ -1,9 +1,8 @@
 package go3d.client
 
-import go3d.{Black, Color, Game, Move, Position}
-
 import scala.annotation.tailrec
-import scala.util.Random
+
+import go3d.{Black, Color, Game, Move, Position}
 
 case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0):
 

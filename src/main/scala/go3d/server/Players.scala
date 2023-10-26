@@ -1,8 +1,8 @@
 package go3d.server
 
-import go3d.{Color, Black, White}
-
 import scala.collection.mutable
+
+import go3d.{Color, Black, White}
 
 object Players:
 

@@ -1,9 +1,9 @@
 package go3d.server
 
-import go3d.GameOver
-
 import cats.effect.IO
 import org.http4s.Request
+
+import go3d.GameOver
 
 val NullRequestInfo = RequestInfo(Map(), "", "", false)
 

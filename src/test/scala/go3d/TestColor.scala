@@ -18,10 +18,16 @@ class TestColor:
     Assertions.assertEquals("·", Sentinel.toString)
     // we don't care about the string representation of the other values
 
-  @Test def tesAllowedColors(): Unit =
+  @Test def testAllowedColors(): Unit =
     Color(' ')
     Color('@')
     Color('O')
     Color('·')
   
   @Test def testBadColor(): Unit = Assertions.assertThrows(classOf[BadColor], () =>Color('+'))
+
+  @Test def testUnaryNot(): Unit =
+    Assertions.assertEquals(White, !Black)
+    Assertions.assertEquals(Black, !White)
+    Assertions.assertThrows(classOf[IllegalArgumentException], () => !Empty)
+    Assertions.assertThrows(classOf[IllegalArgumentException], () => !Sentinel)

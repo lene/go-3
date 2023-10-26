@@ -1,13 +1,13 @@
 package go3d.client
 
-import go3d.{Color, Move}
-import go3d.server.{
-  StatusResponse, GameCreatedResponse, PlayerRegisteredResponse, ServerException, GoResponse,
-  decodeStatusResponse, decodeGameCreatedResponse, decodePlayerRegisteredResponse
-}
-
 import scala.io.Source
 import io.circe.parser._
+
+import go3d.{Color, Move}
+import go3d.server.{
+  StatusResponse, GameCreatedResponse, PlayerRegisteredResponse, ServerException,
+  decodeStatusResponse, decodeGameCreatedResponse, decodePlayerRegisteredResponse
+}
 
 case class BaseClient(serverURL: String, id: String, token: Option[String]):
   def status: StatusResponse = getSR(s"$serverURL/status/$id", headers)

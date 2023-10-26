@@ -1,15 +1,15 @@
 package go3d.client
 
-import go3d.{Game, Position}
-import go3d.server.{StatusResponse, emptyResponse}
 import com.typesafe.scalalogging.LazyLogging
-import org.rogach.scallop._
-import org.rogach.scallop.exceptions.RequiredOptionNotFound
-import requests.RequestFailedException
-import org.http4s.Status
-
 import java.security.SecureRandom
 import java.util.NoSuchElementException
+import org.rogach.scallop._
+import org.rogach.scallop.exceptions.RequiredOptionNotFound
+import org.http4s.Status
+import requests.RequestFailedException
+
+import go3d.{Game, Position}
+import go3d.server.{StatusResponse, emptyResponse}
 
 class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val size = opt[Int](required = false)

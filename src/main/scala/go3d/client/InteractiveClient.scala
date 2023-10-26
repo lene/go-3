@@ -1,11 +1,11 @@
 package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
+import java.util.NoSuchElementException
 import org.rogach.scallop._
 import org.rogach.scallop.exceptions.RequiredOptionNotFound
-import java.util.NoSuchElementException
 
-import go3d.client.BotClient.{client, strategies}
+import go3d.client.BotClient.client
 import go3d.server.{StatusResponse, emptyResponse}
 
 class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):

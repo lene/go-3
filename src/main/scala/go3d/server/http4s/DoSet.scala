@@ -1,9 +1,9 @@
 package go3d.server.http4s
 
 import cats.effect.IO
-import go3d.server.http4s.MakeMove
-import go3d.{Color, Move}
 import org.http4s.Request
+
+import go3d.{Color, Move}
 
 class DoSet(
     override val gameId: String, override val request: Request[IO],
