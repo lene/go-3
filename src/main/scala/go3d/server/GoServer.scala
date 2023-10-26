@@ -2,52 +2,15 @@ package go3d.server
 
 import go3d.{Black, Game, Move}
 import com.typesafe.scalalogging.LazyLogging
-import org.rogach.scallop._
+import org.rogach.scallop.*
 
 import java.security.SecureRandom
-
-// http4s
-import cats.effect._
-import org.http4s._
-import org.http4s.dsl.io._
-import cats.syntax.all._
 import cats.effect.unsafe.implicits.global
-import com.comcast.ip4s._
-import org.http4s.ember.server._
-import org.http4s.server.Router
+import go3d.server.http4s.GoHttpService
 
 object GoServer extends LazyLogging:
 
   private val DefaultPort = 6030 // "Go3D"
-
-  import org.http4s.circe.jsonEncoderOf
-  implicit def healthEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[IO, Int]
-  private def getHealth: Int = 1
-
-  private val goService = HttpRoutes.of[IO] {
-    case GET -> Root / "new" / IntVar(boardSize) => StartNewGame(boardSize).response
-    case request @ GET -> Root / "register" / gameId / color =>
-      RegisterPlayer(gameId, color(0), request).response
-    case request @ GET -> Root / "status" / gameId => GetStatus(gameId, request).response
-    case request @ GET -> Root / "status" / gameId / "d" => GetStatus(gameId, request).response
-    case request @ GET -> Root / "set" / gameId / IntVar(x) / IntVar(y) / IntVar(z) =>
-      DoSet(gameId, request, x, y, z).response
-    case request @ GET -> Root / "set" / gameId / IntVar(x) / IntVar(y) / IntVar(z) / "d" =>
-      DoSet(gameId, request, x, y, z).response
-    case request @ GET -> Root / "pass" / gameId => DoPass(gameId, request).response
-    case request @ GET -> Root / "pass" / gameId / "d" => DoPass(gameId, request).response
-    case GET -> Root / "openGames" => ListOpenGames().response
-    case GET -> Root / "health" => IO(getHealth).flatMap(Ok(_))
-  }
-
-  private val httpApp = Router("/" -> goService).orNotFound
-  def server(port: Int): Resource[IO, org.http4s.server.Server] =
-    EmberServerBuilder
-    .default[IO]
-    .withHost(ipv4"0.0.0.0")
-    .withPort(Port.fromInt(port).getOrElse(throw new Exception(s"invalid port $port")))
-    .withHttpApp(httpApp)
-    .build
 
   private def loadGames(baseDir: String): Unit = Games.loadGames(baseDir)
 
@@ -96,8 +59,7 @@ object GoServer extends LazyLogging:
       val saveDir = conf.saveDir()
       logger.info(s"Starting server on port $port, saving games to $saveDir")
       GoServer.loadGames(saveDir)
-      val shutdown = server(port).allocated.unsafeRunSync()._2
-//      server(port).use(_ => IO.never).as(ExitCode.Success)
+      val shutdown = GoHttpService(port).server.allocated.unsafeRunSync()._2
       while true do
         Thread.sleep(1000)
         if false then shutdown.unsafeRunSync()

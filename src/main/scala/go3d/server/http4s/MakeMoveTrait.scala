@@ -1,4 +1,4 @@
-package go3d.server
+package go3d.server.http4s
 
 import go3d.{Color, Move, Pass}
 

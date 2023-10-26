@@ -1,8 +1,8 @@
-package go3d.server
-
-import go3d.{Color, Move}
+package go3d.server.http4s
 
 import cats.effect.IO
+import go3d.server.http4s.MakeMove
+import go3d.{Color, Move}
 import org.http4s.Request
 
 class DoSet(

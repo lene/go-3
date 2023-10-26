@@ -204,8 +204,8 @@ container_scanning:
     - ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --size $BOARD_SIZE --color b --strategy ${STRATEGY_BLACK:-random} --max-thinking-time-ms 1000 | grep 'Map(' &
     - while [ "$GAME_ID" == "null" ]; do GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r .ids[0]); echo $GAME_ID; sleep 1; done
     - /usr/bin/time -o time.log -f "%e\n%U\n%M\n%P" ${INSTALL_DIR}/bin/bot-client --server localhost --port 6030 --game-id $GAME_ID --color w --strategy ${STRATEGY_WHITE:-random} --max-thinking-time-ms 1000 | tee white.log
-    - grep -c "go3d.server.DoSet" server.log
-    - grep -c "go3d.server.DoPass" server.log || true
+    - grep -c "go3d.server.http4s.DoSet" server.log
+    - grep -c "go3d.server.http4s.DoPass" server.log || true
     - cat white.log
     - SCORE_BLACK=$(cat white.log | grep -E -o "[0-9]+" | tail -n 2 | head -n 1)
     - SCORE_WHITE=$(cat white.log | grep -E -o "[0-9]+" | tail -n 1)
