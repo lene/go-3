@@ -1,6 +1,7 @@
 package go3d.server
 
 import go3d.*
+import go3d.server.http4s.GoHttpService
 import io.circe.parser.*
 import org.junit.jupiter.api.{AfterAll, Assertions, BeforeAll, BeforeEach, Test}
 import requests.{RequestFailedException, *}
@@ -73,7 +74,7 @@ object TestServer:
   @BeforeAll def startHttp4s(): Unit =
     import cats.effect.unsafe.implicits.global
     import scala.util.Try
-    val server = GoServer.server(TestPort)
+    val server = GoHttpService(TestPort).server
     shutdown = Try(server.allocated.unsafeRunSync()._2).toOption
 
   @AfterAll def stopHttp4s(): Unit =

@@ -1,9 +1,9 @@
-package go3d.server
+package go3d.server.http4s
 
-import go3d.GameOver
-
-import com.typesafe.scalalogging.LazyLogging
 import cats.effect.IO
+import com.typesafe.scalalogging.LazyLogging
+import go3d.GameOver
+import go3d.server.{Games, GoResponse, NotReadyToSet, RequestInfo, StatusResponse}
 import org.http4s.Request
 
 abstract case class MakeMove(gameId: String, request: Request[IO])
