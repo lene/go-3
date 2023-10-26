@@ -1,13 +1,11 @@
 package go3d.server.http4s
 
-import cats.effect.*
-import cats.syntax.all.*
-import com.comcast.ip4s.*
-import go3d.server.http4s.{DoPass, DoSet, ListOpenGames, StartNewGame}
-import org.http4s.*
+import cats.effect.{IO, Resource}
+import com.comcast.ip4s.{ipv4, Port}
+import org.http4s.{EntityEncoder, HttpRoutes}
 import org.http4s.circe.jsonEncoderOf
-import org.http4s.dsl.io.*
-import org.http4s.ember.server.*
+import org.http4s.dsl.io._
+import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
 
 case class GoHttpService(port: Int):

@@ -1,12 +1,16 @@
 package go3d.server.http4s
 
 import cats.effect.IO
-import go3d.server.{AuthorizationError, DuplicateColor, GoResponse, NonexistentGame, NotReadyToSet, ServerException, encodeGoResponse}
 import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
-import org.http4s.dsl.io.*
+import org.http4s.dsl.io._
 import org.http4s.{Response, Status}
 
 import scala.util.{Failure, Success, Try}
+
+import go3d.server.{
+  AuthorizationError, DuplicateColor, GoResponse, NonexistentGame, NotReadyToSet, ServerException,
+  encodeGoResponse
+}
 
 trait HandleTrait:
   def handle: GoResponse

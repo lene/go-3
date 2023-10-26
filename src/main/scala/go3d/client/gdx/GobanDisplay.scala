@@ -1,13 +1,13 @@
 package go3d.client.gdx
 
-import go3d.client.BaseClient
-import go3d.server.StatusResponse
-import go3d.{Black, Game, White}
 import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.graphics.g3d.RenderableProvider
 import com.badlogic.gdx.utils.Timer
 import com.typesafe.scalalogging.LazyLogging
 
+import go3d.client.BaseClient
+import go3d.server.StatusResponse
+import go3d.{Black, Game, White}
 
 class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogging:
   final val BOARD_SIZE: Int = client.status.game.size

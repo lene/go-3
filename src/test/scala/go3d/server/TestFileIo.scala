@@ -1,11 +1,11 @@
 package go3d.server
 
-import go3d.*
-import io.circe.parser.*
-import org.junit.jupiter.api.{Assertions, Test, BeforeAll}
-
-import scala.io.Source
+import io.circe.parser._
 import java.nio.file.{Files, Paths, StandardCopyOption}
+import org.junit.jupiter.api.{Assertions, Test, BeforeAll}
+import scala.io.Source
+
+import go3d._
 
 object TestFileIo:
   var fileIO: Option[FileIO] = None
@@ -14,6 +14,11 @@ object TestFileIo:
     fileIO = Games.fileIO
 
 class TestFileIo:
+
+  @Test def testFileIOFailsOnNonexistingBaseFolder(): Unit =
+    Assertions.assertThrows(
+      classOf[IllegalArgumentException], () => FileIO("/tmp/this-folder-should-not-exist")
+    )
 
   @Test def testSaveGameFailsNonexistentGame(): Unit =
     val gameId = "mock"

@@ -1,11 +1,11 @@
 package go3d.server
 
-import go3d.{Black, Game, Move}
-import com.typesafe.scalalogging.LazyLogging
-import org.rogach.scallop.*
-
-import java.security.SecureRandom
 import cats.effect.unsafe.implicits.global
+import com.typesafe.scalalogging.LazyLogging
+import java.security.SecureRandom
+import org.rogach.scallop._
+
+import go3d.{Black, Game, Move}
 import go3d.server.http4s.GoHttpService
 
 object GoServer extends LazyLogging:
