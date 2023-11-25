@@ -2,8 +2,8 @@ package go3d.server
 
 import io.circe._
 import io.circe.syntax._
-import scala.reflect.ClassTag
 
+import scala.reflect.ClassTag
 import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position}
 
 implicit val encodeColor: Encoder[Color] =
@@ -64,20 +64,6 @@ implicit val encodeHasColor: Encoder[HasColor] =
       ("pass", Json.fromBoolean(true)),
       ("color", encodeColor(p.color))
     )
-
-implicit val decodeHasColor: Decoder[HasColor] =
-  (c: HCursor) =>
-    val keys = c.keys.getOrElse(List[String]()).toSet
-    if keys.contains("position") then
-      for
-        pos <- c.downField("position").as[Position]
-        col <- c.downField("color").as[Color]
-      yield new Move(pos, col)
-    else
-      for
-        _ <- c.downField("pass").as[Boolean]
-        col <- c.downField("color").as[Color]
-      yield new Pass(col)
 
 def gobanFromStrings(levels: Array[String]): Goban =
   if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
@@ -240,6 +226,7 @@ implicit val encodeGoResponse: Encoder[GoResponse] =
     case r: GameListResponse => encodeOpenGamesResponse(r)
 
 
+//import scala.io.Source
 //def getResponse[T<:GoResponse](url: String)(implicit cType:ClassTag[T]): T =
 //  val json = Source.fromURL(url).mkString
-//  return decode[T](json)
+//  return Decoder[T].decodeJson(json)

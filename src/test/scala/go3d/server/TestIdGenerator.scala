@@ -6,7 +6,7 @@ class TestIdGenerator:
 
   @Test def testIdLength(): Unit =
     val id = IdGenerator.getId
-    Assertions.assertEquals(IdGenerator.IdLength, id.length)
+    Assertions.assertTrue(IdGenerator.isValidId(id))
 
   @Test def testIdsAreUnique(): Unit =
     val id1 = IdGenerator.getId

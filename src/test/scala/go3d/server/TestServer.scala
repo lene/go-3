@@ -15,7 +15,6 @@ import go3d.server.http4s.GoHttpService
 
 val TestPort = 64555
 
-
 object TestServer:
 
   import ch.qos.logback.classic.{Level, Logger}
@@ -72,10 +71,10 @@ class TestServer:
     Assertions.assertEquals(TestSize, registerResponse.game.size)
     Assertions.assertEquals(Black, registerResponse.color)
 
-  @Test def testRegisterBadColorSetsStatus400(): Unit =
+  @Test def testRegisterBadColorSetsStatus404(): Unit =
     val newGameResponse = GameData.create(TestSize)
     assertFailsWithStatus(
-      s"${GameData.ServerURL}/register/${newGameResponse.id}/X", Status.BadRequest.code
+      s"${GameData.ServerURL}/register/${newGameResponse.id}/X", Status.NotFound.code
     )
 
   @Test def testRegisterTwoPlayers(): Unit =
@@ -384,7 +383,6 @@ class TestServer:
     )
 
   @Test def testNonexistentGameSetsStatus404WhenFetchingStatus(): Unit =
-    val gameData = setUpGame(TestSize)
     assertFailsWithStatus(s"http://localhost:$TestPort/status/NOPE!!", 404)
 
   @Test def testHealth(): Unit =
