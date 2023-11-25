@@ -3,8 +3,7 @@ package go3d.client
 import go3d.{Black, Color, Game, Goban, Move, Position}
 
 import scala.collection.parallel.CollectionConverters._
-
-import go3d.{Black, Color, Game, Move, Position}
+import scala.annotation.tailrec
 
 case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0):
 
