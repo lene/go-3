@@ -32,7 +32,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
   @targetName("minus")
   def -(other: Goban): IndexedSeq[Move] =
-    if size != other.size then throw IllegalArgumentException(s"sizes ${size} != ${other.size}")
+    if size != other.size then throw IllegalArgumentException(s"sizes $size != ${other.size}")
     for (pos <- other.emptyPositions.toIndexedSeq if at(pos) != Empty)
       yield Move(pos, at(pos))
 
@@ -96,7 +96,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     if at(move.position) != move.color then return Set()
     // ok, this is not functional style, but to me much clearer than using recursion
     var connected = Set(move)
-    for position <- neighborsOfColor(move.position, move.color) if !(connected contains(Move(position, move.color))) do
+    for position <- neighborsOfColor(move.position, move.color) if !connected.contains(Move(position, move.color)) do
       connected = connected ++ setStone(Move(move.position, Sentinel)).connectedStones(Move(position, move.color))
     connected
 
