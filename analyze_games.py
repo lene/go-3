@@ -48,7 +48,8 @@ def count(frame: pd.DataFrame) -> int:
 
 
 def wins(frame: pd.DataFrame) -> str:
-    return f"{0 if frame.size == 0 else frame[frame['black'] > frame['white']].size/frame.size*100:.1f}%"
+    win_ratio = 0 if frame.size == 0 else frame[frame['black'] > frame['white']].size / frame.size
+    return f"{win_ratio * 100:.1f}%"
 
 
 def score(frame: pd.DataFrame) -> float:
