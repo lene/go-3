@@ -460,7 +460,7 @@ class TestServer:
 
   @Test def testGetOpenGamesReturnsResponse(): Unit =
     val response = getOGR(s"${GameData.ServerURL}/openGames")
-    Assertions.assertTrue(response.isInstanceOf[GameListResponse])
+    Assertions.assertTrue(response.isInstanceOf[OpenGamesResponse])
 
   @Test def testGetOpenGamesReturns404IfRouteHasTrailingSlash(): Unit =
     Assertions.assertThrows(
@@ -634,9 +634,9 @@ def getSR(url: String, header: Map[String, String]): StatusResponse =
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
   result.getOrElse(null)
 
-def getOGR(url: String): GameListResponse =
+def getOGR(url: String): OpenGamesResponse =
   val json = getJson(url).mkString
-  val result = decode[GameListResponse](json)
+  val result = decode[OpenGamesResponse](json)
   if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
   result.getOrElse(null)
 

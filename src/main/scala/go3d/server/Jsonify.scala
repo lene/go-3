@@ -210,20 +210,20 @@ implicit val decodeStatusResponse: Decoder[StatusResponse] =
     debug <- c.downField("debug").as[RequestInfo]
   yield StatusResponse(game, moves, ready, over, debug)
 
-implicit val encodeOpenGamesResponse: Encoder[GameListResponse] =
-  (response: GameListResponse) => Json.obj(("ids", response.ids.asJson))
+implicit val encodeOpenGamesResponse: Encoder[OpenGamesResponse] =
+  (response: OpenGamesResponse) => Json.obj(("ids", response.ids.asJson))
 
-implicit val decodeOpenGamesResponse: Decoder[GameListResponse] =
+implicit val decodeOpenGamesResponse: Decoder[OpenGamesResponse] =
   (c: HCursor) => for
     ids <- c.downField("ids").as[Array[String]]
-  yield GameListResponse(ids)
+  yield OpenGamesResponse(ids)
 
 implicit val encodeGoResponse: Encoder[GoResponse] =
     case r: StatusResponse => encodeStatusResponse(r)
     case r: PlayerRegisteredResponse => encodePlayerRegisteredResponse(r)
     case r: ErrorResponse => encodeErrorResponse(r)
     case r: GameCreatedResponse => encodeGameCreatedResponse(r)
-    case r: GameListResponse => encodeOpenGamesResponse(r)
+    case r: OpenGamesResponse => encodeOpenGamesResponse(r)
 
 
 //import scala.io.Source
