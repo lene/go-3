@@ -1,8 +1,8 @@
 package go3d.server
 
 import cats.effect.IO
+import com.typesafe.scalalogging.LazyLogging
 import org.http4s.Request
-
 import go3d.GameOver
 
 val NullRequestInfo = RequestInfo(Map(), "", "", false)
@@ -34,7 +34,7 @@ object RequestInfo:
     else (pathInfo, false)
 
 case class RequestInfo(headers: Map[String, String], query: String, path: String, debug: Boolean)
-  extends GoResponse:
+  extends GoResponse with LazyLogging:
   def getGameId: String =
     if path == null || path.isEmpty then throw MalformedRequest(path)
     val parts = path.stripPrefix("/").split('/')
@@ -57,9 +57,9 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
 
   private def getToken: String =
     if !headers.contains("Authentication") then throw AuthorizationMissing(headers)
-    val authorizationParts = headers("Authentication").split("\\s+")
-    if authorizationParts(0) != "Bearer" then throw AuthorizationMethodWrong(authorizationParts(0))
-    authorizationParts(1)
+    val authenticationParts = headers("Authentication").split("\\s+")
+    if authenticationParts(0) != "Bearer" then throw AuthorizationMethodWrong(authenticationParts(0))
+    authenticationParts(1)
 
   private def isAuthorized: Boolean =
     try getToken.nonEmpty

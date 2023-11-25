@@ -14,4 +14,4 @@ def emptyResponse = errorResponse(null)
 
 case class GameOverResponse(game: Game, debug: RequestInfo) extends GoResponse
 
-case class GameListResponse(ids: Array[String]) extends GoResponse
+case class OpenGamesResponse(ids: Array[String]) extends GoResponse

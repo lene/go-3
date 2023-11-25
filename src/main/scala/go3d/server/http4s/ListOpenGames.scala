@@ -1,6 +1,6 @@
 package go3d.server.http4s
 
-import go3d.server.{GameListResponse, GoResponse, Players}
+import go3d.server.{OpenGamesResponse, GoResponse, Players}
 
 /**
  *Usage example for this endpoint:
@@ -13,4 +13,4 @@ import go3d.server.{GameListResponse, GoResponse, Players}
 class ListOpenGames extends BaseHandler:
   def handle: GoResponse =
     Thread.sleep(100) // very basic DoS protection
-    GameListResponse(Players.openGames())
+    OpenGamesResponse(Players.openGames())

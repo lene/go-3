@@ -29,10 +29,14 @@ class TestMove:
     Assertions.assertFalse(Move(1, 1, 1, Black) == Move(1, 1, 1, White))
     Assertions.assertFalse(Move(1, 1, 1, White) == Move(1, 1, 2, White))
 
-  @Test def testPassNeverEqual(): Unit =
+  @Test def testPassNotEqualMove(): Unit =
     Assertions.assertFalse(Move(1, 1, 1, Black) == Pass(Black))
-    Assertions.assertFalse(Pass(Black) == Pass(Black))
+
+  @Test def testPassNotEqualIfColorNotEqusl(): Unit =
     Assertions.assertFalse(Pass(Black) == Pass(White))
+
+  @Test def testPassEqualIfColorEqusl(): Unit =
+    Assertions.assertTrue(Pass(Black) == Pass(Black))
 
   @Test def testFilterList(): Unit =
     val list = List(Move(1, 1, 1, Black), Move(1, 1, 1, White))
