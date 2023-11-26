@@ -1,16 +1,16 @@
 import sbt.Keys.libraryDependencies
 
-val scala3Version = "3.6.2"
-val circeVersion = "0.14.10"
-val libgdxVersion = "1.13.0"
-val http4sVersion = "0.23.30"
+val scala3Version = "3.7.3"
+val circeVersion = "0.14.15"
+val libgdxVersion = "1.13.5"
+val http4sVersion = "1.0.0-M45"
 
 lazy val root = project
   .in(file("."))
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.13",
+    version := "0.7.14",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -36,6 +36,11 @@ lazy val root = project
         "org.http4s" %% "http4s-ember-server" % http4sVersion,
         "org.http4s" %% "http4s-dsl"          % http4sVersion,
         "org.http4s" %% "http4s-circe"        % http4sVersion,
+    ),
+    // log4cats for http4s logging
+    libraryDependencies ++= Seq(
+        "org.typelevel" %% "log4cats-core"  % "2.7.0",
+        "org.typelevel" %% "log4cats-slf4j" % "2.7.0",
     ),
     // circe
     libraryDependencies ++= Seq(
