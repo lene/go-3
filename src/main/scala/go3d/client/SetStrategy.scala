@@ -5,6 +5,13 @@ import go3d.{Black, Color, Game, Goban, Move, Position}
 import scala.collection.parallel.CollectionConverters._
 import scala.annotation.tailrec
 
+object SetStrategy:
+  def create(
+    gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0, parallel: Boolean = false
+  ): SetStrategy =
+    if parallel then ParallelSetStrategy(gameSize, strategies, maxThinkingTimeMs)
+    else SetStrategy(gameSize, strategies, maxThinkingTimeMs)
+
 case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0):
 
   private val thinkingTimeLimiter = ThinkingTimeLimiter(maxThinkingTimeMs)
@@ -76,8 +83,13 @@ case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTime
       val toUse = if possibleMoves.isEmpty then possible else possibleMoves
       bestBy(toUse, p => minLiberties(game.setStone(Move(p, color)), !color))
 
-def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
-  values.par.groupBy(metric).minBy(_._1)._2.seq
+  def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
+    values.groupBy(metric).minBy(_._1)._2
+
+class ParallelSetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0)
+  extends SetStrategy(gameSize, strategies, maxThinkingTimeMs):
+  override def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
+    values.par.groupBy(metric).minBy(_._1)._2.seq
 
 def minBy[A](values: Seq[A], metric: A => Int): Int = values.map(metric).min
 
@@ -86,4 +98,5 @@ def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
 
 def minLiberties(game: Game, color: Color): Int =
   minBy(game.getAreas(color).toList, game.liberties(color, _))
-  
+
+

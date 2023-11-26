@@ -33,7 +33,6 @@ Test:Debian:
         - ubuntu:22.04
         - ubuntu:latest
         - debian:stable-slim
-        - debian:unstable-slim
         - debian:testing-slim
   image: $IMAGE
   stage: test
@@ -125,17 +124,22 @@ TagIsNewAndConsistent:
   script:
     - VERSION_SBT=$(egrep 'version := ".*"' build.sbt | cut -d \" -f 2)
     - test -n "$VERSION_SBT"
+    - echo $VERSION_SBT
     - VERSION_RUN_TEST=$(egrep '^VERSION=.*' run-test-game.sh | cut -d = -f 2)
     - test -n "$VERSION_RUN_TEST"
+    - echo $VERSION_RUN_TEST
     - test "$VERSION_SBT" = "$VERSION_RUN_TEST"
     - VERSIONS_DOCKERFILE=$(egrep 'ARG version=.*' Dockerfile | cut -d = -f 2)
     - test -n "$VERSIONS_DOCKERFILE"
+    - echo $VERSIONS_DOCKERFILE
     - test $(echo $VERSIONS_DOCKERFILE | wc -w) -eq 2
     - VERSIONS_DOCKERFILE_1=$(egrep 'ARG version=.*' Dockerfile | cut -d = -f 2 | head -n 1)
     - VERSIONS_DOCKERFILE_2=$(egrep 'ARG version=.*' Dockerfile | cut -d = -f 2 | tail -n 1)
     - test "$VERSIONS_DOCKERFILE_1" = "$VERSIONS_DOCKERFILE_2"
     - test "$VERSION_SBT" = "$VERSIONS_DOCKERFILE_1"
     - VERSIONS_CI=$(egrep 'DEPLOYABLE_VERSION.*' .gitlab-ci.yml | head -n 1 | cut -d ':' -f 2 | xargs)
+    - test -n "$VERSIONS_CI"
+    - echo $VERSIONS_CI
     - test "$VERSION_SBT" = "$VERSIONS_CI"
     - git tag | ( ! grep "^${VERSION_SBT}\$" )
 
