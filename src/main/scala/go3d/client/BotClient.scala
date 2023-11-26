@@ -20,6 +20,7 @@ class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val port = opt[Int](required = true)
   val strategy = opt[String](required = false)
   val maxThinkingTimeMs = opt[Int](required = false, default = Some(0))
+  val parallel = opt[Boolean](required = false, default = Some(false))
   requireOne(size, gameId)
   dependsOnAll(size, List(color))
   dependsOnAll(token, List(gameId))
@@ -37,6 +38,7 @@ object BotClient extends Client with LazyLogging:
   private val random: SecureRandom = SecureRandom()
   private[client] var strategies: Array[String] = Array()
   private var maxThinkingTimeMs: Int = 0
+  private var parallel: Boolean = false
   private var game: Game = null
   private var strategy: Option[SetStrategy] = None
 
@@ -112,6 +114,7 @@ object BotClient extends Client with LazyLogging:
       else client = BaseClient.register(serverURL, conf.gameId(), colorFromString(conf.color()))
     strategies = conf.strategy().split(',')
     maxThinkingTimeMs = conf.maxThinkingTimeMs()
+    parallel = conf.parallel()
 
   def waitUntilReady(): StatusResponse =
     var status = emptyResponse
