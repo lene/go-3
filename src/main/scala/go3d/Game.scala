@@ -64,8 +64,11 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     if !isDifferentPlayer(color) then return List()
     if moves.length >= size*size*size then return List()
     if moves.isEmpty && color == White then return List()
+    if moves.isEmpty && color == Black then return goban.allPositions.toList
     if moves.nonEmpty && color == moves.last.color then return List()
     goban.emptyPositions.toList.filter(isPossibleMove(_, color))
+
+  def moveColor: Color = if moves.isEmpty then Black else !moves.last.color
 
   def score: Map[Color, Int] =
     val scores = mutable.Map[Color, Int]().withDefaultValue(0)
