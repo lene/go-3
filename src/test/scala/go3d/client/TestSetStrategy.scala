@@ -1,8 +1,7 @@
 package go3d.client
 
-import org.junit.jupiter.api.{Assertions, Test}
-
-import go3d._
+import org.junit.jupiter.api.{Assertions, Disabled, Test}
+import go3d.*
 
 
 class TestSetStrategy:
@@ -249,6 +248,30 @@ class TestSetStrategy:
     )(
       List((1, 1, 1), (1, 1, 2), (1, 2, 1), (1, 2, 2), (2, 1, 1), (2, 1, 2), (2, 2, 1), (2, 2, 2))
     )
+
+  @Disabled("Only run this manually (it's a hack)")
+  @Test def testParallelization(): Unit =
+
+    def time[R](block: => R): Long =
+      val t0 = System.nanoTime()
+      val result = block
+      System.nanoTime() - t0
+
+    val gameSize = 9
+    val strategy = SetStrategy(gameSize, Array("prioritiseCapture"))
+    for _ <- 1 to 10 do
+      var game = Game.start(gameSize)
+      var result: Seq[Position] = Seq()
+      var times = Seq[Long]()
+      while !game.isOver do
+        val color = game.moveColor
+        val moves = game.possibleMoves(color)
+        times = times.appended(time {
+          result = strategy.narrowDown(moves, game)
+        })
+        game = game.makeMove(Move(result.head, color))
+      println(s"Total: ${times.sum / 1000000}ms Average: ${times.sum / times.size / 1000}us")
+
 def defaultStrategy(size: Int): SetStrategy = SetStrategy(size, Array("random"))
 
 def checkStrategyResults(

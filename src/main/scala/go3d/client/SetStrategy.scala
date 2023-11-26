@@ -49,27 +49,24 @@ case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTime
     else bestBy(possible, minDistanceToPointList(_, StarPoints(gameSize).all))
 
   def maximizeOwnLiberties(possible: Seq[Position], game: Game): Seq[Position] =
-    val color = moveColor(game)
+    val color = game.moveColor
     bestBy(possible, p => -game.setStone(Move(p, color)).totalNumLiberties(color))
 
-  private def moveColor(game: Game): Color =
-    if game.moves.isEmpty then Black else !game.moves.last.color
-
   def minimizeOpponentLiberties(possible: Seq[Position], game: Game): Seq[Position] =
-    val color = moveColor(game)
+    val color = game.moveColor
     val possibleMoves = game.getFreeNeighbors(!color).intersect(possible.toSet)
     if possibleMoves.isEmpty
     then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
     else bestBy(possibleMoves.toList, p => game.setStone(Move(p, color)).totalNumLiberties(!color))
 
   def maximizeDistance(possible: Seq[Position], game: Game): Seq[Position] =
-    val opponentStones = game.getStones(!moveColor(game))
+    val opponentStones = game.getStones(!game.moveColor)
     if opponentStones.isEmpty
     then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
     else bestBy(possible, -minDistanceToPointList(_, opponentStones))
 
   def prioritiseCapture(possible: Seq[Position], game: Game): Seq[Position] =
-    val color = moveColor(game)
+    val color = game.moveColor
     val opponentStones = game.getStones(!color)
     if opponentStones.isEmpty
     then possible.toSet.intersect(StarPoints(gameSize).all.toSet).toList
@@ -82,9 +79,7 @@ case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTime
 def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
   values.par.groupBy(metric).minBy(_._1)._2.seq
 
-def minBy[A](values: Seq[A], metric: A => Int): Int = {
-  values.groupBy(metric).minBy(_._1)._1
-}
+def minBy[A](values: Seq[A], metric: A => Int): Int = values.map(metric).min
 
 def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
   remotes.map(p => (p - local).abs).min
