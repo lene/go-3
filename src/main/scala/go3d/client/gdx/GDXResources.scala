@@ -1,10 +1,16 @@
 package go3d.client.gdx
 
 import com.badlogic.gdx.Gdx
+import com.badlogic.gdx.assets.AssetManager
+import com.badlogic.gdx.assets.loaders.resolvers.InternalFileHandleResolver
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.PerspectiveCamera
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
+import com.badlogic.gdx.graphics.g3d.particles.ParticleEffectLoader
+import com.badlogic.gdx.graphics.g3d.particles.ParticleEffectLoader.ParticleEffectLoadParameter
+import com.badlogic.gdx.graphics.g3d.particles.{ParticleEffect, ParticleSystem}
+import com.badlogic.gdx.graphics.g3d.particles.batches.PointSpriteParticleBatch
 import com.badlogic.gdx.graphics.g3d.{Environment, ModelBatch, RenderableProvider}
 import com.badlogic.gdx.math.Vector3
 
@@ -19,11 +25,44 @@ case class GDXResources(boardSize: Int):
   Gdx.input.setInputProcessor(new Go3DInputMultiplexer(camera))
   private val modelBatch = new ModelBatch
 
+  private val particleSystem: Option[ParticleSystem] = createParticleSystem
+  private var currentEffects: ParticleEffect = null
+
+  private def createParticleSystem: Option[ParticleSystem] =
+    println("Creating particle system")
+    val assets = new AssetManager()
+
+    val pointSpriteBatch = PointSpriteParticleBatch()
+    pointSpriteBatch.setCamera(camera)
+
+    val particleSystem = ParticleSystem()
+    particleSystem.add(pointSpriteBatch)
+    println("particle system created")
+
+    val loadParam = ParticleEffectLoadParameter(particleSystem.getBatches);
+    val loader = ParticleEffectLoader(InternalFileHandleResolver())
+    assets.setLoader(classOf[ParticleEffect], loader)
+    assets.load("data/PointSprite.pfx", classOf[ParticleEffect], loadParam)
+    // halt the main thread until assets are loaded.
+    // this is bad for actual games, but okay for demonstration purposes.
+    assets.finishLoading()
+    println("assets loaded")
+
+    currentEffects = assets.get("data/PointSprite.pfx", classOf[ParticleEffect]).copy
+    currentEffects.init()
+    particleSystem.add(currentEffects)
+    Some(particleSystem)
+
   def render(models: List[RenderableProvider]*): Unit =
     Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth, Gdx.graphics.getHeight)
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
     modelBatch.begin(camera)
     models.foreach(model => modelBatch.render(model.asJava, environment))
+    particleSystem.foreach(_.update())
+    particleSystem.foreach(_.begin())
+    particleSystem.foreach(_.draw())
+    particleSystem.foreach(_.end())
+    particleSystem.foreach(modelBatch.render(_))
     modelBatch.end()
 
   def resize(): Unit =
@@ -34,12 +73,14 @@ case class GDXResources(boardSize: Int):
   def dispose(): Unit = modelBatch.dispose()
 
   private def createEnvironment: Environment =
+    println("Creating environment")
     val localEnv = new Environment()
     localEnv.set(new ColorAttribute(ColorAttribute.AmbientLight, 0.4, 0.4, 0.4, 1.0))
     localEnv.add(new DirectionalLight().set(0.8, 0.8, 0.8, -1, -0.8, -0.2))
     localEnv
 
   private def createCamera(cameraPos: Vector3): PerspectiveCamera =
+    println("Creating camera")
     val cam = new PerspectiveCamera(67, Gdx.graphics.getWidth.toFloat, Gdx.graphics.getHeight.toFloat) {
       near = 1.0
       far = 300.0

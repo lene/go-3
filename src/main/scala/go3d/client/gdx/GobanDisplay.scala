@@ -10,7 +10,7 @@ import go3d.server.StatusResponse
 import go3d.{Black, Game, White}
 
 class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogging:
-  final val BOARD_SIZE: Int = client.status.game.size
+  private final val BOARD_SIZE: Int = client.status.game.size
   final val UPDATE_DELAY_SECONDS = 2f
   final val UPDATE_INTERVAL_SECONDS = 1f
 
@@ -21,6 +21,7 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
   private var game: Option[Game] = None
 
   @Override def create(): Unit =
+    println("create")
     updateGame(client.status)
     Timer.schedule(new Timer.Task {
       @Override def run(): Unit = updateGame(client.status)
@@ -28,8 +29,11 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
 
   private def updateGame(status: StatusResponse): Unit =
     def doUpdate(): Unit =
+      println("update")
       game = Some(status.game)
+      println(s"game: $game")
       stonesModel = builder.createStones(status.game)
+      println(s"stonesModel: $stonesModel")
       logger.info(s"Move ${status.game.moves.length}: $lastMove $captures")
     game match
       case None => doUpdate()
