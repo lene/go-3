@@ -19,10 +19,11 @@ object AsciiClient extends InteractiveClient with LazyLogging:
   @tailrec
   def mainLoop(args: Array[String]): Unit =
     logger.info(
-      s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")((str) => str)}"
+      s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")(str => str)}"
     )
     val status = waitUntilReady()
     logger.info(s"\n${status.game.goban}")
+    if status.game.moves.nonEmpty then logger.info(s"last move: ${status.game.moves.last}")
     try
       val input = readLine("your input: ")
       val Array(command, args) = (input+" ").split("\\s+", 2)
