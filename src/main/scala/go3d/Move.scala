@@ -6,6 +6,8 @@ class Move(val position: Position, val color: Color) extends HasColor:
   def y: Int = position.y
   def z: Int = position.z
 
+  override def optionalPosition: Option[Position] = Some(position)
+
   override def toString: String = s"$position $color"
   override def hashCode(): Int = toString.hashCode()
   

@@ -4,10 +4,9 @@ import com.badlogic.gdx.ApplicationListener
 import com.badlogic.gdx.graphics.g3d.RenderableProvider
 import com.badlogic.gdx.utils.Timer
 import com.typesafe.scalalogging.LazyLogging
-
 import go3d.client.BaseClient
 import go3d.server.StatusResponse
-import go3d.{Black, Game, White}
+import go3d.{Black, Game, Position, White}
 
 class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogging:
   private final val BOARD_SIZE: Int = client.status.game.size
@@ -21,7 +20,6 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
   private var game: Option[Game] = None
 
   @Override def create(): Unit =
-    println("create")
     updateGame(client.status)
     Timer.schedule(new Timer.Task {
       @Override def run(): Unit = updateGame(client.status)
@@ -29,11 +27,8 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
 
   private def updateGame(status: StatusResponse): Unit =
     def doUpdate(): Unit =
-      println("update")
       game = Some(status.game)
-      println(s"game: $game")
       stonesModel = builder.createStones(status.game)
-      println(s"stonesModel: $stonesModel")
       logger.info(s"Move ${status.game.moves.length}: $lastMove $captures")
     game match
       case None => doUpdate()
@@ -51,7 +46,12 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
       )
     )
 
-  @Override def render(): Unit = gdxResources.render(builder.gridModel, stonesModel)
+  private def latest: Option[Position] =
+    game.fold(None: Option[Position])(
+      g => if g.moves.length == 0 then None else g.moves.last.optionalPosition
+    )
+
+  @Override def render(): Unit = gdxResources.render(latest, builder.gridModel, stonesModel)
 
   @Override def dispose(): Unit =
     gdxResources.dispose()
