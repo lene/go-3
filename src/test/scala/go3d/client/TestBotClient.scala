@@ -19,7 +19,7 @@ class TestBotClient:
     Assertions.assertThrows(
       classOf[UnknownHostException], () => {
       BotClient.parseArgs(Array(
-        "--server", "doesnt exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
+        "--server", "doesnt-exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
       ))
     })
 

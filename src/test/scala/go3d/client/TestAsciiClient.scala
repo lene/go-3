@@ -21,7 +21,7 @@ class TestAsciiClient:
     Assertions.assertThrows(
       classOf[UnknownHostException], () => {
       AsciiClient.parseArgs(Array(
-        "--server", "doesnt exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
+        "--server", "doesnt-exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
       ))
     })
 
