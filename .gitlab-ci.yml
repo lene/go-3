@@ -350,7 +350,7 @@ PushToGithub:
     - git config user.name "${GITLAB_USER_NAME}"
     - git config pull.rebase true
   script:
-    - git remote add github git@github.com:lene/DuplicateImages.git
+    - git remote add github git@github.com:lene/go-3.git
     - git remote show github
     - BRANCH=${CI_COMMIT_BRANCH:-master}
     - git checkout $BRANCH
