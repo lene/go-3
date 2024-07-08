@@ -196,7 +196,8 @@ container_scanning:
   stage: test built
   variables:
     BOARD_SIZE: 7
-  timeout: 1 hour
+  timeout: 15 minutes
+  retry: 2
   script:
     - mkdir -p saves
     - ${INSTALL_DIR}/bin/go-server --port 6030 --save-dir saves 2>&1 > server.log &
