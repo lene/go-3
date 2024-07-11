@@ -3,6 +3,12 @@ package go3d
 import org.junit.jupiter.api.{Assertions, Test, Disabled}
 
 class TestArea:
+  private val stoneInCenter: Goban = gobanWithAreasFromStrings(Map(
+    1 ->
+      """   |
+        | @ |
+        |   """,
+  ))
 
   @Test def testAreasEmptyBoard(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
@@ -12,29 +18,15 @@ class TestArea:
     ))
     Assertions.assertEquals(0, goban.areas.size)
 
+
   @Test def testAreasOneStone(): Unit =
-    val goban = gobanWithAreasFromStrings(Map(
-      1 -> """   |
-             | @ |
-             |   """,
-    ))
-    Assertions.assertEquals(1, goban.areas.size)
+    Assertions.assertEquals(1, stoneInCenter.areas.size)
 
   @Test def testAreasOneStoneAreaStoneCorrect(): Unit =
-    val goban = gobanWithAreasFromStrings(Map(
-      1 -> """   |
-             | @ |
-             |   """,
-    ))
-    Assertions.assertEquals(Set(Move(2, 2, 1, Black)), goban.areas.head.stones)
+    Assertions.assertEquals(Set(Move(2, 2, 1, Black)), stoneInCenter.areas.head.stones)
 
   @Test def testAreasOneStoneAreaLibertiesCorrect(): Unit =
-    val goban = gobanWithAreasFromStrings(Map(
-      1 -> """   |
-             | @ |
-             |   """,
-    ))
-    val liberties = goban.areas.head.liberties
+    val liberties = stoneInCenter.areas.head.liberties
     Assertions.assertEquals(5, liberties)
 
   @Test def testAreas5DisconnectedStones(): Unit =
@@ -71,13 +63,7 @@ class TestArea:
     Assertions.assertEquals(11, goban.areas.head.liberties)
 
   @Test def testColor(): Unit =
-    val goban = gobanWithAreasFromStrings(Map(
-      1 ->
-        """   |
-          | @ |
-          |   """,
-    ))
-    Assertions.assertEquals(Black, goban.areas.head.color)
+    Assertions.assertEquals(Black, stoneInCenter.areas.head.color)
 
   @Test def testColors5DisconnectedStones(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
@@ -117,6 +103,13 @@ class TestArea:
 
   @Test def testAreaFailsIfAreaEmpty(): Unit =
     Assertions.assertThrows(classOf[BadColorsForArea], () => Area(Set(), 1, defaultGoban))
+
+  @Test def testOuterHullOfSetWithEmptyArea(): Unit =
+    Assertions.assertThrows(classOf[BadArea], () => stoneInCenter.areas.head.outerHullOfSet(Set()))
+
+  @Test def testWithinOuterHull(): Unit =
+    val area = stoneInCenter.areas.head
+    Assertions.assertEquals(Set(Position(2, 2, 1)), area.withinOuterHull.toSet)
 
   @Test def testAreasOneStoneAreaSize(): Unit =
       val goban = gobanWithAreasFromStrings(Map(
