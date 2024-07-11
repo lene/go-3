@@ -5,7 +5,7 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
   val color: Color = validateColor(stones)
   val size: Int = stones.size
   lazy val outerHull: (Position, Position) = outerHullOfSet(stones.map(_.position))
-  private lazy val withinOuterHull: Seq[Position] =
+  private[go3d] lazy val withinOuterHull: Seq[Position] =
     for (
       x <- outerHull(0).x to outerHull(1).x;
       y <- outerHull(0).y to outerHull(1).y;
@@ -33,7 +33,7 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
     if colors.contains(Empty) || colors.size != 1 then throw BadColorsForArea(colors)
     colors.head
 
-  private def outerHullOfSet(stoneSet: Set[Position]): (Position, Position) =
+  private[go3d] def outerHullOfSet(stoneSet: Set[Position]): (Position, Position) =
     if stoneSet.isEmpty then throw BadArea(stones)
     if stoneSet.size == 1 then (stoneSet.head, stoneSet.head)
     else
