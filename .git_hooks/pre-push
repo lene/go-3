@@ -15,6 +15,9 @@ CI_LINT_OUTPUT=/tmp/gitlab-ci-lint.json
 
 status=0
 
+if [ -r ./GITLAB_ACCESS_TOKEN.bash ]; then
+  . ./GITLAB_ACCESS_TOKEN.bash
+fi
 if [ -n "${GITLAB_ACCESS_TOKEN}" ]; then
   CONTENT="$(cat .gitlab-ci.yml)"
   jq --null-input --arg yaml "$CONTENT" '.content=$yaml' | \
