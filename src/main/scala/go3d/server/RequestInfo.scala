@@ -40,7 +40,7 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
     val parts = path.stripPrefix("/").split('/')
     if parts.isEmpty then throw MalformedRequest(path)
     val gameId = parts(0)
-    if !(Games contains gameId) then throw NonexistentGame(gameId, Games.activeGameIds.toList)
+    if !Games.contains(gameId) then throw NonexistentGame(gameId, Games.activeGameIds.toList)
     gameId
 
   def getPlayer: Option[Player] =

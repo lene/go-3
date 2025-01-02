@@ -17,8 +17,8 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
   private lazy val gdxResources = GDXResources(BOARD_SIZE)
   private lazy val builder = GeometryBuilder(BOARD_SIZE)
 
-  private[this] var stonesModel: List[RenderableProvider] = List()
-  private[this] var game: Option[Game] = None
+  private var stonesModel: List[RenderableProvider] = List()
+  private var game: Option[Game] = None
 
   @Override def create(): Unit =
     updateGame(client.status)
