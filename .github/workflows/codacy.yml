@@ -1,15 +1,6 @@
-# This workflow uses actions that are not certified by GitHub.
-# They are provided by a third-party and are governed by
-# separate terms of service, privacy policy, and support
-# documentation.
-
-# This workflow checks out code, performs a Codacy security scan
-# and integrates the results with the
-# GitHub Advanced Security code scanning feature.  For more information on
-# the Codacy security scan action usage and parameters, see
-# https://github.com/codacy/codacy-analysis-cli-action.
-# For more information on Codacy Analysis CLI in general, see
-# https://github.com/codacy/codacy-analysis-cli.
+# This GitHub Actions workflow performs a Codacy security scan on your repository.
+# It checks out code, runs the Codacy Analysis CLI to produce a SARIF report,
+# and then uploads that SARIF file to GitHub's advanced security code scanning.
 
 name: Codacy Security Scan
 
@@ -20,42 +11,62 @@ on:
     # The branches below must be a subset of the branches above
     branches: [ "master" ]
   schedule:
+    # Run every Sunday at 03:20 UTC
     - cron: '20 3 * * 0'
 
 permissions:
-  contents: read
+  contents: read         # needed to fetch code and read contents
+  security-events: write # needed to upload SARIF results
 
 jobs:
   codacy-security-scan:
-    permissions:
-      contents: read # for actions/checkout to fetch code
-      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
-      actions: read # only required for a private repository by github/codeql-action/upload-sarif to get the Action run status
     name: Codacy Security Scan
     runs-on: ubuntu-latest
-    steps:
-      # Checkout the repository to the GitHub Actions runner
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      # Execute Codacy Analysis CLI and generate a SARIF output with the security issues identified during the analysis
+    # Additional permissions if in a private repository
+    # or if you want to limit scope for security:
+    permissions:
+      contents: read         # for actions/checkout to fetch code
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
+      actions: read          # only required for a private repository
+                             # by github/codeql-action/upload-sarif to get the Action run status
+
+    steps:
+      # Step 1: Check out code from this repository
+      - name: Check out repository
+        uses: actions/checkout@v3
+        # If needed, specify a particular ref or submodules:
+        # with:
+        #   ref: ${{ github.ref }}
+        #   submodules: true
+
+      # Step 2: Run Codacy Analysis CLI to create a SARIF file
       - name: Run Codacy Analysis CLI
         uses: codacy/codacy-analysis-cli-action@d840f886c4bd4edc059706d09c6a1586111c540b
         with:
-          # Check https://github.com/codacy/codacy-analysis-cli#project-token to get your project token from your Codacy repository
-          # You can also omit the token and run the tools that support default configurations
+          # Provide your Codacy project token from repository secrets.
+          # You can omit if the underlying tools can run with default config only.
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+
+          # Enable verbose logging to get more details in the build logs.
           verbose: true
+
+          # Name of the SARIF output file.
           output: results.sarif
+
+          # Output format set to 'sarif' so it can be used by GitHub code scanning.
           format: sarif
-          # Adjust severity of non-security issues
+
+          # Force GitHub code scanning compatible severities for non-security issues.
           gh-code-scanning-compat: true
-          # Force 0 exit code to allow SARIF file generation
-          # This will handover control about PR rejection to the GitHub side
+
+          # The maximum number of issues allowed before failing the job,
+          # set to a large number so Codacy won't block generation of the SARIF.
           max-allowed-issues: 2147483647
 
-      # Upload the SARIF file generated in the previous step
-      - name: Upload SARIF results file
+      # Step 3: Upload the SARIF file to GitHub code scanning
+      - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v2
         with:
           sarif_file: results.sarif
+
