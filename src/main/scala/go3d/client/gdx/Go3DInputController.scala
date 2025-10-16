@@ -43,7 +43,7 @@ class Go3DInputController(camera: PerspectiveCamera) extends InputAdapter:
       tmpXZ.set(camera.direction).crs(camera.up).y = 0f
       if (rotatePressed(Keys.UP)) camera.rotateAround(new Vector3, tmpXZ.nor, delta*rotateAngle)
       if (rotatePressed(Keys.DOWN)) camera.rotateAround(new Vector3, tmpXZ.nor, -delta*rotateAngle)
-      camera.update
+      camera.update()
 
   private def setCtrl(mode: Boolean): Boolean =
     ctrl = mode
@@ -59,5 +59,5 @@ class Go3DInputController(camera: PerspectiveCamera) extends InputAdapter:
     camera.direction.set(defaultDirection)
     camera.up.set(defaultUp)
     camera.lookAt(0, 0, 0)
-    camera.update
+    camera.update()
     true

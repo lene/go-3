@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
 import com.badlogic.gdx.graphics.g3d.{Material, Model, ModelInstance, RenderableProvider}
 import go3d.client.StarPoints
 import go3d.{Black, Game, Position, White}
+import com.badlogic.gdx.graphics.GL20
 
 import scala.annotation.tailrec
 
@@ -19,6 +20,7 @@ class GeometryBuilder(boardSize: Int):
 
   final val WHITE = "white stone"
   final val BLACK = "black stone"
+  final val CURSOR = "cursor"
   final val GRID = "horizontal grid"
   final val STAR_POINT = "star point"
 
@@ -37,6 +39,11 @@ class GeometryBuilder(boardSize: Int):
     ColorAttribute.createDiffuse(new Color(0.2, 0.2, 0.2, 0.4)),
     ColorAttribute.createSpecular(new Color(0.8, 0.8, 0.8, 0.4))
   )
+  final val CURSOR_MATERIAL = new Material(
+    ColorAttribute.createAmbient(new Color(0.2, 0.1, 0.1, 0.2)),
+    ColorAttribute.createDiffuse(new Color(0.4, 0.2, 0.2, 0.2)),
+    ColorAttribute.createSpecular(new Color(0.1, 0.8, 0.8, 0.2))
+  )
 
   val modelBuilder = new ModelBuilder
   val models: Map[String, Model] = createModels(boardSize)
@@ -50,6 +57,9 @@ class GeometryBuilder(boardSize: Int):
     (1 to boardSize).map(y => horizontalGrid(y, boardSize)).toList :++
       (-boardSize / 2 to boardSize / 2).map(z => verticalGrid(z, boardSize)).toList :++
       createStarPoints(boardSize)
+
+  def cursor: ModelInstance =
+    createModel(CURSOR, Position(CENTER, CENTER, CENTER), STONE_RADIUS, boardSize)
 
   def dispose(): Unit = models.values.foreach(_.dispose())
 
@@ -76,6 +86,10 @@ class GeometryBuilder(boardSize: Int):
         1, 1, 1, 2 * SPHERE_DIVISIONS, SPHERE_DIVISIONS,
         BLACK_MATERIAL, Usage.Position | Usage.Normal
       ),
+      CURSOR -> modelBuilder.createSphere(
+        1, 1, 1, SPHERE_DIVISIONS, SPHERE_DIVISIONS / 2,
+        GL20.GL_LINES, CURSOR_MATERIAL, Usage.Position | Usage.Normal
+      ),
       GRID -> modelBuilder.createLineGrid(
         boardSize - 1, boardSize - 1, 1, 1,
         GRID_MATERIAL, Usage.Position | Usage.Normal
@@ -88,11 +102,10 @@ class GeometryBuilder(boardSize: Int):
 
   def createModel(name: String, pos: Position, scale: Float, boardSize: Int): ModelInstance =
     val instance = new ModelInstance(models(name))
+    val offset = -(boardSize + 1) / 2f
     instance.transform.setToTranslationAndScaling(
-      pos.x.toFloat, pos.y.toFloat, pos.z.toFloat, scale, scale, scale
-    )
-    instance.transform.translate(
-      -(boardSize + 1) / 2f, -(boardSize + 1) / 2f, -(boardSize + 1) / 2f
+      pos.x.toFloat + offset, pos.y.toFloat + offset, pos.z.toFloat + offset,
+      scale, scale, scale
     )
     instance
 
