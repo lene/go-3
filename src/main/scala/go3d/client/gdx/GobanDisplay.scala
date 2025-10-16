@@ -1,7 +1,7 @@
 package go3d.client.gdx
 
 import com.badlogic.gdx.ApplicationListener
-import com.badlogic.gdx.graphics.g3d.RenderableProvider
+import com.badlogic.gdx.graphics.g3d.{ModelInstance, RenderableProvider}
 import com.badlogic.gdx.utils.Timer
 import com.typesafe.scalalogging.LazyLogging
 import go3d.client.BaseClient
@@ -13,8 +13,9 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
   final val UPDATE_DELAY_SECONDS = 2f
   final val UPDATE_INTERVAL_SECONDS = 1f
 
-  private lazy val gdxResources = GDXResources(BOARD_SIZE)
   private lazy val builder = GeometryBuilder(BOARD_SIZE)
+  private lazy val marker = SphereMarker(builder.cursor, BOARD_SIZE)
+  private lazy val gdxResources = GDXResources(BOARD_SIZE, marker)
 
   private var stonesModel: List[RenderableProvider] = List()
   private var game: Option[Game] = None
@@ -47,18 +48,26 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
     )
 
   private def latest: Option[Position] =
-    game.fold(None: Option[Position])(
-      g => if g.moves.length == 0 then None else g.moves.last.optionalPosition
+    game.flatMap(
+      g => if g.moves.isEmpty then None else g.moves.last.optionalPosition
     )
 
-  @Override def render(): Unit = gdxResources.render(latest, builder.gridModel, stonesModel)
+  private def cursorModel(pos: Option[Position]): List[ModelInstance] =
+    pos.fold(List[ModelInstance]())(
+      p => List(builder.createModel("cursor", p, 1.1, BOARD_SIZE))
+    )
+
+  @Override def render(): Unit =
+    val latestPos = latest
+    if latestPos.isDefined then logger.debug(s"render() latest = ${latestPos.get}")
+    gdxResources.render(latestPos, builder.gridModel, stonesModel, cursorModel(latestPos))
 
   @Override def dispose(): Unit =
     gdxResources.dispose()
     builder.dispose()
 
-  @Override def resume(): Unit = logger.info("resume")
+  @Override def resume(): Unit = logger.debug("resume")
 
   @Override def resize(width: Int, height: Int): Unit = gdxResources.resize()
 
-  @Override def pause(): Unit = logger.info("pause")
+  @Override def pause(): Unit = logger.debug("pause")
