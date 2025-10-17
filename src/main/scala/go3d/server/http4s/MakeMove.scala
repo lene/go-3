@@ -19,6 +19,7 @@ abstract case class MakeMove(gameId: String, request: Request[IO])
     Games.add(gameId, newGame)
     logger.info(s"${requestInfo.path}, $color".replaceAll("[\r\n]"," "))
     StatusResponse(
-      newGame, newGame.possibleMoves(color), false, newGame.isOver, requestInfo.debugInfo
+      newGame, newGame.possibleMoves(color), false, newGame.isOver, Some(color),
+      requestInfo.debugInfo
     )
 

@@ -198,6 +198,7 @@ implicit val encodeStatusResponse: Encoder[StatusResponse] =
       ("moves", response.moves.asJson),
       ("ready", Json.fromBoolean(response.ready)),
       ("over", Json.fromBoolean(response.over)),
+      ("playerColor", response.playerColor.asJson),
       ("debug", response.debug.asJson)
     )
 
@@ -207,8 +208,9 @@ implicit val decodeStatusResponse: Decoder[StatusResponse] =
     moves <- c.downField("moves").as[List[Position]]
     ready <- c.downField("ready").as[Boolean]
     over <- c.downField("over").as[Boolean]
+    playerColor <- c.downField("playerColor").as[Option[Color]]
     debug <- c.downField("debug").as[RequestInfo]
-  yield StatusResponse(game, moves, ready, over, debug)
+  yield StatusResponse(game, moves, ready, over, playerColor, debug)
 
 implicit val encodeOpenGamesResponse: Encoder[OpenGamesResponse] =
   (response: OpenGamesResponse) => Json.obj(("ids", response.ids.asJson))

@@ -9,7 +9,7 @@ import go3d.server.{
   decodeStatusResponse, decodeGameCreatedResponse, decodePlayerRegisteredResponse
 }
 
-case class BaseClient(serverURL: String, id: String, token: Option[String]):
+case class BaseClient(serverURL: String, id: String, token: Option[String], playerColor: Option[Color]):
   def status: StatusResponse = getSR(s"$serverURL/status/$id", headers)
 
   def set(x: Int, y: Int, z: Int): StatusResponse = getSR(s"$serverURL/set/$id/$x/$y/$z", headers)
@@ -27,7 +27,7 @@ object BaseClient:
 
   def register(serverURL: String, id: String, color: Color): BaseClient =
     val response = getPRR(s"$serverURL/register/$id/$color")
-    BaseClient(serverURL, id, Some(response.authToken))
+    BaseClient(serverURL, id, Some(response.authToken), Some(response.color))
 
 def getJson(url: String): Source = Source.fromURL(url)
 
