@@ -14,13 +14,15 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
   final val UPDATE_INTERVAL_SECONDS = 1f
 
   private lazy val builder = GeometryBuilder(BOARD_SIZE)
-  private lazy val marker = SphereMarker(builder.cursor, BOARD_SIZE)
-  private lazy val gdxResources = GDXResources(BOARD_SIZE, marker)
+  private lazy val greenMarker = SphereMarker(builder.cursor, BOARD_SIZE, isGreen = true)
+  private lazy val redMarker = SphereMarker(builder.cursor, BOARD_SIZE, isGreen = false)
+  private lazy val gdxResources = GDXResources(BOARD_SIZE, greenMarker, redMarker)
 
   private var stonesModel: List[RenderableProvider] = List()
   private var game: Option[Game] = None
 
   @Override def create(): Unit =
+    logger.info(s"GobanDisplay.create() - client.playerColor = ${client.playerColor}")
     updateGame(client.status)
     Timer.schedule(new Timer.Task {
       @Override def run(): Unit = updateGame(client.status)
@@ -47,10 +49,19 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
       )
     )
 
-  private def latest: Option[Position] =
-    game.flatMap(
-      g => if g.moves.isEmpty then None else g.moves.last.optionalPosition
-    )
+  private def ownLastMove: Option[Position] =
+    client.playerColor.flatMap { myColor =>
+      game.flatMap { g =>
+        g.moves.reverse.find(_.color == myColor).flatMap(_.optionalPosition)
+      }
+    }
+
+  private def enemyLastMove: Option[Position] =
+    client.playerColor.flatMap { myColor =>
+      game.flatMap { g =>
+        g.moves.reverse.find(_.color != myColor).flatMap(_.optionalPosition)
+      }
+    }
 
   private def cursorModel(pos: Option[Position]): List[ModelInstance] =
     pos.fold(List[ModelInstance]())(
@@ -58,9 +69,11 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
     )
 
   @Override def render(): Unit =
-    val latestPos = latest
-    if latestPos.isDefined then logger.debug(s"render() latest = ${latestPos.get}")
-    gdxResources.render(latestPos, builder.gridModel, stonesModel, cursorModel(latestPos))
+    val own = ownLastMove
+    val enemy = enemyLastMove
+    if own.isDefined then logger.info(s"render() own = ${own.get}")
+    if enemy.isDefined then logger.info(s"render() enemy = ${enemy.get}")
+    gdxResources.render(own, enemy, builder.gridModel, stonesModel, cursorModel(own), cursorModel(enemy))
 
   @Override def dispose(): Unit =
     gdxResources.dispose()

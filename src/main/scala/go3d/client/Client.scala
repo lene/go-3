@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import java.io.IOException
 import java.net.{ConnectException, UnknownHostException}
 
-import go3d.BadColor
+import go3d.{BadColor, Color}
 import go3d.server.StatusResponse
 
 trait ClientTrait:
@@ -15,6 +15,13 @@ trait ClientTrait:
   def init(): Unit
 
 abstract class Client extends ClientTrait with LazyLogging:
+
+  protected def getPlayerColor(serverURL: String, gameId: String, token: String): Option[Color] =
+    logger.info(s"getPlayerColor called with serverURL=$serverURL, gameId=$gameId, token=$token")
+    val tempClient = BaseClient(serverURL, gameId, Some(token), None)
+    val color = tempClient.status.playerColor
+    logger.info(s"getPlayerColor returning: $color")
+    color
 
   def main(args: Array[String]): Unit =
     try

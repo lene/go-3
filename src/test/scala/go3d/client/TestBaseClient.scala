@@ -5,5 +5,5 @@ import org.junit.jupiter.api.{Assertions, Test}
 class TestBaseClient:
 
   @Test def testTokenExpandsToAuthHeader(): Unit =
-    val client = BaseClient("", "", Some("test"))
+    val client = BaseClient("", "", Some("test"), None)
     Assertions.assertEquals(Map("Authentication" -> s"Bearer test"), client.headers)
