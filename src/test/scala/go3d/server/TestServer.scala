@@ -603,6 +603,76 @@ class TestServer:
     Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id), s"${Games.fileIO.get.getArchivedGames} does not contain ${gameData.id}")
     Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
 
+  @Test def testCursorPositioningInRealGame(): Unit =
+    import go3d.client.gdx.playerLastMove
+    val gameData: GameData = setUpGame(3)
+
+    // Black makes first move
+    gameData.set(Black, 2, 2, 2)
+
+    // Verify via status endpoint that move was recorded
+    val status1 = gameData.status()
+    Assertions.assertEquals(1, status1.game.moves.length)
+
+    // Verify cursor logic for Black client
+    val blackOwnCursor = status1.game.playerLastMove(Some(Black))
+    val blackOpponentCursor = status1.game.playerLastMove(Some(!Black))
+    Assertions.assertEquals(Some(Position(2, 2, 2)), blackOwnCursor)
+    Assertions.assertEquals(None, blackOpponentCursor)
+
+    // White makes second move
+    gameData.set(White, 3, 3, 3)
+
+    val status2 = gameData.status()
+    Assertions.assertEquals(2, status2.game.moves.length)
+
+    // Verify cursor logic for both clients
+    val blackOwnCursor2 = status2.game.playerLastMove(Some(Black))
+    val blackOpponentCursor2 = status2.game.playerLastMove(Some(!Black))
+    Assertions.assertEquals(Some(Position(2, 2, 2)), blackOwnCursor2)
+    Assertions.assertEquals(Some(Position(3, 3, 3)), blackOpponentCursor2)
+
+    val whiteOwnCursor = status2.game.playerLastMove(Some(White))
+    val whiteOpponentCursor = status2.game.playerLastMove(Some(!White))
+    Assertions.assertEquals(Some(Position(3, 3, 3)), whiteOwnCursor)
+    Assertions.assertEquals(Some(Position(2, 2, 2)), whiteOpponentCursor)
+
+  @Test def testCursorPositioningMultiMoveSequence(): Unit =
+    import go3d.client.gdx.playerLastMove
+    val gameData: GameData = setUpGame(5)
+
+    val moves = List(
+      (Black, Position(3, 3, 3)),
+      (White, Position(4, 4, 4)),
+      (Black, Position(2, 2, 2)),
+      (White, Position(5, 5, 5)),
+      (Black, Position(1, 1, 1)),
+    )
+
+    var lastBlackMove: Option[Position] = None
+    var lastWhiteMove: Option[Position] = None
+
+    moves.foreach { case (color, position) =>
+      gameData.set(color, position.x, position.y, position.z)
+
+      if color == Black then lastBlackMove = Some(position)
+      else lastWhiteMove = Some(position)
+
+      val status = gameData.status()
+
+      // Verify Black client's view
+      val blackOwn = status.game.playerLastMove(Some(Black))
+      val blackOpponent = status.game.playerLastMove(Some(!Black))
+      Assertions.assertEquals(lastBlackMove, blackOwn)
+      Assertions.assertEquals(lastWhiteMove, blackOpponent)
+
+      // Verify White client's view
+      val whiteOwn = status.game.playerLastMove(Some(White))
+      val whiteOpponent = status.game.playerLastMove(Some(!White))
+      Assertions.assertEquals(lastWhiteMove, whiteOwn)
+      Assertions.assertEquals(lastBlackMove, whiteOpponent)
+    }
+
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
     var statusResponse: StatusResponse = null
     for move <- moves do
