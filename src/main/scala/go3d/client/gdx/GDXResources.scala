@@ -28,13 +28,19 @@ case class GDXResources(boardSize: Int):
   private val greenMarker: Marker = SphereMarker(greenCursorModel, boardSize, isGreen = true)
   private val redMarker: Marker = SphereMarker(redCursorModel, boardSize, isGreen = false)
 
-  def render(ownMove: Option[Position], opponentMove: Option[Position], models: List[RenderableProvider]*): Unit =
+  def render(
+      ownMove: Option[Position],
+      opponentMove: Option[Position],
+      ownFadeAlpha: Float,
+      opponentFadeAlpha: Float,
+      models: List[RenderableProvider]*
+  ): Unit =
     Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth, Gdx.graphics.getHeight)
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
     modelBatch.begin(camera)
     models.foreach(model => modelBatch.render(model.asJava, environment))
-    greenMarker.render(modelBatch, ownMove)
-    redMarker.render(modelBatch, opponentMove)
+    greenMarker.render(modelBatch, ownMove, ownFadeAlpha)
+    redMarker.render(modelBatch, opponentMove, opponentFadeAlpha)
     modelBatch.end()
 
 

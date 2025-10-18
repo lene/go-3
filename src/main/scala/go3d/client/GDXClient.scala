@@ -13,8 +13,10 @@ object GDXClient extends InteractiveClient:
 
     def mainLoop(args: Array[String]): Unit =
         println("Starting 3D Go client")
+        val conf = new ClientCLIConf(args.toList)
+        val cursorFadeSeconds = conf.cursorFadeSeconds()
         val config = getConfiguration("3D Go", 1280, 960)
-        new Lwjgl3Application(new GobanDisplay(client), config)
+        new Lwjgl3Application(new GobanDisplay(client, cursorFadeSeconds), config)
 
     def getConfiguration(appName: String, width: Int, height: Int): Lwjgl3ApplicationConfiguration =
         val config = new Lwjgl3ApplicationConfiguration()
