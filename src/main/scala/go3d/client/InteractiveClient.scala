@@ -16,6 +16,7 @@ class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val token = opt[String](required = false)
   val server = opt[String](required = true)
   val port = opt[Int](required = true)
+  val cursorFadeSeconds = opt[Float](required = false, default = Some(10.0f))
   requireOne(size, gameId)
   dependsOnAll(size, List(color))
   dependsOnAll(token, List(gameId))
