@@ -15,10 +15,11 @@ trait Marker:
   def render(modelBatch: ModelBatch, position: Option[Position]): Unit
 
 
-case class SphereMarker(cursorModel: ModelInstance, boardSize: Int) extends Marker:
+case class SphereMarker(cursorModel: ModelInstance, boardSize: Int, isGreen: Boolean) extends Marker:
   def render(modelBatch: ModelBatch, targetPos: Option[Position]): Unit =
     if targetPos.isDefined then
-      println(s"rendering cursor at ${targetPos.get}")
+      val colorName = if isGreen then "green" else "red"
+      println(s"rendering $colorName cursor at ${targetPos.get}")
       val offset = -(boardSize + 1) / 2f
       cursorModel.transform.setToTranslationAndScaling(
         targetPos.get.x.toFloat + offset,
@@ -27,15 +28,19 @@ case class SphereMarker(cursorModel: ModelInstance, boardSize: Int) extends Mark
         1.1f, 1.1f, 1.1f
       )
       val tempMaterial = cursorModel.materials.get(0)
-//      cursorModel.materials.clear()
       tempMaterial.clear()
-      tempMaterial.set(
-        ColorAttribute.createAmbient(Color(0.2, 0.5, 0.1, 0.2)),
-        ColorAttribute.createDiffuse(Color(0.2, 0.5, 0.1, 0.2)),
-        ColorAttribute.createSpecular(Color(0.4, 1.0, 0.1, 0.4))
-      )
-//      cursorModel.materials.set(0, tempMaterial)
-//      println(s"cursor material: ${cursorModel.materials.get(0)}")
+      if isGreen then
+        tempMaterial.set(
+          ColorAttribute.createAmbient(Color(0.2, 0.5, 0.1, 0.2)),
+          ColorAttribute.createDiffuse(Color(0.2, 0.5, 0.1, 0.2)),
+          ColorAttribute.createSpecular(Color(0.4, 1.0, 0.1, 0.4))
+        )
+      else
+        tempMaterial.set(
+          ColorAttribute.createAmbient(Color(0.5, 0.1, 0.1, 0.2)),
+          ColorAttribute.createDiffuse(Color(0.5, 0.1, 0.1, 0.2)),
+          ColorAttribute.createSpecular(Color(1.0, 0.2, 0.2, 0.4))
+        )
       modelBatch.render(cursorModel)
 
 case class ParticleMarker(assetFile: String, camera: PerspectiveCamera) extends Marker:

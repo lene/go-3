@@ -144,6 +144,7 @@ Bots use a pipeline of strategies to narrow down move selection:
 - Tail recursion (`@tailrec`) for iterative algorithms
 - Case classes for immutability in domain model (except `Goban` which copies arrays)
 - Comprehensive test coverage using ScalaTest
+- Lines have a maximum length of 100 characters
 
 ## Key Implementation Details
 
@@ -161,6 +162,129 @@ This simplifies neighbor checking by avoiding bounds checks.
 
 ### JSON Serialization
 Uses Circe for encoding game state, moves, and API responses. See `server/Jsonify.scala` for encoders/decoders.
+
+# Testing and Development Workflow
+
+## Starting a Game Session
+
+### 1. Start the server (in background)
+```bash
+sbt "runMain go3d.server.GoServer --port 6030 --save-dir saves" &
+```
+
+### 2. Create a new game
+```bash
+curl -s http://localhost:6030/new/5  # Creates 5x5x5 game
+# Returns: {"id":"XXXXXX","size":5}
+```
+
+### 3. Register players (save the tokens!)
+```bash
+# Black player
+curl -s "http://localhost:6030/register/GAME_ID/@"
+# Returns: {...,"color":{"color":"@"},"authToken":"TOKEN1",...}
+
+# White player
+curl -s "http://localhost:6030/register/GAME_ID/O"
+# Returns: {...,"color":{"color":"O"},"authToken":"TOKEN2",...}
+```
+
+### 4. Start GDX client (3D visualization)
+```bash
+# As authenticated Black player
+sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id GAME_ID --token TOKEN1" &
+
+# Or as spectator (watch-only, no cursors)
+sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id GAME_ID" &
+```
+
+### 5. Make moves via API
+```bash
+# Black plays at (3,3,3)
+curl -s -H "Authentication: Bearer TOKEN1" "http://localhost:6030/set/GAME_ID/3/3/3"
+
+# White plays at (4,3,3)
+curl -s -H "Authentication: Bearer TOKEN2" "http://localhost:6030/set/GAME_ID/4/3/3"
+```
+
+## Taking Screenshots for Analysis
+
+Use `scrot` to capture the screen:
+
+```bash
+# Take full screen screenshot
+scrot /tmp/screenshot.png
+
+# Take screenshot with 3 second delay (useful for capturing menus)
+scrot -d 3 /tmp/screenshot.png
+
+# Take screenshot of focused window only
+scrot -u /tmp/screenshot.png
+```
+
+### Analyzing screenshots with Claude Code
+
+1. Take screenshot: `scrot /tmp/screenshot.png`
+2. Use the Read tool to load the screenshot: `Read("/tmp/screenshot.png")`
+3. Claude Code can view and analyze the visual output, including:
+    - 3D board state
+    - Cursor positions and colors
+    - Stone placement
+    - UI elements
+
+## GDX Client Cursor System
+
+The GDX 3D client shows two cursors when authenticated:
+
+- **Green cursor**: Marks the player's own last move
+- **Red cursor**: Marks the opponent's last move
+- Both cursors are wireframe spheres (1.1x stone size) positioned at grid intersections
+- Cursors only appear when client is authenticated with `--token`
+- Watch-only clients (no token) see no cursors
+
+### Cursor Implementation Details
+
+- Green cursor color: `ColorAttribute(0.2, 0.5, 0.1)` - greenish
+- Red cursor color: `ColorAttribute(0.5, 0.1, 0.1)` - reddish
+- Both use `GL20.GL_LINES` rendering mode for wireframe appearance
+- Position calculated with board-centering offset: `-(boardSize+1)/2`
+- Uses `setToTranslationAndScaling()` for absolute positioning (not additive `translate()`)
+
+## Common Test Scenarios
+
+### Testing cursor positioning
+```bash
+# Create game and register both players
+GAME_ID=$(curl -s http://localhost:6030/new/5 | jq -r '.id')
+BLACK_TOKEN=$(curl -s "http://localhost:6030/register/$GAME_ID/@" | jq -r '.authToken')
+WHITE_TOKEN=$(curl -s "http://localhost:6030/register/$GAME_ID/O" | jq -r '.authToken')
+
+# Start GDX client as Black
+sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id $GAME_ID --token $BLACK_TOKEN" &
+
+# Make moves and take screenshots
+curl -s -H "Authentication: Bearer $BLACK_TOKEN" "http://localhost:6030/set/$GAME_ID/3/3/3"
+sleep 2
+scrot /tmp/after_black_move.png
+
+curl -s -H "Authentication: Bearer $WHITE_TOKEN" "http://localhost:6030/set/$GAME_ID/4/3/3"
+sleep 2
+scrot /tmp/after_white_move.png
+```
+
+### Testing bot vs bot game
+```bash
+# Start two bots playing each other
+sbt "runMain go3d.client.BotClient --server localhost --port 6030 --size 5 --color @ --strategy closestToCenter" &
+sbt "runMain go3d.client.BotClient --server localhost --port 6030 --game-id GAME_ID --color O --strategy random" &
+```
+
+## Debugging Tips
+
+- Check client output for cursor rendering: `grep "rendering.*cursor"` in sbt output
+- Verify player color is set: Check `client.playerColor` is `Some(Black)` or `Some(White)`
+- Check move history: `curl -s http://localhost:6030/status/GAME_ID | jq '.game.moves'`
+- Monitor server logs for authentication issues
 
 ## Common Patterns
 

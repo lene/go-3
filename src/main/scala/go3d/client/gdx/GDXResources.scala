@@ -13,7 +13,7 @@ import scala.collection.immutable.List
 import scala.jdk.CollectionConverters.*
 
 
-case class GDXResources(boardSize: Int, marker: Marker):
+case class GDXResources(boardSize: Int, greenMarker: Marker, redMarker: Marker):
 
   private val cameraPosition = Vector3(-boardSize*2f, boardSize*1f, -boardSize*1f).scl(3f/4f)
   private val environment: Environment = createEnvironment
@@ -21,12 +21,13 @@ case class GDXResources(boardSize: Int, marker: Marker):
   Gdx.input.setInputProcessor(new Go3DInputMultiplexer(camera))
   private val modelBatch = new ModelBatch
 
-  def render(latest: Option[Position], models: List[RenderableProvider]*): Unit =
+  def render(ownMove: Option[Position], enemyMove: Option[Position], models: List[RenderableProvider]*): Unit =
     Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth, Gdx.graphics.getHeight)
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
     modelBatch.begin(camera)
     models.foreach(model => modelBatch.render(model.asJava, environment))
-    marker.render(modelBatch, latest)
+    greenMarker.render(modelBatch, ownMove)
+    redMarker.render(modelBatch, enemyMove)
     modelBatch.end()
 
 

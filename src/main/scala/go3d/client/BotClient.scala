@@ -110,9 +110,11 @@ object BotClient extends Client with LazyLogging:
       client = BaseClient.create(serverURL, conf.size(), colorFromString(conf.color()))
     else if conf.gameId.isSupplied then
       if conf.token.isSupplied then
-        client = BaseClient(
-          serverURL, conf.gameId(), conf.token.toOption,
+        val playerColor = if conf.gameId().nonEmpty && conf.token().nonEmpty then
           getPlayerColor(serverURL, conf.gameId(), conf.token())
+        else None
+        client = BaseClient(
+          serverURL, conf.gameId(), conf.token.toOption, playerColor
         )
       else client = BaseClient.register(serverURL, conf.gameId(), colorFromString(conf.color()))
     strategies = conf.strategy().split(',')
