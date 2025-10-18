@@ -5,5 +5,5 @@ import go3d.server.{RequestInfo, StatusResponse}
 
 class MockClient extends BaseClient("mock server", "mock id", None, None):
   override def status: StatusResponse =
-    StatusResponse(Game.start(3), List(), true, false, RequestInfo(Map(), "", "", false))
+    StatusResponse(Game.start(3), List(), true, false, None, RequestInfo(Map(), "", "", false))
 
