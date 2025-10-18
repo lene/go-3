@@ -231,7 +231,7 @@ class TestGoban:
     ))
     Assertions.assertEquals(9, goban.numLiberties(Set(Position(2, 2, 2), Position(1, 2, 2))))
 
-  @Test def testNumLibertiesOfFriendlyAndEnemyNeighborsAdded(): Unit =
+  @Test def testNumLibertiesOfFriendlyAndOpponentNeighborsAdded(): Unit =
     val goban = fromStrings(Map(
       2 ->
         """   |

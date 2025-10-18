@@ -13,21 +13,28 @@ import scala.collection.immutable.List
 import scala.jdk.CollectionConverters.*
 
 
-case class GDXResources(boardSize: Int, greenMarker: Marker, redMarker: Marker):
+case class GDXResources(boardSize: Int):
 
   private val cameraPosition = Vector3(-boardSize*2f, boardSize*1f, -boardSize*1f).scl(3f/4f)
   private val environment: Environment = createEnvironment
   private val camera: PerspectiveCamera = createCamera(cameraPosition)
   Gdx.input.setInputProcessor(new Go3DInputMultiplexer(camera))
   private val modelBatch = new ModelBatch
+  private val builder = GeometryBuilder(boardSize)
 
-  def render(ownMove: Option[Position], enemyMove: Option[Position], models: List[RenderableProvider]*): Unit =
+  private val greenCursorModel = builder.createModel("cursor", Position(1, 1, 1), 1.1, boardSize)
+  private val redCursorModel = builder.createModel("cursor", Position(1, 1, 1), 1.1, boardSize)
+
+  private val greenMarker: Marker = SphereMarker(greenCursorModel, boardSize, isGreen = true)
+  private val redMarker: Marker = SphereMarker(redCursorModel, boardSize, isGreen = false)
+
+  def render(ownMove: Option[Position], opponentMove: Option[Position], models: List[RenderableProvider]*): Unit =
     Gdx.gl.glViewport(0, 0, Gdx.graphics.getWidth, Gdx.graphics.getHeight)
     Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT | GL20.GL_DEPTH_BUFFER_BIT)
     modelBatch.begin(camera)
     models.foreach(model => modelBatch.render(model.asJava, environment))
     greenMarker.render(modelBatch, ownMove)
-    redMarker.render(modelBatch, enemyMove)
+    redMarker.render(modelBatch, opponentMove)
     modelBatch.end()
 
 
@@ -36,7 +43,9 @@ case class GDXResources(boardSize: Int, greenMarker: Marker, redMarker: Marker):
     camera.viewportHeight = Gdx.graphics.getHeight.toFloat
     camera.update()
 
-  def dispose(): Unit = modelBatch.dispose()
+  def dispose(): Unit =
+    modelBatch.dispose()
+    builder.dispose()
 
   private def createEnvironment: Environment =
     val localEnv = new Environment()
