@@ -226,9 +226,3 @@ implicit val encodeGoResponse: Encoder[GoResponse] =
     case r: ErrorResponse => encodeErrorResponse(r)
     case r: GameCreatedResponse => encodeGameCreatedResponse(r)
     case r: OpenGamesResponse => encodeOpenGamesResponse(r)
-
-
-//import scala.io.Source
-//def getResponse[T<:GoResponse](url: String)(implicit cType:ClassTag[T]): T =
-//  val json = Source.fromURL(url).mkString
-//  return Decoder[T].decodeJson(json)

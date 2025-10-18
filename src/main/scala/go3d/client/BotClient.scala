@@ -46,7 +46,7 @@ object BotClient extends Client with LazyLogging:
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
   /// --strategy is a comma-separated list of:
-  //  closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
+  ///   closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
 
   def mainLoop(args: Array[String]): Unit =
     logger.info(
