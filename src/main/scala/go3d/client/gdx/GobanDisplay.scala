@@ -48,25 +48,13 @@ class GobanDisplay(client: BaseClient) extends ApplicationListener with LazyLogg
     )
 
   private def ownLastMove: Option[Position] =
-    client.playerColor.flatMap { myColor =>
-      game.flatMap { g =>
-        g.moves.reverse.find(_.color == myColor).flatMap(_.optionalPosition)
-      }
-    }
+    game.flatMap(_.playerLastMove(client.playerColor))
 
   private def opponentLastMove: Option[Position] =
-    client.playerColor.flatMap { myColor =>
-      game.flatMap { g =>
-        g.moves.reverse.find(_.color != myColor).flatMap(_.optionalPosition)
-      }
-    }
+    game.flatMap(_.playerLastMove(client.playerColor.map(!_)))
 
   @Override def render(): Unit =
-    val own = ownLastMove
-    val opponent = opponentLastMove
-    own.foreach(pos => logger.debug(s"render() own = $pos"))
-    opponent.foreach(pos => logger.debug(s"render() opponent = $pos"))
-    gdxResources.render(own, opponent, builder.gridModel, stonesModel)
+    gdxResources.render(ownLastMove, opponentLastMove, builder.gridModel, stonesModel)
 
   @Override def dispose(): Unit =
     gdxResources.dispose()
