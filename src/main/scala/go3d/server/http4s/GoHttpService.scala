@@ -8,6 +8,8 @@ import org.http4s.circe.jsonEncoderOf
 import org.http4s.dsl.io.*
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 import scala.util.Try
 import go3d.Color
@@ -21,7 +23,8 @@ object ColorVar:
 
 case class GoHttpService(port: Int) extends LazyLogging:
 
-  implicit def intEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[IO, Int]
+  given LoggerFactory[IO] = Slf4jFactory.create[IO]
+  implicit def intEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[Int]
 
   private val goService = HttpRoutes.of[IO] {
     case GET -> Root / "new" / IntVar(boardSize) =>
