@@ -6,7 +6,6 @@ import java.util.NoSuchElementException
 import org.rogach.scallop.*
 import org.rogach.scallop.exceptions.RequiredOptionNotFound
 import go3d.server.StatusResponse
-import go3d.Color
 
 class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val size = opt[Int](required = false)
