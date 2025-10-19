@@ -97,6 +97,8 @@ def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
   remotes.map(p => (p - local).abs).min
 
 def minLiberties(game: Game, color: Color): Int =
-  minBy(game.getAreas(color).toList, game.liberties(color, _))
+  val areas = game.getAreas(color)
+  if areas.isEmpty then Int.MaxValue
+  else minBy(areas.toList, game.liberties(color, _))
 
 

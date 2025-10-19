@@ -27,7 +27,8 @@ lazy val root = project
     ),
     // ScalaTest
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
-    // Scallop command line parser
+    logBuffered in Test := false,
+      // Scallop command line parser
     libraryDependencies += "org.rogach" %% "scallop" % "5.2.0",
     // requests
     libraryDependencies += "com.lihaoyi" %% "requests" % "0.9.0",
