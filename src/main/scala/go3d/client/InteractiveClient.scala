@@ -5,7 +5,7 @@ import com.typesafe.scalalogging.LazyLogging
 import java.util.NoSuchElementException
 import org.rogach.scallop.*
 import org.rogach.scallop.exceptions.RequiredOptionNotFound
-import go3d.server.{emptyResponse, StatusResponse}
+import go3d.server.StatusResponse
 import go3d.Color
 
 class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
@@ -45,12 +45,12 @@ abstract case class InteractiveClient(pollInterval: Int = 500) extends Client wi
       throw new IllegalArgumentException("Must provide either size or gameId")
 
   override  def waitUntilReady(client: BaseClient): StatusResponse =
-    var status = emptyResponse
+    var status = client.status
     var index = 0
     while !status.ready do
       index = index+1
       print("\b" + "/-\\|"(index % 4))
+      Thread.sleep(pollInterval)
       status = client.status
-      if !status.ready then Thread.sleep(pollInterval)
     status
 

@@ -9,8 +9,6 @@ case class PlayerRegisteredResponse(game: Game, color: Color, authToken: String,
                                     debug: RequestInfo) extends GoResponse
 case class StatusResponse(game: Game, moves: List[Position], ready: Boolean, over: Boolean,
                           playerColor: Option[Color], debug: RequestInfo) extends GoResponse
-def errorResponse(game: Game) = StatusResponse(game, List(), false, false, None, NullRequestInfo)
-def emptyResponse = errorResponse(Game.start(1))
 
 case class GameOverResponse(game: Game, debug: RequestInfo) extends GoResponse
 
