@@ -40,7 +40,6 @@ object AnalyzeGameData:
     val endMove = if args.length >= 3 then args(2).toInt else totalMoves - 1
 
     println(s"Analyzing game from $jsonFile")
-    println(s"Game ID: ${saveGame.gameId}")
     println(s"Board size: ${saveGame.game.size}")
     println(s"Total moves: $totalMoves")
     println(s"Detailed analysis: moves $startMove to $endMove")
