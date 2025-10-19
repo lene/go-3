@@ -1,6 +1,7 @@
 package go3d
 
 import scala.annotation.{tailrec, targetName}
+import scala.collection.mutable
 import scala.reflect.ClassTag
 
 object Goban:
@@ -61,12 +62,24 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   def hasLiberties(move: Move): Boolean =
     if !Set(Black, White).contains(move.color) then
       throw ColorMismatch(s"trying to find liberties for $move - not a stone but", move.color)
+    hasLibertiesHelper(move, mutable.Set[Position]())
+
+  private def hasLibertiesHelper(move: Move, visited: mutable.Set[Position]): Boolean =
     if at(move.position) != move.color then return false
+    if visited.contains(move.position) then return false
+    visited += move.position
     val neighboring = neighbors(move.position)
     if neighboring.exists(at(_) == Empty) then return true
     val toCheck = neighboring.filter(at(_) == move.color).map(Move(_, move.color)).toSet
     // check if part of a connected area
-    setStone(Move(move.position, Sentinel)).hasLiberties(toCheck)
+    hasLibertiesHelper(toCheck, visited)
+
+  @tailrec
+  private def hasLibertiesHelper(moves: Set[Move], visited: mutable.Set[Position]): Boolean =
+    if moves.isEmpty then return false
+    if moves.size == 1 then return hasLibertiesHelper(moves.head, visited)
+    if hasLibertiesHelper(moves.head, visited) then return true
+    hasLibertiesHelper(moves - moves.head, visited)
 
   def numLiberties(col: Color): Int =
     emptyPositions.toSet.intersect(neighbors(col)).size
@@ -85,19 +98,17 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
   private def emptyNeighbors(area: Set[Position]): Set[Position] =
     area.flatMap(pos => allNeighbors(pos)).map(_.position).intersect(emptyPositions.toSet)
 
-  @tailrec
-  private def hasLiberties(moves: Set[Move]): Boolean =
-    if moves.isEmpty then return false
-    if moves.size == 1 then return hasLiberties(moves.head)
-    if hasLiberties(moves.head) then return true
-    hasLiberties(moves - moves.head)
-
   def connectedStones(move: Move): Set[Move] =
     if at(move.position) != move.color then return Set()
-    // ok, this is not functional style, but to me much clearer than using recursion
+    connectedStonesHelper(move, mutable.Set[Position]())
+
+  private def connectedStonesHelper(move: Move, visited: mutable.Set[Position]): Set[Move] =
+    if at(move.position) != move.color then return Set()
+    if visited.contains(move.position) then return Set()
+    visited += move.position
     var connected = Set(move)
-    for position <- neighborsOfColor(move.position, move.color) if !connected.contains(Move(position, move.color)) do
-      connected = connected ++ setStone(Move(move.position, Sentinel)).connectedStones(Move(position, move.color))
+    for position <- neighborsOfColor(move.position, move.color) if !visited.contains(position) do
+      connected = connected ++ connectedStonesHelper(Move(position, move.color), visited)
     connected
 
   private def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)

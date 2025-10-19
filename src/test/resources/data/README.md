@@ -26,6 +26,30 @@ sbt "Test/runMain go3d.AnalyzeGameData src/test/resources/data/04hfPW.json 278 2
 
 This will show that the game stops at move 282 with a `PositionOccupied` error.
 
+### gNoDpK.json, yLtN8s.json, gyxAXY.json, sXBvhd.json, 6axryR.json, B8orAu.json
+- **Source**: Bug #66 - "Server hanging sometimes"
+- **Size**: 7x7x7 board
+- **Moves**: 336-342 moves
+- **Status**: Performance issue - FIXED
+
+**Investigation Results**:
+These games exhibited severe performance degradation with certain moves taking over 2 seconds to process, causing the server to appear "hung" during gameplay.
+
+Root cause: The `connectedStones()` and `hasLiberties()` methods in `Goban.scala` were creating deep copies of the entire 3D board array on every recursive call via `setStone()`. For games with large connected groups (~300 stones on a 7x7x7 board), this resulted in exponential complexity.
+
+**Fix**: Refactored both methods to use a mutable `visited` set passed through recursive calls instead of creating new board copies. This eliminated the deep copy overhead.
+
+**Performance Impact**:
+- Before: Move 339 in gNoDpK.json took 2173ms, total game time 2307ms
+- After: Move 339 takes <10ms, total game time 124ms
+- **Result: ~18.6x overall speedup, 200x+ speedup on problematic moves**
+
+**Analysis**:
+To measure performance of these games:
+```bash
+sbt "Test/runMain go3d.MeasureMoveTimes src/test/resources/data/gNoDpK.json 10"
+```
+
 ## Adding New Test Data
 
 When adding new game data files for bug analysis:

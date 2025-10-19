@@ -36,4 +36,4 @@ saves/
 *.zip
 *.png
 point.pfx
-
+.env
