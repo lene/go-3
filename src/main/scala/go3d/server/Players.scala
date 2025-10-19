@@ -22,10 +22,10 @@ object Players:
   def isReady(gameId: String): Boolean =
     activePlayers.contains(gameId) && activePlayers(gameId).size == 2
     
-  def register(gameId: String, color: Color, token: String): Unit =
+  def register(gameId: String, color: Color): Unit =
     if !activePlayers.contains(gameId) then activePlayers(gameId) = Map()
     if isDuplicate(gameId, color) then throw DuplicateColor(gameId, color)
-    val player = Player(color, gameId, token)
+    val player = Player(color, gameId)
     activePlayers(gameId) = activePlayers(gameId) + (color -> player)
 
   def unregister(gameId: String): Unit = activePlayers.remove(gameId)

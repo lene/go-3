@@ -44,16 +44,23 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
     gameId
 
   def getPlayer: Option[Player] =
-    val players = Players.get(getGameId)
-    try players.flatMap(_.find(_._2.token == getToken).map(pair => pair._2))
+    try
+      val token = getToken
+      val gameId = getGameId
+      Tokens.getColor(token, gameId).flatMap(color => Players.get(gameId).flatMap(_.get(color)))
     catch case e: AuthorizationError => None
 
   def mustGetPlayer: Player =
-    val players = Players.get(getGameId)
-    if players.isEmpty then throw GameOver(Games(getGameId))
-    players.get.find(_._2.token == getToken).map(pair => pair._2) match
-      case Some(value) => value
-      case None => throw PlayerNotFoundByToken(getGameId, getToken)
+    val token = getToken
+    val gameId = getGameId
+    val players = Players.get(gameId)
+    if players.isEmpty then throw GameOver(Games(gameId))
+
+    Tokens.getColor(token, gameId) match
+      case Some(color) => players.get.get(color) match
+        case Some(player) => player
+        case None => throw PlayerNotFoundByToken(gameId, token)
+      case None => throw PlayerNotFoundByToken(gameId, token)
 
   private def getToken: String =
     if !headers.contains("Authentication") then throw AuthorizationMissing(headers)

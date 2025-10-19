@@ -147,7 +147,7 @@ class TestJsonify:
     Assertions.assertEquals(game, decoded, json)
 
   @Test def testUseCirceForPlayerJson(): Unit =
-    val player = Player(Black, "game ID", "token")
+    val player = Player(Black, "game ID")
     val json = player.asJson.noSpaces
     val decoded = decode[Player](json).getOrElse(null)
     Assertions.assertEquals(player, decoded, json)
@@ -155,8 +155,8 @@ class TestJsonify:
   @Test def testUseCirceForSaveGameJson(): Unit =
     val game = playListOfMoves(TestSize, CaptureMoves)
     val players = Map(
-      (Black -> Player(Black, "game ID", "token")),
-      (White -> Player(White, "game ID", "other token")),
+      (Black -> Player(Black, "game ID")),
+      (White -> Player(White, "game ID")),
     )
     val saveGame = SaveGame(game, players)
     val json = saveGame.asJson.noSpaces

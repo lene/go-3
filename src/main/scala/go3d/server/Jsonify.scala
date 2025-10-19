@@ -118,16 +118,16 @@ implicit val decodeGame: Decoder[Game] =
 implicit val encodePlayer: Encoder[Player] =
   (player: Player) => Json.obj(
     ("color", player.color.asJson),
-    ("gameId", Json.fromString(player.gameId)),
-    ("token", Json.fromString(player.token))
+    ("gameId", Json.fromString(player.gameId))
   )
 
 implicit val decodePlayer: Decoder[Player] =
   (c: HCursor) => for
     color <- c.downField("color").as[Color]
     gameId <- c.downField("gameId").as[String]
-    token <- c.downField("token").as[String]
-  yield Player(color, gameId, token)
+    // Ignore old token field if present (backwards compatibility)
+    _ = c.downField("token").as[String]
+  yield Player(color, gameId)
 
 implicit val encodeSaveGame: Encoder[SaveGame] =
   (saveGame: SaveGame) => Json.obj(
