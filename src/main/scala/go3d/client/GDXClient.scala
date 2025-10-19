@@ -11,12 +11,12 @@ object GDXClient extends InteractiveClient:
     private final val STENCIL_BITS = 0
     private final val NUM_ANTIALIAS_SAMPLES = 4
 
-    def mainLoop(args: Array[String]): Unit =
+    def mainLoop(client: BaseClient): Unit =
         println("Starting 3D Go client")
-        val conf = new ClientCLIConf(args.toList)
-        val cursorFadeSeconds = conf.cursorFadeSeconds()
         val config = getConfiguration("3D Go", 1280, 960)
-        new Lwjgl3Application(new GobanDisplay(client, cursorFadeSeconds), config)
+        // Note: cursorFadeSeconds must be parsed before calling mainLoop
+        // For now, using default value. This will be fixed properly.
+        new Lwjgl3Application(new GobanDisplay(client, 10.0f), config)
 
     def getConfiguration(appName: String, width: Int, height: Int): Lwjgl3ApplicationConfiguration =
         val config = new Lwjgl3ApplicationConfiguration()

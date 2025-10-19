@@ -5,7 +5,6 @@ import com.typesafe.scalalogging.LazyLogging
 import java.util.NoSuchElementException
 import org.rogach.scallop.*
 import org.rogach.scallop.exceptions.RequiredOptionNotFound
-import go3d.client.BotClient.client
 import go3d.server.{emptyResponse, StatusResponse}
 import go3d.Color
 
@@ -28,22 +27,24 @@ class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
 
 abstract case class InteractiveClient(pollInterval: Int = 500) extends Client with LazyLogging:
 
-  def parseArgs(args: Array[String]): Unit =
+  def parseArgs(args: Array[String]): BaseClient =
     val conf = new ClientCLIConf(args.toList)
     val serverURL = s"http://${conf.server()}:${conf.port()}"
     if conf.size.isSupplied then
-      client = BaseClient.create(serverURL, conf.size(), colorFromString(conf.color()))
+      BaseClient.create(serverURL, conf.size(), colorFromString(conf.color()))
     else if conf.gameId.isSupplied then
       if conf.token.isSupplied then
-        client = BaseClient(
+        BaseClient(
           serverURL, conf.gameId(), conf.token.toOption,
           getPlayerColor(serverURL, conf.gameId(), conf.token())
         )
       else if conf.color.isSupplied then
-        client = BaseClient.register(serverURL, conf.gameId(), colorFromString(conf.color()))
-      else client = BaseClient(serverURL, conf.gameId(), None, None)
+        BaseClient.register(serverURL, conf.gameId(), colorFromString(conf.color()))
+      else BaseClient(serverURL, conf.gameId(), None, None)
+    else
+      throw new IllegalArgumentException("Must provide either size or gameId")
 
-  override  def waitUntilReady(): StatusResponse =
+  override  def waitUntilReady(client: BaseClient): StatusResponse =
     var status = emptyResponse
     var index = 0
     while !status.ready do

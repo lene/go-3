@@ -5,16 +5,22 @@ val circeVersion = "0.14.15"
 val libgdxVersion = "1.13.5"
 val http4sVersion = "1.0.0-M45"
 
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+
 lazy val root = project
   .in(file("."))
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.14",
+    version := "0.7.15",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
-    scalacOptions ++= Seq("-deprecation", "-explain", "-feature"),
+    scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all"),
+
+    // WartRemover configuration - use warnings instead of errors for evaluation
+    wartremoverWarnings ++= Warts.unsafe,
 
     // Parallel collections
     libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.1.0",
