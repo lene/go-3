@@ -40,8 +40,8 @@ object Games:
     activeGames += (gameId -> game)
     gameId
 
-  def registerPlayer(gameId: String, color: Color, token: String): Unit =
-    Players.register(gameId, color, token)
+  def registerPlayer(gameId: String, color: Color): Unit =
+    Players.register(gameId, color)
 
   def add(gameId: String, game: Game): Unit =
     activeGames += (gameId -> game)
@@ -63,6 +63,7 @@ object Games:
     activeGames -= gameId
     fileIO.foreach(_.archiveGame(gameId))
     Players.unregister(gameId)
+    Tokens.unregisterGame(gameId)
 
   private[server] def readGame(saveFile: java.io.File): SaveGame =
     val source = Source.fromFile(saveFile)

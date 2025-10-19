@@ -34,7 +34,7 @@ class TestFileIo:
 
   @Test def testSaveGameWritesFile(): Unit =
     val gameId = Games.register(TestSize)
-    Games.registerPlayer(gameId, Black, "mock@")
+    Games.registerPlayer(gameId, Black)
     TestFileIo.fileIO.get.saveGame(gameId)
     Assertions.assertTrue(
       Files.exists(Paths.get(TestFileIo.fileIO.get.baseFolder, s"$gameId.json")),
@@ -43,7 +43,7 @@ class TestFileIo:
 
   @Test def testSaveGameContents(): Unit =
     val gameId = Games.register(TestSize)
-    Games.registerPlayer(gameId, Black, "mock@")
+    Games.registerPlayer(gameId, Black)
     val path = TestFileIo.fileIO.get.saveGame(gameId)
 
     val source = Source.fromFile(path.toFile)
