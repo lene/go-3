@@ -33,19 +33,19 @@ def getJson(url: String): Source = Source.fromURL(url)
 
 def getPRR(url: String): PlayerRegisteredResponse =
   val json = getJson(url).mkString
-  val result = decode[PlayerRegisteredResponse](json)
-  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  result.getOrElse(null)
+  decode[PlayerRegisteredResponse](json) match
+    case Right(response) => response
+    case Left(error) => throw ServerException(error.getMessage)
 
 def getGCR(url: String): GameCreatedResponse =
   val json = getJson(url).mkString
-  val result = decode[GameCreatedResponse](json)
-  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  result.getOrElse(null)
+  decode[GameCreatedResponse](json) match
+    case Right(response) => response
+    case Left(error) => throw ServerException(error.getMessage)
 
 def getSR(url: String, header: Map[String, String]): StatusResponse =
   val response = requests.get(url, headers = header, readTimeout = 30000, connectTimeout = 30000)
   val json = response.text()
-  val result = decode[StatusResponse](json)
-  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  result.getOrElse(null)
+  decode[StatusResponse](json) match
+    case Right(response) => response
+    case Left(error) => throw ServerException(error.getMessage)

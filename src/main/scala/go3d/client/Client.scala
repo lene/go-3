@@ -8,10 +8,9 @@ import go3d.{BadColor, Color}
 import go3d.server.StatusResponse
 
 trait ClientTrait:
-  var client: BaseClient = null
-  def mainLoop(args: Array[String]): Unit
-  def parseArgs(args: Array[String]): Unit
-  def waitUntilReady(): StatusResponse
+  def mainLoop(client: BaseClient): Unit
+  def parseArgs(args: Array[String]): BaseClient
+  def waitUntilReady(client: BaseClient): StatusResponse
   def init(): Unit
 
 abstract class Client extends ClientTrait with LazyLogging:
@@ -25,9 +24,9 @@ abstract class Client extends ClientTrait with LazyLogging:
 
   def main(args: Array[String]): Unit =
     try
-      parseArgs(args)
+      val client = parseArgs(args)
       init()
-      mainLoop(args)
+      mainLoop(client)
     catch
       case e: UnknownHostException => exit(s"unknown host: ${e.getMessage}", 1)
       case e: ConnectException => exit(s"connection problem: ${e.getMessage}", 1)

@@ -6,6 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a 3D Go (Weiqi/Baduk) game implementation where the traditional 2D board is extended into three dimensions on a cubic lattice. The project consists of a server that manages game state and multiple client types (ASCII, 3D graphical, bot) that connect to play games.
 
+**Static Analysis**: See [STATIC_ANALYSIS.md](STATIC_ANALYSIS.md) for code quality findings from WartRemover and Scalafix.
+Keep this file updated and use it as a guideline for future contributions. The code quality should always improve, never degrade.
+
 ## Build System and Commands
 
 ### Building

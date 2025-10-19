@@ -68,9 +68,9 @@ object Games:
     val source = Source.fromFile(saveFile)
     val fileContents = source.getLines.mkString
     source.close()
-    val result = decode[SaveGame](fileContents)
-    if result.isLeft then throw ReadSaveGameError(result.left.getOrElse(null).getMessage)
-    result.getOrElse(null)
+    decode[SaveGame](fileContents) match
+      case Right(saveGame) => saveGame
+      case Left(error) => throw ReadSaveGameError(error.getMessage)
 
   private def restoreGame(saveGame: SaveGame): Unit =
     val gameId = saveGame.players.last._2.gameId
