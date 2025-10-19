@@ -9,7 +9,7 @@ import org.http4s.Status
 import requests.RequestFailedException
 
 import go3d.{Game, Position}
-import go3d.server.{StatusResponse, emptyResponse}
+import go3d.server.StatusResponse
 
 class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val size = opt[Int](required = false)
@@ -142,11 +142,11 @@ object BotClient extends Client with LazyLogging:
       throw new IllegalArgumentException("Must provide either size or gameId")
 
   def waitUntilReady(client: BaseClient): StatusResponse =
-    var status = emptyResponse
+    var status = client.status
     while !status.ready do
-      status = client.status
       if status.over then
         logger.info(s"Game over: ${status.game}")
         exit(0)
-      if !status.ready then Thread.sleep(PULL_WAIT_MS)
+      Thread.sleep(PULL_WAIT_MS)
+      status = client.status
     status
