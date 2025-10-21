@@ -1,32 +1,52 @@
 package go3d.server
 
-import scala.collection.mutable
+import scala.collection.concurrent
 
 import go3d.{Color, Black, White}
 
 object Players:
 
-  private val activePlayers: mutable.Map[String, Map[Color, Player]] = mutable.Map()
+  // Thread-safe map: each game's player map is independently updatable
+  // Using ConcurrentState for lock-free atomic updates
+  private val activePlayers = concurrent.TrieMap[String, ConcurrentState[Map[Color, Player]]]()
 
-  def apply(gameId: String): Map[Color, Player] = activePlayers(gameId)
-  def get(gameId: String): Option[Map[Color, Player]] = activePlayers.get(gameId)
+  def apply(gameId: String): Map[Color, Player] =
+    activePlayers.get(gameId).map(_.get()).getOrElse(Map.empty)
 
-  def update(gameId: String, players: Map[Color, Player]): Unit = activePlayers(gameId) = players
+  def get(gameId: String): Option[Map[Color, Player]] =
+    activePlayers.get(gameId).map(_.get())
+
+  def update(gameId: String, players: Map[Color, Player]): Unit =
+    activePlayers.get(gameId) match
+      case Some(state) => state.set(players)
+      case None => activePlayers.put(gameId, new ConcurrentState(players))
 
   def openGames(): Array[String] =
-    activePlayers.filter(p => p._2.contains(Black) && !p._2.contains(White)).keys.toArray
+    activePlayers.filter { case (_, state) =>
+      val players = state.get()
+      players.contains(Black) && !players.contains(White)
+    }.keys.toArray
 
   def isDuplicate(gameId: String, color: Color): Boolean =
-    activePlayers.contains(gameId) && activePlayers(gameId).contains(color)
+    activePlayers.get(gameId).exists(_.get().contains(color))
 
   def isReady(gameId: String): Boolean =
-    activePlayers.contains(gameId) && activePlayers(gameId).size == 2
-    
+    activePlayers.get(gameId).exists(_.get().size == 2)
+
+  /**
+   * Register a player for a game (thread-safe).
+   */
   def register(gameId: String, color: Color): Unit =
-    if !activePlayers.contains(gameId) then activePlayers(gameId) = Map()
-    if isDuplicate(gameId, color) then throw DuplicateColor(gameId, color)
-    val player = Player(color, gameId)
-    activePlayers(gameId) = activePlayers(gameId) + (color -> player)
+    val state = activePlayers.getOrElseUpdate(
+      gameId,
+      new ConcurrentState(Map.empty[Color, Player])
+    )
+
+    state.update { players =>
+      if players.contains(color) then
+        throw DuplicateColor(gameId, color)
+      players + (color -> Player(color, gameId))
+    }
 
   def unregister(gameId: String): Unit = activePlayers.remove(gameId)
   

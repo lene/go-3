@@ -15,7 +15,11 @@ class FileIO(val baseFolder: String):
 
   def saveGame(gameId: String): Path =
     if !Files.exists(basePath) then Files.createDirectory(basePath)
-    writeFile(s"$gameId.json", SaveGame(Games(gameId), Players(gameId)).asJson.noSpaces)
+    val game = Games(gameId)  // Will throw NoSuchElementException if game doesn't exist
+    val players = Players(gameId)
+    if players.isEmpty then
+      throw IllegalStateException(s"Cannot save game $gameId with no players")
+    writeFile(s"$gameId.json", SaveGame(game, players).asJson.noSpaces)
 
   def writeFile(saveFile: String, content: String): Path =
     guardAgainstAbsolutePath(saveFile)

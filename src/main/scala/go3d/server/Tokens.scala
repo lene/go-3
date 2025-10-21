@@ -1,17 +1,24 @@
 package go3d.server
 
-import scala.collection.mutable
+import scala.collection.concurrent
 import com.typesafe.scalalogging.LazyLogging
 import go3d.Color
 
 /**
  * Manages authentication tokens for players.
  * Tokens expire after 24 hours and are automatically cleaned up.
+ *
+ * Thread-safety: Uses TrieMap for lock-free concurrent access.
+ * Individual operations (put, get, remove) are atomic, but
+ * compound operations (filter + remove) are not atomic across
+ * the entire map. This is acceptable since token cleanup is
+ * best-effort and doesn't require strong consistency.
  */
 object Tokens extends LazyLogging:
 
-  // Map of token string -> AuthToken
-  private val activeTokens: mutable.Map[String, AuthToken] = mutable.Map()
+  // Thread-safe map: token string -> AuthToken
+  // TrieMap provides lock-free concurrent access for individual operations
+  private val activeTokens = concurrent.TrieMap[String, AuthToken]()
 
   /**
    * Register a new authentication token.

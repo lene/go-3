@@ -3,14 +3,16 @@ package go3d.server
 import com.typesafe.scalalogging.Logger
 import io.circe.parser._
 import scala.io.Source
-import scala.collection.mutable
+import scala.collection.concurrent
 
 import go3d.{Game, Color}
 
 object Games:
 
-  private val activeGames: mutable.Map[String, Game] = mutable.Map()
-  private val archivedGames: mutable.Map[String, Game] = mutable.Map()
+  // Thread-safe map: multiple games can be updated concurrently
+  // Each game uses ConcurrentState for lock-free atomic updates
+  private val activeGames = concurrent.TrieMap[String, ConcurrentState[Game]]()
+  private val archivedGames = concurrent.TrieMap[String, Game]()
   var fileIO: Option[FileIO] = None
 
   def init(baseDir: String): Unit = fileIO = Some(FileIO(baseDir))
@@ -18,8 +20,14 @@ object Games:
   def checkInitialized(): Unit =
     if fileIO.isEmpty then throw new IllegalStateException("Games not initialized")
 
+  /**
+   * Get current game state (thread-safe read).
+   */
   def apply(gameId: String): Game =
-    if activeGames contains gameId then activeGames(gameId) else archivedGames(gameId)
+    if activeGames.contains(gameId) then
+      activeGames(gameId).get()
+    else
+      archivedGames(gameId)
 
   def loadGames(baseDir: String): Unit =
     // logger declared locally to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
@@ -34,19 +42,44 @@ object Games:
         case e: JsonDecodeError => logger.warn(s"${saveFile.getName}: ${e.message}")
     logger.info(s"${Games.numActiveGames} active games loaded, ${Games.numArchivedGames} archived")
 
+  /**
+   * Register a new game with lock-free thread safety.
+   */
   def register(boardSize: Int): String =
     val gameId = IdGenerator.getId
     val game = Game.start(boardSize)
-    activeGames += (gameId -> game)
+    activeGames.put(gameId, new ConcurrentState(game))
     gameId
 
   def registerPlayer(gameId: String, color: Color): Unit =
     Players.register(gameId, color)
 
+  /**
+   * Add or update a game (thread-safe).
+   * Use this for restoring games from disk or updating after moves.
+   */
   def add(gameId: String, game: Game): Unit =
-    activeGames += (gameId -> game)
+    activeGames.get(gameId) match
+      case Some(state) => state.set(game)  // Update existing
+      case None => activeGames.put(gameId, new ConcurrentState(game))  // Create new
     fileIO.foreach(_.saveGame(gameId))
     if game.isOver then archive(gameId)
+
+  /**
+   * Thread-safe atomic game update using a function.
+   *
+   * Automatically retries if concurrent update occurs.
+   * This is the preferred way to update game state from handlers.
+   *
+   * @param gameId The game to update
+   * @param f Function to transform old game state to new state
+   * @return The new game state after successful update
+   */
+  def update(gameId: String)(f: Game => Game): Game =
+    val newGame = activeGames(gameId).update(f)
+    fileIO.foreach(_.saveGame(gameId))
+    if newGame.isOver then archive(gameId)
+    newGame
 
   def contains(gameId: String): Boolean =
     activeGames.contains(gameId) || archivedGames.contains(gameId)
@@ -59,11 +92,13 @@ object Games:
   private def archive(gameId: String): Unit =
     // logger declared inline to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
     Logger(Games.getClass).info(s"Archiving $gameId")
-    archivedGames += (gameId -> activeGames(gameId))
-    activeGames -= gameId
-    fileIO.foreach(_.archiveGame(gameId))
-    Players.unregister(gameId)
-    Tokens.unregisterGame(gameId)
+    activeGames.get(gameId).foreach { state =>
+      archivedGames.put(gameId, state.get())
+      activeGames.remove(gameId)
+      fileIO.foreach(_.archiveGame(gameId))
+      Players.unregister(gameId)
+      Tokens.unregisterGame(gameId)
+    }
 
   private[server] def readGame(saveFile: java.io.File): SaveGame =
     val source = Source.fromFile(saveFile)
