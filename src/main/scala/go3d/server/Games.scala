@@ -1,11 +1,12 @@
 package go3d.server
 
 import com.typesafe.scalalogging.Logger
+import go3d.Color
+import go3d.Game
 import io.circe.parser._
-import scala.io.Source
-import scala.collection.concurrent
 
-import go3d.{Game, Color}
+import scala.collection.concurrent
+import scala.io.Source
 
 object Games:
 

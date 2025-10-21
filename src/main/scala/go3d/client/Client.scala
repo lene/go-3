@@ -1,11 +1,13 @@
 package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
-import java.io.IOException
-import java.net.{ConnectException, UnknownHostException}
-
-import go3d.{BadColor, Color}
+import go3d.BadColor
+import go3d.Color
 import go3d.server.StatusResponse
+
+import java.io.IOException
+import java.net.ConnectException
+import java.net.UnknownHostException
 
 trait ClientTrait:
   def mainLoop(client: BaseClient): Unit

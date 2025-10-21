@@ -1,6 +1,10 @@
 package go3d.client
 
-import go3d.{Color, Empty, Game, Move, Position}
+import go3d.Color
+import go3d.Empty
+import go3d.Game
+import go3d.Move
+import go3d.Position
 
 extension (game: Game)
   def totalNumLiberties(col: Color): Int =

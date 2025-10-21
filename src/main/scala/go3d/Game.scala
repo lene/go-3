@@ -21,7 +21,10 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def isOver: Boolean =
     moves.length >= size * size * size || (
-      moves.length >= 2 && moves.last.isInstanceOf[Pass] && moves.init.last.isInstanceOf[Pass]
+      moves.length >= 2 && ((moves.last, moves.init.last) match
+        case (_: Pass, _: Pass) => true
+        case _ => false
+      )
     )
   
   def isTurn(color: Color): Boolean =
@@ -98,10 +101,10 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
     try
       if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))
-    catch case e: IllegalMove => return false
+    catch case _: IllegalMove => return false
     true
 
-  private def gameOver(pass: Pass): Boolean = moves.nonEmpty && moves.last.isInstanceOf[Pass]
+  
 
   private def isDifferentPlayer(color: Color): Boolean = moves.isEmpty || moves.last.color != color
 

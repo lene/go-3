@@ -1,12 +1,16 @@
 package go3d.client.gdx
 
 import com.badlogic.gdx.ApplicationListener
-import com.badlogic.gdx.graphics.g3d.{ModelInstance, RenderableProvider}
+import com.badlogic.gdx.graphics.g3d.ModelInstance
+import com.badlogic.gdx.graphics.g3d.RenderableProvider
 import com.badlogic.gdx.utils.Timer
 import com.typesafe.scalalogging.LazyLogging
+import go3d.Black
+import go3d.Game
+import go3d.Position
+import go3d.White
 import go3d.client.BaseClient
 import go3d.server.StatusResponse
-import go3d.{Black, Game, Position, White}
 
 class GobanDisplay(client: BaseClient, val cursorFadeSeconds: Float = 10.0f)
     extends ApplicationListener with LazyLogging:

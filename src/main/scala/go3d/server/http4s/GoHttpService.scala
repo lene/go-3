@@ -1,19 +1,22 @@
 package go3d.server.http4s
 
-import cats.effect.{IO, Resource}
-import com.comcast.ip4s.{Port, ipv4}
+import cats.effect.IO
+import cats.effect.Resource
+import com.comcast.ip4s.Port
+import com.comcast.ip4s.ipv4
 import com.typesafe.scalalogging.LazyLogging
-import org.http4s.{EntityEncoder, HttpRoutes}
+import go3d.Color
+import go3d.server.IdGenerator
+import org.http4s.EntityEncoder
+import org.http4s.HttpRoutes
 import org.http4s.circe.jsonEncoderOf
-import org.http4s.dsl.io.*
+import org.http4s.dsl.io._
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.server.Router
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 import scala.util.Try
-import go3d.Color
-import go3d.server.IdGenerator
 
 object GameId:
   def unapply(str: String): Option[String] = Some(str).filter(IdGenerator.isValidId)

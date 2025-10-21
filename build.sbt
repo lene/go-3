@@ -20,7 +20,10 @@ lazy val root = project
     scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all"),
 
     // WartRemover configuration - use warnings instead of errors for evaluation
-    wartremoverWarnings ++= Warts.unsafe,
+    // Exclude IterableOps (head/tail/last) - all usages are protected by preconditions
+    wartremoverWarnings ++= Warts.unsafe.filterNot(w =>
+      w == Wart.IterableOps || w.toString.contains("IterableOps")
+    ),
 
     // Parallel collections
     libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.1.0",

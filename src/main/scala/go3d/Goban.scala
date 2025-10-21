@@ -1,6 +1,7 @@
 package go3d
 
-import scala.annotation.{tailrec, targetName}
+import scala.annotation.tailrec
+import scala.annotation.targetName
 import scala.collection.mutable
 import scala.reflect.ClassTag
 

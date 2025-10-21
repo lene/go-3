@@ -3,14 +3,16 @@ package go3d.client.gdx
 import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.PerspectiveCamera
+import com.badlogic.gdx.graphics.g3d.Environment
+import com.badlogic.gdx.graphics.g3d.ModelBatch
+import com.badlogic.gdx.graphics.g3d.RenderableProvider
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.environment.DirectionalLight
-import com.badlogic.gdx.graphics.g3d.{Environment, ModelBatch, RenderableProvider}
 import com.badlogic.gdx.math.Vector3
 import go3d.Position
 
 import scala.collection.immutable.List
-import scala.jdk.CollectionConverters.*
+import scala.jdk.CollectionConverters._
 
 
 case class GDXResources(boardSize: Int):

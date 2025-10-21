@@ -1,6 +1,8 @@
 package go3d.server.http4s
 
-import go3d.server.{OpenGamesResponse, GoResponse, Players}
+import go3d.server.GoResponse
+import go3d.server.OpenGamesResponse
+import go3d.server.Players
 
 /**
  *Usage example for this endpoint:

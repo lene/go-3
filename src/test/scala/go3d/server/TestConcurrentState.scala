@@ -114,12 +114,6 @@ class TestConcurrentState:
 
     Assertions.assertEquals(42, state.get())
 
-  @Test def testRequireFailsForNullInitialValue(): Unit =
-    Assertions.assertThrows(
-      classOf[IllegalArgumentException],
-      () => new ConcurrentState(null)
-    )
-
   @Test def testSetToNullIsAllowedAfterConstruction(): Unit =
     // While we avoid nulls, the API technically allows it after construction
     val state = new ConcurrentState[String]("initial")

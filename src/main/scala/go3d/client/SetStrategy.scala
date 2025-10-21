@@ -1,9 +1,14 @@
 package go3d.client
 
-import go3d.{Black, Color, Game, Goban, Move, Position}
+import go3d.Black
+import go3d.Color
+import go3d.Game
+import go3d.Goban
+import go3d.Move
+import go3d.Position
 
-import scala.collection.parallel.CollectionConverters._
 import scala.annotation.tailrec
+import scala.collection.parallel.CollectionConverters._
 
 object SetStrategy:
   def create(

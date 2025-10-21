@@ -1,6 +1,12 @@
 package go3d.client
 
-import go3d.{Game, Goban, Move, Pass, Black, White, Position}
+import go3d.Black
+import go3d.Game
+import go3d.Goban
+import go3d.Move
+import go3d.Pass
+import go3d.Position
+import go3d.White
 
 object Util {
   def gameWithCornerStones(size: Int): Game =

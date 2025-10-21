@@ -1,9 +1,9 @@
 package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
-import scala.util.Random
-
 import go3d.Position
+
+import scala.util.Random
 
 class ThinkingTimeLimiter(val maxThinkingTimeMs: Int) extends LazyLogging:
 
