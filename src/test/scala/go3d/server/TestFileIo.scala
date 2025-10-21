@@ -29,7 +29,7 @@ class TestFileIo:
   @Test def testSaveGameFailsNonexistentPlayers(): Unit =
     val gameId = Games.register(TestSize)
     Assertions.assertThrows(
-      classOf[NoSuchElementException], () => TestFileIo.fileIO.get.saveGame(gameId)
+      classOf[IllegalStateException], () => TestFileIo.fileIO.get.saveGame(gameId)
     )
 
   @Test def testSaveGameWritesFile(): Unit =

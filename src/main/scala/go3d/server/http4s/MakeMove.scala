@@ -12,11 +12,15 @@ abstract case class MakeMove(gameId: String, request: Request[IO])
   def handle: GoResponse =
     val requestInfo = RequestInfo(request)
     val color = requestInfo.mustGetPlayer.color
-    val game = Games(gameId)
-    if game.isOver then throw GameOver(game)
-    if !game.isTurn(color) then throw NotReadyToSet(gameId, color)
-    val newGame = game.makeMove(makeMove(requestInfo.path, color))
-    Games.add(gameId, newGame)
+
+    // Atomic update using optimistic locking (CAS retry loop)
+    // Pre-flight checks need to be inside the update to be thread-safe
+    val newGame = Games.update(gameId) { game =>
+      if game.isOver then throw GameOver(game)
+      if !game.isTurn(color) then throw NotReadyToSet(gameId, color)
+      game.makeMove(makeMove(requestInfo.path, color))
+    }
+
     logger.info(s"${requestInfo.path}, $color".replaceAll("[\r\n]"," "))
     StatusResponse(
       newGame, newGame.possibleMoves(color), false, newGame.isOver, Some(color),
