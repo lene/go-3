@@ -2,8 +2,8 @@ package go3d.server
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
-import org.http4s.Request
 import go3d.GameOver
+import org.http4s.Request
 
 val NullRequestInfo = RequestInfo(Map(), "", "", false)
 
@@ -48,7 +48,7 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
       val token = getToken
       val gameId = getGameId
       Tokens.getColor(token, gameId).flatMap(color => Players.get(gameId).flatMap(_.get(color)))
-    catch case e: AuthorizationError => None
+    catch case _: AuthorizationError => None
 
   def mustGetPlayer: Player =
     val token = getToken

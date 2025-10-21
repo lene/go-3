@@ -1,6 +1,8 @@
 package go3d.client.gdx
 
-import go3d.{Color, Game, Position}
+import go3d.Color
+import go3d.Game
+import go3d.Position
 
 /** Extension methods for calculating cursor positions from game state. */
 extension (game: Game)

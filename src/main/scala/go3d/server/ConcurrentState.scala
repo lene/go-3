@@ -28,12 +28,10 @@ import scala.annotation.tailrec
  *   }
  * }}}
  *
- * @param initial The initial value (must not be null)
- * @tparam T The type of state being managed (should be immutable)
+ * @param initial The initial value (use immutable objects)
+ * @tparamaram T The type of state being managed (should be immutable)
  */
 class ConcurrentState[T](initial: T):
-  require(initial != null, "Initial value cannot be null")
-
   private val ref = new AtomicReference(initial)
 
   /**

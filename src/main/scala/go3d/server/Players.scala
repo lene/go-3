@@ -1,8 +1,10 @@
 package go3d.server
 
-import scala.collection.concurrent
+import go3d.Black
+import go3d.Color
+import go3d.White
 
-import go3d.{Color, Black, White}
+import scala.collection.concurrent
 
 object Players:
 

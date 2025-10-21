@@ -1,10 +1,16 @@
 package go3d.server
 
+import go3d.Color
+import go3d.Game
+import go3d.Goban
+import go3d.HasColor
+import go3d.Move
+import go3d.Pass
+import go3d.Position
 import io.circe._
 import io.circe.syntax._
 
 import scala.reflect.ClassTag
-import go3d.{Color, Game, Goban, HasColor, Move, Pass, Position}
 
 implicit val encodeColor: Encoder[Color] =
   (col: Color) => Json.obj(("color", Json.fromString(col.toString)))

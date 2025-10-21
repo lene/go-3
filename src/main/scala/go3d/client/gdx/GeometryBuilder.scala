@@ -1,13 +1,19 @@
 package go3d.client.gdx
 
 import com.badlogic.gdx.graphics.Color
+import com.badlogic.gdx.graphics.GL20
 import com.badlogic.gdx.graphics.VertexAttributes.Usage
+import com.badlogic.gdx.graphics.g3d.Material
+import com.badlogic.gdx.graphics.g3d.Model
+import com.badlogic.gdx.graphics.g3d.ModelInstance
+import com.badlogic.gdx.graphics.g3d.RenderableProvider
 import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import com.badlogic.gdx.graphics.g3d.utils.ModelBuilder
-import com.badlogic.gdx.graphics.g3d.{Material, Model, ModelInstance, RenderableProvider}
+import go3d.Black
+import go3d.Game
+import go3d.Position
+import go3d.White
 import go3d.client.StarPoints
-import go3d.{Black, Game, Position, White}
-import com.badlogic.gdx.graphics.GL20
 
 import scala.annotation.tailrec
 

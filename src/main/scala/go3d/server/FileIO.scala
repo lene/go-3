@@ -1,9 +1,13 @@
 package go3d.server
 
 import io.circe.syntax.EncoderOps
-import java.io.{File, IOException}
-import java.nio.file.{Files, Path, Paths}
+
+import java.io.File
+import java.io.IOException
 import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 
 class FileIO(val baseFolder: String):
 

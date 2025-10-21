@@ -2,10 +2,18 @@ package go3d.server.http4s
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
+import go3d.Black
+import go3d.Color
+import go3d.White
+import go3d.server.Games
+import go3d.server.GoResponse
+import go3d.server.IdGenerator
+import go3d.server.PlayerRegisteredResponse
+import go3d.server.Players
+import go3d.server.RequestInfo
+import go3d.server.SecurityUtils
+import go3d.server.Tokens
 import org.http4s.Request
-
-import go3d.server.{Games, GoResponse, PlayerRegisteredResponse, Players, RequestInfo, IdGenerator, SecurityUtils, Tokens}
-import go3d.{Black, Color, White}
 
 case class RegisterPlayer(gameId: String, color: Color, request: Request[IO])
   extends BaseHandler with LazyLogging:

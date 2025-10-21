@@ -1,6 +1,7 @@
 package go3d.server
 
-import go3d.{Color, GoException}
+import go3d.Color
+import go3d.GoException
 
 class ServerException(override val message: String) extends GoException(message):
   override def toString: String = message

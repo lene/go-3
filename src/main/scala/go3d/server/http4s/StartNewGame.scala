@@ -1,8 +1,9 @@
 package go3d.server.http4s
 
 import com.typesafe.scalalogging.LazyLogging
-
-import go3d.server.{GameCreatedResponse, Games, GoResponse}
+import go3d.server.GameCreatedResponse
+import go3d.server.Games
+import go3d.server.GoResponse
 
 case class StartNewGame(boardSize: Int) extends BaseHandler with LazyLogging:
   def handle: GoResponse =

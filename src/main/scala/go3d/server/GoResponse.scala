@@ -1,6 +1,8 @@
 package go3d.server
 
-import go3d.{Color, Game, Position}
+import go3d.Color
+import go3d.Game
+import go3d.Position
 
 class GoResponse
 case class ErrorResponse(err: String) extends GoResponse

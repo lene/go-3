@@ -1,8 +1,9 @@
 package go3d.server
 
-import scala.collection.concurrent
 import com.typesafe.scalalogging.LazyLogging
 import go3d.Color
+
+import scala.collection.concurrent
 
 /**
  * Manages authentication tokens for players.
@@ -101,7 +102,7 @@ object Tokens extends LazyLogging:
    */
   def cleanupExpiredTokens(): Int =
     val before = activeTokens.size
-    val now = java.time.Instant.now().getEpochSecond
+    java.time.Instant.now().getEpochSecond
     activeTokens.filterInPlace((_, authToken) => !SecurityUtils.isExpired(authToken.expiresAt))
     val removed = before - activeTokens.size
     if removed > 0 then

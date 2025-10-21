@@ -2,8 +2,10 @@ package go3d.client.gdx
 
 import com.badlogic.gdx.graphics.Color
 import com.badlogic.gdx.graphics.GL20
-import com.badlogic.gdx.graphics.g3d.attributes.{BlendingAttribute, ColorAttribute}
-import com.badlogic.gdx.graphics.g3d.{ModelBatch, ModelInstance}
+import com.badlogic.gdx.graphics.g3d.ModelBatch
+import com.badlogic.gdx.graphics.g3d.ModelInstance
+import com.badlogic.gdx.graphics.g3d.attributes.BlendingAttribute
+import com.badlogic.gdx.graphics.g3d.attributes.ColorAttribute
 import go3d.Position
 
 trait Marker:

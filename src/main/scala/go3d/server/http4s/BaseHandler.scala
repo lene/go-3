@@ -1,16 +1,21 @@
 package go3d.server.http4s
 
 import cats.effect.IO
+import go3d.server.AuthorizationError
+import go3d.server.DuplicateColor
+import go3d.server.GoResponse
+import go3d.server.NonexistentGame
+import go3d.server.NotReadyToSet
+import go3d.server.ServerException
+import go3d.server.encodeGoResponse
+import org.http4s.Response
+import org.http4s.Status
 import org.http4s.circe.CirceEntityEncoder.circeEntityEncoder
 import org.http4s.dsl.io._
-import org.http4s.{Response, Status}
 
-import scala.util.{Failure, Success, Try}
-
-import go3d.server.{
-  AuthorizationError, DuplicateColor, GoResponse, NonexistentGame, NotReadyToSet, ServerException,
-  encodeGoResponse
-}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 trait HandleTrait:
   def handle: GoResponse
@@ -25,7 +30,7 @@ abstract class BaseHandler extends HandleTrait:
       case Failure(e: NotReadyToSet) => BadRequest(s"${e.getClass.getSimpleName}: ${e.getMessage}")
       case Failure(e: NoSuchElementException) => NotFound(e.getMessage)
       case Failure(e: NonexistentGame) => NotFound(e.getMessage)
-      case Failure(e: AuthorizationError) => IO(Response[IO](status = Status.Unauthorized))
+      case Failure(_: AuthorizationError) => IO(Response[IO](status = Status.Unauthorized))
       case Failure(e: ServerException) => InternalServerError(e.getMessage)
       case Failure(e: go3d.IllegalMove) => BadRequest(s"${e.getClass.getSimpleName}: ${e.getMessage}")
       case Failure(e: go3d.GameOver) => Gone(s"${e.getClass.getSimpleName}: ${e.getMessage}")
