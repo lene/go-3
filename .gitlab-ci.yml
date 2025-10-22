@@ -308,15 +308,20 @@ CreateTag:
     - TestDeployable
   before_script:
     - apk update
-    - apk add git
-    - git config user.email "${GITLAB_USER_EMAIL}"
-    - git config user.name "${GITLAB_USER_NAME}"
+    - apk add curl jq
   script:
     - VERSION_SBT=$(egrep 'version := ".*"' build.sbt | cut -d \" -f 2)
-    - echo "**** Tagging release as version $VERSION_SBT"
-    - git remote add tag-origin https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.com/${CI_PROJECT_PATH}.git
-    - git tag -a "${VERSION_SBT}" -m "Released $(date +%Y-%m-%d)"
-    - git push tag-origin "${VERSION_SBT}"
+    - echo "**** Creating release and tag for version $VERSION_SBT"
+    - |
+      curl --fail-with-body --request POST --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        --header "Content-Type: application/json" \
+        --data '{
+          "tag_name": "'"${VERSION_SBT}"'",
+          "name": "Release '"${VERSION_SBT}"'",
+          "description": "Automated release created on '"$(date +%Y-%m-%d)"'"
+        }' \
+        "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/releases"
+    - echo "Successfully created release and tag ${VERSION_SBT}"
 
 Upload:
   stage: release
