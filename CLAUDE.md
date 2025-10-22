@@ -149,6 +149,43 @@ Bots use a pipeline of strategies to narrow down move selection:
 - Comprehensive test coverage using ScalaTest
 - Lines have a maximum length of 100 characters
 
+## CI/CD Conventions
+
+### Version Bumping
+
+The project uses semantic versioning (MAJOR.MINOR.PATCH) defined in multiple files that must stay in sync:
+- `build.sbt`: `version := "X.Y.Z"`
+- `Dockerfile`: `ARG version=X.Y.Z` (appears twice)
+- `run-test-game.sh`: `VERSION=X.Y.Z`
+- `.gitlab-ci.yml`: `DEPLOYABLE_VERSION: X.Y.Z`
+
+The `TagIsNewAndConsistent` CI job enforces version consistency and ensures each version is tagged only once.
+
+### CI Fix Commits
+
+For infrastructure-only changes (CI configuration, build scripts, etc.) that don't affect application functionality, you can skip version bumping by including **"CI Fix"** in the commit message.
+
+When the commit message contains "CI Fix", the `TagIsNewAndConsistent` job will skip version validation, allowing you to merge infrastructure fixes to master without creating a new release tag.
+
+**Example commit messages:**
+- `CI Fix: Update CreateTag authentication to use CI_JOB_TOKEN`
+- `CI Fix: Add code coverage reporting to pipeline`
+- `CI Fix: Optimize Docker build caching`
+
+**When to use "CI Fix":**
+- GitLab CI configuration changes (`.gitlab-ci.yml`)
+- Docker build improvements
+- Build script modifications
+- Test infrastructure updates
+
+**When NOT to use "CI Fix":**
+- Application code changes
+- Dependency updates
+- Bug fixes
+- New features
+
+If in doubt, bump the patch version - infrastructure improvements are valid releases.
+
 ## Key Implementation Details
 
 ### Liberty Calculation
