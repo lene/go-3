@@ -10,6 +10,7 @@
 1. [Current State Analysis](#1-current-state-analysis)
 2. [Cloud-Readiness Requirements](#2-cloud-readiness-requirements)
 3. [Deployment Options](#3-deployment-options)
+   - [3.6 Lambda Native Compilation Deep Dive](#36-lambda-native-compilation-deep-dive)
 4. [Comparison Matrix](#4-comparison-matrix)
 5. [Recommended Architecture](#5-recommended-architecture)
 6. [Implementation Roadmap](#6-implementation-roadmap)
@@ -313,6 +314,77 @@ CREATE INDEX idx_players_token ON players(token);
 
 ---
 
+### 3.6 Lambda Native Compilation Deep Dive
+
+⚠️ **Critical for Lambda Success: Addressing JVM Cold Start Issues**
+
+The primary concern with Lambda (Option E) is JVM cold start latency of **2-5 seconds**, which is unacceptable for user-facing APIs. Native compilation solves this problem.
+
+#### Cold Start Comparison
+
+| Approach | Cold Start | Memory | Cost/Invocation | Difficulty |
+|----------|-----------|--------|-----------------|------------|
+| **Standard JVM** | 2,000-5,000ms | 512-1024MB | $0.0000002083/ms | Easy |
+| **SnapStart** | 600-800ms | 512-1024MB | $0.0000002083/ms | Trivial |
+| **GraalVM Native** | 50-200ms | 128-256MB | $0.0000000833/ms | Medium |
+| **Scala Native** | 10-50ms | 64-128MB | $0.0000000417/ms | High (not viable) |
+
+#### Recommendation: GraalVM Native Image ✅
+
+**Why GraalVM:**
+- **10-25x faster cold starts** (2-5s → 50-200ms)
+- **60% cost reduction** due to lower memory and faster execution
+- **Proven compatibility** with http4s, Cats Effect, Circe
+- **2-3 week implementation** vs 8-12 weeks for Scala Native
+- **Minimal code changes** - mostly build configuration
+
+**Implementation Highlights:**
+
+```scala
+// build.sbt - Enable native image
+enablePlugins(NativeImagePlugin)
+
+nativeImageOptions ++= Seq(
+  "--no-fallback",
+  "--initialize-at-build-time",
+  "-O3",
+  "--gc=serial",
+  "-H:+ReportExceptionStackTraces"
+)
+```
+
+**Expected Performance:**
+- Cold start: **150ms** (vs 3,000ms JVM)
+- Memory: **256MB** (vs 512MB JVM)
+- Warm latency: **15ms** (vs 30ms JVM)
+- **Monthly cost reduction: 60-70%**
+
+**Cost Impact at 50,000 games/month:**
+
+| Component | JVM | GraalVM Native | Savings |
+|-----------|-----|----------------|---------|
+| Compute | $120 | $25 | $95 |
+| Memory | $25 | $12 | $13 |
+| Provisioned concurrency | $30 (needed) | $0 (not needed) | $30 |
+| **Total** | **$175** | **$37** | **$138/mo (79% savings)** |
+
+**Phased Approach:**
+
+1. **Week 1:** Enable **SnapStart** (AWS feature) - Get 60% improvement instantly with zero code changes
+2. **Week 2-3:** Build **GraalVM Native Image** - Get 90% improvement
+3. **Week 4:** Profile-guided optimization - Fine-tune last 10%
+
+**See [LAMBDA_NATIVE_COMPILATION.md](LAMBDA_NATIVE_COMPILATION.md) for complete implementation guide including:**
+- Dependency compatibility analysis
+- Build configuration examples
+- Reflection configuration for Circe
+- Lambda handler implementation
+- Performance benchmarks
+- Testing strategy
+- Migration risks and mitigations
+
+---
+
 ## 4. Comparison Matrix
 
 ### 4.1 Effort to Implement
@@ -323,7 +395,7 @@ CREATE INDEX idx_players_token ON players(token);
 | **B: ECS Fargate** | Medium | Medium | Medium | **3-4 weeks** |
 | **C: EKS** | Medium | High | High | **6-8 weeks** |
 | **D: App Runner** | Medium | Low | Low | **2-3 weeks** |
-| **E: Lambda** | High | Medium | Medium | **5-6 weeks** |
+| **E: Lambda (Native)** | Medium | Medium | Medium | **3-4 weeks** |
 
 ### 4.2 Monthly Cost Estimate (Low Traffic: ~1000 games/month)
 
@@ -333,7 +405,7 @@ CREATE INDEX idx_players_token ON players(token);
 | **B: ECS Fargate** | $30-50 | $30-80 | $30 | **$90-160** |
 | **C: EKS** | $75-150 | $50-100 | $75 | **$200-400** |
 | **D: App Runner** | $25-50 | $30-80 | $15 | **$70-145** |
-| **E: Lambda** | $5-20 | $25 (DDB) | $10 | **$40-55** |
+| **E: Lambda (Native)** | $3-10 | $25 (DDB) | $5 | **$33-40** |
 
 ### 4.3 Monthly Cost Estimate (High Traffic: ~50,000 games/month)
 
@@ -343,7 +415,7 @@ CREATE INDEX idx_players_token ON players(token);
 | **B: ECS Fargate** | $100-200 | $100-200 | $50 | **$250-450** |
 | **C: EKS** | $150-300 | $150-250 | $100 | **$400-650** |
 | **D: App Runner** | $100-200 | $100-200 | $30 | **$230-430** |
-| **E: Lambda** | $50-150 | $50-100 | $30 | **$130-280** |
+| **E: Lambda (Native)** | $25-60 | $50-100 | $20 | **$95-180** |
 
 ### 4.4 Performance & Scalability
 
@@ -353,9 +425,9 @@ CREATE INDEX idx_players_token ON players(token);
 | **B: ECS Fargate** | Low (5-15ms) | ~10,000+ | Automatic | Multi-AZ |
 | **C: EKS** | Low (5-15ms) | ~100,000+ | Advanced | Multi-AZ/Region |
 | **D: App Runner** | Low (10-20ms) | ~5,000+ | Automatic | Multi-AZ |
-| **E: Lambda** | Medium (50-500ms*) | Unlimited | Instant | Multi-AZ |
+| **E: Lambda (Native)** | Low (15-150ms*) | Unlimited | Instant | Multi-AZ |
 
-*Lambda cold start adds 500ms-2s for JVM; can be mitigated with provisioned concurrency or GraalVM native image.
+*Native image cold start: 50-200ms. JVM cold start: 2-5s (use SnapStart or provisioned concurrency if not using native).
 
 ### 4.5 Overall Rating (1-5 stars)
 
@@ -365,7 +437,7 @@ CREATE INDEX idx_players_token ON players(token);
 | **B: ECS Fargate** | ★★★☆☆ | ★★★☆☆ | ★★★★☆ | ★★★★☆ | **Production** |
 | **C: EKS** | ★★☆☆☆ | ★★☆☆☆ | ★★★☆☆ | ★★★★★ | Enterprise/Multi-service |
 | **D: App Runner** | ★★★★☆ | ★★★★☆ | ★★★★☆ | ★★★☆☆ | **Quick Start** |
-| **E: Lambda** | ★★☆☆☆ | ★★★★★ | ★★★★★ | ★★★★★ | Variable Traffic |
+| **E: Lambda (Native)** | ★★★☆☆ | ★★★★★ | ★★★★★ | ★★★★★ | **Low Cost/Variable Traffic** |
 
 ---
 
@@ -387,7 +459,22 @@ CREATE INDEX idx_players_token ON players(token);
 - Good enough for initial launch
 - Easy migration to ECS later
 
-### 5.3 Detailed Architecture (Option B)
+### 5.3 For Low Cost / Variable Traffic: Option E (Lambda Native)
+
+**Rationale:**
+- **Lowest cost option** ($33-40/month low traffic, $95-180/month high traffic)
+- Excellent for early-stage or hobby projects
+- Scales to zero when not in use
+- Native image eliminates cold start concerns
+- Perfect for sporadic/unpredictable traffic patterns
+- **Recommended if cost is the primary concern**
+
+**Trade-offs:**
+- More complex deployment (native compilation)
+- Platform lock-in to Lambda
+- Limited to 15-minute execution time (not an issue for API)
+
+### 5.4 Detailed Architecture (Option B)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
