@@ -25,10 +25,12 @@ class TestTokens extends AnyFunSuite:
     Tokens.register(token, gameId, color)
     val result = Tokens.validate(token)
 
-    assert(result.isDefined)
-    assert(result.get.token == token)
-    assert(result.get.gameId == gameId)
-    assert(result.get.color == color)
+    result match
+      case Some(authToken) =>
+        assert(authToken.token == token)
+        assert(authToken.gameId == gameId)
+        assert(authToken.color == color)
+      case None => fail("Expected Some but got None")
 
   test("validate returns None for non-existent token"):
     val result = Tokens.validate("nonexistent_token")
@@ -93,8 +95,7 @@ class TestTokens extends AnyFunSuite:
     Tokens.register(token, gameId, color)
 
     val result = Tokens.getColor(token, gameId)
-    assert(result.isDefined)
-    assert(result.get == color)
+    assert(result.contains(color))
 
   test("getColor returns None for invalid token"):
     val result = Tokens.getColor("invalid_token", "game9")
@@ -159,15 +160,16 @@ class TestTokens extends AnyFunSuite:
     Tokens.register(token, gameId, color, hoursUntilExpiration = 48)
 
     val result = Tokens.validate(token)
-    assert(result.isDefined)
 
     // Check expiration is approximately 48 hours from now
     val now = java.time.Instant.now().getEpochSecond
     val expectedExpiration = now + (48 * 3600)
-    val actualExpiration = result.get.expiresAt
 
-    // Allow 5 second tolerance for test execution time
-    assert(math.abs(actualExpiration - expectedExpiration) < 5)
+    result match
+      case Some(authToken) =>
+        // Allow 5 second tolerance for test execution time
+        assert(math.abs(authToken.expiresAt - expectedExpiration) < 5)
+      case None => fail("Expected Some but got None")
 
   test("multiple tokens for same game but different colors"):
     val gameId = "game18"

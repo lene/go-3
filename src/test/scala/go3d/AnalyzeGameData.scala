@@ -29,11 +29,10 @@ object AnalyzeGameData:
     val jsonContent = try source.mkString finally source.close()
     val saveGameResult = decode[go3d.server.SaveGame](jsonContent)
 
-    if saveGameResult.isLeft then
-      System.err.println(s"Failed to decode JSON: $saveGameResult")
-      sys.exit(1)
-
-    val saveGame = saveGameResult.toOption.get
+    val saveGame = saveGameResult.fold(
+      e => { System.err.println(s"Failed to decode JSON: $e"); sys.exit(1) },
+      identity
+    )
     val totalMoves = saveGame.game.moves.length
 
     val startMove = if args.length >= 2 then args(1).toInt else 0

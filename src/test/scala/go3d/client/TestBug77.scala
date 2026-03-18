@@ -33,7 +33,9 @@ class TestBug77:
 
     Assertions.assertTrue(saveGameResult.isRight, s"Failed to decode JSON: $saveGameResult")
 
-    val saveGame = saveGameResult.toOption.get
+    val saveGame = saveGameResult match
+      case Right(sg) => sg
+      case Left(e) => Assertions.fail(s"Failed to decode JSON: ${e.getMessage}"); throw RuntimeException("unreachable")
     System.err.println(s"Loaded game with ${saveGame.game.moves.length} moves")
     System.err.flush()
 

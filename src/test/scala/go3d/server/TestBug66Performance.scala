@@ -28,7 +28,9 @@ class TestBug66Performance extends AnyFunSuite:
   private def replayGameFile(filename: String, maxTimeMs: Long): Long =
     val source = Source.fromFile(filename)
     val jsonContent = try source.mkString finally source.close()
-    val saveGame = decode[SaveGame](jsonContent).toOption.get
+    val saveGame = decode[SaveGame](jsonContent) match
+      case Right(sg) => sg
+      case Left(e) => fail(s"Failed to decode $filename: ${e.getMessage}")
 
     val startTime = System.nanoTime()
     var game = Game.start(saveGame.game.size)
