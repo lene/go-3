@@ -30,11 +30,10 @@ object MeasureMoveTimes:
     val jsonContent = try source.mkString finally source.close()
     val saveGameResult = decode[go3d.server.SaveGame](jsonContent)
 
-    if saveGameResult.isLeft then
-      System.err.println(s"Failed to decode JSON: $saveGameResult")
-      sys.exit(1)
-
-    val saveGame = saveGameResult.toOption.get
+    val saveGame = saveGameResult.fold(
+      e => { System.err.println(s"Failed to decode JSON: $e"); sys.exit(1) },
+      identity
+    )
     val totalMoves = saveGame.game.moves.length
 
     println(s"Analyzing move times from $jsonFile")

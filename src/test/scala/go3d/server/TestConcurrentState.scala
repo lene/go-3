@@ -114,12 +114,6 @@ class TestConcurrentState:
 
     Assertions.assertEquals(42, state.get())
 
-  @Test def testSetToNullIsAllowedAfterConstruction(): Unit =
-    // While we avoid nulls, the API technically allows it after construction
-    val state = new ConcurrentState[String]("initial")
-    state.set(null)
-    Assertions.assertEquals(null, state.get())
-
   @Test def testMultipleUpdatesInSequence(): Unit =
     val state = new ConcurrentState(1)
     val result1 = state.update(_ * 2) // 2

@@ -41,9 +41,14 @@ class TestServer:
 
   var tempDir: Option[String] = None
 
+  private def fileIO = Games.fileIO.getOrElse(
+    throw new IllegalStateException("Games not initialized - check test setup")
+  )
+
   @BeforeEach def setupTempDir(): Unit =
-    tempDir = Some(Files.createTempDirectory("go3d").toString)
-    Games.init(tempDir.get)
+    val dir = Files.createTempDirectory("go3d").toString
+    tempDir = Some(dir)
+    Games.init(dir)
 
   @Test def testNewGame(): Unit =
     val response = GameData.create(TestSize)
@@ -462,7 +467,7 @@ class TestServer:
 
   @Test def testGetOpenGamesReturnsResponse(): Unit =
     val response = getOGR(s"${GameData.ServerURL}/openGames")
-    Assertions.assertTrue(response.isInstanceOf[OpenGamesResponse])
+    Assertions.assertInstanceOf(classOf[OpenGamesResponse], response)
 
   @Test def testGetOpenGamesReturns404IfRouteHasTrailingSlash(): Unit =
     Assertions.assertThrows(
@@ -577,12 +582,12 @@ class TestServer:
 
   @Test def testAddedGameIsNotWrittenBeforeFirstMove(): Unit =
     val gameData: GameData = setUpGame(3)
-    Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
+    Assertions.assertFalse(fileIO.getActiveGames.contains(gameData.id))
 
   @Test def testAddedGameIsWrittenAfterFirstMove(): Unit =
     val gameData: GameData = setUpGame(3)
     gameData.set(Move(Position(1, 1, 1), Black))
-    Assertions.assertTrue(Games.fileIO.get.getActiveGames.contains(gameData.id))
+    Assertions.assertTrue(fileIO.getActiveGames.contains(gameData.id))
 
   @Test def testFinishedGameIsNoLongerActive(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -602,8 +607,8 @@ class TestServer:
     val gameData: GameData = setUpGame(3)
     gameData.pass(Black)
     gameData.pass(White)
-    Assertions.assertTrue(Games.fileIO.get.getArchivedGames.contains(gameData.id), s"${Games.fileIO.get.getArchivedGames} does not contain ${gameData.id}")
-    Assertions.assertFalse(Games.fileIO.get.getActiveGames.contains(gameData.id))
+    Assertions.assertTrue(fileIO.getArchivedGames.contains(gameData.id), s"${fileIO.getArchivedGames} does not contain ${gameData.id}")
+    Assertions.assertFalse(fileIO.getActiveGames.contains(gameData.id))
 
   @Test def testCursorPositioningInRealGame(): Unit =
     import go3d.client.gdx.playerLastMove
@@ -676,41 +681,34 @@ class TestServer:
     }
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
-    var statusResponse: StatusResponse = null
-    for move <- moves do
-      statusResponse = move match
-        case m: Move => gameData.set(m)
-        case p: Pass => gameData.pass(p.color)
-    statusResponse
+  moves.map {
+    case m: Move => gameData.set(m)
+    case p: Pass => gameData.pass(p.color)
+  }.last
 
 def randomChoice[T](elements: List[T]): T = elements((new Random).nextInt(elements.length))
 
 def getJson(url: String): Source = Source.fromURL(url)
 
 def getPRR(url: String): PlayerRegisteredResponse =
-  val json = getJson(url).mkString
-  val result = decode[PlayerRegisteredResponse](json)
-  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  result.getOrElse(null)
+  decode[PlayerRegisteredResponse](getJson(url).mkString) match
+    case Right(v) => v
+    case Left(e) => throw ServerException(e.getMessage)
 
 def getGCR(url: String): GameCreatedResponse =
-  val json = getJson(url).mkString
-  val result = decode[GameCreatedResponse](json)
-  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  result.getOrElse(null)
+  decode[GameCreatedResponse](getJson(url).mkString) match
+    case Right(v) => v
+    case Left(e) => throw ServerException(e.getMessage)
 
 def getSR(url: String, header: Map[String, String]): StatusResponse =
-  val response = requests.get(url, headers = header)
-  val json = response.text()
-  val result = decode[StatusResponse](json)
-  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  result.getOrElse(null)
+  decode[StatusResponse](requests.get(url, headers = header).text()) match
+    case Right(v) => v
+    case Left(e) => throw ServerException(e.getMessage)
 
 def getOGR(url: String): OpenGamesResponse =
-  val json = getJson(url).mkString
-  val result = decode[OpenGamesResponse](json)
-  if result.isLeft then throw ServerException(result.left.getOrElse(null).getMessage)
-  result.getOrElse(null)
+  decode[OpenGamesResponse](getJson(url).mkString) match
+    case Right(v) => v
+    case Left(e) => throw ServerException(e.getMessage)
 
 def setUpGame(size: Int): GameData =
   val newGameResponse = GameData.create(size)
