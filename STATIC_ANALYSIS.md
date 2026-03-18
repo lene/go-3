@@ -1,7 +1,7 @@
 # Static Analysis Report
 
 Generated: October 19, 2025
-Updated: October 21, 2025
+Updated: March 18, 2026
 
 ## Tools Configured
 
@@ -50,7 +50,7 @@ DisableSyntax.noIsInstanceOf = true
 | Return | 20 | Low | Early returns are acceptable in Scala 3 |
 | DefaultArguments | 8 | Low | Default arguments are idiomatic Scala |
 | StringPlusAny | 5 | Low | Acceptable in toString implementations |
-| OptionPartial | 5 | Medium | Use `.getOrElse` or pattern matching instead of `.get` |
+| **OptionPartial** | **0** | **Medium** | **✅ FIXED - All `.get` on Option replaced with safe alternatives** |
 | IsInstanceOf | 3 | Medium | Consider pattern matching instead |
 | **Null** | **0** | **High** | **✅ FIXED - All null usages eliminated!** |
 
@@ -96,11 +96,13 @@ While some mutable state is necessary for performance (especially in GDX client)
 
 ### Medium Priority Issues
 
-#### 4. OptionPartial (5 occurrences)
-Using `.get` on Option can throw `NoSuchElementException`.
-- Use `.getOrElse(default)`
-- Use pattern matching
-- Use `.fold`
+#### 4. ✅ OptionPartial (FIXED - was 5 occurrences, now 0)
+**All unsafe `.get` calls on Option have been replaced with safe alternatives!**
+
+Fixes applied:
+- **ParticleMarker.scala**: `targetPos.isDefined && ... targetPos.get.x/y/z` → `for pos <- targetPos if ... do pos.x/y/z`
+- **Games.scala**: `fileIO.get.getArchivedGames` → `fileIO.fold(Iterable.empty)(_.getArchivedGames)`
+- **RequestInfo.scala**: `players.get.get(color)` → `players.flatMap(_.get(color))`
 
 #### 5. ✅ IsInstanceOf (FIXED - was 3 occurrences, now 0)
 **All isInstanceOf checks have been replaced with pattern matching!**
@@ -136,7 +138,7 @@ Idiomatic Scala - no action needed.
 
 ### Remaining Actions
 1. ✅ ~~Consider refactoring unsafe IterableOps in critical code paths (27 instances)~~ **COMPLETED - Suppressed after verification**
-2. ⚠️ Review OptionPartial usage (5 instances of `.get`)
+2. ✅ ~~Review OptionPartial usage (5 instances of `.get`)~~ **COMPLETED - All replaced with safe alternatives**
 
 ### Future Improvements
 1. Create custom WartRemover configuration excluding acceptable patterns:

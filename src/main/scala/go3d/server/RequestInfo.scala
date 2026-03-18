@@ -57,7 +57,7 @@ case class RequestInfo(headers: Map[String, String], query: String, path: String
     if players.isEmpty then throw GameOver(Games(gameId))
 
     Tokens.getColor(token, gameId) match
-      case Some(color) => players.get.get(color) match
+      case Some(color) => players.flatMap(_.get(color)) match
         case Some(player) => player
         case None => throw PlayerNotFoundByToken(gameId, token)
       case None => throw PlayerNotFoundByToken(gameId, token)

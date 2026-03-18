@@ -22,7 +22,9 @@ object TestServer:
 
   @BeforeAll def quietLogging(): Unit =
     val root = org.slf4j.Logger.ROOT_LOGGER_NAME
-    LoggerFactory.getLogger(root).asInstanceOf[Logger].setLevel(Level.WARN)
+    LoggerFactory.getLogger(root) match
+      case l: Logger => l.setLevel(Level.WARN)
+      case _ => ()
 
   var shutdown: Option[cats.effect.IO[Unit]] = None
   @BeforeAll def startHttp4s(): Unit =
