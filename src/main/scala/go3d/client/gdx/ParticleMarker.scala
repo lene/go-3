@@ -14,12 +14,12 @@ trait Marker:
 
 case class SphereMarker(cursorModel: ModelInstance, boardSize: Int, isGreen: Boolean) extends Marker:
   def render(modelBatch: ModelBatch, targetPos: Option[Position], fadeAlpha: Float): Unit =
-    if targetPos.isDefined && fadeAlpha < 1.0f then
+    for pos <- targetPos if fadeAlpha < 1.0f do
       val offset = -(boardSize + 1) / 2f
       cursorModel.transform.setToTranslationAndScaling(
-        targetPos.get.x.toFloat + offset,
-        targetPos.get.y.toFloat + offset,
-        targetPos.get.z.toFloat + offset,
+        pos.x.toFloat + offset,
+        pos.y.toFloat + offset,
+        pos.z.toFloat + offset,
         1.1f, 1.1f, 1.1f
       )
       val tempMaterial = cursorModel.materials.get(0)

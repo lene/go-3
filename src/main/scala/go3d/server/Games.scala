@@ -87,7 +87,7 @@ object Games:
   def numActiveGames: Int = activeGames.size
   def activeGameIds: Iterable[String] = activeGames.keys
   def numArchivedGames: Int = fileIO.fold(0)(_.getArchivedGames.size)
-  def archivedGameIds: Iterable[String] = fileIO.get.getArchivedGames
+  def archivedGameIds: Iterable[String] = fileIO.fold(Iterable.empty[String])(_.getArchivedGames)
   def isReady(gameId: String): Boolean = activeGames.contains(gameId) && Players.isReady(gameId)
     
   private def archive(gameId: String): Unit =

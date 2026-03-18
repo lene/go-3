@@ -10,18 +10,17 @@ RUN sbt "Universal / packageBin"
 RUN unzip -oq /go-3/target/universal/go-3d-${version}.zip
 RUN mv go-3d-${version}/??? . && rm -r go-3d-*.*.* target
 
-FROM openjdk:21
+FROM eclipse-temurin:21-jre
 ARG version=0.7.17
-ENV SAVE_DIR saves
-ENV PORT 6030
+ENV SAVE_DIR=saves
+ENV PORT=6030
 
-RUN microdnf upgrade
 WORKDIR /go-3
-RUN useradd go-3d && chown -R go-3d . && microdnf install jq curl time && mkdir -p "${SAVE_DIR}"
+RUN apt-get update && apt-get upgrade -y && apt-get install -y --no-install-recommends jq curl time && rm -rf /var/lib/apt/lists/* && useradd go-3d && chown -R go-3d . && mkdir -p "${SAVE_DIR}"
 USER go-3d
 COPY --from=builder /go-3/bin /go-3/bin/
 COPY --from=builder /go-3/lib /go-3/lib/
 
 EXPOSE ${PORT}
-ENTRYPOINT ./bin/runner --server --port "${PORT}" --save-dir "${SAVE_DIR}"
+ENTRYPOINT ["/bin/sh", "-c", "exec ./bin/runner --server --port $PORT --save-dir $SAVE_DIR"]
 HEALTHCHECK CMD curl --fail http://localhost:${PORT}/health
