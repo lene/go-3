@@ -151,6 +151,9 @@ Bots use a pipeline of strategies to narrow down move selection:
 
 ## CI/CD Conventions
 
+After pushing to any branch, always monitor the CI pipeline(s) started by this push to ensure all
+jobs pass successfully. In case of failures, investigate and fix the issues before merging to main
+branches.
 ### Version Bumping
 
 The project uses semantic versioning (MAJOR.MINOR.PATCH) defined in multiple files that must stay in sync:
