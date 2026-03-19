@@ -27,7 +27,7 @@ object AsciiClient extends InteractiveClient with LazyLogging:
     val status = waitUntilReady(client)
     logger.info(s"\n${status.game.goban}")
     if status.game.moves.nonEmpty then logger.info(s"last move: ${status.game.moves.last}")
-    try
+    scala.util.Try {
       val input = readLine("your input: ")
       val Array(command, args) = (input+" ").split("\\s+", 2)
       val statusResponse: Option[StatusResponse] = command match
@@ -46,11 +46,12 @@ object AsciiClient extends InteractiveClient with LazyLogging:
           )
           None
       statusResponse.foreach(sr => if sr.over then exit(0))
-    catch
+    }.recover {
       case _: Exit => exit(0)
       case _: InterruptedException => exit(1)
       case e: RequestFailedException => logger.warn(e.message)
       case e: NumberFormatException => logger.warn(s"Not a number: ${e.getMessage}, set again!")
+    }
     mainLoop(client)
 
   def set(client: BaseClient, args: String): StatusResponse =

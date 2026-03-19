@@ -8,6 +8,7 @@ import go3d.server.StatusResponse
 import java.io.IOException
 import java.net.ConnectException
 import java.net.UnknownHostException
+import scala.util.Try
 
 trait ClientTrait:
   def mainLoop(client: BaseClient): Unit
@@ -25,11 +26,11 @@ abstract class Client extends ClientTrait with LazyLogging:
     color
 
   def main(args: Array[String]): Unit =
-    try
+    Try {
       val client = parseArgs(args)
       init()
       mainLoop(client)
-    catch
+    }.recover {
       case e: UnknownHostException => exit(s"unknown host: ${e.getMessage}", 1)
       case e: ConnectException => exit(s"connection problem: ${e.getMessage}", 1)
       case e: NumberFormatException => exit(s"not a number: ${e.getMessage}", 1)
@@ -38,6 +39,7 @@ abstract class Client extends ClientTrait with LazyLogging:
       case e: NoSuchElementException => exit(s"missing argument: --${e.getMessage}", 1)
       case e: IllegalArgumentException => exit(s"missing argument: ${e.getMessage}", 1)
       case e: Throwable => exit(s"unexpected error: ${e.getMessage} ${e.getStackTrace.mkString("\n")}", 1)
+    }
 
   def init(): Unit = {}
 
