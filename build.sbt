@@ -1,9 +1,9 @@
 import sbt.Keys.libraryDependencies
 
-val scala3Version = "3.7.3"
+val scala3Version = "3.8.2"
 val circeVersion = "0.14.15"
-val libgdxVersion = "1.13.5"
-val http4sVersion = "1.0.0-M45"
+val libgdxVersion = "1.14.0"
+val http4sVersion = "1.0.0-M46"
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
@@ -13,7 +13,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.17",
+    version := "0.7.18",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -26,13 +26,13 @@ lazy val root = project
     ),
 
     // Parallel collections
-    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.1.0",
+    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
     // Logging
     libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.15",
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.32",
     // JUnit
     libraryDependencies ++= Seq(
-          "net.aichler" % "jupiter-interface" % JupiterKeys.jupiterVersion.value % Test
+          "com.github.sbt.junit" % "jupiter-interface" % JupiterKeys.jupiterVersion.value % Test
     ),
     // ScalaTest
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
@@ -40,7 +40,7 @@ lazy val root = project
     // Scallop command line parser
     libraryDependencies += "org.rogach" %% "scallop" % "5.2.0",
     // requests
-    libraryDependencies += "com.lihaoyi" %% "requests" % "0.9.0",
+    libraryDependencies += "com.lihaoyi" %% "requests" % "0.9.2",
     libraryDependencies ++= Seq(
         "org.http4s" %% "http4s-ember-client" % http4sVersion,
         "org.http4s" %% "http4s-ember-server" % http4sVersion,
@@ -49,8 +49,8 @@ lazy val root = project
     ),
     // log4cats for http4s logging
     libraryDependencies ++= Seq(
-        "org.typelevel" %% "log4cats-core"  % "2.7.0",
-        "org.typelevel" %% "log4cats-slf4j" % "2.7.0",
+        "org.typelevel" %% "log4cats-core"  % "2.7.1",
+        "org.typelevel" %% "log4cats-slf4j" % "2.7.1",
     ),
     // circe
     libraryDependencies ++= Seq(
@@ -61,7 +61,7 @@ lazy val root = project
     // libGDX
     libraryDependencies ++= Seq(
         "com.badlogicgames.gdx" % "gdx" % libgdxVersion,
-        "net.sf.proguard" % "proguard-base" % "6.2.2" % "provided",
+        "com.guardsquare" % "proguard-base" % "7.8.2" % "provided",
         "com.badlogicgames.gdx" % "gdx-backend-lwjgl3" % libgdxVersion,
         "com.badlogicgames.gdx" % "gdx-platform" % libgdxVersion classifier "natives-desktop",
     )
