@@ -29,7 +29,7 @@ Test:Debian:
   parallel:
     matrix:
       - IMAGE:
-        - ubuntu:22.04
+        - ubuntu:24.04
         - ubuntu:latest
         - debian:stable-slim
         - debian:testing-slim
