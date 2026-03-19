@@ -60,7 +60,7 @@ class TestFileIo:
       case Left(e) => Assertions.fail(e.getMessage)
 
   @Test def testExistsToGainTrustInTestsThatUseIt(): Unit =
-    TestFileIo.fileIO.writeFile("test.json", "{}")
+    Games.fileIO.foreach(_.writeFile("test.json", "{}"))
     Assertions.assertTrue(IOForTests.exists("test.json"))
     Assertions.assertFalse(IOForTests.exists("this file should not exist"))
 
