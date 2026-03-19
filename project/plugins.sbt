@@ -1,13 +1,13 @@
 // Universal / packageBin
-addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.7.6")
+addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.7")
 
 // JUnit5/Jupiter
-addSbtPlugin("net.aichler" % "sbt-jupiter-interface" % "0.11.1")
+addSbtPlugin("com.github.sbt.junit" % "sbt-jupiter-interface" % "0.17.1")
 
 // Test coverage (see https://www.baeldung.com/scala/sbt-scoverage-code-analysis)
-addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.0.9")
+addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.4.4")
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 
 // Static analysis tools
-addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.4.1")
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.4")
+addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.5.6")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.6")
