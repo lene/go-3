@@ -42,7 +42,7 @@ object MeasureMoveTimes:
     println(s"Threshold: ${thresholdMs}ms")
     println("=" * 80)
 
-    var game = Game.start(saveGame.game.size)
+    var game = Game.start(saveGame.game.size).get
     var slowMoves = 0
     var totalTime = 0L
 
@@ -52,9 +52,9 @@ object MeasureMoveTimes:
       try
         moveOrPass match
           case move: Move =>
-            game = game.makeMove(move)
+            game = game.makeMove(move).get
           case pass: Pass =>
-            game = game.makeMove(pass)
+            game = game.makeMove(pass).get
 
         val endTime = System.nanoTime()
         val durationMs = (endTime - startTime) / 1_000_000

@@ -11,17 +11,20 @@ import io.circe._
 import io.circe.syntax._
 
 import scala.reflect.ClassTag
+import scala.util.Try
 
 implicit val encodeColor: Encoder[Color] =
   (col: Color) => Json.obj(("color", Json.fromString(col.toString)))
 
 implicit val decodeColor: Decoder[Color] =
-  (c: HCursor) => for col <- c.downField("color").as[Char]
-    yield Color(col)
+  (c: HCursor) => for
+    col <- c.downField("color").as[Char]
+    color <- Color(col).toEither.left.map(e => DecodingFailure(e.getMessage, c.history))
+  yield color
 
 implicit val colorKeyEncoder: KeyEncoder[Color] = (col: Color) => col.toString
 
-implicit val colorKeyDecoder: KeyDecoder[Color] = (key: String) => Some(Color(key(0)))
+implicit val colorKeyDecoder: KeyDecoder[Color] = (key: String) => Color(key(0)).toOption
 
 implicit val encodePosition: Encoder[Position] = (pos: Position) => Json.obj(
   ("x", Json.fromInt(pos.x)),
@@ -34,7 +37,8 @@ implicit val decodePosition: Decoder[Position] =
     x <- c.downField("x").as[Int]
     y <- c.downField("y").as[Int]
     z <- c.downField("z").as[Int]
-  yield new Position(x, y, z)
+    pos <- Try(Position(x, y, z)).toEither.left.map(e => DecodingFailure(e.getMessage, c.history))
+  yield pos
 
 implicit val encodeMove: Encoder[Move] =
   (move: Move) => Json.obj(
@@ -71,19 +75,22 @@ implicit val encodeHasColor: Encoder[HasColor] =
       ("color", encodeColor(p.color))
     )
 
-def gobanFromStrings(levels: Array[String]): Goban =
-  if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
+def gobanFromStrings(levels: Array[String]): Try[Goban] =
+  if levels.isEmpty then return scala.util.Failure(IllegalArgumentException("nothing to generate"))
   val size = levels(0).stripMargin.replace("|", "").split("\n").length
-  if levels.length != size then throw JsonDecodeError(s"${levels.length} != $size")
-  val goban = Goban.start(size)
-  for (level, z) <- levels.zipWithIndex do
-    val lines = level.stripMargin.replace("|", "").split("\n")
-    if lines.length != size then throw JsonDecodeError(s"${lines.toString}: ${lines.length} != $size")
-    for (line, y) <- lines.zipWithIndex do
-      if line.length != size then throw JsonDecodeError(s"\"$line\": ${line.length} != $size")
-      for (stone, x) <- line.zipWithIndex do
-        goban.stones(x+1)(y+1)(z+1) = Color(stone)
-  goban
+  if levels.length != size then return scala.util.Failure(JsonDecodeError(s"${levels.length} != $size"))
+  Goban.start(size).flatMap { goban =>
+    Try {
+      for (level, z) <- levels.zipWithIndex do
+        val lines = level.stripMargin.replace("|", "").split("\n")
+        if lines.length != size then sys.error(s"${lines.toString}: ${lines.length} != $size")
+        for (line, y) <- lines.zipWithIndex do
+          if line.length != size then sys.error(s"\"$line\": ${line.length} != $size")
+          for (stone, x) <- line.zipWithIndex do
+            goban.stones(x+1)(y+1)(z+1) = Color(stone).getOrElse(go3d.Empty)
+      goban
+    }.recoverWith { case e => scala.util.Failure(JsonDecodeError(e.getMessage)) }
+  }
 
 def gobanToStrings(goban: Goban): Array[String] =
   val strings = Array.fill(goban.size){""}
@@ -103,7 +110,8 @@ implicit val decodeGoban: Decoder[Goban] =
   (c: HCursor) => for
     _ <- c.downField("size").as[Int]
     stones <- c.downField("stones").as[Array[String]]
-  yield gobanFromStrings(stones)
+    goban <- gobanFromStrings(stones).toEither.left.map(e => DecodingFailure(e.getMessage, c.history))
+  yield goban
 
 implicit val encodeGame: Encoder[Game] =
   (game: Game) => Json.obj(

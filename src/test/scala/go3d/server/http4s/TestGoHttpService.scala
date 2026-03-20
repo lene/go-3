@@ -36,7 +36,10 @@ class TestGoHttpService extends LazyLogging:
     Request[IO](Method.GET, Uri.fromString(path).getOrElse(Assertions.fail()), headers = headers)
 
   @Test def testRunningServerWithInvalidPortThrows(): Unit =
-    Assertions.assertThrows(classOf[IllegalArgumentException], () => GoHttpService(-1).server)
+    Assertions.assertThrows(
+      classOf[IllegalArgumentException],
+      () => GoHttpService(-1).server.use(_ => IO.unit).unsafeRunSync()
+    )
 
   @Test def testHealth(): Unit =
     val actual = runRequest(uri"/health")

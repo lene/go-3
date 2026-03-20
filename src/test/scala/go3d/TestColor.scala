@@ -19,15 +19,16 @@ class TestColor:
     // we don't care about the string representation of the other values
 
   @Test def testAllowedColors(): Unit =
-    Color(' ')
-    Color('@')
-    Color('O')
-    Color('·')
-  
-  @Test def testBadColor(): Unit = Assertions.assertThrows(classOf[BadColor], () =>Color('+'))
+    Color(' ').get
+    Color('@').get
+    Color('O').get
+    Color('·').get
+
+  @Test def testBadColor(): Unit =
+    Assertions.assertInstanceOf(classOf[BadColor], Color('+').failed.get)
 
   @Test def testUnaryNot(): Unit =
     Assertions.assertEquals(White, !Black)
     Assertions.assertEquals(Black, !White)
-    Assertions.assertThrows(classOf[IllegalArgumentException], () => !Empty)
-    Assertions.assertThrows(classOf[IllegalArgumentException], () => !Sentinel)
+    Assertions.assertThrows(classOf[RuntimeException], () => !Empty)
+    Assertions.assertThrows(classOf[RuntimeException], () => !Sentinel)

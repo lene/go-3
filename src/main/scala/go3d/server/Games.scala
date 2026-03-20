@@ -7,6 +7,7 @@ import io.circe.parser._
 
 import scala.collection.concurrent
 import scala.io.Source
+import scala.util.{Failure, Success, Try}
 
 object Games:
 
@@ -16,10 +17,12 @@ object Games:
   private val archivedGames = concurrent.TrieMap[String, Game]()
   var fileIO: Option[FileIO] = None
 
-  def init(baseDir: String): Unit = fileIO = Some(FileIO(baseDir))
+  def init(baseDir: String): Try[Unit] =
+    FileIO(baseDir).map(io => fileIO = Some(io))
 
-  def checkInitialized(): Unit =
-    if fileIO.isEmpty then throw new IllegalStateException("Games not initialized")
+  def checkInitialized(): Try[Unit] =
+    if fileIO.isEmpty then Failure(new IllegalStateException("Games not initialized"))
+    else Success(())
 
   /**
    * Get current game state (thread-safe read).
@@ -35,24 +38,26 @@ object Games:
     val logger = Logger(Games.getClass)
     init(baseDir)
     for saveFile <- fileIO.fold(List())(_.getListOfFiles(".json").sorted) do
-      try
-        restoreGame(readGame(saveFile))
-        logger.debug(s"Loaded ${saveFile.getName}")
-      catch
-        case e: ReadSaveGameError => logger.warn(s"${saveFile.getName}: ${e.message}")
-        case e: JsonDecodeError => logger.warn(s"${saveFile.getName}: ${e.message}")
+      readGame(saveFile) match
+        case Success(saveGame) =>
+          restoreGame(saveGame)
+          logger.debug(s"Loaded ${saveFile.getName}")
+        case Failure(e: ReadSaveGameError) => logger.warn(s"${saveFile.getName}: ${e.message}")
+        case Failure(e: JsonDecodeError) => logger.warn(s"${saveFile.getName}: ${e.message}")
+        case Failure(e) => logger.warn(s"${saveFile.getName}: ${e.getMessage}")
     logger.info(s"${Games.numActiveGames} active games loaded, ${Games.numArchivedGames} archived")
 
   /**
    * Register a new game with lock-free thread safety.
    */
-  def register(boardSize: Int): String =
-    val gameId = IdGenerator.getId
-    val game = Game.start(boardSize)
-    activeGames.put(gameId, new ConcurrentState(game))
-    gameId
+  def register(boardSize: Int): Try[String] =
+    go3d.Game.start(boardSize).map { game =>
+      val gameId = IdGenerator.getId
+      activeGames.put(gameId, new ConcurrentState(game))
+      gameId
+    }
 
-  def registerPlayer(gameId: String, color: Color): Unit =
+  def registerPlayer(gameId: String, color: Color): Try[Unit] =
     Players.register(gameId, color)
 
   /**
@@ -67,20 +72,21 @@ object Games:
     if game.isOver then archive(gameId)
 
   /**
-   * Thread-safe atomic game update using a function.
+   * Thread-safe atomic game update using a Try-returning function.
    *
    * Automatically retries if concurrent update occurs.
-   * This is the preferred way to update game state from handlers.
+   * If f returns Failure, propagates immediately without modifying state.
    *
    * @param gameId The game to update
-   * @param f Function to transform old game state to new state
-   * @return The new game state after successful update
+   * @param f Function to transform old game state to Try of new state
+   * @return The new game state after successful update, or Failure
    */
-  def update(gameId: String)(f: Game => Game): Game =
-    val newGame = activeGames(gameId).update(f)
-    fileIO.foreach(_.saveGame(gameId))
-    if newGame.isOver then archive(gameId)
-    newGame
+  def update(gameId: String)(f: Game => Try[Game]): Try[Game] =
+    activeGames(gameId).update(f).map { newGame =>
+      fileIO.foreach(_.saveGame(gameId))
+      if newGame.isOver then archive(gameId)
+      newGame
+    }
 
   def contains(gameId: String): Boolean =
     activeGames.contains(gameId) || archivedGames.contains(gameId)
@@ -89,7 +95,7 @@ object Games:
   def numArchivedGames: Int = fileIO.fold(0)(_.getArchivedGames.size)
   def archivedGameIds: Iterable[String] = fileIO.fold(Iterable.empty[String])(_.getArchivedGames)
   def isReady(gameId: String): Boolean = activeGames.contains(gameId) && Players.isReady(gameId)
-    
+
   private def archive(gameId: String): Unit =
     // logger declared inline to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
     Logger(Games.getClass).info(s"Archiving $gameId")
@@ -101,13 +107,13 @@ object Games:
       Tokens.unregisterGame(gameId)
     }
 
-  private[server] def readGame(saveFile: java.io.File): SaveGame =
+  private[server] def readGame(saveFile: java.io.File): Try[SaveGame] =
     val source = Source.fromFile(saveFile)
     val fileContents = source.getLines.mkString
     source.close()
     decode[SaveGame](fileContents) match
-      case Right(saveGame) => saveGame
-      case Left(error) => throw ReadSaveGameError(error.getMessage)
+      case Right(saveGame) => Success(saveGame)
+      case Left(error) => Failure(ReadSaveGameError(error.getMessage))
 
   private def restoreGame(saveGame: SaveGame): Unit =
     val gameId = saveGame.players.last._2.gameId

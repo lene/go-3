@@ -8,12 +8,18 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import scala.util.{Failure, Success, Try}
 
-class FileIO(val baseFolder: String):
+object FileIO:
+  def apply(baseFolder: String): Try[FileIO] =
+    val basePath = Paths.get(baseFolder)
+    if !Files.exists(basePath) || !Files.isDirectory(basePath)
+    then Failure(IllegalArgumentException(s"$baseFolder not a directory"))
+    else Success(new FileIO(baseFolder))
+
+class FileIO private(val baseFolder: String):
 
   private val basePath: Path = Paths.get(baseFolder)
-  if !Files.exists(basePath) || !Files.isDirectory(basePath)
-  then throw IllegalArgumentException(s"$baseFolder not a directory")
 
   override def toString: String = s"FileIO($baseFolder, $archiveFolder)"
 
@@ -22,7 +28,7 @@ class FileIO(val baseFolder: String):
     val game = Games(gameId)  // Will throw NoSuchElementException if game doesn't exist
     val players = Players(gameId)
     if players.isEmpty then
-      throw IllegalStateException(s"Cannot save game $gameId with no players")
+      sys.error(s"Cannot save game $gameId with no players")
     writeFile(s"$gameId.json", SaveGame(game, players).asJson.noSpaces)
 
   def writeFile(saveFile: String, content: String): Path =
@@ -46,7 +52,7 @@ class FileIO(val baseFolder: String):
 
   def archiveGame(gameId: String): Unit =
     val sourcePath = Paths.get(baseFolder, s"$gameId.json")
-    if !Files.exists(sourcePath) then throw IllegalArgumentException(s"$gameId.json does not exist")
+    if !Files.exists(sourcePath) then sys.error(s"$gameId.json does not exist")
     if !Files.exists(archivePath) then Files.createDirectory(archivePath)
     val archivedPath = archivePath.resolve(sourcePath.getFileName)
     if Files.exists(archivedPath) then deleteFileIfArchivedVersionIsSame(sourcePath, archivedPath)
@@ -54,7 +60,7 @@ class FileIO(val baseFolder: String):
 
   private def deleteFileIfArchivedVersionIsSame(sourcePath: Path, archivedPath: Path): Unit =
     if !filesAreEqual(sourcePath, archivedPath) then
-      throw IllegalArgumentException(s"$sourcePath and $archivedPath have different content")
+      sys.error(s"$sourcePath and $archivedPath have different content")
     Files.delete(sourcePath)
 
   private def filesAreEqual(sourcePath: Path, targetPath: Path): Boolean =
@@ -66,9 +72,10 @@ class FileIO(val baseFolder: String):
 
   private def guardAgainstAbsolutePath(path: String): Unit =
     val pathAsFile: File = File(path)
-    if pathAsFile.isAbsolute then throw IllegalArgumentException(s"Path traversal attempt? $path")
-    try
-      if pathAsFile.getCanonicalPath != pathAsFile.getAbsolutePath
-      then throw IllegalArgumentException(s"Path traversal attempt? $path")
-    catch case e: IOException => throw IllegalArgumentException(s"Path traversal attempt? $path", e)
-
+    if pathAsFile.isAbsolute then sys.error(s"Path traversal attempt? $path")
+    Try(pathAsFile.getCanonicalPath).fold(
+      _ => sys.error(s"Path traversal attempt? $path"),
+      canonicalPath =>
+        if canonicalPath != pathAsFile.getAbsolutePath
+        then sys.error(s"Path traversal attempt? $path")
+    )

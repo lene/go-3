@@ -16,13 +16,11 @@ import org.http4s.server.Router
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 
-import scala.util.Try
-
 object GameId:
   def unapply(str: String): Option[String] = Some(str).filter(IdGenerator.isValidId)
 
 object ColorVar:
-  def unapply(str: String): Option[Color] = Try(Color(str.head)).toOption
+  def unapply(str: String): Option[Color] = Color(str.head).toOption
 
 case class GoHttpService(port: Int) extends LazyLogging:
 
@@ -53,10 +51,13 @@ case class GoHttpService(port: Int) extends LazyLogging:
   private[http4s] val httpApp = Router("/" -> goService).orNotFound
 
   def server: Resource[IO, org.http4s.server.Server] =
-    EmberServerBuilder
-      .default[IO]
-      .withHost(ipv4"0.0.0.0")
-      .withPort(Port.fromInt(port).getOrElse(throw IllegalArgumentException(s"invalid port $port")))
-      .withHttpApp(httpApp)
-      .build
+    Port.fromInt(port) match
+      case None => Resource.eval(IO.raiseError(IllegalArgumentException(s"invalid port $port")))
+      case Some(p) =>
+        EmberServerBuilder
+          .default[IO]
+          .withHost(ipv4"0.0.0.0")
+          .withPort(p)
+          .withHttpApp(httpApp)
+          .build
 

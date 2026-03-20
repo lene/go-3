@@ -3,7 +3,7 @@ package go3d.client
 import com.typesafe.scalalogging.LazyLogging
 import go3d.Position
 
-import scala.util.Random
+import scala.util.{Random, Try}
 
 class ThinkingTimeLimiter(val maxThinkingTimeMs: Int) extends LazyLogging:
 
@@ -24,8 +24,8 @@ class ThinkingTimeLimiter(val maxThinkingTimeMs: Int) extends LazyLogging:
       logger.info(s"Choosing $targetSize / ${possible.size} to satisfy max thinking time of $maxThinkingTimeMs ms")
       targetSize
 
-  def recordThinkingTime(choiceFunction: => Seq[Position]): Seq[Position] =
+  def recordThinkingTime(choiceFunction: => Try[Seq[Position]]): Try[Seq[Position]] =
     val startTime = System.currentTimeMillis()
-    val possiblePositions = choiceFunction
+    val result = choiceFunction
     lastThinkingTimeMs = (System.currentTimeMillis() - startTime).toInt
-    possiblePositions
+    result

@@ -18,11 +18,11 @@ import scala.util.Success
 import scala.util.Try
 
 trait HandleTrait:
-  def handle: GoResponse
+  def handle: Try[GoResponse]
 
 abstract class BaseHandler extends HandleTrait:
   def response: IO[Response[IO]] =
-    Try(handle) match
+    handle match
       case Success(body) => Ok(body)
       case Failure(e: go3d.BadBoardSize) => BadRequest(e.getMessage)
       case Failure(e: go3d.BadColor) => BadRequest(e.getMessage)

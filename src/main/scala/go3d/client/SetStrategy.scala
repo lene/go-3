@@ -9,6 +9,7 @@ import go3d.Position
 
 import scala.annotation.tailrec
 import scala.collection.parallel.CollectionConverters._
+import scala.util.{Failure, Success, Try}
 
 object SetStrategy:
   def create(
@@ -21,27 +22,26 @@ case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTime
 
   private val thinkingTimeLimiter = ThinkingTimeLimiter(maxThinkingTimeMs)
 
-  def narrowDown(possible: Seq[Position], game: Game): Seq[Position] =
+  def narrowDown(possible: Seq[Position], game: Game): Try[Seq[Position]] =
     @tailrec
     def iterateThroughStrategies(
         possible: Seq[Position], game: Game, strategies: Array[String]
-    ): Seq[Position] =
-      if strategies.isEmpty || possible.isEmpty then possible
+    ): Try[Seq[Position]] =
+      if strategies.isEmpty || possible.isEmpty then Success(possible)
       else
-        val nextPossible = strategies.head match
-          case "random" => possible
-          case "closestToCenter" => closestToCenter(possible)
-          case "onStarPoints" => onStarPoints(possible)
-          case "closestToStarPoints" => closestToStarPoints(possible)
-          case "maximizeOwnLiberties" => maximizeOwnLiberties(possible, game)
-          case "minimizeOpponentLiberties" => minimizeOpponentLiberties(possible, game)
-          case "maximizeDistance" => maximizeDistance(possible, game)
-          case "prioritiseCapture" => prioritiseCapture(possible, game)
-          case s => throw IllegalArgumentException(s"narrowDown(): $s not implemented")
-        iterateThroughStrategies(nextPossible, game, strategies.tail)
+        strategies.head match
+          case "random" => iterateThroughStrategies(possible, game, strategies.tail)
+          case "closestToCenter" => iterateThroughStrategies(closestToCenter(possible), game, strategies.tail)
+          case "onStarPoints" => iterateThroughStrategies(onStarPoints(possible), game, strategies.tail)
+          case "closestToStarPoints" => iterateThroughStrategies(closestToStarPoints(possible), game, strategies.tail)
+          case "maximizeOwnLiberties" => iterateThroughStrategies(maximizeOwnLiberties(possible, game), game, strategies.tail)
+          case "minimizeOpponentLiberties" => iterateThroughStrategies(minimizeOpponentLiberties(possible, game), game, strategies.tail)
+          case "maximizeDistance" => iterateThroughStrategies(maximizeDistance(possible, game), game, strategies.tail)
+          case "prioritiseCapture" => iterateThroughStrategies(prioritiseCapture(possible, game), game, strategies.tail)
+          case s => Failure(IllegalArgumentException(s"narrowDown(): $s not implemented"))
 
     val subset = thinkingTimeLimiter.subsetToSatisfyMaxThinkingTime(possible)
-    thinkingTimeLimiter.recordThinkingTime({iterateThroughStrategies(subset, game, strategies)})
+    thinkingTimeLimiter.recordThinkingTime(iterateThroughStrategies(subset, game, strategies))
 
 
   def closestToCenter(possible: Seq[Position]): Seq[Position] =

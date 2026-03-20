@@ -2,6 +2,7 @@ package go3d.server
 
 import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 /**
  * Thread-safe container for lock-free optimistic updates.
@@ -64,6 +65,27 @@ class ConcurrentState[T](initial: T):
       else
         attemptUpdate()  // CAS failed due to concurrent update, retry with fresh value
 
+    attemptUpdate()
+
+  /**
+   * Atomically update state using a Try-returning function f.
+   *
+   * If f returns Failure, propagates immediately without modifying state.
+   * If f returns Success and CAS succeeds, returns the new state.
+   * Retries automatically if CAS fails due to concurrent update.
+   *
+   * @param f Function to transform old state to Try of new state
+   * @return The result of f applied to the current state
+   */
+  def update(f: T => Try[T]): Try[T] =
+    @tailrec
+    def attemptUpdate(): Try[T] =
+      val oldValue = ref.get()
+      f(oldValue) match
+        case Failure(e) => Failure(e)
+        case Success(newValue) =>
+          if ref.compareAndSet(oldValue, newValue) then Success(newValue)
+          else attemptUpdate()
     attemptUpdate()
 
   /**

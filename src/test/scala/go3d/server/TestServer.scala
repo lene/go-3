@@ -8,7 +8,7 @@ import org.http4s.Status
 import java.io.IOException
 import java.nio.file.Files
 import scala.io.Source
-import scala.util.Random
+import scala.util.{Failure, Random, Success, Try}
 
 import go3d._
 import go3d.server.http4s.GoHttpService
@@ -42,7 +42,7 @@ class TestServer:
   var tempDir: Option[String] = None
 
   private def fileIO = Games.fileIO.getOrElse(
-    throw new IllegalStateException("Games not initialized - check test setup")
+    sys.error("Games not initialized - check test setup")
   )
 
   @BeforeEach def setupTempDir(): Unit =
@@ -327,7 +327,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     gameData.playRandomGame(false)
     val savedGame = Games.readGame(IOForTests.open(gameData.id + ".json"))
-    Assertions.assertEquals(Games(gameData.id), savedGame.game)
+    Assertions.assertEquals(Games(gameData.id), savedGame.get.game)
 
   @Test def testTooLongURLSetsStatus400WhenCreatingGame(): Unit =
     assertFailsWithStatus(s"http://localhost:$TestPort/new/123", 400)
@@ -693,22 +693,22 @@ def getJson(url: String): Source = Source.fromURL(url)
 def getPRR(url: String): PlayerRegisteredResponse =
   decode[PlayerRegisteredResponse](getJson(url).mkString) match
     case Right(v) => v
-    case Left(e) => throw ServerException(e.getMessage)
+    case Left(e) => sys.error(e.getMessage)
 
 def getGCR(url: String): GameCreatedResponse =
   decode[GameCreatedResponse](getJson(url).mkString) match
     case Right(v) => v
-    case Left(e) => throw ServerException(e.getMessage)
+    case Left(e) => sys.error(e.getMessage)
 
 def getSR(url: String, header: Map[String, String]): StatusResponse =
   decode[StatusResponse](requests.get(url, headers = header).text()) match
     case Right(v) => v
-    case Left(e) => throw ServerException(e.getMessage)
+    case Left(e) => sys.error(e.getMessage)
 
 def getOGR(url: String): OpenGamesResponse =
   decode[OpenGamesResponse](getJson(url).mkString) match
     case Right(v) => v
-    case Left(e) => throw ServerException(e.getMessage)
+    case Left(e) => sys.error(e.getMessage)
 
 def setUpGame(size: Int): GameData =
   val newGameResponse = GameData.create(size)
@@ -722,13 +722,11 @@ def gameWithBlackAt111(size: Int): StatusResponse =
 
 def assertFailsWithStatus(url: String, expectedStatus: Int,
                           headers: Map[String, String] = Map()): Unit =
-  try
-    requests.get(url, headers = headers)
-    Assertions.fail("request unexpectedly succeeded")
-  catch
-    case e: RequestFailedException => Assertions.assertEquals(
+  Try(requests.get(url, headers = headers)) match
+    case Success(_) => Assertions.fail("request unexpectedly succeeded")
+    case Failure(e: RequestFailedException) => Assertions.assertEquals(
       expectedStatus, e.response.statusCode, e.response.text()
     )
-    case e: Throwable => Assertions.fail(
+    case Failure(e) => Assertions.fail(
       s"expected RequestFailedException, got ${e.getClass.getSimpleName}"
     )

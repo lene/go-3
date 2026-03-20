@@ -5,11 +5,13 @@ import com.typesafe.scalalogging.LazyLogging
 import go3d.GameOver
 import org.http4s.Request
 
+import scala.util.{Failure, Success, Try}
+
 val NullRequestInfo = RequestInfo(Map(), "", "", false)
 
 object RequestInfo:
 
-  def apply(request: Request[IO], maxLength: Int=100): RequestInfo =
+  def apply(request: Request[IO], maxLength: Int=100): Try[RequestInfo] =
     val headers = request.headers.headers.map(h => (h.name.toString, h.value)).toMap
     fromRaw(
       headers, request.uri.query.toString,
@@ -18,16 +20,16 @@ object RequestInfo:
 
   private def fromRaw(
     headers: Map[String, String], queryString: String, rawPathInfo: String, maxLength: Int
-  ): RequestInfo =
+  ): Try[RequestInfo] =
     val (pathInfo, debug) = parsePathInfo(rawPathInfo)
     if pathInfo != null && pathInfo.length > maxLength
-    then throw RequestTooLong(maxLength, pathInfo.length)
-    RequestInfo(
+    then Failure(RequestTooLong(maxLength, pathInfo.length))
+    else Success(RequestInfo(
       headers,
       if (queryString != null && queryString.nonEmpty) queryString else "/",
       if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/",
       debug
-    )
+    ))
 
   private def parsePathInfo(pathInfo: String): (String, Boolean) =
     if pathInfo != null && pathInfo.endsWith("/d") then (pathInfo.dropRight(2), true)
@@ -35,41 +37,41 @@ object RequestInfo:
 
 case class RequestInfo(headers: Map[String, String], query: String, path: String, debug: Boolean)
   extends GoResponse with LazyLogging:
-  def getGameId: String =
-    if path == null || path.isEmpty then throw MalformedRequest(path)
-    val parts = path.stripPrefix("/").split('/')
-    if parts.isEmpty then throw MalformedRequest(path)
-    val gameId = parts(0)
-    if !Games.contains(gameId) then throw NonexistentGame(gameId, Games.activeGameIds.toList)
-    gameId
+  def getGameId: Try[String] =
+    if path == null || path.isEmpty then Failure(MalformedRequest(path))
+    else
+      val parts = path.stripPrefix("/").split('/')
+      if parts.isEmpty then Failure(MalformedRequest(path))
+      else
+        val gameId = parts(0)
+        if !Games.contains(gameId) then Failure(NonexistentGame(gameId, Games.activeGameIds.toList))
+        else Success(gameId)
 
   def getPlayer: Option[Player] =
-    try
-      val token = getToken
-      val gameId = getGameId
-      Tokens.getColor(token, gameId).flatMap(color => Players.get(gameId).flatMap(_.get(color)))
-    catch case _: AuthorizationError => None
+    (for
+      token <- getToken
+      gameId <- getGameId
+      players <- Players.get(gameId).toRight(GameOver(Games(gameId))).toTry
+      color <- Tokens.getColor(token, gameId).toRight(PlayerNotFoundByToken(gameId, token)).toTry
+      player <- players.get(color).toRight(PlayerNotFoundByToken(gameId, token)).toTry
+    yield player).toOption
 
-  def mustGetPlayer: Player =
-    val token = getToken
-    val gameId = getGameId
-    val players = Players.get(gameId)
-    if players.isEmpty then throw GameOver(Games(gameId))
+  def mustGetPlayer: Try[Player] =
+    for
+      token <- getToken
+      gameId <- getGameId
+      players <- Players.get(gameId).toRight(GameOver(Games(gameId))).toTry
+      color <- Tokens.getColor(token, gameId).toRight(PlayerNotFoundByToken(gameId, token)).toTry
+      player <- players.get(color).toRight(PlayerNotFoundByToken(gameId, token)).toTry
+    yield player
 
-    Tokens.getColor(token, gameId) match
-      case Some(color) => players.flatMap(_.get(color)) match
-        case Some(player) => player
-        case None => throw PlayerNotFoundByToken(gameId, token)
-      case None => throw PlayerNotFoundByToken(gameId, token)
+  def getToken: Try[String] =
+    if !headers.contains("Authentication") then Failure(AuthorizationMissing(headers))
+    else
+      val authenticationParts = headers("Authentication").split("\\s+")
+      if authenticationParts(0) != "Bearer" then Failure(AuthorizationMethodWrong(authenticationParts(0)))
+      else Success(authenticationParts(1))
 
-  private def getToken: String =
-    if !headers.contains("Authentication") then throw AuthorizationMissing(headers)
-    val authenticationParts = headers("Authentication").split("\\s+")
-    if authenticationParts(0) != "Bearer" then throw AuthorizationMethodWrong(authenticationParts(0))
-    authenticationParts(1)
-
-  private def isAuthorized: Boolean =
-    try getToken.nonEmpty
-    catch case _: AuthorizationError => false
+  private def isAuthorized: Boolean = getToken.isSuccess
 
   def debugInfo: RequestInfo = if debug && isAuthorized then this else NullRequestInfo

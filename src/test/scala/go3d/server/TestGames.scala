@@ -10,5 +10,5 @@ object TestGames:
 class TestGames:
 
   @Test def testAddedGameIsStored(): Unit =
-    val gameId = Games.register(3)
+    val gameId = Games.register(3).get
     Assertions.assertTrue(Games.contains(gameId))

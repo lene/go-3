@@ -16,8 +16,8 @@ object TestFileIo:
 class TestFileIo:
 
   @Test def testFileIOFailsOnNonexistingBaseFolder(): Unit =
-    Assertions.assertThrows(
-      classOf[IllegalArgumentException], () => FileIO("/tmp/this-folder-should-not-exist")
+    Assertions.assertInstanceOf(
+      classOf[IllegalArgumentException], FileIO("/tmp/this-folder-should-not-exist").failed.get
     )
 
   @Test def testSaveGameFailsNonexistentGame(): Unit =
@@ -27,14 +27,14 @@ class TestFileIo:
     )
 
   @Test def testSaveGameFailsNonexistentPlayers(): Unit =
-    val gameId = Games.register(TestSize)
+    val gameId = Games.register(TestSize).get
     Assertions.assertThrows(
-      classOf[IllegalStateException], () => TestFileIo.fileIO.saveGame(gameId)
+      classOf[RuntimeException], () => TestFileIo.fileIO.saveGame(gameId)
     )
 
   @Test def testSaveGameWritesFile(): Unit =
-    val gameId = Games.register(TestSize)
-    Games.registerPlayer(gameId, Black)
+    val gameId = Games.register(TestSize).get
+    Games.registerPlayer(gameId, Black).get
     TestFileIo.fileIO.saveGame(gameId)
     Assertions.assertTrue(
       Files.exists(Paths.get(TestFileIo.fileIO.baseFolder, s"$gameId.json")),
@@ -42,8 +42,8 @@ class TestFileIo:
     )
 
   @Test def testSaveGameContents(): Unit =
-    val gameId = Games.register(TestSize)
-    Games.registerPlayer(gameId, Black)
+    val gameId = Games.register(TestSize).get
+    Games.registerPlayer(gameId, Black).get
     val path = TestFileIo.fileIO.saveGame(gameId)
 
     val source = Source.fromFile(path.toFile)
@@ -73,11 +73,11 @@ class TestFileIo:
 
   @Test def testGuardAgainstPathTraversal(): Unit =
     Assertions.assertThrows(
-      classOf[IllegalArgumentException],
+      classOf[RuntimeException],
       () => TestFileIo.fileIO.writeFile("../test.json", "{}")
     )
     Assertions.assertThrows(
-      classOf[IllegalArgumentException],
+      classOf[RuntimeException],
       () => TestFileIo.fileIO.writeFile("/tmp/test.json", "{}")
     )
 
@@ -121,5 +121,5 @@ class TestFileIo:
     val differentRandomContent = IdGenerator.getId
     TestFileIo.fileIO.writeFile(s"$gameId.json", s"{$differentRandomContent}")
     Assertions.assertThrows(
-      classOf[IllegalArgumentException], () => TestFileIo.fileIO.archiveGame(gameId)
+      classOf[RuntimeException], () => TestFileIo.fileIO.archiveGame(gameId)
     )

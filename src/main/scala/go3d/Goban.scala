@@ -4,20 +4,21 @@ import scala.annotation.tailrec
 import scala.annotation.targetName
 import scala.collection.mutable
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success, Try}
 
 object Goban:
-  def start(size: Int): Goban = Goban(size, initializeBoard(size))
+  def start(size: Int): Try[Goban] =
+    if size < MinBoardSize then Failure(BadBoardSize(size, "too small"))
+    else if size > MaxBoardSize then Failure(BadBoardSize(size, "too big"))
+    else if size % 2 == 0 then Failure(BadBoardSize(size, "even"))
+    else Success(new Goban(size, initializeBoard(size)))
 
-class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
-
-  if size < MinBoardSize then throw BadBoardSize(size, "too small")
-  if size > MaxBoardSize then throw BadBoardSize(size, "too big")
-  if size % 2 == 0 then throw BadBoardSize(size, "even")
+class Goban private[go3d](val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
   lazy val areas: Set[Area] = calculateAreas()
   private lazy val allNeighbors: Map[Position, Set[Move]] = neighborsMap()
   lazy val allPositions: Seq[Position] =
-    for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield Position(x, y, z)
+    for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield new Position(x, y, z)
 
 
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
@@ -30,11 +31,11 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
         else allPositions.forall(pos => at(pos) == g.at(pos))
       case _ => false
 
-  override def clone(): Goban = Goban(size, deepCopy(stones))
+  override def clone(): Goban = new Goban(size, deepCopy(stones))
 
   @targetName("minus")
   def -(other: Goban): IndexedSeq[Move] =
-    if size != other.size then throw IllegalArgumentException(s"sizes $size != ${other.size}")
+    if size != other.size then sys.error(s"sizes $size != ${other.size}")
     for (pos <- other.emptyPositions.toIndexedSeq if at(pos) != Empty)
       yield Move(pos, at(pos))
 
@@ -48,21 +49,22 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       out += "\n"
     out
 
-  def checkValid(move: Move): Unit =
-    if move.x > size || move.y > size || move.z > size then throw OutsideBoard(move.x, move.y, move.z)
-    if at(move.position) != Empty then throw PositionOccupied(move, at(move.position))
-    if isSuicide(move) then throw Suicide(move)
+  def checkValid(move: Move): Try[Unit] =
+    if move.x > size || move.y > size || move.z > size then Failure(OutsideBoard(move.x, move.y, move.z))
+    else if at(move.position) != Empty then Failure(PositionOccupied(move, at(move.position)))
+    else if isSuicide(move) then Failure(Suicide(move))
+    else Success(())
 
   def setStone(move: Move): Goban = setStone(move.x, move.y, move.z, move.color)
   def setStone(x: Int, y: Int, z: Int, color: Color): Goban =
-    if isOnBoardPlusBorder(x, y, z) then throw OutsideBoard(x, y, z)
+    if isOnBoardPlusBorder(x, y, z) then sys.error(s"outside board: $x, $y, $z")
     val newStones = deepCopy(stones)
     newStones(x)(y)(z) = color
-    Goban(size, newStones)
+    new Goban(size, newStones)
 
   def hasLiberties(move: Move): Boolean =
     if !Set(Black, White).contains(move.color) then
-      throw ColorMismatch(s"trying to find liberties for $move - not a stone but", move.color)
+      sys.error(s"trying to find liberties for $move - not a stone but ${move.color}")
     hasLibertiesHelper(move, mutable.Set[Position]())
 
   private def hasLibertiesHelper(move: Move, visited: mutable.Set[Position]): Boolean =
@@ -120,7 +122,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
       y <- position.y-1 to position.y+1;
       z <- position.z-1 to position.z+1
       if isNeighbor(position, x, y, z)
-    ) yield Position(x, y, z)
+    ) yield new Position(x, y, z)
 
   def neighbors(col: Color): Set[Position] =
     val validAreas = areas.filter(_.color == col)
@@ -138,8 +140,9 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
 
   def checkAndClear(move: Move): Goban =
     if Set(Empty, Sentinel, move.color).contains(at(move.position)) then return this
-    if hasLiberties(Move(move.x, move.y, move.z, !move.color)) then return this
-    clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, !move.color)), this)
+    val opponent = !move.color
+    if hasLiberties(Move(move.x, move.y, move.z, opponent)) then this
+    else clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, opponent)), this)
 
   private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
@@ -169,7 +172,7 @@ class Goban(val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGam
     clearListOfPlaces(toClear.dropRight(1), goban.setStone(Move(toClear.last.position, Empty)))
 
   private def isNeighbor(position: Position, x: Int, y: Int, z: Int): Boolean =
-    isOnBoard(x, y, z) && (position - Position(x, y, z)).abs == 1
+    isOnBoard(x, y, z) && (position - new Position(x, y, z)).abs == 1
 
   private def isOnBoardPlusBorder(x: Int, y: Int, z: Int): Boolean =
     x < 0 || y < 0 || z < 0 || x > size + 1 || y > size + 1 || z > size + 1

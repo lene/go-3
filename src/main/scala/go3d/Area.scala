@@ -10,7 +10,7 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
       x <- outerHull(0).x to outerHull(1).x;
       y <- outerHull(0).y to outerHull(1).y;
       z <- outerHull(0).z to outerHull(1).z
-    ) yield Position(x, y, z)
+    ) yield new Position(x, y, z)
 
   def contains: Position => Boolean = stones.map(_.position).contains
 
@@ -30,21 +30,21 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
 
   private def validateColor(stones: Set[Move]): Color =
     val colors = stones.foldLeft(Set[Color]())((colors, stone) => colors + stone.color)
-    if colors.contains(Empty) || colors.size != 1 then throw BadColorsForArea(colors)
+    if colors.contains(Empty) || colors.size != 1 then sys.error(s"bad colors for area: $colors")
     colors.head
 
   private[go3d] def outerHullOfSet(stoneSet: Set[Position]): (Position, Position) =
-    if stoneSet.isEmpty then throw BadArea(stones)
+    if stoneSet.isEmpty then sys.error(s"bad area: $stones")
     if stoneSet.size == 1 then (stoneSet.head, stoneSet.head)
     else
       val (subHullMin, subHullMax) = outerHullOfSet(stoneSet.tail)
       val currentStone = stoneSet.head
       (
-        Position(
+        new Position(
           if currentStone.x < subHullMin.x then currentStone.x else subHullMin.x,
           if currentStone.y < subHullMin.y then currentStone.y else subHullMin.y,
           if currentStone.z < subHullMin.z then currentStone.z else subHullMin.z),
-        Position(
+        new Position(
           if currentStone.x > subHullMax.x then currentStone.x else subHullMax.x,
           if currentStone.y > subHullMax.y then currentStone.y else subHullMax.y,
           if currentStone.z > subHullMax.z then currentStone.z else subHullMax.z)
@@ -60,7 +60,7 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
     )
 
   def insideArea(position: Position, alreadyFoundPaths: Set[Position] = Set.empty): Set[Position] =
-    if goban.at(position) == color then throw BadColorsForArea(Set(color))
+    if goban.at(position) == color then return Set.empty
     val neighborsToConsider = goban.neighbors(position).
       filter(pos => goban.at(pos) != color).
       filter(!alreadyFoundPaths.contains(_))
