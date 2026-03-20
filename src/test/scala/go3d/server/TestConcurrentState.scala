@@ -1,6 +1,7 @@
 package go3d.server
 
 import org.junit.jupiter.api.{Assertions, Test}
+import scala.util.{Failure, Success}
 import java.util.concurrent.{CountDownLatch, Executors}
 import scala.concurrent.{ExecutionContext, Future, Await}
 import scala.concurrent.duration._
@@ -105,12 +106,9 @@ class TestConcurrentState:
   @Test def testUpdateWithExceptionDoesNotModifyState(): Unit =
     val state = new ConcurrentState(42)
 
-    Assertions.assertThrows(
-      classOf[IllegalStateException],
-      () => state.update { _ =>
-        throw new IllegalStateException("Test exception")
-      }
-    )
+    val result = state.update { _ => Failure(new IllegalStateException("Test exception")) }
+    Assertions.assertTrue(result.isFailure)
+    Assertions.assertInstanceOf(classOf[IllegalStateException], result.failed.get)
 
     Assertions.assertEquals(42, state.get())
 

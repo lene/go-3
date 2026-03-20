@@ -11,6 +11,7 @@ import requests.RequestFailedException
 
 import java.security.SecureRandom
 import java.util.NoSuchElementException
+import scala.util.{Failure, Success, Try}
 
 class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val size = opt[Int](required = false)
@@ -27,6 +28,7 @@ class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   dependsOnAll(token, List(gameId))
   verify()
 
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   override def onError(e: Throwable): Unit = e match {
     case RequiredOptionNotFound(optionName) => throw NoSuchElementException(optionName)
     case other => throw other
@@ -51,43 +53,32 @@ object BotClient extends Client with LazyLogging:
     logger.info(
       s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")((str) => str)}"
     )
-    val status = waitUntilReady(client)
+    val status = waitUntilReady(client).get
     var game = status.game
     val strategy = if strategies.nonEmpty then Some(SetStrategy(game.size, strategies, maxThinkingTimeMs)) else None
     logger.info(s"Move: ${game.moves.length} ${executionTimeString}")
-    var over = false
     val startTime = System.currentTimeMillis()
-    try
-      val (newOver, newGame) = makeOneMove(client, status, game, strategy)
-      over = newOver
-      game = newGame
-    catch
-      case _: Exit => exit(0)
-      case _: InterruptedException => exit(1)
-      case e: RequestFailedException => checkFailedRequest(client, e)
-    finally
-      executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
-    if !over then mainLoopRecursive(client, game, strategy)
-    else logger.info(s"${client.status.game}")
+    val (newOver, newGame) = Try(makeOneMove(client, status, game, strategy)).recover {
+      case _: InterruptedException => exit(1); (true, game)
+      case e: RequestFailedException => checkFailedRequest(client, e); (true, game)
+    }.get
+    executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
+    if !newOver then mainLoopRecursive(client, newGame, strategy)
+    else logger.info(s"${client.status.map(_.game).getOrElse(game)}")
 
   private def mainLoopRecursive(client: BaseClient, game: Game, strategy: Option[SetStrategy]): Unit =
     logger.info(s"Move: ${game.moves.length} ${executionTimeString}")
-    var updatedGame = game
-    var over = false
     val startTime = System.currentTimeMillis()
-    try
-      val status = client.status
-      val (newOver, newGame) = makeOneMove(client, status, updatedGame, strategy)
-      over = newOver
-      updatedGame = newGame
-    catch
-      case _: Exit => exit(0)
-      case _: InterruptedException => exit(1)
-      case e: RequestFailedException => checkFailedRequest(client, e)
-    finally
-      executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
-    if !over then mainLoopRecursive(client, updatedGame, strategy)
-    else logger.info(s"${client.status.game}")
+    val (newOver, newGame) = Try {
+      val status = client.status.get
+      makeOneMove(client, status, game, strategy)
+    }.recover {
+      case _: InterruptedException => exit(1); (true, game)
+      case e: RequestFailedException => checkFailedRequest(client, e); (true, game)
+    }.get
+    executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
+    if !newOver then mainLoopRecursive(client, newGame, strategy)
+    else logger.info(s"${client.status.map(_.game).getOrElse(game)}")
 
   private def checkFailedRequest(client: BaseClient, e: RequestFailedException): Unit =
     logger.warn(e.message)
@@ -96,16 +87,16 @@ object BotClient extends Client with LazyLogging:
 
 
   private def makeOneMove(client: BaseClient, status: StatusResponse, game: Game, strategy: Option[SetStrategy]): (Boolean, Game) =
-    val possible = strategy.map(_.narrowDown(status.moves, game)).getOrElse(status.moves)
+    val possible = strategy.map(_.narrowDown(status.moves, game).get).getOrElse(status.moves)
     if possible.nonEmpty then
       val setPosition = randomMove(possible)
-      val newStatus = client.set(setPosition.x, setPosition.y, setPosition.z)
+      val newStatus = client.set(setPosition.x, setPosition.y, setPosition.z).get
       if newStatus.over then
         logger.info(s"Game over: ${newStatus.game}")
         exit(0)
       (false, newStatus.game)
     else
-      val newStatus = client.pass
+      val newStatus = client.pass.get
       if newStatus.over then
         logger.info(s"Game over: ${newStatus.game}")
         exit(0)
@@ -121,33 +112,34 @@ object BotClient extends Client with LazyLogging:
       val avg = executionTimes.sum / executionTimes.length
       f"(${last}ms last/${avg}ms avg)  "
 
-  def parseArgs(args: Array[String]): BaseClient =
-    val conf = new BotClientCLIConf(args.toList)
-    val serverURL = s"http://${conf.server()}:${conf.port()}"
-    strategies = conf.strategy.toOption.fold(Array.empty[String])(_.split(','))
-    maxThinkingTimeMs = conf.maxThinkingTimeMs()
-    parallel = conf.parallel()
+  def parseArgs(args: Array[String]): Try[BaseClient] =
+    Try {
+      val conf = new BotClientCLIConf(args.toList)
+      val serverURL = s"http://${conf.server()}:${conf.port()}"
+      strategies = conf.strategy.toOption.fold(Array.empty[String])(_.split(','))
+      maxThinkingTimeMs = conf.maxThinkingTimeMs()
+      parallel = conf.parallel()
 
-    if conf.size.isSupplied then
-      BaseClient.create(serverURL, conf.size(), colorFromString(conf.color()))
-    else if conf.gameId.isSupplied then
-      if conf.token.isSupplied then
-        val playerColor = if conf.gameId().nonEmpty && conf.token().nonEmpty then
-          getPlayerColor(serverURL, conf.gameId(), conf.token())
-        else None
-        BaseClient(
-          serverURL, conf.gameId(), conf.token.toOption, playerColor
-        )
-      else BaseClient.register(serverURL, conf.gameId(), colorFromString(conf.color()))
-    else
-      throw new IllegalArgumentException("Must provide either size or gameId")
+      if conf.size.isSupplied then
+        colorFromString(conf.color()).flatMap(color => BaseClient.create(serverURL, conf.size(), color)).get
+      else if conf.gameId.isSupplied then
+        if conf.token.isSupplied then
+          val playerColor = if conf.gameId().nonEmpty && conf.token().nonEmpty then
+            getPlayerColor(serverURL, conf.gameId(), conf.token())
+          else None
+          BaseClient(serverURL, conf.gameId(), conf.token.toOption, playerColor)
+        else colorFromString(conf.color()).flatMap(color => BaseClient.register(serverURL, conf.gameId(), color)).get
+      else sys.error("Must provide either size or gameId")
+    }
 
-  def waitUntilReady(client: BaseClient): StatusResponse =
-    var status = client.status
-    while !status.ready do
-      if status.over then
-        logger.info(s"Game over: ${status.game}")
-        exit(0)
-      Thread.sleep(PULL_WAIT_MS)
-      status = client.status
-    status
+  def waitUntilReady(client: BaseClient): Try[StatusResponse] =
+    client.status.flatMap { initialStatus =>
+      var status = initialStatus
+      while !status.ready do
+        if status.over then
+          logger.info(s"Game over: ${status.game}")
+          exit(0)
+        Thread.sleep(PULL_WAIT_MS)
+        status = client.status.get
+      Success(status)
+    }

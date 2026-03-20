@@ -1,9 +1,11 @@
 package go3d
 
 import collection.mutable
+import scala.util.{Failure, Success, Try}
 
 object Game:
-  def start(size: Int): Game = Game(size, Goban.start(size), Array(), Map[Int, Array[Move]]())
+  def start(size: Int): Try[Game] =
+    Goban.start(size).map(goban => Game(size, goban, Array(), Map[Int, Array[Move]]()))
 
 class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
            val captures: Map[Int, Array[Move]]) extends GoGame:
@@ -17,7 +19,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
       case _ => false
 
   def at(pos: Position): Color = goban.at(pos)
-  def at(x: Int, y: Int, z: Int): Color = at(Position(x, y, z))
+  def at(x: Int, y: Int, z: Int): Color = at(new Position(x, y, z))
 
   def isOver: Boolean =
     moves.length >= size * size * size || (
@@ -26,22 +28,24 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
         case _ => false
       )
     )
-  
+
   def isTurn(color: Color): Boolean =
     if moves.isEmpty then color == Black else color != moves.last.color
 
-  def makeMove(move: Move | Pass): Game =
+  def makeMove(move: Move | Pass): Try[Game] =
     move match
-      case _: Pass => Game(size, goban, moves.appended(move), captures)
+      case _: Pass => Success(Game(size, goban, moves.appended(move), captures))
       case m: Move =>
-        checkValid(m)
-        val newboard = setStone(m)
-        Game(size, newboard.goban, moves.appended(move), newboard.captures)
+        checkValid(m).map { _ =>
+          val newboard = setStone(m)
+          Game(size, newboard.goban, moves.appended(move), newboard.captures)
+        }
 
-  def checkValid(move: Move): Unit =
-    if !isDifferentPlayer(move.color) then throw WrongTurn(move)
-    goban.checkValid(move)
-    if isKo(move) then throw Ko(move)
+  def checkValid(move: Move): Try[Unit] =
+    if !isDifferentPlayer(move.color) then Failure(WrongTurn(move))
+    else goban.checkValid(move).flatMap { _ =>
+      if isKo(move) then Failure(Ko(move)) else Success(())
+    }
 
   override def toString: String =
     var out = "\n"
@@ -99,12 +103,8 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
 
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
-    try
-      if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color))
-    catch case _: IllegalMove => return false
-    true
-
-  
+    if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color)).isSuccess
+    else true
 
   private def isDifferentPlayer(color: Color): Boolean = moves.isEmpty || moves.last.color != color
 

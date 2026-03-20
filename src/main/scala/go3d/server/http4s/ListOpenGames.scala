@@ -4,6 +4,8 @@ import go3d.server.GoResponse
 import go3d.server.OpenGamesResponse
 import go3d.server.Players
 
+import scala.util.{Success, Try}
+
 /**
  *Usage example for this endpoint:
   *To get an essentially random game ID waiting for a white player to connect:
@@ -13,6 +15,6 @@ import go3d.server.Players
       *--color w --strategy random
 **/
 class ListOpenGames extends BaseHandler:
-  def handle: GoResponse =
+  def handle: Try[GoResponse] =
     Thread.sleep(100) // very basic DoS protection
-    OpenGamesResponse(Players.openGames())
+    Success(OpenGamesResponse(Players.openGames()))

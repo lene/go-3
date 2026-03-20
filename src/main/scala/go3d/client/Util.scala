@@ -51,19 +51,19 @@ object Util {
   )), Array(), Map())
 
   def fromStrings(levels: Map[Int, String]): Goban =
-    if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
-    val goban = Goban.start((levels.head._2.stripMargin.replace("|", "").split("\n").length))
+    if levels.isEmpty then sys.error("nothing to generate")
+    val goban = Goban.start((levels.head._2.stripMargin.replace("|", "").split("\n").length)).get
     for (z, level) <- levels do
       val lines = level.stripMargin.replace("|", "").split("\n")
       for (line, y) <- lines.zipWithIndex do
         for (stone, x) <- line.zipWithIndex do
-          goban.stones(x + 1)(y + 1)(z) = go3d.Color(stone)
+          goban.stones(x + 1)(y + 1)(z) = go3d.Color(stone).get
     goban
 
   private def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass]): Game =
-    var game = Game.start(boardSize)
+    var game = Game.start(boardSize).get
     for move <- moves do
-      game = game.makeMove(move)
+      game = game.makeMove(move).get
     game
 
 }

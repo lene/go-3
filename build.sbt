@@ -19,8 +19,10 @@ lazy val root = project
 
     scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all"),
 
-    // WartRemover configuration - use warnings instead of errors for evaluation
+    // WartRemover configuration
     // Exclude IterableOps (head/tail/last) - all usages are protected by preconditions
+    // Wart.Throw remains a warning: sys.error() is used for precondition violations
+    // (value type constructors, Color.!, etc.) which are programming errors, not user errors
     wartremoverWarnings ++= Warts.unsafe.filterNot(w =>
       w == Wart.IterableOps || w.toString.contains("IterableOps")
     ),

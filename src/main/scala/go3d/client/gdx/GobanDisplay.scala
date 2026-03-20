@@ -14,7 +14,7 @@ import go3d.server.StatusResponse
 
 class GobanDisplay(client: BaseClient, val cursorFadeSeconds: Float = 10.0f)
     extends ApplicationListener with LazyLogging:
-  private final val BOARD_SIZE: Int = client.status.game.size
+  private final val BOARD_SIZE: Int = client.status.get.game.size
   final val UPDATE_DELAY_SECONDS = 2f
   final val UPDATE_INTERVAL_SECONDS = 1f
 
@@ -30,9 +30,9 @@ class GobanDisplay(client: BaseClient, val cursorFadeSeconds: Float = 10.0f)
 
   @Override def create(): Unit =
     logger.info(s"GobanDisplay.create() - client.playerColor = ${client.playerColor}")
-    updateGame(client.status)
+    client.status.foreach(updateGame)
     Timer.schedule(new Timer.Task {
-      @Override def run(): Unit = updateGame(client.status)
+      @Override def run(): Unit = client.status.foreach(updateGame)
     }, UPDATE_DELAY_SECONDS, UPDATE_INTERVAL_SECONDS)
 
   private def updateGame(status: StatusResponse): Unit =

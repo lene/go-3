@@ -44,7 +44,7 @@ object AnalyzeGameData:
     println(s"Detailed analysis: moves $startMove to $endMove")
     println("=" * 80)
 
-    var game = Game.start(saveGame.game.size)
+    var game = Game.start(saveGame.game.size).get
 
     for (moveOrPass, index) <- saveGame.game.moves.zipWithIndex do
       val detailed = index >= startMove && index <= endMove
@@ -71,7 +71,7 @@ object AnalyzeGameData:
       try
         moveOrPass match
           case move: Move =>
-            game = game.makeMove(move)
+            game = game.makeMove(move).get
             if detailed then
               println(s"\n=== After Move $index ===")
               println(s"Captures this move: ${game.lastCapture.mkString(", ")}")
@@ -79,7 +79,7 @@ object AnalyzeGameData:
               println(s"Total White captures: ${game.captures(White)}")
 
           case pass: Pass =>
-            game = game.makeMove(pass)
+            game = game.makeMove(pass).get
             if detailed then
               println(s"\n=== After Move $index ===")
               println(s"Pass by ${pass.color}")

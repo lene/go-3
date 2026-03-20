@@ -8,12 +8,12 @@ import go3d.server.StatusResponse
 import java.io.IOException
 import java.net.ConnectException
 import java.net.UnknownHostException
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 trait ClientTrait:
   def mainLoop(client: BaseClient): Unit
-  def parseArgs(args: Array[String]): BaseClient
-  def waitUntilReady(client: BaseClient): StatusResponse
+  def parseArgs(args: Array[String]): Try[BaseClient]
+  def waitUntilReady(client: BaseClient): Try[StatusResponse]
   def init(): Unit
 
 abstract class Client extends ClientTrait with LazyLogging:
@@ -21,15 +21,14 @@ abstract class Client extends ClientTrait with LazyLogging:
   protected def getPlayerColor(serverURL: String, gameId: String, token: String): Option[Color] =
     logger.info(s"getPlayerColor called with serverURL=$serverURL, gameId=$gameId, token=$token")
     val tempClient = BaseClient(serverURL, gameId, Some(token), None)
-    val color = tempClient.status.playerColor
+    val color = tempClient.status.map(_.playerColor).getOrElse(None)
     logger.info(s"getPlayerColor returning: $color")
     color
 
   def main(args: Array[String]): Unit =
-    Try {
-      val client = parseArgs(args)
+    parseArgs(args).flatMap { client =>
       init()
-      mainLoop(client)
+      Try { mainLoop(client) }
     }.recover {
       case e: UnknownHostException => exit(s"unknown host: ${e.getMessage}", 1)
       case e: ConnectException => exit(s"connection problem: ${e.getMessage}", 1)
@@ -50,4 +49,3 @@ abstract class Client extends ClientTrait with LazyLogging:
     if message.nonEmpty then logger.info(message)
     System.exit(status)
   def exit(status: Int): Unit = exit("", status)
-

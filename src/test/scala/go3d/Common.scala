@@ -39,14 +39,14 @@ val eyeSituation = Map(
 )
 
 def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass], verbose: Boolean = false): Game =
-  var game = Game.start(boardSize)
+  var game = Game.start(boardSize).get
   for move <- moves do
-    game = game.makeMove(move)
+    game = game.makeMove(move).get
     if verbose then println(move.toString+"\n"+game)
   game
 
 def setListOfStones(boardSize: Int, moves: List[Move | Pass]): Goban =
-  var goban = Goban.start(boardSize)
+  var goban = Goban.start(boardSize).get
   for move <- moves do
     move match
       case _: Pass =>
@@ -68,13 +68,13 @@ def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]):
   assertCollectionEqual(for (p <- expected) yield Position(p._1, p._2, p._3), actual)
 
 def fromStrings(levels: Map[Int, String]): Goban =
-  if levels.isEmpty then throw IllegalArgumentException("nothing to generate")
-  val goban = Goban.start((levels.head._2.stripMargin.replace("|", "").split("\n").length))
+  if levels.isEmpty then sys.error("nothing to generate")
+  val goban = Goban.start((levels.head._2.stripMargin.replace("|", "").split("\n").length)).get
   for (z, level) <- levels do
     val lines = level.stripMargin.replace("|", "").split("\n")
     for (line, y) <- lines.zipWithIndex do
       for (stone, x) <- line.zipWithIndex do
-        goban.stones(x+1)(y+1)(z) = Color(stone)
+        goban.stones(x+1)(y+1)(z) = Color(stone).get
   goban
 
 def fromGoban(goban: Goban): Game =

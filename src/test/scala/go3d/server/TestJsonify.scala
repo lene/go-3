@@ -57,7 +57,7 @@ class TestJsonify:
   @Test def testFromStringsWithPipes(): Unit =
     val goban = gobanFromStrings(
       Array("|   |\n|   |\n|   |", "|   |\n| @ |\n|   |", "|   |\n|   |\n|   |")
-    )
+    ).get
     Assertions.assertEquals(Black, goban.at(2, 2, 2))
 
   @Test def testFromStringsWithMargin(): Unit =
@@ -71,16 +71,16 @@ class TestJsonify:
       """|   |
          |   |
          |   |"""
-    ))
+    )).get
     Assertions.assertEquals(Black, goban.at(2, 2, 2), goban.toString)
 
   @Test def testFromStringsWithoutPipesOrMargin(): Unit =
-    val goban = gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   "))
+    val goban = gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   ")).get
     Assertions.assertEquals(Black, goban.at(2, 2, 2))
 
   @Test def testToStringsIsInverseOfFromStrings(): Unit =
     val definition = Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   ")
-    val goban = gobanFromStrings(definition)
+    val goban = gobanFromStrings(definition).get
     Assertions.assertEquals(definition.toList, gobanToStrings(goban).toList)
 
   @Test def testFromStringsIsInverseOfToStrings(): Unit =
@@ -94,23 +94,23 @@ class TestJsonify:
       """|   |
          |   |
          |   |"""
-    ))
+    )).get
     val definition = gobanToStrings(goban)
     Assertions.assertEquals(gobanToStrings(goban).toList, definition.toList)
 
   @Test def testFromStringsWithTooFewLevels(): Unit =
-    Assertions.assertThrows(
-      classOf[JsonDecodeError], () => gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   "))
+    Assertions.assertInstanceOf(
+      classOf[JsonDecodeError], gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ")).failed.get
     )
 
   @Test def testFromStringsWithTruncatedLastLevel(): Unit =
-    Assertions.assertThrows(
+    Assertions.assertInstanceOf(
       classOf[JsonDecodeError],
-      () => gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n "))
+      gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n ")).failed.get
     )
 
   @Test def testUseCirceForEmptyGobanJson(): Unit =
-    val goban = Goban.start(TestSize)
+    val goban = Goban.start(TestSize).get
     val json = goban.asJson.noSpaces
     Assertions.assertEquals(Right(goban), decode[Goban](json))
 
@@ -127,7 +127,7 @@ class TestJsonify:
     Assertions.assertEquals(Right(goban), decode[Goban](json))
 
   @Test def testUseCirceForEmptyGameJson(): Unit =
-    val game = Game.start(TestSize)
+    val game = Game.start(TestSize).get
     val json = game.asJson.noSpaces
     Assertions.assertEquals(Right(game), decode[Game](json), json)
 
@@ -168,7 +168,7 @@ class TestJsonify:
 
   @Test def testUseCirceForPlayerRegisteredResponseJson(): Unit =
     val response = PlayerRegisteredResponse(
-      Game.start(TestSize), Black, "token", true,
+      Game.start(TestSize).get, Black, "token", true,
       RequestInfo(Map("header name" -> "header value"), "query", "path", false)
     )
     val json = response.asJson.noSpaces
@@ -176,7 +176,7 @@ class TestJsonify:
 
   @Test def testUseCirceForStatusResponseJson(): Unit =
     val response = StatusResponse(
-      Game.start(TestSize), List(Position(1, 1, 1)), true, false, None,
+      Game.start(TestSize).get, List(Position(1, 1, 1)), true, false, None,
       RequestInfo(Map("header name" -> "header value"), "query", "path", false)
     )
     val json = response.asJson.noSpaces

@@ -92,20 +92,20 @@ class TestArea:
 
   @Test def testAreaFailsIfMultipleColors(): Unit =
     Assertions.assertThrows(
-      classOf[BadColorsForArea],
+      classOf[RuntimeException],
       () => Area(Set(Move(1, 1, 1, Black), Move(1, 1, 2, White)), 1, defaultGoban)
     )
 
   @Test def testAreaFailsIfFieldEmpty(): Unit =
     Assertions.assertThrows(
-      classOf[BadColorsForArea], () => Area(Set(Move(1, 1, 1, Empty)), 1, defaultGoban)
+      classOf[RuntimeException], () => Area(Set(Move(1, 1, 1, Empty)), 1, defaultGoban)
     )
 
   @Test def testAreaFailsIfAreaEmpty(): Unit =
-    Assertions.assertThrows(classOf[BadColorsForArea], () => Area(Set(), 1, defaultGoban))
+    Assertions.assertThrows(classOf[RuntimeException], () => Area(Set(), 1, defaultGoban))
 
   @Test def testOuterHullOfSetWithEmptyArea(): Unit =
-    Assertions.assertThrows(classOf[BadArea], () => stoneInCenter.areas.head.outerHullOfSet(Set()))
+    Assertions.assertThrows(classOf[RuntimeException], () => stoneInCenter.areas.head.outerHullOfSet(Set()))
 
   @Test def testWithinOuterHull(): Unit =
     val area = stoneInCenter.areas.head
@@ -266,7 +266,7 @@ class TestArea:
     Assertions.assertEquals(1, goban.areas.head.inside.size)
     Assertions.assertEquals(Set(Position(2, 2, 1)), goban.areas.head.inside)
 
-  @Test def testInsideAreaThrowsExceptionIfRequestedForAreaColor(): Unit =
+  @Test def testInsideAreaReturnsEmptyIfRequestedForAreaColor(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
       1 ->
         """ @ |
@@ -285,7 +285,7 @@ class TestArea:
     val blackArea = getOnlyAreaOfColor(goban, Black)
     val blackPositions = goban.allPositions.filter(p => goban.at(p) == Black)
     blackPositions.foreach(
-      p => Assertions.assertThrows(classOf[BadColorsForArea], () => blackArea.insideArea(p))
+      p => Assertions.assertEquals(Set.empty, blackArea.insideArea(p))
     )
 
   @Test def testInsideAreaOneEmpty(): Unit =
@@ -543,7 +543,7 @@ class TestArea:
           |     """,
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
-    Assertions.assertEquals(Set(Position(5, 2, 1), Position(4, 2, 2),Position(5, 2, 2)), blackArea.allInsideAreas)
+    Assertions.assertEquals(Set(Position(5, 2, 1), Position(4, 2, 2), Position(5, 2, 2)), blackArea.allInsideAreas)
 
   @Test def testIsAliveThreeEmpty(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
@@ -657,6 +657,6 @@ class TestArea:
 
 def gobanWithAreasFromStrings(levels: Map[Int, String]): Goban =
   val from = fromStrings(levels)
-  Goban(from.size, from.stones)
+  new Goban(from.size, from.stones)
 
-def defaultGoban: Goban = Goban.start(3)
+def defaultGoban: Goban = Goban.start(3).get

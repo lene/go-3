@@ -37,13 +37,13 @@ object GoServer extends LazyLogging:
 
     def randomGame(size: Int, print_step_size: Int): Unit =
       val random = new SecureRandom()
-      var game = Game.start(size)
+      var game = Game.start(size).get
       var color = Black
       val startTime = System.nanoTime()
       var startTimeForMoves = startTime
       while game.possibleMoves(color).nonEmpty && game.moves.length <= size*size*size do
         val move = Move(game.possibleMoves(color)(random.nextInt(game.possibleMoves(color).length)), color)
-        game = game.makeMove(move)
+        game = game.makeMove(move).get
         if game.moves.length % print_step_size == 0 || game.moves.length == size*size*size then
           val stepMs = (System.nanoTime()-startTimeForMoves)/1000000
           logger.info(s"${game.moves.length}/${size*size*size} (${stepMs/print_step_size}ms/move)")

@@ -171,7 +171,7 @@ class TestSetStrategy:
     checkMinimizeLibertiesEmptyBoard3(ParallelSetStrategy(3, Array("minimizeOpponentLiberties")))
 
   private def checkMinimizeLibertiesEmptyBoard3(strategy: SetStrategy): Unit =
-    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, Game.start(3)))
+    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, Game.start(3).get))
     val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
@@ -182,7 +182,7 @@ class TestSetStrategy:
     checkMinimizeLibertiesEmptyBoard7(ParallelSetStrategy(7, Array("minimizeOpponentLiberties")))
 
   private def checkMinimizeLibertiesEmptyBoard7(strategy: SetStrategy): Unit =
-    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, Game.start(7)))
+    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, Game.start(7).get))
     val starPoints = StarPoints(7).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
@@ -204,7 +204,7 @@ class TestSetStrategy:
     checkMaximizeDistanceEmptyBoard3(ParallelSetStrategy(3, Array("maximizeDistance")))
 
   private def checkMaximizeDistanceEmptyBoard3(strategy: SetStrategy): Unit =
-    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, Game.start(7)))
+    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, Game.start(7).get))
     val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
@@ -215,7 +215,7 @@ class TestSetStrategy:
     checkMaximizeDistanceEmptyBoard7(ParallelSetStrategy(7, Array("maximizeDistance")))
 
   private def checkMaximizeDistanceEmptyBoard7(strategy: SetStrategy): Unit =
-    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, Game.start(7)))
+    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, Game.start(7).get))
     val starPoints = StarPoints(7).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
@@ -368,9 +368,9 @@ class TestSetStrategy:
     )
 
   @Test def testNarrowDownRandom(): Unit =
-    val game = Game.start(3)
+    val game = Game.start(3).get
     val strategy = SetStrategy(3, Array("random"))
-    val check = checkStrategyResults.curried(strategy.narrowDown(_, game))
+    val check = checkStrategyResults.curried(pos => strategy.narrowDown(pos, game).get)
     check(
       List((1, 1, 1), (1, 1, 2), (1, 2, 1), (1, 2, 2), (2, 1, 1), (2, 1, 2), (2, 2, 1), (2, 2, 2))
     )(
@@ -388,16 +388,16 @@ class TestSetStrategy:
     val gameSize = 9
     val strategy = SetStrategy(gameSize, Array("prioritiseCapture"))
     for _ <- 1 to 10 do
-      var game = Game.start(gameSize)
+      var game = Game.start(gameSize).get
       var result: Seq[Position] = Seq()
       var times = Seq[Long]()
       while !game.isOver do
         val color = game.moveColor
         val moves = game.possibleMoves(color)
         times = times.appended(time {
-          result = strategy.narrowDown(moves, game)
+          result = strategy.narrowDown(moves, game).get
         })
-        game = game.makeMove(Move(result.head, color))
+        game = game.makeMove(Move(result.head, color)).get
       println(s"Total: ${times.sum / 1000000}ms Average: ${times.sum / times.size / 1000}us")
 
 def defaultStrategy(size: Int): SetStrategy = SetStrategy(size, Array("random"))
@@ -406,7 +406,7 @@ def checkStrategyResults(
   strategy: Seq[Position] => Seq[Position],
   toCheck: Seq[(Int, Int, Int)], expected: Seq[(Int, Int, Int)]
 ): Unit =
-    assertPositionsEqual(expected, strategy(toCheck.map(e => Position(e))))
+    assertPositionsEqual(expected, strategy(toCheck.map(e => Position(e._1, e._2, e._3))))
 
 def check3BoardForPossibleMoves(
   moves: List[Move|Pass], expected: List[(Int, Int, Int)], parallel: Boolean
