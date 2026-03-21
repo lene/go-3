@@ -305,18 +305,16 @@ CreateTag:
     - apk add curl jq
   script:
     - VERSION_SBT=$(egrep 'version := ".*"' build.sbt | cut -d \" -f 2)
-    - echo "**** Creating release and tag for version $VERSION_SBT"
+    - echo "**** Creating tag for version $VERSION_SBT"
     - |
       curl --fail-with-body --request POST --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
         --header "Content-Type: application/json" \
         --data '{
           "tag_name": "'"${VERSION_SBT}"'",
-          "ref": "'"${CI_COMMIT_SHA}"'",
-          "name": "Release '"${VERSION_SBT}"'",
-          "description": "Automated release created on '"$(date +%Y-%m-%d)"'"
+          "ref": "'"${CI_COMMIT_SHA}"'"
         }' \
-        "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/releases"
-    - echo "Successfully created release and tag ${VERSION_SBT}"
+        "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/repository/tags"
+    - echo "Successfully created tag ${VERSION_SBT}"
 
 Upload:
   stage: release
