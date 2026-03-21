@@ -311,6 +311,7 @@ CreateTag:
         --header "Content-Type: application/json" \
         --data '{
           "tag_name": "'"${VERSION_SBT}"'",
+          "ref": "'"${CI_COMMIT_SHA}"'",
           "name": "Release '"${VERSION_SBT}"'",
           "description": "Automated release created on '"$(date +%Y-%m-%d)"'"
         }' \
