@@ -31,7 +31,10 @@ object GoServer extends LazyLogging:
       val saveDir: ScallopOption[String] = opt[String](
         default = Some(DefaultSaveDir), descr = "Directory to save games to"
       )
-      conflicts(benchmark, List(port, saveDir))
+      val inactiveGameTimeoutMinutes: ScallopOption[Int] = opt[Int](
+        default = Some(120), descr = "Minutes of inactivity before an active game is expired"
+      )
+      conflicts(benchmark, List(port, saveDir, inactiveGameTimeoutMinutes))
       dependsOnAll(printStepSize, List(benchmark))
       verify()
 
@@ -59,9 +62,17 @@ object GoServer extends LazyLogging:
     else
       val port = conf.port()
       val saveDir = conf.saveDir()
+      val timeoutMs = conf.inactiveGameTimeoutMinutes() * 60 * 1000L
       logger.info(s"Starting server on port $port, saving games to $saveDir")
+      logger.info(s"Inactive game timeout: ${conf.inactiveGameTimeoutMinutes()} minutes")
       GoServer.loadGames(saveDir)
       val shutdown = GoHttpService(port).server.allocated.unsafeRunSync()._2
+      val cleanupIntervalMs = 5 * 60 * 1000L
+      var lastCleanup = System.currentTimeMillis()
       while true do
         Thread.sleep(1000)
+        val now = System.currentTimeMillis()
+        if now - lastCleanup >= cleanupIntervalMs then
+          Games.expireStaleGames(timeoutMs)
+          lastCleanup = now
         if false then shutdown.unsafeRunSync()
