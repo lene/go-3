@@ -123,3 +123,37 @@ class TestFileIo:
     Assertions.assertThrows(
       classOf[RuntimeException], () => TestFileIo.fileIO.archiveGame(gameId)
     )
+
+  @Test def testDeleteGameRemovesFile(): Unit =
+    val gameId = Games.register(TestSize).get
+    Games.registerPlayer(gameId, Black).get
+    TestFileIo.fileIO.saveGame(gameId)
+    Assertions.assertTrue(IOForTests.exists(s"$gameId.json"))
+    TestFileIo.fileIO.deleteGame(gameId)
+    Assertions.assertFalse(IOForTests.exists(s"$gameId.json"))
+
+  @Test def testDeleteGameIsIdempotent(): Unit =
+    val gameId = IdGenerator.getId
+    TestFileIo.fileIO.deleteGame(gameId) // should not throw
+
+  @Test def testArchivedExistsReturnsFalseForMissingGame(): Unit =
+    Assertions.assertFalse(TestFileIo.fileIO.archivedExists(IdGenerator.getId))
+
+  @Test def testArchivedExistsReturnsTrueAfterArchive(): Unit =
+    val gameId = Games.register(TestSize).get
+    Games.registerPlayer(gameId, Black).get
+    TestFileIo.fileIO.saveGame(gameId)
+    TestFileIo.fileIO.archiveGame(gameId)
+    Assertions.assertTrue(TestFileIo.fileIO.archivedExists(gameId))
+
+  @Test def testLoadArchivedGameFailsForMissingGame(): Unit =
+    Assertions.assertTrue(TestFileIo.fileIO.loadArchivedGame(IdGenerator.getId).isFailure)
+
+  @Test def testLoadArchivedGameSucceeds(): Unit =
+    val gameId = Games.register(TestSize).get
+    Games.registerPlayer(gameId, Black).get
+    TestFileIo.fileIO.saveGame(gameId)
+    TestFileIo.fileIO.archiveGame(gameId)
+    val result = TestFileIo.fileIO.loadArchivedGame(gameId)
+    Assertions.assertTrue(result.isSuccess)
+    Assertions.assertEquals(TestSize, result.get.game.size)

@@ -5,6 +5,7 @@ import go3d.Color
 import go3d.Game
 import io.circe.parser._
 
+import java.util.NoSuchElementException
 import scala.collection.concurrent
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
@@ -14,7 +15,7 @@ object Games:
   // Thread-safe map: multiple games can be updated concurrently
   // Each game uses ConcurrentState for lock-free atomic updates
   private val activeGames = concurrent.TrieMap[String, ConcurrentState[Game]]()
-  private val archivedGames = concurrent.TrieMap[String, Game]()
+  private val lastActivity = concurrent.TrieMap[String, Long]()
   var fileIO: Option[FileIO] = None
 
   def init(baseDir: String): Try[Unit] =
@@ -26,12 +27,13 @@ object Games:
 
   /**
    * Get current game state (thread-safe read).
+   * Active games are served from memory; archived games are lazy-loaded from disk.
    */
+  @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def apply(gameId: String): Game =
-    if activeGames.contains(gameId) then
-      activeGames(gameId).get()
-    else
-      archivedGames(gameId)
+    activeGames.get(gameId).map(_.get()).orElse(
+      fileIO.flatMap(io => io.loadArchivedGame(gameId).toOption).map(_.game)
+    ).getOrElse(throw NoSuchElementException(gameId))
 
   def loadGames(baseDir: String): Unit =
     // logger declared locally to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
@@ -54,6 +56,7 @@ object Games:
     go3d.Game.start(boardSize).map { game =>
       val gameId = IdGenerator.getId
       activeGames.put(gameId, new ConcurrentState(game))
+      lastActivity(gameId) = System.currentTimeMillis()
       gameId
     }
 
@@ -68,6 +71,7 @@ object Games:
     activeGames.get(gameId) match
       case Some(state) => state.set(game)  // Update existing
       case None => activeGames.put(gameId, new ConcurrentState(game))  // Create new
+    lastActivity(gameId) = System.currentTimeMillis()
     fileIO.foreach(_.saveGame(gameId))
     if game.isOver then archive(gameId)
 
@@ -83,25 +87,58 @@ object Games:
    */
   def update(gameId: String)(f: Game => Try[Game]): Try[Game] =
     activeGames(gameId).update(f).map { newGame =>
+      lastActivity(gameId) = System.currentTimeMillis()
       fileIO.foreach(_.saveGame(gameId))
       if newGame.isOver then archive(gameId)
       newGame
     }
 
   def contains(gameId: String): Boolean =
-    activeGames.contains(gameId) || archivedGames.contains(gameId)
+    activeGames.contains(gameId) || fileIO.exists(_.archivedExists(gameId))
   def numActiveGames: Int = activeGames.size
   def activeGameIds: Iterable[String] = activeGames.keys
   def numArchivedGames: Int = fileIO.fold(0)(_.getArchivedGames.size)
   def archivedGameIds: Iterable[String] = fileIO.fold(Iterable.empty[String])(_.getArchivedGames)
   def isReady(gameId: String): Boolean = activeGames.contains(gameId) && Players.isReady(gameId)
 
+  /**
+   * Remove an active game entirely (no archive). Used for games with too few moves to be worth
+   * keeping. Cleans up all in-memory and on-disk state.
+   */
+  def deleteGame(gameId: String): Unit =
+    activeGames.remove(gameId)
+    lastActivity.remove(gameId)
+    fileIO.foreach(_.deleteGame(gameId))
+    Players.unregister(gameId)
+    Tokens.unregisterGame(gameId)
+
+  /**
+   * Expire games that have had no activity for longer than the given thresholds.
+   *
+   * Games with 0 moves are deleted after shortInactiveMs (they were never played).
+   * Games with moves are archived after inactiveMs.
+   */
+  def expireStaleGames(inactiveMs: Long, shortInactiveMs: Long = -1): Unit =
+    val zeroMoveMs = if shortInactiveMs >= 0 then shortInactiveMs else inactiveMs / 12
+    val now = System.currentTimeMillis()
+    activeGames.keys.foreach { gameId =>
+      val activity = lastActivity.getOrElse(gameId, now)
+      val elapsed = now - activity
+      val game = activeGames(gameId).get()
+      if game.moves.isEmpty && elapsed >= zeroMoveMs then
+        Logger(Games.getClass).info(s"Expiring zero-move game $gameId after ${elapsed}ms")
+        deleteGame(gameId)
+      else if game.moves.nonEmpty && elapsed >= inactiveMs then
+        Logger(Games.getClass).info(s"Archiving stale game $gameId after ${elapsed}ms")
+        archive(gameId)
+    }
+
   private def archive(gameId: String): Unit =
     // logger declared inline to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
     Logger(Games.getClass).info(s"Archiving $gameId")
-    activeGames.get(gameId).foreach { state =>
-      archivedGames.put(gameId, state.get())
+    activeGames.get(gameId).foreach { _ =>
       activeGames.remove(gameId)
+      lastActivity.remove(gameId)
       fileIO.foreach(_.archiveGame(gameId))
       Players.unregister(gameId)
       Tokens.unregisterGame(gameId)

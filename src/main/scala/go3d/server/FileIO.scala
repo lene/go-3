@@ -3,11 +3,11 @@ package go3d.server
 import io.circe.syntax.EncoderOps
 
 import java.io.File
-import java.io.IOException
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.NoSuchElementException
 import scala.util.{Failure, Success, Try}
 
 object FileIO:
@@ -49,6 +49,25 @@ class FileIO private(val baseFolder: String):
   def getArchivedGames: List[String] =
     if !Files.exists(archivePath) then List()
     else File(archiveFolder).listFiles().map(_.getName).map(_.stripSuffix(".json")).toList
+
+  def deleteGame(gameId: String): Unit =
+    val path = Paths.get(baseFolder, s"$gameId.json")
+    if Files.exists(path) then Files.delete(path)
+
+  def archivedExists(gameId: String): Boolean =
+    Files.exists(archivePath.resolve(s"$gameId.json"))
+
+  def loadArchivedGame(gameId: String): Try[SaveGame] =
+    if !archivedExists(gameId) then Failure(NoSuchElementException(gameId))
+    else
+      val path = archivePath.resolve(s"$gameId.json")
+      Try(scala.io.Source.fromFile(path.toFile))
+        .flatMap { source =>
+          val content = source.getLines().mkString
+          source.close()
+          io.circe.parser.decode[SaveGame](content)
+            .fold(e => Failure(JsonDecodeError(e.getMessage)), game => scala.util.Success(game))
+        }
 
   def archiveGame(gameId: String): Unit =
     val sourcePath = Paths.get(baseFolder, s"$gameId.json")
