@@ -1,7 +1,7 @@
 # Static Analysis Report
 
 Generated: October 19, 2025
-Updated: March 18, 2026
+Updated: March 21, 2026
 
 ## Tools Configured
 
@@ -46,7 +46,7 @@ Previous versions of this report only covered main sources.
 | Warning Type | Count | Severity | Status |
 |--------------|-------|----------|--------|
 | Any | 98 | Low | Most are in string interpolations - acceptable |
-| Throw | 41 | Low | Exception throwing is appropriate for error handling |
+| **Throw** | **4** | **Low** | **✅ REDUCED - Only library-interop throws remain (Scallop onError, suppressed with @SuppressWarnings)** |
 | Var | 29 | Medium | Consider refactoring to immutable where possible |
 | Return | 22 | Low | Early returns are acceptable in Scala 3 |
 | DefaultArguments | 11 | Low | Default arguments are idiomatic Scala |
@@ -141,8 +141,11 @@ Main source fixes:
 #### 6. Any Type Inference (98 main + 173 test)
 Most are in string interpolations which is acceptable.
 
-#### 7. Throw (41 main + 2 test)
-Exception throwing is appropriate for error conditions in game logic.
+#### 7. Throw (4 main + 2 test)
+The 4 remaining throws in main are Scallop library-interop (required by Scallop's `onError`
+API contract) in `InteractiveClient.scala` and `BotClient.scala`. Each is annotated with
+`@SuppressWarnings(Array("org.wartremover.warts.Throw"))`. The 2 in test are acceptable
+as test failure signals.
 
 #### 8. Return Statements (22 occurrences in main)
 Early returns are acceptable and often improve readability.
@@ -161,6 +164,17 @@ Idiomatic Scala - no action needed.
 6. ✅ Unused variable names cleaned up (e → _)
 7. ✅ **All OptionPartial usages fixed - main (5) and test (43) sources**
 8. ✅ IterableOps suppressed after verification (27 instances, all guarded)
+9. ✅ **Exception throwing replaced with `scala.util.Try` throughout codebase (issue #63)**
+   - `Goban.start(size): Try[Goban]` — private constructor, factory validates size
+   - `Game.start(size): Try[Game]` — private constructor, factory validates size
+   - `FileIO.apply(dir): Try[FileIO]` — private constructor, factory validates directory
+   - `RequestInfo.apply(request): Try[RequestInfo]` — factory returns Failure on invalid input
+   - All client loops use `Try`/`recover` instead of bare exception handling
+10. ✅ **Throw count reduced 41 → 4 (issue #57)**
+    - 4 remaining throws are Scallop library-interop in `InteractiveClient` and `BotClient`
+    - Each annotated `@SuppressWarnings(Array("org.wartremover.warts.Throw"))`
+    - `Position` and `Color` retain `sys.error` for programming-error preconditions (not user errors)
+    - `Area` private helpers use `sys.error` for internal invariant violations
 
 ### Remaining Actions
 None - all high and medium priority issues are resolved.
@@ -191,7 +205,7 @@ The only remaining warnings are low-priority categories that are acceptable by d
 
 ## Summary of Improvements
 
-**Total fixes: 97 static analysis issues resolved**
+**Total fixes: 134 static analysis issues resolved**
 - 12 null usages in main → 0 (100% elimination)
 - 31 null usages in test → 0 (100% elimination)
 - 3 isInstanceOf checks in main → 0 (100% elimination)
@@ -200,3 +214,4 @@ The only remaining warnings are low-priority categories that are acceptable by d
 - 43 OptionPartial in test → 0 (100% elimination)
 - 27 IterableOps warnings → 0 (100% suppression after verification)
 - 38 files improved with import organization
+- 41 Throw warnings in main → 4 (90% reduction; 4 are library-interop, suppressed)
