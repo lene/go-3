@@ -139,7 +139,9 @@ object Games:
     activeGames.get(gameId).foreach { _ =>
       activeGames.remove(gameId)
       lastActivity.remove(gameId)
-      fileIO.foreach(_.archiveGame(gameId))
+      fileIO.foreach(io => Try(io.archiveGame(gameId)).failed.foreach(e =>
+        Logger(Games.getClass).warn(s"Failed to archive $gameId on disk: ${e.getMessage}")
+      ))
       Players.unregister(gameId)
       Tokens.unregisterGame(gameId)
     }
