@@ -5,8 +5,9 @@ Updated: March 21, 2026
 
 ## Tools Configured
 
-- **WartRemover 3.4.1** - Scala linter detecting unsafe code patterns
-- **Scalafix 0.14.4** - Scala code rewriting and linting tool
+- **WartRemover 3.5.6** - Scala linter detecting unsafe code patterns (upgraded)
+- **Scalafix 0.14.6** - Scala code rewriting and linting tool (upgraded)
+- **Scapegoat 3.3.3** - Additional Scala static analysis (added in issue #51)
 
 ## Configuration
 
@@ -14,9 +15,17 @@ Updated: March 21, 2026
 ```scala
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+ThisBuild / scapegoatVersion := "3.3.3"
 
 scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all")
-wartremoverWarnings ++= Warts.unsafe
+
+// Wart.IterableOps excluded (all usages guarded by preconditions)
+// Wart.Throw excluded from warnings and promoted to a build error
+wartremoverWarnings ++= Warts.unsafe.filterNot(w =>
+  w == Wart.IterableOps || w.toString.contains("IterableOps") || w == Wart.Throw
+)
+// Only 4 library-interop throws remain (Scallop onError), each @SuppressWarnings-annotated
+wartremoverErrors += Wart.Throw
 ```
 
 ### .scalafix.conf
@@ -73,6 +82,19 @@ Previous versions of this report only covered main sources.
 - **Var declarations**: 29 main + 24 test (see WartRemover above)
 - **Import organization**: Several files could benefit from splitting grouped imports
 - **Unused imports**: Detected with `-Wunused:all` compiler flag
+
+### Scapegoat (Scala 3.8.2, version 3.3.3)
+
+Running with 4 active inspections (5 minus OptionGet which is disabled — see below).
+
+| Result | Count | Notes |
+|--------|-------|-------|
+| Errors | 0 | Clean |
+| Warnings | 0 | Clean |
+
+**Disabled inspection**: `OptionGet` — WartRemover's `OptionPartial` already covers this
+with 0 violations in our code. `OptionGet` is disabled because sbt-scapegoat's own source
+file (`Literals.scala`) triggers a false positive during compilation.
 
 ## Detailed Analysis
 
@@ -175,6 +197,9 @@ Idiomatic Scala - no action needed.
     - Each annotated `@SuppressWarnings(Array("org.wartremover.warts.Throw"))`
     - `Position` and `Color` retain `sys.error` for programming-error preconditions (not user errors)
     - `Area` private helpers use `sys.error` for internal invariant violations
+11. ✅ **Wart.Throw promoted to compile error (issue #51)**
+    - `wartremoverErrors += Wart.Throw` — any new throw without @SuppressWarnings breaks the build
+    - Scapegoat added (plugin version 1.2.13, inspections version 3.3.3) — 0 errors, 0 warnings
 
 ### Remaining Actions
 None - all high and medium priority issues are resolved.
@@ -182,9 +207,15 @@ None - all high and medium priority issues are resolved.
 ### Future Improvements (low priority)
 1. Create custom WartRemover configuration excluding acceptable patterns:
    - Allow `Any` in string interpolations
-   - Allow `throw` for domain exceptions
    - Allow `return` statements
-2. Document intentional use of mutable state in GDX client
+2. Intentional mutable state (var) — not worth refactoring:
+   - `GoServer.scala` (3 vars): in benchmark mode's while loop — classic imperative iteration
+   - `Games.scala` (1 var): `fileIO: Option[FileIO]` startup state — would need significant refactor
+   - GDX client vars: required by OpenGL/libGDX lifecycle
+3. Enable `DisableSyntax.noThrows = true` in `.scalafix.conf` — deferred because Scalafix
+   `DisableSyntax` does not respect `@SuppressWarnings`. The 4 Scallop onError throw sites
+   would need `// scalafix:off DisableSyntax.noThrows` comment blocks. WartRemover's
+   `Wart.Throw` error (added in issue #51) already provides compile-time enforcement.
 
 ### Not Recommended
 - Don't try to eliminate all warnings - many are false positives for this codebase

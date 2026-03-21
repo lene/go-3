@@ -7,13 +7,17 @@ val http4sVersion = "1.0.0-M46"
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+ThisBuild / scapegoatVersion := "3.3.3"
+// OptionGet is already covered by WartRemover's OptionPartial (0 violations in our code).
+// Disabled here because sbt-scapegoat's own source (Literals.scala) triggers a false positive.
+ThisBuild / scapegoatDisabledInspections := Seq("OptionGet")
 
 lazy val root = project
   .in(file("."))
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.20",
+    version := "0.7.21",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -21,11 +25,13 @@ lazy val root = project
 
     // WartRemover configuration
     // Exclude IterableOps (head/tail/last) - all usages are protected by preconditions
-    // Wart.Throw remains a warning: sys.error() is used for precondition violations
-    // (value type constructors, Color.!, etc.) which are programming errors, not user errors
+    // Exclude Throw from warnings since it is promoted to an error below
     wartremoverWarnings ++= Warts.unsafe.filterNot(w =>
-      w == Wart.IterableOps || w.toString.contains("IterableOps")
+      w == Wart.IterableOps || w.toString.contains("IterableOps") || w == Wart.Throw
     ),
+    // Wart.Throw is a build error: only 4 library-interop throws remain (Scallop onError),
+    // each annotated with @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+    wartremoverErrors += Wart.Throw,
 
     // Parallel collections
     libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
