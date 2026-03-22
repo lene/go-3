@@ -10,6 +10,7 @@ import go3d.server.GoResponse
 import go3d.server.IdGenerator
 import go3d.server.PlayerRegisteredResponse
 import go3d.server.Players
+import go3d.server.RateLimiter
 import go3d.server.RequestInfo
 import go3d.server.SecurityUtils
 import go3d.server.Tokens
@@ -22,6 +23,7 @@ case class RegisterPlayer(gameId: String, color: Color, request: Request[IO])
   def handle: Try[GoResponse] =
     val token = IdGenerator.generateAuthToken(gameId, color)
     for
+      _ <- RateLimiter.check(clientIp(request))
       _ <- Games.registerPlayer(gameId, color)
       requestInfo <- RequestInfo(request)
     yield

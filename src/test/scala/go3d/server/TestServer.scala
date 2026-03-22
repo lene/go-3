@@ -45,6 +45,8 @@ class TestServer:
     sys.error("Games not initialized - check test setup")
   )
 
+  @BeforeEach def resetRateLimiter(): Unit = RateLimiter.reset()
+
   @BeforeEach def setupTempDir(): Unit =
     val dir = Files.createTempDirectory("go3d").toString
     tempDir = Some(dir)

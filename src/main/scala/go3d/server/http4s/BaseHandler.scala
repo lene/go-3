@@ -6,6 +6,7 @@ import go3d.server.DuplicateColor
 import go3d.server.GoResponse
 import go3d.server.NonexistentGame
 import go3d.server.NotReadyToSet
+import go3d.server.RateLimitExceeded
 import go3d.server.ServerException
 import go3d.server.encodeGoResponse
 import org.http4s.Response
@@ -31,6 +32,7 @@ abstract class BaseHandler extends HandleTrait:
       case Failure(e: NoSuchElementException) => NotFound(e.getMessage)
       case Failure(e: NonexistentGame) => NotFound(e.getMessage)
       case Failure(_: AuthorizationError) => IO(Response[IO](status = Status.Unauthorized))
+      case Failure(_: RateLimitExceeded) => IO(Response[IO](status = Status.TooManyRequests))
       case Failure(e: ServerException) => InternalServerError(e.getMessage)
       case Failure(e: go3d.IllegalMove) => BadRequest(s"${e.getClass.getSimpleName}: ${e.getMessage}")
       case Failure(e: go3d.GameOver) => Gone(s"${e.getClass.getSimpleName}: ${e.getMessage}")

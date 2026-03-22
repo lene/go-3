@@ -28,8 +28,8 @@ case class GoHttpService(port: Int) extends LazyLogging:
   implicit def intEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[Int]
 
   private val goService = HttpRoutes.of[IO] {
-    case GET -> Root / "new" / IntVar(boardSize) =>
-      StartNewGame(boardSize).response
+    case request@GET -> Root / "new" / IntVar(boardSize) =>
+      StartNewGame(boardSize, request).response
     case request@GET -> Root / "register" / GameId(gameId) / ColorVar(color) =>
       logger.info("received request"); RegisterPlayer(gameId, color, request).response
     case request@GET -> Root / "status" / GameId(gameId) =>

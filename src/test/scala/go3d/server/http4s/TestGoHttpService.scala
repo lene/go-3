@@ -1,6 +1,6 @@
 package go3d.server.http4s
 
-import go3d.server.{GameCreatedResponse, OpenGamesResponse, decodeOpenGamesResponse, GoResponse, IdGenerator, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse, decodePlayerRegisteredResponse, decodeStatusResponse}
+import go3d.server.{GameCreatedResponse, OpenGamesResponse, RateLimiter, decodeOpenGamesResponse, GoResponse, IdGenerator, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse, decodePlayerRegisteredResponse, decodeStatusResponse}
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
@@ -8,12 +8,14 @@ import go3d.{Black, Color, Move, Pass, White}
 import io.circe.parser.decode
 import org.http4s.implicits.uri
 import org.http4s.{EntityDecoder, Headers, Method, Request, Response, Status, Uri}
-import org.junit.jupiter.api.{Assertions, Test}
+import org.junit.jupiter.api.{Assertions, BeforeEach, Test}
 
 class TestGoHttpService extends LazyLogging:
 
   private val gameSize = 7
   val goHttpService: GoHttpService = GoHttpService(0)
+
+  @BeforeEach def resetRateLimiter(): Unit = RateLimiter.reset()
 
   def check[A](
     actual: IO[Response[IO]], expectedStatus: Status, expectedBody: Option[A]
@@ -154,4 +156,5 @@ class TestGoHttpService extends LazyLogging:
     val result = decode[OpenGamesResponse](json)
     Assertions.assertTrue(result.isRight)
     Assertions.assertTrue(result.map(_.ids.contains(gameId)).getOrElse(Assertions.fail()))
+
 
