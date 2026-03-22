@@ -397,18 +397,31 @@ CreateGithubRelease:
 
 CreateGitlabRelease:
   stage: release
-  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  image: alpine:latest
   needs:
-    - job: BuildDeployable
-      artifacts: true
     - TestDockerImage
     - TestDeployable
   rules:
     - if: $CI_COMMIT_TAG
+  before_script:
+    - apk update
+    - apk add curl jq
   script:
-    - echo 'running release_job'
-  release:
-    name: 'Release $CI_COMMIT_TAG'
-    description: 'Created using the release-cli'
-    tag_name: '$CI_COMMIT_TAG'
-    ref: '$CI_COMMIT_TAG'
+    - |
+      HTTP_STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" \
+        --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+        "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/releases/${CI_COMMIT_TAG}")
+      if [ "$HTTP_STATUS" = "200" ]; then
+        echo "Release ${CI_COMMIT_TAG} already exists (created by master pipeline), nothing to do"
+      else
+        echo "Creating release ${CI_COMMIT_TAG}..."
+        curl --fail-with-body --request POST --header "JOB-TOKEN: ${CI_JOB_TOKEN}" \
+          --header "Content-Type: application/json" \
+          --data '{
+            "name": "Release '"${CI_COMMIT_TAG}"'",
+            "description": "Automated release '"${CI_COMMIT_TAG}"'",
+            "tag_name": "'"${CI_COMMIT_TAG}"'",
+            "ref": "'"${CI_COMMIT_TAG}"'"
+          }' \
+          "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/releases"
+      fi
