@@ -311,10 +311,12 @@ CreateTag:
         --header "Content-Type: application/json" \
         --data '{
           "tag_name": "'"${VERSION_SBT}"'",
-          "ref": "'"${CI_COMMIT_SHA}"'"
+          "ref": "'"${CI_COMMIT_SHA}"'",
+          "name": "Release '"${VERSION_SBT}"'",
+          "description": "Automated release created on '"$(date +%Y-%m-%d)"'"
         }' \
-        "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/repository/tags"
-    - echo "Successfully created tag ${VERSION_SBT}"
+        "https://gitlab.com/api/v4/projects/${CI_PROJECT_ID}/releases"
+    - echo "Successfully created tag and release ${VERSION_SBT}"
 
 Upload:
   stage: release
