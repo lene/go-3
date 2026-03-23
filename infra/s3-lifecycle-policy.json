@@ -1,0 +1,27 @@
+{
+  "Rules": [
+    {
+      "Id": "TransitionOldGames",
+      "Status": "Enabled",
+      "Filter": {
+        "Prefix": "archives/"
+      },
+      "Transitions": [
+        {
+          "Days": 30,
+          "StorageClass": "STANDARD_IA"
+        },
+        {
+          "Days": 365,
+          "StorageClass": "DEEP_ARCHIVE"
+        }
+      ],
+      "NoncurrentVersionTransitions": [
+        {
+          "NoncurrentDays": 30,
+          "StorageClass": "GLACIER"
+        }
+      ]
+    }
+  ]
+}
