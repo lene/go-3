@@ -2,6 +2,7 @@ package go3d.server
 
 import com.typesafe.scalalogging.LazyLogging
 import go3d.Color
+import go3d.server.aws.DynamoDBPlayersRepository
 
 import scala.collection.concurrent
 
@@ -39,6 +40,7 @@ object Tokens extends LazyLogging:
     val expiresAt = SecurityUtils.expirationTimestamp(hoursUntilExpiration)
     val authToken = AuthToken(token, gameId, color, expiresAt)
     activeTokens(token) = authToken
+    DynamoDBPlayersRepository.put(gameId, color, token)
     logger.debug(s"Token registered: gameId=$gameId, color=$color, " +
       s"tokenHash=${SecurityUtils.tokenHashPrefix(token)}, expiresAt=$expiresAt")
 
