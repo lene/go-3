@@ -17,7 +17,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.24",
+    version := "0.7.25",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -66,6 +66,12 @@ lazy val root = project
         "io.circe" %% "circe-generic",
         "io.circe" %% "circe-parser"
     ).map(_ % circeVersion),
+    // AWS SDK v2 (DynamoDB + S3, used for Lambda migration phases 3+)
+    libraryDependencies ++= Seq(
+        "software.amazon.awssdk" % "dynamodb"             % "2.26.31",
+        "software.amazon.awssdk" % "url-connection-client" % "2.26.31",
+    ),
+
     // libGDX
     libraryDependencies ++= Seq(
         "com.badlogicgames.gdx" % "gdx" % libgdxVersion,

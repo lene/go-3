@@ -3,6 +3,8 @@ package go3d.server
 import com.typesafe.scalalogging.Logger
 import go3d.Color
 import go3d.Game
+import go3d.server.aws.DynamoDBGamesRepository
+import go3d.server.aws.DynamoDBPlayersRepository
 import io.circe.parser._
 
 import java.util.NoSuchElementException
@@ -73,6 +75,7 @@ object Games:
       case None => activeGames.put(gameId, new ConcurrentState(game))  // Create new
     lastActivity(gameId) = System.currentTimeMillis()
     fileIO.foreach(_.saveGame(gameId))
+    DynamoDBGamesRepository.put(gameId, game)
     if game.isOver then archive(gameId)
 
   /**
@@ -89,6 +92,7 @@ object Games:
     activeGames(gameId).update(f).map { newGame =>
       lastActivity(gameId) = System.currentTimeMillis()
       fileIO.foreach(_.saveGame(gameId))
+      DynamoDBGamesRepository.put(gameId, newGame)
       if newGame.isOver then archive(gameId)
       newGame
     }
@@ -142,6 +146,8 @@ object Games:
       fileIO.foreach(io => Try(io.archiveGame(gameId)).failed.foreach(e =>
         Logger(Games.getClass).warn(s"Failed to archive $gameId on disk: ${e.getMessage}")
       ))
+      DynamoDBGamesRepository.delete(gameId)
+      DynamoDBPlayersRepository.deleteGame(gameId)
       Players.unregister(gameId)
       Tokens.unregisterGame(gameId)
     }
