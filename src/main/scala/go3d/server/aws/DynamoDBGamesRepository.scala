@@ -5,6 +5,7 @@ import go3d.Game
 import go3d.server.SaveGame
 import go3d.server.Players
 import go3d.server.given  // top-level Circe encoders in go3d.server (Jsonify.scala)
+import io.circe.parser._
 import io.circe.syntax._
 import software.amazon.awssdk.services.dynamodb.model._
 
@@ -52,6 +53,24 @@ object DynamoDBGamesRepository extends LazyLogging:
               .build()
           )
         }
+
+  /** Read a game from DynamoDB. Returns None when DynamoDB is not configured or item not found. */
+  def get(gameId: String): Option[SaveGame] =
+    DynamoDBClient.get().flatMap { case (client, config) =>
+      Try(
+        client.getItem(
+          GetItemRequest.builder()
+            .tableName(config.gamesTable)
+            .key(Map("gameId" -> str(gameId)).asJava)
+            .build()
+        )
+      ).toOption.flatMap { response =>
+        if response.hasItem then
+          response.item().asScala.get("gameState")
+            .flatMap(av => decode[SaveGame](av.s()).toOption)
+        else None
+      }
+    }
 
   /** Remove a game from DynamoDB (best-effort, called on archive). */
   def delete(gameId: String): Unit =

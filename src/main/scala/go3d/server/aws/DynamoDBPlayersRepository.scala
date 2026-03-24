@@ -60,6 +60,30 @@ object DynamoDBPlayersRepository extends LazyLogging:
           )
         }
 
+  /**
+   * Return game IDs that have exactly one player registered (open for opponent).
+   * Scans the players table and returns IDs appearing exactly once.
+   * Returns empty array when DynamoDB is not configured.
+   */
+  def openGames(): Array[String] =
+    DynamoDBClient.get() match
+      case None => Array.empty
+      case Some((client, config)) =>
+        Try(
+          client.scan(
+            ScanRequest.builder()
+              .tableName(config.playersTable)
+              .projectionExpression("gameId")
+              .build()
+          )
+        ).map { response =>
+          response.items().asScala.toSeq
+            .flatMap(item => item.asScala.get("gameId").map(_.s()))
+            .groupBy(identity)
+            .collect { case (gId, occurrences) if occurrences.length == 1 => gId }
+            .toArray
+        }.getOrElse(Array.empty)
+
   /** Remove all player registrations for a game (best-effort, called on archive). */
   def deleteGame(gameId: String): Unit =
     DynamoDBClient.get() match
