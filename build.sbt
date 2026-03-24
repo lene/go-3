@@ -17,7 +17,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.25",
+    version := "0.7.26",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -69,6 +69,7 @@ lazy val root = project
     // AWS SDK v2 (DynamoDB + S3, used for Lambda migration phases 3+)
     libraryDependencies ++= Seq(
         "software.amazon.awssdk" % "dynamodb"             % "2.26.31",
+        "software.amazon.awssdk" % "s3"                   % "2.26.31",
         "software.amazon.awssdk" % "url-connection-client" % "2.26.31",
     ),
 

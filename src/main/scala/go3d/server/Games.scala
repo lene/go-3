@@ -5,7 +5,10 @@ import go3d.Color
 import go3d.Game
 import go3d.server.aws.DynamoDBGamesRepository
 import go3d.server.aws.DynamoDBPlayersRepository
+import go3d.server.aws.S3Client
+import go3d.server.given  // Circe encoders for SaveGame serialisation
 import io.circe.parser._
+import io.circe.syntax._
 
 import java.util.NoSuchElementException
 import scala.collection.concurrent
@@ -140,7 +143,8 @@ object Games:
   private def archive(gameId: String): Unit =
     // logger declared inline to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
     Logger(Games.getClass).info(s"Archiving $gameId")
-    activeGames.get(gameId).foreach { _ =>
+    activeGames.get(gameId).foreach { state =>
+      val game = state.get()
       activeGames.remove(gameId)
       lastActivity.remove(gameId)
       fileIO.foreach(io => Try(io.archiveGame(gameId)).failed.foreach(e =>
@@ -148,6 +152,7 @@ object Games:
       ))
       DynamoDBGamesRepository.delete(gameId)
       DynamoDBPlayersRepository.deleteGame(gameId)
+      S3Client.archiveGame(gameId, SaveGame(game, Players(gameId)).asJson.noSpaces)
       Players.unregister(gameId)
       Tokens.unregisterGame(gameId)
     }
