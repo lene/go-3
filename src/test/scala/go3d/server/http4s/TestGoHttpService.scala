@@ -157,4 +157,9 @@ class TestGoHttpService extends LazyLogging:
     Assertions.assertTrue(result.isRight)
     Assertions.assertTrue(result.map(_.ids.contains(gameId)).getOrElse(Assertions.fail()))
 
+  @Test def testGetArchivedGameNotFound(): Unit =
+    val request = httpRequest(s"/archived/NONEXISTENT")
+    val response = goHttpService.httpApp.run(request).unsafeRunSync()
+    Assertions.assertEquals(Status.NotFound, response.status)
+
 

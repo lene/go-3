@@ -45,6 +45,8 @@ case class GoHttpService(port: Int) extends LazyLogging:
     case request@GET -> Root / "pass" / GameId(gameId) / "d" =>
       DoPass(gameId, request).response
     case GET -> Root / "openGames" => ListOpenGames().response
+    case request@GET -> Root / "archived" / GameId(gameId) =>
+      GetArchivedGame(gameId).response
     case GET -> Root / "health" => Ok(1)
   }
 
