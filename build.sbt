@@ -17,7 +17,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.26",
+    version := "0.7.27",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -72,6 +72,19 @@ lazy val root = project
         "software.amazon.awssdk" % "s3"                   % "2.26.31",
         "software.amazon.awssdk" % "url-connection-client" % "2.26.31",
     ),
+    // AWS Lambda Java SDK (for LambdaHandler)
+    libraryDependencies ++= Seq(
+        "com.amazonaws" % "aws-lambda-java-core"   % "1.2.3",
+        "com.amazonaws" % "aws-lambda-java-events" % "3.14.0",
+    ),
+    // Fat JAR for Lambda deployment
+    assembly / assemblyJarName := s"go-3d-lambda-${version.value}.jar",
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", "services", _*) => MergeStrategy.concat
+      case PathList("META-INF", _*)             => MergeStrategy.discard
+      case "reference.conf"                     => MergeStrategy.concat
+      case _                                    => MergeStrategy.first
+    },
 
     // libGDX
     libraryDependencies ++= Seq(

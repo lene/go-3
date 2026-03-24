@@ -1,6 +1,9 @@
 // Universal / packageBin
 addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.11.7")
 
+// assembly / assembly (fat JAR for Lambda)
+addSbtPlugin("com.eed3si9n" % "sbt-assembly" % "2.3.1")
+
 // JUnit5/Jupiter
 addSbtPlugin("com.github.sbt.junit" % "sbt-jupiter-interface" % "0.17.1")
 
