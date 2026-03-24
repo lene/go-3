@@ -22,23 +22,23 @@ object RequestInfo:
     headers: Map[String, String], queryString: String, rawPathInfo: String, maxLength: Int
   ): Try[RequestInfo] =
     val (pathInfo, debug) = parsePathInfo(rawPathInfo)
-    if pathInfo != null && pathInfo.length > maxLength
+    if Option(pathInfo).exists(_.length > maxLength)
     then Failure(RequestTooLong(maxLength, pathInfo.length))
     else Success(RequestInfo(
       headers,
-      if (queryString != null && queryString.nonEmpty) queryString else "/",
-      if (pathInfo != null && pathInfo.nonEmpty) pathInfo else "/",
+      Option(queryString).filter(_.nonEmpty).getOrElse("/"),
+      Option(pathInfo).filter(_.nonEmpty).getOrElse("/"),
       debug
     ))
 
   private def parsePathInfo(pathInfo: String): (String, Boolean) =
-    if pathInfo != null && pathInfo.endsWith("/d") then (pathInfo.dropRight(2), true)
-    else (pathInfo, false)
+    Option(pathInfo).filter(_.endsWith("/d"))
+      .fold((pathInfo, false))(p => (p.dropRight(2), true))
 
 case class RequestInfo(headers: Map[String, String], query: String, path: String, debug: Boolean)
   extends GoResponse with LazyLogging:
   def getGameId: Try[String] =
-    if path == null || path.isEmpty then Failure(MalformedRequest(path))
+    if path.isEmpty then Failure(MalformedRequest(path))
     else
       val parts = path.stripPrefix("/").split('/')
       if parts.isEmpty then Failure(MalformedRequest(path))
