@@ -32,17 +32,49 @@ history of any game — active or archived — one move at a time, with optional
 ### Components
 
 ```
+Domain
+  Game.atMove(count)       new method — replays first N moves; single source of truth
+
 Server
-  GetStatusAtMove          new http4s handler
+  GetStatusAtMove          new http4s handler; delegates replay to Game.atMove
   GoHttpService            new route entry
 
 Client
-  ReplayState              new class — owns all replay logic
+  ReplayState              new class — owns all client-side replay logic
   GobanDisplay             extended — holds Option[ReplayState], renders HUD
   BaseClient               one new method: statusAtMove(n)
   ClientCLIConf            four new CLI options
   GDXClient.mainLoop       wires ReplayState when --replay flag present
 ```
+
+---
+
+## Section 0 — `Game.atMove` (Domain Helper)
+
+**Method:** `def atMove(count: Int): Try[Game]`
+**Added to:** `class Game` in `go3d/Game.scala`
+
+Reconstructs the board state after exactly `count` moves from this game's history.
+Clamping (`count.max(0).min(moves.length)`) is the caller's responsibility.
+
+```scala
+def atMove(count: Int): Try[Game] =
+  moves.take(count).foldLeft(Game.start(size)) { (acc, move) =>
+    acc.flatMap(_.makeMove(move))
+  }
+```
+
+This is the single source of truth for move-by-move replay. Both the server handler and any
+future callers use this method rather than inlining the fold.
+
+If any `makeMove` call returns `Failure` (corrupted stored state), `atMove` propagates that
+`Failure` to the caller unchanged.
+
+**Tests** (`TestGame` or a new `TestGameReplay`):
+- `atMove(0)` returns an empty board of the same size
+- `atMove(1)` after one stone placed returns that stone on the board
+- `atMove(n)` for `n == moves.length` returns the same final board as the full game
+- `atMove` beyond bounds: callers clamp first; no test needed on `Game` itself
 
 ---
 
@@ -64,16 +96,9 @@ Client
 
 1. Load the full game via `Games(gameId)` (falls back to archived games automatically)
 2. Clamp `moveCount` to `[0, game.moves.length]`: `val count = moveCount.max(0).min(game.moves.length)`
-3. Replay exactly `count` moves:
-   ```scala
-   game.moves.take(count).foldLeft(Game.start(game.size)) { (acc, move) =>
-     acc.flatMap(_.makeMove(move))
-   }
-   ```
-   If any `makeMove` call returns `Failure`, the fold propagates a `Failure[Game]`. The handler
-   treats this as an `InternalServerError` — it falls through to the `BaseHandler` catch-all
-   `case Failure(e) => InternalServerError(...)`. This should only occur if stored game state is
-   corrupted.
+3. Delegate to `game.atMove(count)` (defined in Section 0).
+   If `atMove` returns `Failure` (corrupted stored state), it falls through to the `BaseHandler`
+   catch-all `case Failure(e) => InternalServerError(...)`.
 4. Return (using named parameters to avoid field-order ambiguity):
    ```scala
    StatusResponse(
@@ -271,6 +296,12 @@ else
 ---
 
 ## Section 6 — Testing
+
+### Domain (`TestGame` or `TestGameReplay`)
+
+- `game.atMove(0)` → empty board
+- `game.atMove(1)` after one stone placed → board with that stone
+- `game.atMove(n)` where `n == game.moves.length` → same as full game
 
 ### Server (`TestGoHttpService`)
 
