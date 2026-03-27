@@ -418,3 +418,23 @@ class TestGame:
     Assertions.assertTrue(game.isTurn(Black))
     Assertions.assertFalse(game.isTurn(White))
 
+  @Test def testAtMoveZeroReturnsEmptyBoard(): Unit =
+    val game = Game.start(TestSize).get.makeMove(Move(2, 2, 2, Black)).get
+    val result = game.atMove(0).get
+    Assertions.assertEquals(0, result.moves.length)
+    for p <- result.goban.allPositions do
+      Assertions.assertEquals(Empty, result.at(p))
+
+  @Test def testAtMoveOneReturnsFirstStone(): Unit =
+    val game = Game.start(TestSize).get.makeMove(Move(2, 2, 2, Black)).get
+    val result = game.atMove(1).get
+    Assertions.assertEquals(1, result.moves.length)
+    Assertions.assertEquals(Black, result.at(Position(2, 2, 2)))
+
+  @Test def testAtMoveFullLengthMatchesFinalGame(): Unit =
+    val game = Game.start(TestSize).get
+      .makeMove(Move(2, 2, 2, Black)).get
+      .makeMove(Move(3, 3, 3, White)).get
+    val result = game.atMove(game.moves.length).get
+    Assertions.assertEquals(game.goban, result.goban)
+

@@ -29,6 +29,11 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
       )
     )
 
+  def atMove(count: Int): Try[Game] =
+    moves.take(count).foldLeft(Game.start(size)) { (acc, move) =>
+      acc.flatMap(_.makeMove(move))
+    }
+
   def isTurn(color: Color): Boolean =
     if moves.isEmpty then color == Black else color != moves.last.color
 
