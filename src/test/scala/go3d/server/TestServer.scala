@@ -682,6 +682,42 @@ class TestServer:
       Assertions.assertEquals(lastBlackMove, whiteOpponent)
     }
 
+  @Test def testReplayEndpointReturnsMidGameState(): Unit =
+    val gameSize = 5
+    val newJson  = Source.fromURL(s"http://localhost:$TestPort/new/$gameSize").mkString
+    val gameId   = decode[go3d.server.GameCreatedResponse](newJson).toOption.get.id
+
+    val blackJson = Source.fromURL(s"http://localhost:$TestPort/register/$gameId/@").mkString
+    val blackToken = decode[go3d.server.PlayerRegisteredResponse](blackJson).toOption.get.authToken
+    val whiteJson = Source.fromURL(s"http://localhost:$TestPort/register/$gameId/O").mkString
+
+    requests.get(
+      s"http://localhost:$TestPort/set/$gameId/1/1/1",
+      headers = Map("Authentication" -> s"Bearer $blackToken")
+    )
+
+    val move2Token = decode[go3d.server.PlayerRegisteredResponse](whiteJson).toOption.get.authToken
+    requests.get(
+      s"http://localhost:$TestPort/set/$gameId/2/2/2",
+      headers = Map("Authentication" -> s"Bearer $move2Token")
+    )
+
+    val at0 = decode[go3d.server.StatusResponse](
+      Source.fromURL(s"http://localhost:$TestPort/status/$gameId/0").mkString
+    ).toOption.get
+    Assertions.assertEquals(0, at0.game.moves.length)
+
+    val at1 = decode[go3d.server.StatusResponse](
+      Source.fromURL(s"http://localhost:$TestPort/status/$gameId/1").mkString
+    ).toOption.get
+    Assertions.assertEquals(1, at1.game.moves.length)
+    Assertions.assertEquals(go3d.Black, at1.game.at(go3d.Position(1, 1, 1)))
+
+    val at2 = decode[go3d.server.StatusResponse](
+      Source.fromURL(s"http://localhost:$TestPort/status/$gameId/2").mkString
+    ).toOption.get
+    Assertions.assertEquals(2, at2.game.moves.length)
+
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =
   moves.map {
     case m: Move => gameData.set(m)
