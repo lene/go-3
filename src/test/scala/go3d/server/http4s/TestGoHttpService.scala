@@ -162,4 +162,53 @@ class TestGoHttpService extends LazyLogging:
     val response = goHttpService.httpApp.run(request).unsafeRunSync()
     Assertions.assertEquals(Status.NotFound, response.status)
 
+  @Test def testStatusAtMoveZeroReturnsEmptyBoard(): Unit =
+    val gameId = createGameWithId()
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    val request = httpRequest(s"/status/$gameId/0")
+    val json = getJson(request)
+    val result = decode[StatusResponse](json)
+    Assertions.assertTrue(result.isRight)
+    Assertions.assertEquals(Right(0), result.map(_.game.moves.length))
+
+  @Test def testStatusAtMoveOneReturnsOneMove(): Unit =
+    val gameId = createGameWithId()
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    val request = httpRequest(s"/status/$gameId/1")
+    val json = getJson(request)
+    val result = decode[StatusResponse](json)
+    Assertions.assertTrue(result.isRight)
+    Assertions.assertEquals(Right(1), result.map(_.game.moves.length))
+
+  @Test def testStatusAtMoveBeyondEndReturnsFinalBoard(): Unit =
+    val gameId = createGameWithId()
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    val request = httpRequest(s"/status/$gameId/999")
+    val json = getJson(request)
+    val result = decode[StatusResponse](json)
+    Assertions.assertTrue(result.isRight)
+    Assertions.assertEquals(Right(1), result.map(_.game.moves.length))
+
+  @Test def testStatusAtMoveNegativeClampedToZero(): Unit =
+    val gameId = createGameWithId()
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    val request = httpRequest(s"/status/$gameId/-1")
+    val json = getJson(request)
+    val result = decode[StatusResponse](json)
+    Assertions.assertTrue(result.isRight)
+    Assertions.assertEquals(Right(0), result.map(_.game.moves.length))
+
+  @Test def testStatusAtMoveUnknownGameReturns404(): Unit =
+    val actual = runRequest(uri"/status/NONEXISTENT/0")
+    val response = actual.unsafeRunSync()
+    Assertions.assertEquals(Status.NotFound, response.status)
+
 
