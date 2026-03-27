@@ -37,3 +37,4 @@ saves/
 *.png
 point.pfx
 .env
+.worktrees/
