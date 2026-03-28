@@ -40,9 +40,10 @@ class GobanDisplay(
   @Override def create(): Unit =
     logger.info(s"GobanDisplay.create() - client.playerColor = ${client.playerColor}")
     client.status.foreach(updateGame)
-    Timer.schedule(new Timer.Task {
-      @Override def run(): Unit = client.status.foreach(updateGame)
-    }, UPDATE_DELAY_SECONDS, UPDATE_INTERVAL_SECONDS)
+    if replayState.isEmpty then
+      Timer.schedule(new Timer.Task {
+        @Override def run(): Unit = client.status.foreach(updateGame)
+      }, UPDATE_DELAY_SECONDS, UPDATE_INTERVAL_SECONDS)
     hudBatch = new SpriteBatch()
     hudFont  = new BitmapFont()
     if replayState.isDefined then
