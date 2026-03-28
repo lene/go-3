@@ -44,9 +44,9 @@ class GobanDisplay(
       Timer.schedule(new Timer.Task {
         @Override def run(): Unit = client.status.foreach(updateGame)
       }, UPDATE_DELAY_SECONDS, UPDATE_INTERVAL_SECONDS)
-    hudBatch = new SpriteBatch()
-    hudFont  = new BitmapFont()
     if replayState.isDefined then
+      hudBatch = new SpriteBatch()
+      hudFont  = new BitmapFont()
       Gdx.input.setInputProcessor(new com.badlogic.gdx.InputAdapter {
         override def keyDown(keycode: Int): Boolean =
           keycode match
@@ -54,6 +54,7 @@ class GobanDisplay(
             case com.badlogic.gdx.Input.Keys.BACKSPACE => replayState.foreach(_.rewind());  true
             case _              => false
       })
+
 
   private def updateGame(status: StatusResponse): Unit =
     def doUpdate(): Unit =
