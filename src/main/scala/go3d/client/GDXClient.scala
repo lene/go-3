@@ -3,6 +3,9 @@ package go3d.client
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration
 import go3d.client.gdx.GobanDisplay
+import go3d.client.gdx.ReplayState
+
+import scala.util.Try
 
 object GDXClient extends InteractiveClient:
 
@@ -11,12 +14,38 @@ object GDXClient extends InteractiveClient:
     private final val STENCIL_BITS = 0
     private final val NUM_ANTIALIAS_SAMPLES = 4
 
+    @SuppressWarnings(Array("org.wartremover.warts.Var"))
+    private var replayEnabled: Boolean = false
+    @SuppressWarnings(Array("org.wartremover.warts.Var"))
+    private var replayFrom: Int = 0
+    @SuppressWarnings(Array("org.wartremover.warts.Var"))
+    private var replayTo: Int = Int.MaxValue
+    @SuppressWarnings(Array("org.wartremover.warts.Var"))
+    private var replaySpeed: Float = 1.0f
+    @SuppressWarnings(Array("org.wartremover.warts.Var"))
+    private var cursorFade: Float = 10.0f
+
+    override def parseArgs(args: Array[String]): Try[BaseClient] =
+        val result = super.parseArgs(args)
+        result.foreach { _ =>
+            val conf = new ClientCLIConf(args.toList)
+            replayEnabled = conf.replay()
+            replayFrom    = conf.from()
+            replayTo      = conf.to()
+            replaySpeed   = conf.replaySpeed()
+            cursorFade    = conf.cursorFadeSeconds()
+        }
+        result
+
     def mainLoop(client: BaseClient): Unit =
         println("Starting 3D Go client")
         val config = getConfiguration("3D Go", 1280, 960)
-        // Note: cursorFadeSeconds must be parsed before calling mainLoop
-        // For now, using default value. This will be fixed properly.
-        new Lwjgl3Application(new GobanDisplay(client, 10.0f), config)
+        if replayEnabled then
+            val state = new ReplayState(client, replayFrom, replayTo, replaySpeed)
+            state.init()
+            new Lwjgl3Application(new GobanDisplay(client, cursorFade, Some(state)), config)
+        else
+            new Lwjgl3Application(new GobanDisplay(client, cursorFade), config)
 
     def getConfiguration(appName: String, width: Int, height: Int): Lwjgl3ApplicationConfiguration =
         val config = new Lwjgl3ApplicationConfiguration()
