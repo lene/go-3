@@ -646,6 +646,27 @@ class TestServer:
     Assertions.assertEquals(Some(Position(3, 3, 3)), whiteOwnCursor)
     Assertions.assertEquals(Some(Position(2, 2, 2)), whiteOpponentCursor)
 
+  @Test def testReplayEndpointReturnsMidGameState(): Unit =
+    val gameData = setUpGame(5)
+    gameData.set(Move(Position(1, 1, 1), Black))
+    gameData.set(Move(Position(2, 2, 2), White))
+
+    val at0 = decode[StatusResponse](
+      getJson(s"http://localhost:$TestPort/status/${gameData.id}/0").mkString
+    ).toOption.get
+    Assertions.assertEquals(0, at0.game.moves.length)
+
+    val at1 = decode[StatusResponse](
+      getJson(s"http://localhost:$TestPort/status/${gameData.id}/1").mkString
+    ).toOption.get
+    Assertions.assertEquals(1, at1.game.moves.length)
+    Assertions.assertEquals(Black, at1.game.at(Position(1, 1, 1)))
+
+    val at2 = decode[StatusResponse](
+      getJson(s"http://localhost:$TestPort/status/${gameData.id}/2").mkString
+    ).toOption.get
+    Assertions.assertEquals(2, at2.game.moves.length)
+
   @Test def testCursorPositioningMultiMoveSequence(): Unit =
     import go3d.client.gdx.playerLastMove
     val gameData: GameData = setUpGame(5)
