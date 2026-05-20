@@ -21,6 +21,11 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
   def at(pos: Position): Color = goban.at(pos)
   def at(x: Int, y: Int, z: Int): Color = at(new Position(x, y, z))
 
+  def atMove(count: Int): scala.util.Try[Game] =
+    moves.take(count).foldLeft(Game.start(size)) { (acc, move) =>
+      acc.flatMap(_.makeMove(move))
+    }
+
   def isOver: Boolean =
     moves.length >= size * size * size || (
       moves.length >= 2 && ((moves.last, moves.init.last) match
