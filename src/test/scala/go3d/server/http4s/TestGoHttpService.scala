@@ -162,4 +162,38 @@ class TestGoHttpService extends LazyLogging:
     val response = goHttpService.httpApp.run(request).unsafeRunSync()
     Assertions.assertEquals(Status.NotFound, response.status)
 
+  @Test def testStatusAtMoveZeroReturnsEmptyBoard(): Unit =
+    val gameId = createGameWithId()
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    val json = getJson(httpRequest(s"/status/$gameId/0"))
+    val result = decode[StatusResponse](json)
+    Assertions.assertTrue(result.isRight)
+    Assertions.assertEquals(Right(0), result.map(_.game.moves.length))
+
+  @Test def testStatusAtMoveOneReturnsOneMove(): Unit =
+    val gameId = createGameWithId()
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    val json = getJson(httpRequest(s"/status/$gameId/1"))
+    val result = decode[StatusResponse](json)
+    Assertions.assertTrue(result.isRight)
+    Assertions.assertEquals(Right(1), result.map(_.game.moves.length))
+
+  @Test def testStatusAtMoveBeyondEndReturnsFinalBoard(): Unit =
+    val gameId = createGameWithId()
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    val json = getJson(httpRequest(s"/status/$gameId/999"))
+    val result = decode[StatusResponse](json)
+    Assertions.assertTrue(result.isRight)
+    Assertions.assertEquals(Right(1), result.map(_.game.moves.length))
+
+  @Test def testStatusAtMoveUnknownGameReturns404(): Unit =
+    val request = httpRequest(s"/status/XXXXXX/0")
+    val response = goHttpService.httpApp.run(request).unsafeRunSync()
+    Assertions.assertEquals(Status.NotFound, response.status)
 
