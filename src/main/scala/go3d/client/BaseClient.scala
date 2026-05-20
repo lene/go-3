@@ -16,6 +16,7 @@ import scala.util.{Failure, Success, Try}
 
 case class BaseClient(serverURL: String, id: String, token: Option[String], playerColor: Option[Color]):
   def status: Try[StatusResponse] = getSR(s"$serverURL/status/$id", headers)
+  def statusAtMove(n: Int): Try[StatusResponse] = getSR(s"$serverURL/status/$id/$n", headers)
 
   def set(x: Int, y: Int, z: Int): Try[StatusResponse] = getSR(s"$serverURL/set/$id/$x/$y/$z", headers)
   def set(move: Move): Try[StatusResponse] = set(move.x, move.y, move.z)
