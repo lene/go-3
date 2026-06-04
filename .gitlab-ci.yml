@@ -1,6 +1,8 @@
 stages:
   - test
   - build
+  - terraform plan
+  - terraform apply
   - test built
   - package
   - release
@@ -12,6 +14,10 @@ variables:
   DEPLOYABLE_VERSION: 0.7.29
   SBT_IMAGE: hseeberger/scala-sbt:17.0.2_1.6.2_3.1.1
   DOCKER_IMAGE: registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/server
+  TERRAFORM_IMAGE: hashicorp/terraform:1.8.5
+  TF_ROOT: infra/terraform/go3d-readonly
+  TF_STATE_NAME: go3d-eu-central-1-prod
+  TF_LAMBDA_JAR_PATH: ../../../go-3d-lambda.jar
 
 default:
   retry: 2
@@ -174,6 +180,19 @@ BuildDeployable:
     paths:
       - go-3d-*.*.*.zip
 
+BuildLambdaAssembly:
+  image: $SBT_IMAGE
+  stage: build
+  needs: []
+  script:
+    - sbt assembly
+    - LAMBDA_JAR_PATH=$(find target/scala-* -name 'go-3d-lambda-*.jar' | head -n 1)
+    - test -n "$LAMBDA_JAR_PATH"
+    - cp "$LAMBDA_JAR_PATH" go-3d-lambda.jar
+  artifacts:
+    paths:
+      - go-3d-lambda.jar
+
 BuildDockerImage:
   image: docker:24.0.5
   stage: build
@@ -196,6 +215,88 @@ container_scanning:
     - BuildDockerImage
   variables:
     CS_IMAGE: ${DOCKER_IMAGE}:latest
+
+.TerraformBase:
+  image:
+    name: $TERRAFORM_IMAGE
+    entrypoint: [""]
+  variables:
+    TF_IN_AUTOMATION: "true"
+  before_script:
+    - cd "$TF_ROOT"
+    - export TF_STATE_ADDRESS="${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/terraform/state/${TF_STATE_NAME}"
+    - export TF_STATE_USERNAME="${TF_STATE_USERNAME:-gitlab-ci-token}"
+    - export TF_STATE_PASSWORD="${TF_STATE_PASSWORD:-$CI_JOB_TOKEN}"
+
+TerraformValidate:
+  extends: .TerraformBase
+  stage: terraform plan
+  needs: []
+  script:
+    - terraform init -backend=false
+    - terraform fmt -check -recursive .
+    - terraform validate
+  rules:
+    - if: "$CI_MERGE_REQUEST_ID"
+    - if: $CI_COMMIT_BRANCH == "master"
+
+TerraformPlan:
+  extends: .TerraformBase
+  stage: terraform plan
+  needs:
+    - job: BuildLambdaAssembly
+      artifacts: true
+  script:
+    - test -f "$TF_LAMBDA_JAR_PATH"
+    - terraform init
+      -backend-config=address="$TF_STATE_ADDRESS"
+      -backend-config=lock_address="$TF_STATE_ADDRESS/lock"
+      -backend-config=unlock_address="$TF_STATE_ADDRESS/lock"
+      -backend-config=username="$TF_STATE_USERNAME"
+      -backend-config=password="$TF_STATE_PASSWORD"
+      -backend-config=lock_method=POST
+      -backend-config=unlock_method=DELETE
+      -backend-config=retry_wait_min=5
+    - terraform validate
+    - terraform plan -var "lambda_jar_path=${TF_LAMBDA_JAR_PATH}" -out=tfplan
+    - terraform show -no-color tfplan > tfplan.txt
+  artifacts:
+    name: terraform-plan-${CI_COMMIT_SHORT_SHA}
+    expire_in: 7 days
+    paths:
+      - infra/terraform/go3d-readonly/tfplan
+      - infra/terraform/go3d-readonly/tfplan.txt
+  rules:
+    - if: "$CI_MERGE_REQUEST_ID && $AWS_ACCESS_KEY_ID"
+    - if: $CI_COMMIT_BRANCH == "master" && $AWS_ACCESS_KEY_ID
+
+TerraformApply:
+  extends: .TerraformBase
+  stage: terraform apply
+  needs:
+    - job: BuildLambdaAssembly
+      artifacts: true
+    - job: TerraformPlan
+      artifacts: true
+  script:
+    - test -f "$TF_LAMBDA_JAR_PATH"
+    - test -f tfplan
+    - terraform init
+      -backend-config=address="$TF_STATE_ADDRESS"
+      -backend-config=lock_address="$TF_STATE_ADDRESS/lock"
+      -backend-config=unlock_address="$TF_STATE_ADDRESS/lock"
+      -backend-config=username="$TF_STATE_USERNAME"
+      -backend-config=password="$TF_STATE_PASSWORD"
+      -backend-config=lock_method=POST
+      -backend-config=unlock_method=DELETE
+      -backend-config=retry_wait_min=5
+    - terraform apply -auto-approve tfplan
+  environment:
+    name: production
+  rules:
+    - if: $CI_COMMIT_BRANCH == "master" && $AWS_ACCESS_KEY_ID
+      when: manual
+  allow_failure: false
 
 .TestGameplay:
   stage: test built

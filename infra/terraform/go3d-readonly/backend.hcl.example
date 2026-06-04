@@ -1,0 +1,16 @@
+# GitLab-managed Terraform HTTP state for issue #127.
+# Copy to backend.hcl locally; backend.hcl is intentionally ignored.
+#
+# Supply credentials at init time, for example:
+#   -backend-config=username="$GITLAB_USERNAME"
+#   -backend-config=password="$GITLAB_ACCESS_TOKEN"
+#
+# In GitLab CI, use the CI job token or project variables rather than
+# committing credentials here.
+
+address        = "https://gitlab.com/api/v4/projects/6643214/terraform/state/go3d-eu-central-1-prod"
+lock_address   = "https://gitlab.com/api/v4/projects/6643214/terraform/state/go3d-eu-central-1-prod/lock"
+unlock_address = "https://gitlab.com/api/v4/projects/6643214/terraform/state/go3d-eu-central-1-prod/lock"
+lock_method    = "POST"
+unlock_method  = "DELETE"
+retry_wait_min = 5
