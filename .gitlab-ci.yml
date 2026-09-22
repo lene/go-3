@@ -12,7 +12,7 @@ variables:
   TEST_RUN_MAX_RUNNING_TIME: 60
   DEPLOYABLE_BASE_NAME: go-3d
   DEPLOYABLE_VERSION: 0.7.29
-  SBT_IMAGE: hseeberger/scala-sbt:17.0.2_1.6.2_3.1.1
+  SBT_IMAGE: sbtscala/scala-sbt:eclipse-temurin-25.0.4_7_1.13.0_3.8.4
   DOCKER_IMAGE: registry.gitlab.com/${CI_PROJECT_NAMESPACE}/${CI_PROJECT_NAME}/server
   TERRAFORM_IMAGE: hashicorp/terraform:1.8.5
   TF_ROOT: infra/terraform/go3d-readonly
