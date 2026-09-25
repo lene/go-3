@@ -338,10 +338,10 @@ s3://go3d-game-archives/
 
 ## Implementation Phases
 
-The migration is broken into 8 phases, each with independent value and minimal risk. Each phase has a dedicated GitLab issue for tracking.
+The migration is broken into 8 phases, each with independent value and minimal risk. Each phase has a dedicated GitHub issue for tracking.
 
 ### Phase 1: Security Hardening (Current Server)
-**Issue**: [#117](https://gitlab.com/go-3/go-3/-/issues/117)
+**Issue**: [#117](https://github.com/lene/go-3/issues/117)
 **Timeline**: 3-5 days
 **Risk**: Low
 
@@ -367,7 +367,7 @@ The migration is broken into 8 phases, each with independent value and minimal r
 ---
 
 ### Phase 2: AWS Infrastructure Setup
-**Issue**: [#118](https://gitlab.com/go-3/go-3/-/issues/118)
+**Issue**: [#118](https://github.com/lene/go-3/issues/118)
 **Timeline**: 3-4 days
 **Risk**: Low (infrastructure only, no code changes)
 
@@ -461,7 +461,7 @@ aws s3api put-bucket-lifecycle-configuration \
 ---
 
 ### Phase 3: DynamoDB Integration Layer
-**Issue**: [#119](https://gitlab.com/go-3/go-3/-/issues/119)
+**Issue**: [#119](https://github.com/lene/go-3/issues/119)
 **Timeline**: 5-7 days
 **Risk**: Medium (dual-write complexity)
 
@@ -500,7 +500,7 @@ libraryDependencies ++= Seq(
 ---
 
 ### Phase 4: S3 Archival System
-**Issue**: [#120](https://gitlab.com/go-3/go-3/-/issues/120)
+**Issue**: [#120](https://github.com/lene/go-3/issues/120)
 **Timeline**: 4-6 days
 **Risk**: Low (archival is non-critical path)
 
@@ -551,7 +551,7 @@ def handle: GoResponse =
 ---
 
 ### Phase 5: Lambda Functions (Read-Only Endpoints)
-**Issue**: [#121](https://gitlab.com/go-3/go-3/-/issues/121)
+**Issue**: [#121](https://github.com/lene/go-3/issues/121)
 **Timeline**: 5-7 days
 **Risk**: Low (read-only, existing server as fallback)
 
@@ -622,7 +622,7 @@ aws apigateway create-rest-api --name go3d-api --region us-east-1
 ---
 
 ### Phase 6: Evaluate & Optimize
-**Issue**: [#122](https://gitlab.com/go-3/go-3/-/issues/122)
+**Issue**: [#122](https://github.com/lene/go-3/issues/122)
 **Timeline**: 2 weeks (monitoring period)
 **Risk**: None (evaluation only)
 
@@ -673,7 +673,7 @@ fields @timestamp, @message
 ---
 
 ### Phase 7: Lambda Functions (Write Endpoints)
-**Issue**: [#123](https://gitlab.com/go-3/go-3/-/issues/123)
+**Issue**: [#123](https://github.com/lene/go-3/issues/123)
 **Timeline**: 5-7 days
 **Risk**: Medium (write path critical, need rollback plan)
 
@@ -740,7 +740,7 @@ END IF
 ---
 
 ### Phase 8: Production Cutover
-**Issue**: [#124](https://gitlab.com/go-3/go-3/-/issues/124)
+**Issue**: [#124](https://github.com/lene/go-3/issues/124)
 **Timeline**: 3-5 days
 **Risk**: Low (existing server available as fallback)
 
@@ -836,17 +836,17 @@ addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.16") // Docker (if 
 
 ## References
 
-### GitLab Issues
+### GitHub Issues
 
-- [#112 - Set server up as Lambda (Epic)](https://gitlab.com/go-3/go-3/-/issues/112)
-- [#117 - Phase 1: Security Hardening](https://gitlab.com/go-3/go-3/-/issues/117)
-- [#118 - Phase 2: AWS Infrastructure Setup](https://gitlab.com/go-3/go-3/-/issues/118)
-- [#119 - Phase 3: DynamoDB Integration Layer](https://gitlab.com/go-3/go-3/-/issues/119)
-- [#120 - Phase 4: S3 Archival System](https://gitlab.com/go-3/go-3/-/issues/120)
-- [#121 - Phase 5: Lambda Functions (Read-Only)](https://gitlab.com/go-3/go-3/-/issues/121)
-- [#122 - Phase 6: Evaluate & Optimize](https://gitlab.com/go-3/go-3/-/issues/122)
-- [#123 - Phase 7: Lambda Functions (Write Endpoints)](https://gitlab.com/go-3/go-3/-/issues/123)
-- [#124 - Phase 8: Production Cutover](https://gitlab.com/go-3/go-3/-/issues/124)
+- [#112 - Set server up as Lambda (Epic)](https://github.com/lene/go-3/issues/112)
+- [#117 - Phase 1: Security Hardening](https://github.com/lene/go-3/issues/117)
+- [#118 - Phase 2: AWS Infrastructure Setup](https://github.com/lene/go-3/issues/118)
+- [#119 - Phase 3: DynamoDB Integration Layer](https://github.com/lene/go-3/issues/119)
+- [#120 - Phase 4: S3 Archival System](https://github.com/lene/go-3/issues/120)
+- [#121 - Phase 5: Lambda Functions (Read-Only)](https://github.com/lene/go-3/issues/121)
+- [#122 - Phase 6: Evaluate & Optimize](https://github.com/lene/go-3/issues/122)
+- [#123 - Phase 7: Lambda Functions (Write Endpoints)](https://github.com/lene/go-3/issues/123)
+- [#124 - Phase 8: Production Cutover](https://github.com/lene/go-3/issues/124)
 
 ### AWS Documentation
 

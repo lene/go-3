@@ -1,0 +1,67 @@
+name: Mirror to GitLab
+
+# GitHub is the primary repository; every branch and tag update or deletion is replicated to
+# the GitLab mirror. GitLab only accepts pushes from the deploy key whose private half is
+# stored in the GITLAB_MIRROR_SSH_KEY secret.
+on:
+  push:
+    branches: ["**"]
+    tags: ["**"]
+  delete:
+  # Tags created by the Release workflow use GITHUB_TOKEN, which does not trigger push events.
+  workflow_run:
+    workflows: [Release]
+    types: [completed]
+
+concurrency:
+  group: mirror-${{ github.event.ref || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  GITLAB_REMOTE: git@gitlab.com:go-3/go-3.git
+
+jobs:
+  mirror:
+    if: github.repository == 'lene/go-3'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        if: github.event_name != 'delete'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Set up SSH
+        id: ssh
+        env:
+          SSH_KEY: ${{ secrets.GITLAB_MIRROR_SSH_KEY }}
+        run: |
+          if [ -z "$SSH_KEY" ]; then
+            echo "::warning::GITLAB_MIRROR_SSH_KEY is not set, not mirroring to GitLab"
+            exit 0
+          fi
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          echo "$SSH_KEY" | tr -d '\r' > ~/.ssh/id_gitlab && chmod 600 ~/.ssh/id_gitlab
+          ssh-keyscan gitlab.com >> ~/.ssh/known_hosts
+          echo "GIT_SSH_COMMAND=ssh -i ~/.ssh/id_gitlab -o IdentitiesOnly=yes" >> "$GITHUB_ENV"
+      - name: Push branch
+        if: steps.ssh.outputs.enabled && github.event_name == 'push' && github.ref_type == 'branch'
+        run: git push --force "$GITLAB_REMOTE" "${GITHUB_SHA}:${GITHUB_REF}"
+      - name: Push tag
+        if: steps.ssh.outputs.enabled && github.event_name == 'push' && github.ref_type == 'tag'
+        run: git push --force "$GITLAB_REMOTE" "${GITHUB_REF}:${GITHUB_REF}"
+      - name: Delete ref
+        if: steps.ssh.outputs.enabled && github.event_name == 'delete'
+        env:
+          REF_TYPE: ${{ github.event.ref_type }}
+          REF_NAME: ${{ github.event.ref }}
+        run: |
+          REF="refs/heads/$REF_NAME"
+          if [ "$REF_TYPE" = "tag" ]; then REF="refs/tags/$REF_NAME"; fi
+          git init -q . && git push "$GITLAB_REMOTE" ":$REF"
+      - name: Push tags
+        if: steps.ssh.outputs.enabled && github.event_name == 'workflow_run'
+        run: git push "$GITLAB_REMOTE" --tags

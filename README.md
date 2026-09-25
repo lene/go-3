@@ -51,7 +51,7 @@ Set `$SAVE_DIR` to the folder to save games in and `$PORT` to the port the serve
 ### From docker image
 ```
 $ docker run [--net=host] [--env SAVE_DIR=$SAVE_DIR] [--env PORT=$PORT] \
-    -t registry.gitlab.com/go-3/go-3/server:latest
+    -t ghcr.io/lene/go-3/server:latest
 ```
 Depending on your Docker configuration, the `--net=host` may be necessary or not.
 
@@ -67,7 +67,7 @@ For the client, no convenient Docker image exists yet. If you do not want to per
 installation, I suggest you run the docker image in interactive mode:
 ```shell
 $ docker run --net=host --env PORT=$PORT --entrypoint /bin/bash -it \
-         -t registry.gitlab.com/lilacashes/go-3/server:latest
+         -t ghcr.io/lene/go-3/server:latest
 ```
 You will be dropped into a `bash` shell. From there you can add `/go-3/bin` to the `PATH` 
 environment variable:

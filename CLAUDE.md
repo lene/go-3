@@ -64,10 +64,10 @@ sbt "runMain go3d.client.BotClient --server localhost --port 6030 --size 7 --col
 ### Docker
 ```bash
 # Build Docker image
-docker build -t registry.gitlab.com/lilacashes/go-3/server .
+docker build -t ghcr.io/lene/go-3/server .
 
 # Run server in Docker
-docker run --net=host --env PORT=6030 --env SAVE_DIR=saves -t registry.gitlab.com/lilacashes/go-3/server:latest
+docker run --net=host --env PORT=6030 --env SAVE_DIR=saves -t ghcr.io/lene/go-3/server:latest
 ```
 
 ## Architecture
@@ -151,6 +151,17 @@ Bots use a pipeline of strategies to narrow down move selection:
 
 ## CI/CD Conventions
 
+GitHub (`lene/go-3`) is the primary repository: issues, pull requests and CI (GitHub Actions in
+`.github/workflows/`) live there. GitLab (`gitlab.com/go-3/go-3`) is a read-only mirror that only
+accepts pushes from the `mirror-to-gitlab.yml` workflow and runs GitLab's security scanners
+(`.gitlab-ci.yml`); do not add build, test or release jobs there.
+
+- `ci.yml`: tests, coverage ratchet, benchmarks, version/changelog checks, deployable and Docker
+  image (`ghcr.io/lene/go-3/server`), Trivy container scan and gameplay tests
+  (`ci/test-gameplay.sh`)
+- `release.yml`: after CI passes on master, creates the tag and GitHub release for a new version
+- `mirror-to-gitlab.yml`: replicates branches and tags to GitLab
+
 After pushing to any branch, always monitor the CI pipeline(s) started by this push to ensure all
 jobs pass successfully. In case of failures, investigate and fix the issues before merging to main
 branches.
@@ -160,23 +171,22 @@ The project uses semantic versioning (MAJOR.MINOR.PATCH) defined in multiple fil
 - `build.sbt`: `version := "X.Y.Z"`
 - `Dockerfile`: `ARG version=X.Y.Z` (appears twice)
 - `run-test-game.sh`: `VERSION=X.Y.Z`
-- `.gitlab-ci.yml`: `DEPLOYABLE_VERSION: X.Y.Z`
 
-The `TagIsNewAndConsistent` CI job enforces version consistency and ensures each version is tagged only once.
+The `version-consistent` CI job enforces version consistency and ensures each version is tagged only once.
 
 ### CI Fix Commits
 
-For infrastructure-only changes (CI configuration, build scripts, etc.) that don't affect application functionality, you can skip version bumping by including **"CI Fix"** in the commit message.
+For infrastructure-only changes (CI configuration, build scripts, etc.) that don't affect application functionality, you can skip version bumping by including **"CI Fix"** in the commit message (or, for pull requests, in the PR title).
 
-When the commit message contains "CI Fix", the `TagIsNewAndConsistent` job will skip version validation, allowing you to merge infrastructure fixes to master without creating a new release tag.
+When the commit message contains "CI Fix", the `version-consistent` job will skip version validation, allowing you to merge infrastructure fixes to master without creating a new release tag.
 
 **Example commit messages:**
-- `CI Fix: Update CreateTag authentication to use CI_JOB_TOKEN`
+- `CI Fix: Pin actions/checkout to v4`
 - `CI Fix: Add code coverage reporting to pipeline`
 - `CI Fix: Optimize Docker build caching`
 
 **When to use "CI Fix":**
-- GitLab CI configuration changes (`.gitlab-ci.yml`)
+- CI configuration changes (`.github/workflows/`, `.gitlab-ci.yml`)
 - Docker build improvements
 - Build script modifications
 - Test infrastructure updates

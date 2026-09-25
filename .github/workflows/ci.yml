@@ -1,0 +1,399 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+
+permissions:
+  contents: read
+
+env:
+  TEST_RUN_BOARD_SIZE: 11
+  TEST_RUN_MAX_RUNNING_TIME: 60
+  DEPLOYABLE_BASE_NAME: go-3d
+  DOCKER_IMAGE: ghcr.io/${{ github.repository }}/server
+  JAVA_VERSION: 17
+
+jobs:
+  version:
+    name: Read version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: version
+        run: echo "version=$(grep 'version :=' build.sbt | cut -d '"' -f 2)" >> "$GITHUB_OUTPUT"
+
+  # Installs sbt from the sbt apt repository on several distributions. Somewhat slower than the
+  # other jobs, kept mostly as documentation of how to install the environment.
+  test-debian:
+    name: Test (${{ matrix.image }})
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [ubuntu:24.04, ubuntu:latest, debian:stable-slim, debian:testing-slim]
+    steps:
+      - name: Install sbt
+        run: |
+          apt-get -y update
+          apt-get -y upgrade
+          # default-jdk provides the best available JDK for each distro
+          apt-get -y install curl gnupg git default-jdk
+          # sbt repo key uses SHA1 binding signatures (rejected by apt since 2026-02-01)
+          echo "deb [trusted=yes] https://repo.scala-sbt.org/scalasbt/debian all main" \
+            > /etc/apt/sources.list.d/sbt.list
+          echo "deb [trusted=yes] https://repo.scala-sbt.org/scalasbt/debian /" \
+            > /etc/apt/sources.list.d/sbt_old.list
+          apt-get -y update
+          apt-get -y install sbt
+      - uses: actions/checkout@v4
+      - run: sbt test
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - run: sbt test
+      - name: Publish test report
+        if: always()
+        uses: mikepenz/action-junit-report@v5
+        with:
+          report_paths: target/test-reports/**/TEST-*.xml
+
+  coverage:
+    name: Check coverage
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - name: Download coverage of last successful master build
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          workflow: ci.yml
+          branch: master
+          workflow_conclusion: success
+          name: coverage-log
+          path: previous-coverage
+          if_no_artifact_found: warn
+      - name: Measure coverage and compare
+        run: |
+          if [ -f previous-coverage/coverage.log ]; then . previous-coverage/coverage.log; fi
+          statement_rate_old=${statement_rate:-0}
+          branch_rate_old=${branch_rate:-0}
+          sbt clean coverage test || true
+          sbt coverageReport
+          REPORT=$(head -n 2 target/scala-3.*.*/scoverage-report/scoverage.xml | tail -n 1 | xargs)
+          for word in $REPORT; do echo "$word"; done | grep rate | tr - _ > coverage.log
+          . ./coverage.log
+          echo "statement_rate_old=$statement_rate_old, statement_rate=$statement_rate"
+          echo "branch_rate_old=$branch_rate_old, branch_rate=$branch_rate"
+          if [ "$(echo "$branch_rate_old > $branch_rate" | bc -l)" -eq 1 ]; then
+            echo "::warning::branch rate decreased from $branch_rate_old to $branch_rate"
+          fi
+          if [ "$(echo "$statement_rate_old > $statement_rate" | bc -l)" -eq 1 ]; then
+            echo "::error::statement rate decreased from $statement_rate_old to $statement_rate"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-log
+          path: coverage.log
+          if-no-files-found: ignore
+
+  benchmark:
+    name: Benchmark run
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - run: sbt "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
+
+  check-runtime:
+    name: Check run time
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - run: sbt compile
+      - name: Run benchmark and check user time
+        run: |
+          /usr/bin/time -f %U -o runtime.log \
+            sbt "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
+          echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
+          if [ "$(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l)" -eq 1 ]; then
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: runtime-log
+          path: runtime.log
+
+  version-consistent:
+    name: Version is new and consistent
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Check version
+        env:
+          # the head commit message on push, the PR title on pull requests
+          MESSAGE: ${{ github.event.head_commit.message || github.event.pull_request.title }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          if [ -n "$PR_HEAD" ]; then MESSAGE="$MESSAGE $(git log -1 --format=%B "$PR_HEAD")"; fi
+          # infrastructure-only changes do not need a version bump
+          if echo "$MESSAGE" | grep -q "CI Fix"; then
+            echo "Skipping version check for CI Fix commit"
+            exit 0
+          fi
+          VERSION_SBT=$(grep -E 'version := ".*"' build.sbt | cut -d \" -f 2)
+          test -n "$VERSION_SBT"
+          echo "build.sbt: $VERSION_SBT"
+          VERSION_RUN_TEST=$(grep -E '^VERSION=.*' run-test-game.sh | cut -d = -f 2)
+          echo "run-test-game.sh: $VERSION_RUN_TEST"
+          test "$VERSION_SBT" = "$VERSION_RUN_TEST"
+          VERSIONS_DOCKERFILE=$(grep -E 'ARG version=.*' Dockerfile | cut -d = -f 2)
+          echo "Dockerfile: $VERSIONS_DOCKERFILE"
+          test "$(echo "$VERSIONS_DOCKERFILE" | wc -w)" -eq 2
+          test "$(echo "$VERSIONS_DOCKERFILE" | sort -u)" = "$VERSION_SBT"
+          if git tag | grep -q "^${VERSION_SBT}\$"; then
+            echo "::error::tag $VERSION_SBT already exists, bump the version"
+            exit 1
+          fi
+
+  changelog:
+    name: Changelog is updated
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/master'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check changelog
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          test -f CHANGELOG.md || exit 0
+          VERSION=$(grep -E 'version := ".*"' build.sbt | cut -d \" -f 2)
+          test -n "$VERSION"
+          grep -F "## [$VERSION]" CHANGELOG.md
+          grep -F "...$VERSION" CHANGELOG.md
+          echo "$PR_TITLE" | grep '^Draft:\|^WIP:' ||
+            grep -F "## [$VERSION] - $(date +%Y-%m-%d)" CHANGELOG.md
+
+  build-deployable:
+    name: Build deployable
+    needs: version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - run: sbt "Universal / packageBin"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deployable
+          path: target/universal/${{ env.DEPLOYABLE_BASE_NAME }}-${{ needs.version.outputs.version }}.zip
+          if-no-files-found: error
+
+  build-docker:
+    name: Build Docker image
+    needs: version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ env.DOCKER_IMAGE }}:${{ needs.version.outputs.version }}-${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+          tags: |
+            type=raw,value=${{ needs.version.outputs.version }}-${{ github.sha }}
+            type=raw,value=${{ needs.version.outputs.version }},enable=${{ github.ref == 'refs/heads/master' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          build-args: version=${{ needs.version.outputs.version }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  container-scan:
+    name: Container scan
+    needs: build-docker
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
+    steps:
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ needs.build-docker.outputs.image }}
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH
+      - uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: container-scan
+
+  test-deployable:
+    name: Test deployable (${{ matrix.image }})
+    needs: [version, build-deployable]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: ${{ matrix.image }}
+    strategy:
+      fail-fast: false
+      matrix:
+        image:
+          - hseeberger/scala-sbt:17.0.2_1.6.2_3.1.1
+          - eclipse-temurin:17-jre
+          - eclipse-temurin:21-jre
+    env:
+      INSTALL_DIR: ./go-3d-${{ needs.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: deployable
+      - run: apt-get -y update && apt-get -y install jq curl time unzip
+      - run: unzip -q "${DEPLOYABLE_BASE_NAME}-${{ needs.version.outputs.version }}.zip"
+      - run: ci/test-gameplay.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gameplay-deployable-${{ strategy.job-index }}
+          path: |
+            server.log
+            white.log
+            results.*.*.csv
+
+  test-docker-image:
+    name: Test Docker image (${{ matrix.black }} vs ${{ matrix.white }})
+    needs: build-docker
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container:
+      image: ${{ needs.build-docker.outputs.image }}
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+      options: --user root
+    permissions:
+      contents: read
+      packages: read
+    strategy:
+      fail-fast: false
+      matrix:
+        black: [closestToStarPoints, maximizeDistance]
+        white:
+          - onStarPoints,minimizeOpponentLiberties
+          - onStarPoints,maximizeOwnLiberties
+          - prioritiseCapture,closestToStarPoints
+    env:
+      INSTALL_DIR: /go-3
+      STRATEGY_BLACK: ${{ matrix.black }}
+      STRATEGY_WHITE: ${{ matrix.white }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: ci/test-gameplay.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gameplay-docker-${{ strategy.job-index }}
+          path: |
+            server.log
+            white.log
+            results.*.*.csv
+
+  collect-results:
+    name: Collect results
+    needs: test-docker-image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: gameplay-docker-*
+          merge-multiple: true
+      - run: |
+          ls -l results.*.*.csv
+          cat results.*.*.csv >> results.all.csv
+      - uses: actions/upload-artifact@v4
+        with:
+          name: results-all
+          path: results.all.csv
+
+  dependency-submission:
+    name: Submit dependencies
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@v1
+      - uses: scalacenter/sbt-dependency-submission@v3

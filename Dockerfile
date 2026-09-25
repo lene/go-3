@@ -1,5 +1,5 @@
-# docker build -t registry.gitlab.com/lilacashes/go-3/server .
-# docker run [--net=host] -t registry.gitlab.com/lilacashes/go-3/server:latest
+# docker build -t ghcr.io/lene/go-3/server .
+# docker run [--net=host] -t ghcr.io/lene/go-3/server:latest
 
 FROM hseeberger/scala-sbt:17.0.2_1.6.2_3.1.1 AS builder
 ARG version=0.7.29
