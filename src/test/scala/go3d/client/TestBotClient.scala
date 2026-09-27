@@ -100,7 +100,7 @@ class TestBotClient:
 
   @Test def testMakeOneMovePassesWhenNoMoveIsPossible(): Unit =
     val client = new RecordingClient
-    val status = mockStatus(ready = true)
+    val status = mockStatus(ready = true, moves = List())
     val (over, _) = BotClient.makeOneMove(client, status, status.game, None).success.value
     Assertions.assertFalse(over)
     Assertions.assertEquals(List("pass"), client.sent)

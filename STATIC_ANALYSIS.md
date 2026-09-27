@@ -1,7 +1,7 @@
 # Static Analysis Report
 
 Generated: October 19, 2025
-Updated: March 21, 2026; current counts September 27, 2026
+Updated: March 21, 2026; current counts September 27, 2026 (after issue #143)
 
 ## Tools Configured
 
@@ -47,23 +47,27 @@ DisableSyntax.noIsInstanceOf = true
 
 ## Current Counts (CI `Check warnings` job)
 
-Measured on 27 September 2026 by the `Check warnings` job in `.github/workflows/ci.yml`, which
-compiles main and test sources and fails when the total goes up (see `ci/warning_summary.sh`).
-Total: **699** compiler warnings (241 main, 458 test).
+Measured by the `Check warnings` job in `.github/workflows/ci.yml`, which compiles main and test
+sources and fails when the total goes up (see `ci/warning_summary.sh`).
+Total: **434** compiler warnings (196 main, 238 test), down from 699 before issue #143.
 
-| Warning | Count (main + test) | Note |
-|---------|---------------------|------|
-| wartremover:Any | 340 | mostly `s"..."` interpolation |
-| wartremover:TryPartial | 221 | `Try#get` can throw; not tracked before - issue #143 |
-| wartremover:Var | 50 | |
-| wartremover:Return | 22 | |
-| wartremover:DefaultArguments | 19 | |
-| unused import | 13 | issue #143 |
-| unused local definition | 11 | issue #143 |
-| wartremover:Null | 8 | the sections below report 0; regressed since March |
-| wartremover:StringPlusAny | 7 | |
-| wartremover:OptionPartial | 6 | the sections below report 0; regressed since March |
-| unused explicit parameter | 2 | issue #143 |
+| Warning | main | test | Note |
+|---------|------|------|------|
+| wartremover:Any | 133 | 206 | mostly `s"..."` interpolation |
+| wartremover:Var | 28 | 26 | |
+| wartremover:Return | 22 | 0 | |
+| wartremover:DefaultArguments | 13 | 6 | |
+
+Fixed in issue #143 (0 left):
+- `TryPartial` (221): main code composes `Try` (`flatMap`, `match`) instead of calling `.get`;
+  tests use ScalaTest's `TryValues` (`.success.value`, `.failure.exception`).
+- `OptionPartial` (6): tests use `OptionValues` (`.value`).
+- Unused imports, locals and parameters (26).
+- `StringPlusAny` (7): explicit `toString`.
+- `Null` (8): the remaining nulls in tests are intentional and suppressed with a reason.
+
+WartRemover reports one warning per expression, so fixing `TryPartial` exposed some `Var` warnings
+on the same lines (`var game = Game.start(n).get`).
 
 The sections below are the March 2026 report and are kept for its history of fixes.
 

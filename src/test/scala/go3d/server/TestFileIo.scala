@@ -10,7 +10,7 @@ import org.scalatest.TryValues.*
 
 object TestFileIo:
   // assigned in @BeforeAll, which JUnit runs before any test reads it
-  @SuppressWarnings(Array("org.wartremover.warts.Null"))
+  @SuppressWarnings(Array("org.wartremover.warts.Null", "org.wartremover.warts.Var"))
   var fileIO: FileIO = scala.compiletime.uninitialized
   @BeforeAll def initIo(): Unit =
     Games.init(Files.createTempDirectory("go3d").toString)
