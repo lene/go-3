@@ -8,7 +8,8 @@ import go3d.server.StatusResponse
 import java.io.IOException
 import java.net.ConnectException
 import java.net.UnknownHostException
-import scala.util.Try
+import scala.annotation.tailrec
+import scala.util.{Success, Try}
 
 trait ClientTrait:
   def mainLoop(client: BaseClient): Try[Unit]
@@ -41,6 +42,20 @@ abstract class Client extends ClientTrait with LazyLogging:
     }
 
   def init(): Unit = {}
+
+  /// Polls the server every `waitMs` until the game is ready for `client`, calling `onWait` with
+  /// the last status before each wait.
+  @tailrec
+  protected final def pollUntilReady(
+    client: BaseClient, status: StatusResponse, waitMs: Int, onWait: StatusResponse => Unit
+  ): Try[StatusResponse] =
+    if status.ready then Success(status)
+    else
+      onWait(status)
+      Thread.sleep(waitMs)
+      client.status match
+        case Success(next) => pollUntilReady(client, next, waitMs, onWait)
+        case failure => failure
 
   protected def exceptionToParam(e: NoSuchElementException): String =
       "--" + e.getMessage //.substring("key not found: ".length).replace('_', '-')

@@ -2,67 +2,52 @@ package go3d.client
 
 import go3d._
 import org.junit.jupiter.api.{Assertions, Test}
+import org.scalatest.TryValues.*
 import java.net.UnknownHostException
 import org.rogach.scallop.exceptions.ValidationFailure
-import org.scalatest.TryValues.*
 
 class TestBotClient:
 
   @Test def testBadColor(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[BadColor],
-      BotClient.parseArgs(Array(
-        "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--color", "bx"
-      )).failure.exception
+    assertParseFails(
+      classOf[BadColor], BotClient.parseArgs,
+      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--color", "bx"
     )
 
   @Test def testUnknownHost(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[UnknownHostException],
-      BotClient.parseArgs(Array(
-        "--server", "doesnt-exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
-      )).failure.exception
+    assertParseFails(
+      classOf[UnknownHostException], BotClient.parseArgs,
+      "--server", "doesnt-exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
     )
 
   @Test def testMissingServer(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[NoSuchElementException],
-      BotClient.parseArgs(Array(
-        "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
-      )).failure.exception
+    assertParseFails(
+      classOf[NoSuchElementException], BotClient.parseArgs,
+      "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
     )
 
   @Test def testMissingPort(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[NoSuchElementException],
-      BotClient.parseArgs(Array(
-        "--server", "localhost", "--size", "3", "--color", "b"
-      )).failure.exception
+    assertParseFails(
+      classOf[NoSuchElementException], BotClient.parseArgs,
+      "--server", "localhost", "--size", "3", "--color", "b"
     )
 
   @Test def testMissingColor(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[ValidationFailure],
-      BotClient.parseArgs(Array(
-        "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3"
-      )).failure.exception
+    assertParseFails(
+      classOf[ValidationFailure], BotClient.parseArgs,
+      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3"
     )
 
   @Test def testMissingSize(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[ValidationFailure],
-      AsciiClient.parseArgs(Array(
-        "--server", "localhost", "--port", ClientTestPort.toString, "--color", "b"
-      )).failure.exception
+    assertParseFails(
+      classOf[ValidationFailure], BotClient.parseArgs,
+      "--server", "localhost", "--port", ClientTestPort.toString, "--color", "b"
     )
 
   @Test def testConflictingArguments(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[ValidationFailure],
-      AsciiClient.parseArgs(Array(
-        "--server", "localhost", "--port", ClientTestPort.toString,
-        "--size", "3", "--game-id", "1"
-      )).failure.exception
+    assertParseFails(
+      classOf[ValidationFailure], BotClient.parseArgs,
+      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--game-id", "1"
     )
 
   @Test def testStrategyIsParsed(): Unit =
@@ -95,3 +80,34 @@ class TestBotClient:
     Assertions.assertTrue(status.isSuccess)
     Assertions.assertTrue(status.success.value.ready)
     Assertions.assertEquals(3, status.success.value.game.size)
+
+  @Test def testWaitUntilReadyPollsUntilReady(): Unit =
+    val client = new NotReadyClient(3)
+    Assertions.assertTrue(BotClient.waitUntilReady(client).success.value.ready)
+    Assertions.assertEquals(3, client.statusCalls)
+
+  @Test def testWaitUntilReadyPollsUntilReadyForInteractiveClient(): Unit =
+    val client = new NotReadyClient(2)
+    Assertions.assertTrue(AsciiClient.waitUntilReady(client).success.value.ready)
+    Assertions.assertEquals(2, client.statusCalls)
+
+  @Test def testMakeOneMoveSetsWhenAMoveIsPossible(): Unit =
+    val client = new RecordingClient
+    val status = mockStatus(ready = true, moves = List(Position(1, 1, 1)))
+    val (over, _) = BotClient.makeOneMove(client, status, status.game, None).success.value
+    Assertions.assertFalse(over)
+    Assertions.assertEquals(List("set 1 1 1"), client.sent)
+
+  @Test def testMakeOneMovePassesWhenNoMoveIsPossible(): Unit =
+    val client = new RecordingClient
+    val status = mockStatus(ready = true)
+    val (over, _) = BotClient.makeOneMove(client, status, status.game, None).success.value
+    Assertions.assertFalse(over)
+    Assertions.assertEquals(List("pass"), client.sent)
+
+  @Test def testMakeOneMoveNarrowsDownWithStrategy(): Unit =
+    val client = new RecordingClient
+    val status = mockStatus(ready = true, moves = List(Position(1, 1, 1), Position(2, 2, 2)))
+    val strategy = Some(SetStrategy(3, Array("closestToCenter")))
+    BotClient.makeOneMove(client, status, status.game, strategy).success.value
+    Assertions.assertEquals(List("set 2 2 2"), client.sent)

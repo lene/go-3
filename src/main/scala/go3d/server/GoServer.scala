@@ -19,6 +19,33 @@ object GoServer extends LazyLogging:
 
   private def loadGames(baseDir: String): Unit = Games.loadGames(baseDir)
 
+  /// Plays a game of random moves on a board of `size`, logging timings every `printStepSize`
+  /// moves.
+  private[server] def randomGame(size: Int, printStepSize: Int): Try[Game] =
+    val random = new SecureRandom()
+    val totalMoves = size*size*size
+    val startTime = System.nanoTime()
+
+    @tailrec def play(game: Game, color: Color, startTimeForMoves: Long): Try[Game] =
+      val possible = game.possibleMoves(color)
+      if possible.isEmpty || game.moves.length > totalMoves then Success(game)
+      else game.makeMove(Move(possible(random.nextInt(possible.length)), color)) match
+        case Failure(e) => Failure(e)
+        case Success(next) =>
+          if next.moves.length % printStepSize == 0 || next.moves.length == totalMoves then
+            val stepMs = (System.nanoTime()-startTimeForMoves)/1000000
+            logger.info(s"${next.moves.length}/$totalMoves (${stepMs/printStepSize}ms/move)")
+            play(next, !color, System.nanoTime())
+          else play(next, !color, startTimeForMoves)
+
+    Game.start(size).flatMap(play(_, Black, startTime)).map { game =>
+      val totalSeconds = (System.nanoTime()-startTime)/1000000000.0
+      logger.info(s"overall: ${totalSeconds}s, ${totalSeconds*1000.0/totalMoves}ms/move")
+      logger.info(game.toString)
+      logger.info(game.score.toString)
+      game
+    }
+
   def main(args: Array[String]): Unit =
 
     val DefaultSaveDir = "saves"
@@ -40,30 +67,6 @@ object GoServer extends LazyLogging:
       conflicts(benchmark, List(port, saveDir, inactiveGameTimeoutMinutes))
       dependsOnAll(printStepSize, List(benchmark))
       verify()
-
-    def randomGame(size: Int, print_step_size: Int): Try[Unit] =
-      val random = new SecureRandom()
-      val totalMoves = size*size*size
-      val startTime = System.nanoTime()
-
-      @tailrec def play(game: Game, color: Color, startTimeForMoves: Long): Try[Game] =
-        val possible = game.possibleMoves(color)
-        if possible.isEmpty || game.moves.length > totalMoves then Success(game)
-        else game.makeMove(Move(possible(random.nextInt(possible.length)), color)) match
-          case Failure(e) => Failure(e)
-          case Success(next) =>
-            if next.moves.length % print_step_size == 0 || next.moves.length == totalMoves then
-              val stepMs = (System.nanoTime()-startTimeForMoves)/1000000
-              logger.info(s"${next.moves.length}/$totalMoves (${stepMs/print_step_size}ms/move)")
-              play(next, !color, System.nanoTime())
-            else play(next, !color, startTimeForMoves)
-
-      Game.start(size).flatMap(play(_, Black, startTime)).map { game =>
-        val totalSeconds = (System.nanoTime()-startTime)/1000000000.0
-        logger.info(s"overall: ${totalSeconds}s, ${totalSeconds*1000.0/totalMoves}ms/move")
-        logger.info(game.toString)
-        logger.info(game.score.toString)
-      }
 
     val conf = Conf(args.toList)
     if conf.benchmark.isSupplied then

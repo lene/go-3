@@ -89,7 +89,7 @@ object BotClient extends Client with LazyLogging:
     if e.response.statusCode == Status.Gone.code then exit(0)
     mainLoop(client)
 
-  private def makeOneMove(
+  private[client] def makeOneMove(
     client: BaseClient, status: StatusResponse, game: Game, strategy: Option[SetStrategy]
   ): Try[(Boolean, Game)] =
     strategy.fold[Try[Seq[Position]]](Success(status.moves))(_.narrowDown(status.moves, game))
@@ -141,16 +141,9 @@ object BotClient extends Client with LazyLogging:
     }
 
   def waitUntilReady(client: BaseClient): Try[StatusResponse] =
-    client.status.flatMap(pollUntilReady(client, _))
+    client.status.flatMap(pollUntilReady(client, _, PULL_WAIT_MS, exitIfOver))
 
-  @tailrec
-  private def pollUntilReady(client: BaseClient, status: StatusResponse): Try[StatusResponse] =
-    if status.ready then Success(status)
-    else
-      if status.over then
-        logger.info(s"Game over: ${status.game}")
-        exit(0)
-      Thread.sleep(PULL_WAIT_MS)
-      client.status match
-        case Success(next) => pollUntilReady(client, next)
-        case failure => failure
+  private def exitIfOver(status: StatusResponse): Unit =
+    if status.over then
+      logger.info(s"Game over: ${status.game}")
+      exit(0)

@@ -5,64 +5,56 @@ import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 import org.rogach.scallop.exceptions.ValidationFailure
 import java.net.UnknownHostException
+import scala.util.Try
 
 val ClientTestPort = 64556
+
+/// Asserts that parsing `args` with `parse` fails with an exception of type `expected`.
+def assertParseFails[E <: Throwable](
+  expected: Class[E], parse: Array[String] => Try[BaseClient], args: String*
+): Unit =
+  Assertions.assertInstanceOf(expected, parse(args.toArray).failure.exception)
 
 class TestAsciiClient:
 
   @Test def testBadColor(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[BadColor],
-      AsciiClient.parseArgs(Array(
-        "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--color", "bx"
-      )).failure.exception
+    assertParseFails(
+      classOf[BadColor], AsciiClient.parseArgs,
+      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--color", "bx"
     )
 
   @Test def testUnknownHost(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[UnknownHostException],
-      AsciiClient.parseArgs(Array(
-        "--server", "doesnt-exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
-      )).failure.exception
+    assertParseFails(
+      classOf[UnknownHostException], AsciiClient.parseArgs,
+      "--server", "doesnt-exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
     )
 
   @Test def testMissingServer(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[NoSuchElementException],
-      BotClient.parseArgs(Array(
-        "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
-      )).failure.exception
+    assertParseFails(
+      classOf[NoSuchElementException], AsciiClient.parseArgs,
+      "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
     )
 
   @Test def testMissingPort(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[NoSuchElementException],
-      BotClient.parseArgs(Array(
-        "--server", "localhost", "--size", "3", "--color", "b"
-      )).failure.exception
+    assertParseFails(
+      classOf[NoSuchElementException], AsciiClient.parseArgs,
+      "--server", "localhost", "--size", "3", "--color", "b"
     )
 
   @Test def testMissingColor(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[ValidationFailure],
-      BotClient.parseArgs(Array(
-        "--server", "localhost", "--port", ClientTestPort.toString
-      )).failure.exception
+    assertParseFails(
+      classOf[ValidationFailure], AsciiClient.parseArgs,
+      "--server", "localhost", "--port", ClientTestPort.toString
     )
 
   @Test def testMissingSize(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[ValidationFailure],
-      AsciiClient.parseArgs(Array(
-        "--server", "localhost", "--port", ClientTestPort.toString, "--color", "b"
-      )).failure.exception
+    assertParseFails(
+      classOf[ValidationFailure], AsciiClient.parseArgs,
+      "--server", "localhost", "--port", ClientTestPort.toString, "--color", "b"
     )
 
   @Test def testConflictingArguments(): Unit =
-    Assertions.assertInstanceOf(
-      classOf[ValidationFailure],
-      AsciiClient.parseArgs(Array(
-        "--server", "localhost", "--port", ClientTestPort.toString,
-        "--size", "3", "--game-id", "1"
-      )).failure.exception
+    assertParseFails(
+      classOf[ValidationFailure], AsciiClient.parseArgs,
+      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--game-id", "1"
     )

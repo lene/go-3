@@ -6,7 +6,6 @@ import org.rogach.scallop._
 import org.rogach.scallop.exceptions.RequiredOptionNotFound
 
 import java.util.NoSuchElementException
-import scala.annotation.tailrec
 import scala.util.{Failure, Success, Try}
 
 class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
@@ -57,16 +56,7 @@ abstract case class InteractiveClient(pollInterval: Int = 500) extends Client wi
     }
 
   override def waitUntilReady(client: BaseClient): Try[StatusResponse] =
-    client.status.flatMap(status => pollUntilReady(client, status, 0))
-
-  @tailrec
-  private def pollUntilReady(
-    client: BaseClient, status: StatusResponse, index: Int
-  ): Try[StatusResponse] =
-    if status.ready then Success(status)
-    else
-      print("\b" + "/-\\|".charAt((index + 1) % 4).toString)
-      Thread.sleep(pollInterval)
-      client.status match
-        case Success(next) => pollUntilReady(client, next, index + 1)
-        case failure => failure
+    val spinner = Iterator.continually("/-\\|".toList).flatten
+    client.status.flatMap(
+      pollUntilReady(client, _, pollInterval, _ => print("\b" + spinner.next().toString))
+    )

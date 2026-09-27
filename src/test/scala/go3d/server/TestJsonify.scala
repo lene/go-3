@@ -6,6 +6,9 @@ import io.circe.syntax._
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
+private val EmptyLevel = "   \n   \n   "
+private val CenterLevel = "   \n @ \n   "
+
 class TestJsonify:
 
   @Test def testEqualMapsAreEqual(): Unit =
@@ -76,12 +79,11 @@ class TestJsonify:
     Assertions.assertEquals(Black, goban.at(2, 2, 2), goban.toString)
 
   @Test def testFromStringsWithoutPipesOrMargin(): Unit =
-    val goban =
-      gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   ")).success.value
+    val goban = gobanFromStrings(Array(EmptyLevel, CenterLevel, EmptyLevel)).success.value
     Assertions.assertEquals(Black, goban.at(2, 2, 2))
 
   @Test def testToStringsIsInverseOfFromStrings(): Unit =
-    val definition = Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n   ")
+    val definition = Array(EmptyLevel, CenterLevel, EmptyLevel)
     val goban = gobanFromStrings(definition).success.value
     Assertions.assertEquals(definition.toList, gobanToStrings(goban).toList)
 
@@ -102,14 +104,13 @@ class TestJsonify:
 
   @Test def testFromStringsWithTooFewLevels(): Unit =
     Assertions.assertInstanceOf(
-      classOf[JsonDecodeError],
-      gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ")).failure.exception
+      classOf[JsonDecodeError], gobanFromStrings(Array(EmptyLevel, CenterLevel)).failure.exception
     )
 
   @Test def testFromStringsWithTruncatedLastLevel(): Unit =
     Assertions.assertInstanceOf(
       classOf[JsonDecodeError],
-      gobanFromStrings(Array("   \n   \n   ", "   \n @ \n   ", "   \n   \n ")).failure.exception
+      gobanFromStrings(Array(EmptyLevel, CenterLevel, "   \n   \n ")).failure.exception
     )
 
   @Test def testUseCirceForEmptyGobanJson(): Unit =
