@@ -6,13 +6,13 @@ import go3d.server.service.{FailingGameStore, InMemoryGameStore}
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
-// The AWS Lambda API allows a null Context and LambdaHandler does not use it;
-// testNullPathReturns404 passes a null path on purpose.
-@SuppressWarnings(Array("org.wartremover.warts.Null"))
 private val GameId = "ABCDEF"
 private val StatusPath = "/status/" + GameId
 private val OpenGamesPath = "/openGames"
 
+// The AWS Lambda API allows a null Context and LambdaHandler does not use it;
+// testNullPathReturns404 passes a null path on purpose.
+@SuppressWarnings(Array("org.wartremover.warts.Null"))
 class TestLambdaHandler:
 
   private val handler = new LambdaHandler()
