@@ -35,6 +35,7 @@ GITLAB_WEB = "https://gitlab.com/go-3/go-3"
 GITHUB_API = "https://api.github.com"
 GITHUB_REPO = "lene/go-3"
 FIRST_PRESERVED_IID = 3  # GitHub #1 and #2 are pull requests
+BURNED_NUMBERS = {3}  # permanently unusable: a spam PR was opened and deleted here pre-migration
 MAP_FILE = Path("migration-map.json")
 WRITE_DELAY_SECONDS = 1.0
 MAX_BODY_LENGTH = 65000  # GitHub limit is 65536 characters
@@ -45,7 +46,9 @@ ISSUE_MARKER_RE = re.compile(r"<!-- gitlab-issue:(\d+) -->")
 
 
 class ApiError(Exception):
-    pass
+    def __init__(self, message, status=None):
+        super().__init__(message)
+        self.status = status
 
 
 def request(method, url, token_header, data=None, retries=6):
@@ -67,7 +70,7 @@ def request(method, url, token_header, data=None, retries=6):
                 print(f"  {err.code} from {url}, retrying in {wait}s", file=sys.stderr)
                 time.sleep(wait)
                 continue
-            raise ApiError(f"{method} {url} -> {err.code}: {text}") from err
+            raise ApiError(f"{method} {url} -> {err.code}: {text}", status=err.code) from err
     raise ApiError(f"{method} {url}: retries exhausted")
 
 
@@ -124,10 +127,15 @@ class GitHub:
 
 
 def number_mapping(max_iid):
-    """Map every GitLab iid (existing or not) to its GitHub issue number."""
-    mapping = {iid: iid for iid in range(FIRST_PRESERVED_IID, max_iid + 1)}
-    for offset, iid in enumerate(range(1, FIRST_PRESERVED_IID), start=1):
-        mapping[iid] = max_iid + offset
+    """Map every GitLab iid (existing or not) to its GitHub issue number, skipping numbers
+    GitHub will never hand out again (BURNED_NUMBERS)."""
+    mapping = {}
+    counter = FIRST_PRESERVED_IID
+    for iid in list(range(FIRST_PRESERVED_IID, max_iid + 1)) + list(range(1, FIRST_PRESERVED_IID)):
+        while counter in BURNED_NUMBERS:
+            counter += 1
+        mapping[iid] = counter
+        counter += 1
     return mapping
 
 
@@ -232,9 +240,15 @@ def reconcile_unrecorded(github, state):
     recorded = {entry["github"] for entry in state["issues"].values()}
     last = github.highest_number()
     for number in range(FIRST_PRESERVED_IID, last + 1):
-        if number in recorded:
+        if number in recorded or number in BURNED_NUMBERS:
             continue
-        issue = github.get(f"issues/{number}")
+        try:
+            issue = github.get(f"issues/{number}")
+        except ApiError as err:
+            if err.status == 404:
+                print(f"  GitHub #{number} does not exist (deleted before migration), skipping")
+                continue
+            raise
         match = ISSUE_MARKER_RE.search(issue.get("body") or "")
         if match:
             print(f"  recovered GitHub #{number} as GitLab #{match.group(1)}")
@@ -291,8 +305,12 @@ def migrate_issues(gitlab, github, state, execute):
         issue = issues.get(iid)
         if entry is None:
             if execute:
-                actual_next = github.highest_number() + 1
-                if actual_next != expected:
+                for attempt in range(5):
+                    actual_next = github.highest_number() + 1
+                    if actual_next == expected:
+                        break
+                    time.sleep(2)  # GitHub's issue list index can lag just-written issues
+                else:
                     raise ApiError(f"next GitHub number is #{actual_next}, expected #{expected} "
                                    f"for GitLab #{iid}; aborting to keep numbering intact")
             if issue is None:

@@ -8,7 +8,9 @@ takes no new issues. Steps marked **manual** need an account owner.
 - Create a GitLab personal access token with `api` scope.
 - Create a GitHub fine-grained PAT for `lene/go-3` with *Issues: read and write*.
 - Disable Dependabot version updates, and don't open issues or PRs on GitHub until step 2 is
-  done. Every new issue or PR takes a number that the migration needs.
+  done. Every new issue or PR takes a number that the migration needs. Issues and PRs share one
+  number sequence, so this also means: don't merge the branch with the GitHub Actions changes
+  (step 3) via a PR yet, even though it's ready — that would consume a number too.
 
 ## 2. Migrate issues
 ```shell
@@ -29,10 +31,15 @@ Check a few issues on GitHub, then comment on and close the GitLab originals:
 scripts/migrate_gitlab_issues.py --close-gitlab             # dry run
 scripts/migrate_gitlab_issues.py --close-gitlab --execute
 ```
+Only once this step is fully done (including `--close-gitlab --execute`) is it safe to open any
+new PR or issue on GitHub, including the one below.
 
 ## 3. GitHub Actions (this branch)
 - `.github/workflows/ci.yml` replaces the GitLab pipeline. `release.yml` creates the tags and
-  releases. `mirror-to-gitlab.yml` pushes to GitLab.
+  releases. `mirror-to-gitlab.yml` pushes to GitLab. `codacy.yml` is unrelated to this migration
+  and stays as-is.
+- Now that step 2 is done, merge this branch into master via a normal PR (or push it directly if
+  a PR still isn't wanted) — its number no longer matters to the migration.
 - The Docker image moves to `ghcr.io/lene/go-3/server`. After the first push to master, make
   the package public: *Package settings → Change visibility*.
 - `.gitlab-ci.yml` now contains only GitLab's security scanners.
@@ -53,7 +60,8 @@ ssh-keygen -t ed25519 -N "" -C "github-to-gitlab mirror" -f gitlab-mirror
   Re-protect `master` the same way.
 - *Protected tags*: protect `*` with *Allowed to create: the deploy key*. If your GitLab
   version doesn't offer deploy keys there, use *Maintainers*.
-- Port the 3 open merge requests to GitHub or close them.
+- Check the open merge request count on GitLab (3 as of writing this doc — may have drifted).
+  Port each to GitHub or close it.
 - *Settings → General → Visibility*: disable **Issues** and **Merge requests**.
 - *Settings → General*: set the description to "Mirror of https://github.com/lene/go-3 — issues
   and pull requests go there". Don't archive the project, because archiving blocks the mirror
@@ -68,6 +76,10 @@ ssh-keygen -t ed25519 -N "" -C "github-to-gitlab mirror" -f gitlab-mirror
 - *Code security*: enable secret scanning, push protection and Dependabot alerts. The
   `dependency-submission` job reports sbt dependencies.
 - Re-enable Dependabot version updates.
+
+## 7. Clean up tokens (manual)
+- Revoke the GitLab PAT and GitHub PAT created in step 1 — they're single-use for the migration
+  and shouldn't be left lying around once it's verified complete.
 
 ## Verification
 - Push a branch to GitHub. It should appear on GitLab, where only the scan jobs run.
