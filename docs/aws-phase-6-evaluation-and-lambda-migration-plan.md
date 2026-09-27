@@ -1,6 +1,6 @@
 # AWS Phase 6 Evaluation And Lambda Migration Plan
 
-Issue: #122
+Issue: #123 (GitLab #122)
 Date: June 2, 2026
 Default region: `eu-central-1`
 AWS CLI profile used for live data: `personal`
