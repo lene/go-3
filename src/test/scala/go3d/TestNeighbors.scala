@@ -1,33 +1,34 @@
 package go3d
 
 import org.junit.jupiter.api.Test
+import org.scalatest.TryValues.*
 
 class TestNeighbors:
 
   @Test def testNeighborsCorner(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     val cornerNeighbors = empty.neighbors(Position(1, 1, 1))
     assertPositionsEqual(List((1, 1, 2), (1, 2, 1), (2, 1, 1)), cornerNeighbors)
 
   @Test def testNeighborsEdge(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     val edgeNeighbors = empty.neighbors(Position(1, 1, 2))
     assertPositionsEqual(List((1, 1, 1), (1, 1, 3), (1, 2, 2), (2, 1, 2)), edgeNeighbors)
 
   @Test def testNeighborsFace(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     val faceNeighbors = empty.neighbors(Position(1, 2, 2))
     assertPositionsEqual(List((1, 2, 1), (1, 2, 3), (1, 1, 2), (1, 3, 2), (2, 2, 2)), faceNeighbors)
 
   @Test def testNeighborsInterior(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     val interiorNeighbors = empty.neighbors(Position(2, 2, 2))
     assertPositionsEqual(
       List((2, 2, 1), (2, 2, 3), (2, 1, 2), (2, 3, 2), (1, 2, 2), (3, 2, 2)), interiorNeighbors
     )
 
   @Test def testNeighborsOuterCorner(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     val cornerNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize))
     assertPositionsEqual(
       List((TestSize, TestSize, TestSize-1), (TestSize, TestSize-1, TestSize),
@@ -36,7 +37,7 @@ class TestNeighbors:
     )
 
   @Test def testNeighborsOuterEdge(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     val edgeNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize-1))
     assertPositionsEqual(
       List((TestSize, TestSize, TestSize), (TestSize, TestSize, TestSize-2),
@@ -45,7 +46,7 @@ class TestNeighbors:
     )
 
   @Test def testNeighborsOuterFace(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     val faceNeighbors = empty.neighbors(Position(TestSize, TestSize-1, TestSize-1))
     assertPositionsEqual(
       List((TestSize, TestSize-1, TestSize), (TestSize, TestSize-1, TestSize-2),

@@ -3,6 +3,9 @@ package go3d.server.lambda
 import com.amazonaws.services.lambda.runtime.events.APIGatewayProxyRequestEvent
 import org.junit.jupiter.api.{Assertions, Test}
 
+// The AWS Lambda API allows a null Context and LambdaHandler does not use it;
+// testNullPathReturns404 passes a null path on purpose.
+@SuppressWarnings(Array("org.wartremover.warts.Null"))
 class TestLambdaHandler:
 
   private val handler = new LambdaHandler()

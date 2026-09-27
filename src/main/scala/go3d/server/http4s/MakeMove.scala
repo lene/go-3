@@ -10,7 +10,7 @@ import go3d.server.RequestInfo
 import go3d.server.StatusResponse
 import org.http4s.Request
 
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Try}
 
 abstract case class MakeMove(gameId: String, request: Request[IO])
   extends BaseHandler with MakeMoveTrait with LazyLogging:

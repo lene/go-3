@@ -8,6 +8,7 @@ import io.circe.parser.decode
 import org.scalatest.funsuite.AnyFunSuite
 
 import scala.io.Source
+import org.scalatest.TryValues.*
 
 /**
  * Performance regression tests for bug #66 - "Server hanging sometimes"
@@ -33,7 +34,7 @@ class TestBug66Performance extends AnyFunSuite:
       case Left(e) => fail(s"Failed to decode $filename: ${e.getMessage}")
 
     val startTime = System.nanoTime()
-    var game = Game.start(saveGame.game.size).get
+    var game = Game.start(saveGame.game.size).success.value
 
     for (moveOrPass, index) <- saveGame.game.moves.zipWithIndex do
       val elapsedMs = (System.nanoTime() - startTime) / 1_000_000
@@ -42,8 +43,8 @@ class TestBug66Performance extends AnyFunSuite:
              s"Elapsed: ${elapsedMs}ms. This suggests performance regression in connectedStones() or hasLiberties().")
 
       moveOrPass match
-        case move: Move => game = game.makeMove(move).get
-        case pass: Pass => game = game.makeMove(pass).get
+        case move: Move => game = game.makeMove(move).success.value
+        case pass: Pass => game = game.makeMove(pass).success.value
 
     val endTime = System.nanoTime()
     val totalTimeMs = (endTime - startTime) / 1_000_000

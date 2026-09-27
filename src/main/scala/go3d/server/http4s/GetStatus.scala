@@ -8,7 +8,7 @@ import go3d.server.RequestInfo
 import go3d.server.StatusResponse
 import org.http4s.Request
 
-import scala.util.{Success, Try}
+import scala.util.Try
 
 case class GetStatus(gameId: String, request: Request[IO]) extends BaseHandler with LazyLogging:
   def handle: Try[GoResponse] =

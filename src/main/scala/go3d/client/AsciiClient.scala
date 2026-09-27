@@ -19,39 +19,45 @@ object AsciiClient extends InteractiveClient with LazyLogging:
   /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
 
   @tailrec
-  def mainLoop(client: BaseClient): Unit =
+  def mainLoop(client: BaseClient): Try[Unit] =
     logger.info(
       s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")(str => str)}"
     )
-    val status = waitUntilReady(client).get
-    logger.info(s"\n${status.game.goban}")
-    if status.game.moves.nonEmpty then logger.info(s"last move: ${status.game.moves.last}")
-    Try {
-      val input = readLine("your input: ")
-      val Array(command, args) = (input+" ").split("\\s+", 2)
-      val statusResponse: Option[StatusResponse] = command match
-        case "set"|"s" => Some(set(client, args).get)
-        case "pass"|"p" => Some(pass(client).get)
-        case "status"|"st" => Some(getStatus(client).get)
-        case "exit" =>
-          logger.info("Exiting. If you want to reconnect to the game, enter")
-          logger.info(
-            s"$$ sbt \"runMain go3d.client.AsciiClient --server ${client.serverURL} --game-id ${client.id} --token ${client.token}\""
-          )
-          exit(0)
-          None
-        case _ =>
-          logger.warn(
-            s"\"$command\" not understood - use \"set|s\", \"pass|p\", \"status|st\" or \"exit\"!"
-          )
-          None
-      statusResponse.foreach(sr => if sr.over then exit(0))
-    }.recover {
-      case _: InterruptedException => exit(1)
-      case e: RequestFailedException => logger.warn(e.message)
-      case e: NumberFormatException => logger.warn(s"Not a number: ${e.getMessage}, set again!")
-    }
-    mainLoop(client)
+    waitUntilReady(client) match
+      case Failure(e) => Failure(e)
+      case Success(status) =>
+        logger.info(s"\n${status.game.goban}")
+        if status.game.moves.nonEmpty then logger.info(s"last move: ${status.game.moves.last}")
+        Try {
+          val input = readLine("your input: ")
+          val Array(command, args) = (input+" ").split("\\s+", 2)
+          handleCommand(client, command, args)
+        }.flatten.map(_.foreach(sr => if sr.over then exit(0))).recover {
+          case _: InterruptedException => exit(1)
+          case e: RequestFailedException => logger.warn(e.message)
+          case e: NumberFormatException => logger.warn(s"Not a number: ${e.getMessage}, set again!")
+        }
+        mainLoop(client)
+
+  private def handleCommand(
+    client: BaseClient, command: String, args: String
+  ): Try[Option[StatusResponse]] =
+    command match
+      case "set"|"s" => set(client, args).map(Some(_))
+      case "pass"|"p" => pass(client).map(Some(_))
+      case "status"|"st" => getStatus(client).map(Some(_))
+      case "exit" =>
+        logger.info("Exiting. If you want to reconnect to the game, enter")
+        logger.info(
+          s"$$ sbt \"runMain go3d.client.AsciiClient --server ${client.serverURL} --game-id ${client.id} --token ${client.token}\""
+        )
+        exit(0)
+        Success(None)
+      case _ =>
+        logger.warn(
+          s"\"$command\" not understood - use \"set|s\", \"pass|p\", \"status|st\" or \"exit\"!"
+        )
+        Success(None)
 
   def set(client: BaseClient, args: String): Try[StatusResponse] =
     val Array(x, y, z) = args.split("\\s+", 3).map(s => s.trim.toInt)

@@ -2,9 +2,10 @@ package go3d.client
 
 import org.junit.jupiter.api.{Assertions, Test}
 import go3d.*
-import go3d.server.{*, given}
+import go3d.server.*
 import io.circe.parser.decode
 import scala.io.Source
+import org.scalatest.TryValues.*
 
 /**
  * Test for bug #77: bot crashes with "empty.minBy" in prioritiseCapture strategy
@@ -40,7 +41,7 @@ class TestBug77:
     System.err.flush()
 
     // Replay the game move by move, testing the strategy at each step
-    var game = Game.start(7).get
+    var game = Game.start(7).success.value
     val strategy = SetStrategy(7, Array("prioritiseCapture", "minimizeOpponentLiberties", "closestToStarPoints"))
 
     for (moveOrPass, index) <- saveGame.game.moves.zipWithIndex do
@@ -71,22 +72,22 @@ class TestBug77:
                 Assertions.assertTrue(result.nonEmpty || possibleMoves.isEmpty,
                   s"Strategy should return moves or have no moves at move $index")
 
-          game = game.makeMove(move).get
+          game = game.makeMove(move).success.value
         case pass: Pass =>
-          game = game.makeMove(pass).get
+          game = game.makeMove(pass).success.value
 
   @Test def testMinLibertiesWithEmptyAreas(): Unit =
     // Create a simple test case: Black has one stone in corner (1,1,1) which has only 3 neighbors
     // White surrounds it completely, capturing it
     // This triggers the bug: when evaluating moves, minLiberties is called on a game where one color has no areas
 
-    val game = Game.start(3).get
-      .makeMove(Move(1, 1, 1, Black)).get  // Black at corner (has 3 neighbors: 2,1,1 and 1,2,1 and 1,1,2)
-      .makeMove(Move(2, 1, 1, White)).get  // White blocks one liberty
-      .makeMove(Move(2, 2, 2, Black)).get  // Black plays elsewhere
-      .makeMove(Move(1, 2, 1, White)).get  // White blocks second liberty
-      .makeMove(Pass(Black)).get
-      .makeMove(Move(1, 1, 2, White)).get  // White captures Black's corner stone
+    val game = Game.start(3).success.value
+      .makeMove(Move(1, 1, 1, Black)).success.value  // Black at corner (has 3 neighbors: 2,1,1 and 1,2,1 and 1,1,2)
+      .makeMove(Move(2, 1, 1, White)).success.value  // White blocks one liberty
+      .makeMove(Move(2, 2, 2, Black)).success.value  // Black plays elsewhere
+      .makeMove(Move(1, 2, 1, White)).success.value  // White blocks second liberty
+      .makeMove(Pass(Black)).success.value
+      .makeMove(Move(1, 1, 2, White)).success.value  // White captures Black's corner stone
       // Now Black's corner stone is captured. Black still has a stone at (2,2,2)
 
     // The key test: when it's Black's turn and the strategy evaluates possible moves,
@@ -96,7 +97,7 @@ class TestBug77:
     Assertions.assertTrue(possibleMoves.nonEmpty, "Should have possible moves for Black")
 
     // This should not crash with "empty.minBy" after the fix
-    val result = strategy.narrowDown(possibleMoves, game).get
+    val result = strategy.narrowDown(possibleMoves, game).success.value
 
     // After the fix, it should return valid moves
     Assertions.assertTrue(result.nonEmpty, "Strategy should return at least one move")

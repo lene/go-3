@@ -1,15 +1,16 @@
 package go3d
 
 import org.junit.jupiter.api.{Assertions, Test}
+import org.scalatest.TryValues.*
 
 class TestGoban:
 
   @Test def testGameCtorBasic(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     Assertions.assertEquals(TestSize, goban.size)
 
   @Test def testMemoryAllocation(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     Assertions.assertEquals(TestSize+2, goban.stones.length)
     Assertions.assertEquals(TestSize+2, goban.stones(0).length)
     Assertions.assertEquals(TestSize+2, goban.stones(TestSize+1).length)
@@ -17,7 +18,7 @@ class TestGoban:
     Assertions.assertEquals(TestSize+2, goban.stones(TestSize+1)(TestSize+1).length)
 
   @Test def testSentinels(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     Assertions.assertEquals(Sentinel, goban.stones(0)(0)(0))
     Assertions.assertEquals(Sentinel, goban.stones(TestSize+1)(TestSize+1)(TestSize+1))
     for x <- 1 to TestSize do
@@ -29,20 +30,22 @@ class TestGoban:
         for z <- 1 to TestSize do Assertions.assertEquals(Empty, goban.stones(x)(y)(z))
 
   @Test def testBoardSizeTooSmall(): Unit =
-    Assertions.assertInstanceOf(classOf[BadBoardSize], Goban.start(1).failed.get)
+    Assertions.assertInstanceOf(classOf[BadBoardSize], Goban.start(1).failure.exception)
 
   @Test def testBoardSizeTooBig(): Unit =
-    Assertions.assertInstanceOf(classOf[BadBoardSize], Goban.start(MaxBoardSize+2).failed.get)
+    Assertions.assertInstanceOf(
+      classOf[BadBoardSize], Goban.start(MaxBoardSize+2).failure.exception
+    )
 
   @Test def testBoardSizeEven(): Unit =
-    Assertions.assertInstanceOf(classOf[BadBoardSize], Goban.start(4).failed.get)
+    Assertions.assertInstanceOf(classOf[BadBoardSize], Goban.start(4).failure.exception)
 
   @Test def testEmptyBoardAt(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     for p <- empty.allPositions do Assertions.assertEquals(Empty, empty.at(p))
 
   @Test def testAtWithIntsOnBorder(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     for x <- 0 to TestSize+1
       y <- 0 to TestSize+1 by TestSize+1
       z <- 0 to TestSize+1 by TestSize+1
@@ -50,43 +53,45 @@ class TestGoban:
       Assertions.assertEquals(Sentinel, empty.at(x, y, z))
 
   @Test def testSetStoneWithMove(): Unit =
-    val board = Goban.start(TestSize).get.setStone(Move(2, 2, 2, Black))
+    val board = Goban.start(TestSize).success.value.setStone(Move(2, 2, 2, Black))
     Assertions.assertEquals(board.at(Position(2, 2, 2)), Black)
 
   @Test def testSetStoneWithMoveOutsideBoard(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     Assertions.assertThrows(
       classOf[RuntimeException], () => empty.setStone(Move(TestSize+2, TestSize+2, TestSize+2, Black))
     )
 
   @Test def testSetStoneWithInts(): Unit =
-    val board = Goban.start(TestSize).get.setStone(2, 2, 2, Black)
+    val board = Goban.start(TestSize).success.value.setStone(2, 2, 2, Black)
     Assertions.assertEquals(board.at(Position(2, 2, 2)), Black)
 
   @Test def testSetStoneWithIntsOnBorder(): Unit =
-    val empty = Goban.start(TestSize).get.setStone(0, 0, 0, Sentinel)
+    val empty = Goban.start(TestSize).success.value.setStone(0, 0, 0, Sentinel)
     Assertions.assertEquals(empty.at(0, 0, 0), Sentinel)
 
   @Test def testSetStoneWithIntsOutsideBoard(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     Assertions.assertThrows(
       classOf[RuntimeException], () => empty.setStone(TestSize+2, TestSize+2, TestSize+2, Black)
     )
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
-    val board = Goban.start(TestSize).get.setStone(Move(2, 2, 2, Black))
-    Assertions.assertInstanceOf(classOf[PositionOccupied], board.checkValid(Move(2, 2, 2, White)).failed.get)
+    val board = Goban.start(TestSize).success.value.setStone(Move(2, 2, 2, Black))
+    Assertions.assertInstanceOf(
+      classOf[PositionOccupied], board.checkValid(Move(2, 2, 2, White)).failure.exception
+    )
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
-    val empty = Goban.start(TestSize).get
+    val empty = Goban.start(TestSize).success.value
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.checkValid(Move(TestSize+1, 2, 2, White)).failed.get
+      classOf[OutsideBoard], empty.checkValid(Move(TestSize+1, 2, 2, White)).failure.exception
     )
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.checkValid(Move(2, TestSize+1, 2, White)).failed.get
+      classOf[OutsideBoard], empty.checkValid(Move(2, TestSize+1, 2, White)).failure.exception
     )
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.checkValid(Move(2, 2, TestSize+1, White)).failed.get
+      classOf[OutsideBoard], empty.checkValid(Move(2, 2, TestSize+1, White)).failure.exception
     )
 
   @Test def testDeepCopy2D(): Unit =
@@ -102,7 +107,7 @@ class TestGoban:
     Assertions.assertEquals(1, original(0)(0)(0))
 
   @Test def testClone(): Unit =
-    val original = Goban.start(TestSize).get
+    val original = Goban.start(TestSize).success.value
     val cloned = original.clone()
     cloned.setStone(1, 1, 1, Black)
     Assertions.assertEquals(Empty, original.at(1, 1, 1))

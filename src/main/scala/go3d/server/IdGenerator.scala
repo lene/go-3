@@ -1,6 +1,5 @@
 package go3d.server
 
-import go3d.Color
 
 import java.security.SecureRandom
 import scala.annotation.tailrec
@@ -10,7 +9,7 @@ object IdGenerator:
   private val TokenLength = 10
 
   def getId: String = getBase62(IdLength)
-  def generateAuthToken(gameId: String, color: Color): String = getBase62(TokenLength)
+  def generateAuthToken: String = getBase62(TokenLength)
   def isValidId(id: String): Boolean = id.length == IdLength && id.forall(base62.contains)
   def isValidToken(token: String): Boolean =
     token.length == TokenLength && token.forall(base62.contains)

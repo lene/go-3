@@ -8,10 +8,10 @@ import go3d.server.StatusResponse
 import java.io.IOException
 import java.net.ConnectException
 import java.net.UnknownHostException
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 trait ClientTrait:
-  def mainLoop(client: BaseClient): Unit
+  def mainLoop(client: BaseClient): Try[Unit]
   def parseArgs(args: Array[String]): Try[BaseClient]
   def waitUntilReady(client: BaseClient): Try[StatusResponse]
   def init(): Unit
@@ -28,7 +28,7 @@ abstract class Client extends ClientTrait with LazyLogging:
   def main(args: Array[String]): Unit =
     parseArgs(args).flatMap { client =>
       init()
-      Try { mainLoop(client) }
+      mainLoop(client)
     }.recover {
       case e: UnknownHostException => exit(s"unknown host: ${e.getMessage}", 1)
       case e: ConnectException => exit(s"connection problem: ${e.getMessage}", 1)

@@ -12,6 +12,8 @@ import scala.util.{Failure, Random, Success, Try}
 
 import go3d._
 import go3d.server.http4s.GoHttpService
+import org.scalatest.TryValues.*
+import org.scalatest.OptionValues.*
 
 val TestPort = 64555
 
@@ -227,7 +229,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(Black)
     val pos = statusResponse.moves.last
-    val setResponse = gameData.set(Move(pos, Black))
+    gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(Black)
     Assertions.assertFalse(statusResponseAgain.ready)
 
@@ -235,7 +237,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(Black)
     val pos = statusResponse.moves.last
-    val setResponse = gameData.set(Move(pos, Black))
+    gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(Black)
     Assertions.assertTrue(statusResponseAgain.moves.isEmpty)
 
@@ -243,7 +245,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(Black)
     val pos = statusResponse.moves.last
-    val setResponse = gameData.set(Move(pos, Black))
+    gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(White)
     Assertions.assertTrue(statusResponseAgain.ready)
 
@@ -251,7 +253,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(Black)
     val pos = statusResponse.moves.last
-    val setResponse = gameData.set(Move(pos, Black))
+    gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(White)
     Assertions.assertEquals(Black, statusResponseAgain.game.at(pos))
 
@@ -259,7 +261,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status(Black)
     val pos = statusResponse.moves.last
-    val setResponse = gameData.set(Move(pos, Black))
+    gameData.set(Move(pos, Black))
     val statusResponseAgain = gameData.status(White)
     Assertions.assertTrue(statusResponseAgain.moves.nonEmpty)
 
@@ -267,7 +269,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     val statusResponse = gameData.status()
     Assertions.assertFalse(statusResponse.ready)
-    val setResponse = gameData.set(Black, 1, 1, 1)
+    gameData.set(Black, 1, 1, 1)
     val statusResponseAgain = gameData.status()
     Assertions.assertFalse(statusResponseAgain.ready)
     Assertions.assertEquals(0, statusResponseAgain.moves.length)
@@ -281,7 +283,7 @@ class TestServer:
 
   @Test def testPassTwiceReturnsGameOver(): Unit =
     val gameData = setUpGame(TestSize)
-    val pass1Response = gameData.pass(Black)
+    gameData.pass(Black)
     val pass2Response = gameData.pass(White)
     Assertions.assertTrue(pass2Response.game.isOver)
 
@@ -329,7 +331,7 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     gameData.playRandomGame(false)
     val savedGame = Games.readGame(IOForTests.open(gameData.id + ".json"))
-    Assertions.assertEquals(Games(gameData.id), savedGame.get.game)
+    Assertions.assertEquals(Games(gameData.id), savedGame.success.value.game)
 
   @Test def testTooLongURLSetsStatus400WhenCreatingGame(): Unit =
     assertFailsWithStatus(s"http://localhost:$TestPort/new/123", 400)
@@ -374,7 +376,7 @@ class TestServer:
     assertFailsWithStatus(s"http://localhost:$TestPort/status/${gameData.id}/X", 404)
 
   @Test def testNonexistentGameSetsStatus404WhenRegisteringPlayer(): Unit =
-    val newGameResponse = GameData.create(TestSize)
+    GameData.create(TestSize)
     assertFailsWithStatus(s"http://localhost:$TestPort/register/NOPE!!/@", 404)
 
   @Test def testNonexistentGameSetsStatus404WhenSetting(): Unit =
@@ -485,7 +487,7 @@ class TestServer:
 
   @Test def testGetOpenGamesReturnsOneRegisteredGame(): Unit =
     val newGameResponse = GameData.create(3)
-    val blackRegistered = GameData.register(newGameResponse.id, Black)
+    GameData.register(newGameResponse.id, Black)
     val response = getOGR(s"${GameData.ServerURL}/openGames")
     Assertions.assertFalse(response.ids.isEmpty)
     Assertions.assertTrue(response.ids.contains(newGameResponse.id))
@@ -685,10 +687,11 @@ class TestServer:
   @Test def testReplayEndpointReturnsMidGameState(): Unit =
     val gameSize = 5
     val newJson  = Source.fromURL(s"http://localhost:$TestPort/new/$gameSize").mkString
-    val gameId   = decode[go3d.server.GameCreatedResponse](newJson).toOption.get.id
+    val gameId   = decode[go3d.server.GameCreatedResponse](newJson).toOption.value.id
 
     val blackJson = Source.fromURL(s"http://localhost:$TestPort/register/$gameId/@").mkString
-    val blackToken = decode[go3d.server.PlayerRegisteredResponse](blackJson).toOption.get.authToken
+    val blackToken =
+      decode[go3d.server.PlayerRegisteredResponse](blackJson).toOption.value.authToken
     val whiteJson = Source.fromURL(s"http://localhost:$TestPort/register/$gameId/O").mkString
 
     requests.get(
@@ -696,7 +699,8 @@ class TestServer:
       headers = Map("Authentication" -> s"Bearer $blackToken")
     )
 
-    val move2Token = decode[go3d.server.PlayerRegisteredResponse](whiteJson).toOption.get.authToken
+    val move2Token =
+      decode[go3d.server.PlayerRegisteredResponse](whiteJson).toOption.value.authToken
     requests.get(
       s"http://localhost:$TestPort/set/$gameId/2/2/2",
       headers = Map("Authentication" -> s"Bearer $move2Token")
@@ -704,18 +708,18 @@ class TestServer:
 
     val at0 = decode[go3d.server.StatusResponse](
       Source.fromURL(s"http://localhost:$TestPort/status/$gameId/0").mkString
-    ).toOption.get
+    ).toOption.value
     Assertions.assertEquals(0, at0.game.moves.length)
 
     val at1 = decode[go3d.server.StatusResponse](
       Source.fromURL(s"http://localhost:$TestPort/status/$gameId/1").mkString
-    ).toOption.get
+    ).toOption.value
     Assertions.assertEquals(1, at1.game.moves.length)
     Assertions.assertEquals(go3d.Black, at1.game.at(go3d.Position(1, 1, 1)))
 
     val at2 = decode[go3d.server.StatusResponse](
       Source.fromURL(s"http://localhost:$TestPort/status/$gameId/2").mkString
-    ).toOption.get
+    ).toOption.value
     Assertions.assertEquals(2, at2.game.moves.length)
 
 def playListOfMoves(gameData: GameData, moves: Iterable[Move | Pass]): StatusResponse =

@@ -7,11 +7,12 @@ import go3d.server.{NullRequestInfo, StatusResponse}
 import org.junit.jupiter.api.{Assertions, Test}
 
 import scala.util.{Failure, Success, Try}
+import org.scalatest.TryValues.*
 
 class TestReplayState:
 
   private def makeStatusResponse(moveCount: Int): StatusResponse =
-    var game = go3d.Game.start(3).get
+    var game = go3d.Game.start(3).success.value
     for i <- 1 to moveCount do
       val pos = go3d.Position(((i-1) % 3) + 1, ((i-1) / 3 % 3) + 1, ((i-1) / 9) + 1)
       game = game.makeMove(go3d.Move(pos, if i % 2 == 1 then Black else White)).getOrElse(game)
@@ -116,9 +117,9 @@ class TestReplayState:
     )
 
   @Test def testHudLinesAtGameOver(): Unit =
-    val over = go3d.Game.start(3).get
-      .makeMove(go3d.Pass(Black)).get
-      .makeMove(go3d.Pass(White)).get
+    val over = go3d.Game.start(3).success.value
+      .makeMove(go3d.Pass(Black)).success.value
+      .makeMove(go3d.Pass(White)).success.value
     val state = new ReplayState(stubClient(Map()), from = 0, to = 2, autoPlayDelay = 1.0f)
     state.currentIndex = 2
     state.currentStatus = Some(StatusResponse(
@@ -140,7 +141,7 @@ class TestReplayState:
     Assertions.assertEquals("[0/3]", state.progressLine)
 
   @Test def testProgressLineShowsPass(): Unit =
-    val passed = go3d.Game.start(3).get.makeMove(go3d.Pass(Black)).get
+    val passed = go3d.Game.start(3).success.value.makeMove(go3d.Pass(Black)).success.value
     val state = new ReplayState(stubClient(Map()), from = 0, to = 1, autoPlayDelay = 1.0f)
     state.currentIndex = 1
     state.currentStatus = Some(StatusResponse(

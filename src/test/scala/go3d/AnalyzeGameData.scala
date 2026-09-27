@@ -1,8 +1,9 @@
 package go3d
 
-import go3d.server.{*, given}
+import go3d.server.*
 import io.circe.parser.decode
 import scala.io.Source
+import org.scalatest.TryValues.*
 
 /**
  * Utility to replay saved game data and analyze specific moves.
@@ -44,7 +45,7 @@ object AnalyzeGameData:
     println(s"Detailed analysis: moves $startMove to $endMove")
     println("=" * 80)
 
-    var game = Game.start(saveGame.game.size).get
+    var game = Game.start(saveGame.game.size).success.value
 
     for (moveOrPass, index) <- saveGame.game.moves.zipWithIndex do
       val detailed = index >= startMove && index <= endMove
@@ -71,7 +72,7 @@ object AnalyzeGameData:
       try
         moveOrPass match
           case move: Move =>
-            game = game.makeMove(move).get
+            game = game.makeMove(move).success.value
             if detailed then
               println(s"\n=== After Move $index ===")
               println(s"Captures this move: ${game.lastCapture.mkString(", ")}")
@@ -79,7 +80,7 @@ object AnalyzeGameData:
               println(s"Total White captures: ${game.captures(White)}")
 
           case pass: Pass =>
-            game = game.makeMove(pass).get
+            game = game.makeMove(pass).success.value
             if detailed then
               println(s"\n=== After Move $index ===")
               println(s"Pass by ${pass.color}")

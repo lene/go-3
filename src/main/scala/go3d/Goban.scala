@@ -44,7 +44,7 @@ class Goban private[go3d](val size: Int, val stones: Array[Array[Array[Color]]])
     for y <- 0 to size + 1 do
       for z <- 1 to size do
         for x <- 0 to size + 1 do
-          out += at(x, y, z)
+          out += at(x, y, z).toString
         if z < size then out += "|"
       out += "\n"
     out

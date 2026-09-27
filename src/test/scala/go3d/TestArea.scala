@@ -1,6 +1,7 @@
 package go3d
 
 import org.junit.jupiter.api.{Assertions, Test, Disabled}
+import org.scalatest.TryValues.*
 
 class TestArea:
   private val stoneInCenter: Goban = gobanWithAreasFromStrings(Map(
@@ -659,4 +660,4 @@ def gobanWithAreasFromStrings(levels: Map[Int, String]): Goban =
   val from = fromStrings(levels)
   new Goban(from.size, from.stones)
 
-def defaultGoban: Goban = Goban.start(3).get
+def defaultGoban: Goban = Goban.start(3).success.value

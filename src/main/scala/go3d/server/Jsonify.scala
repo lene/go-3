@@ -97,7 +97,7 @@ def gobanToStrings(goban: Goban): Array[String] =
   for z <- 1 to goban.size do
     for y <- 1 to goban.size do
       for x <- 1 to goban.size do
-        strings(z-1) += goban.at(x, y, z)
+        strings(z-1) += goban.at(x, y, z).toString
       if y < goban.size then strings(z-1) += "\n"
   strings
 

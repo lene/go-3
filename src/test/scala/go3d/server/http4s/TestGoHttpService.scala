@@ -1,6 +1,10 @@
 package go3d.server.http4s
 
-import go3d.server.{GameCreatedResponse, OpenGamesResponse, RateLimiter, decodeOpenGamesResponse, GoResponse, IdGenerator, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse, decodePlayerRegisteredResponse, decodeStatusResponse}
+import go3d.server.{
+  GameCreatedResponse, OpenGamesResponse, RateLimiter, decodeOpenGamesResponse, IdGenerator,
+  PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
+  decodePlayerRegisteredResponse, decodeStatusResponse
+}
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging

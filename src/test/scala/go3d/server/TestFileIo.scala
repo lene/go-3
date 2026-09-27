@@ -6,8 +6,11 @@ import org.junit.jupiter.api.{Assertions, Test, BeforeAll}
 import scala.io.Source
 
 import go3d._
+import org.scalatest.TryValues.*
 
 object TestFileIo:
+  // assigned in @BeforeAll, which JUnit runs before any test reads it
+  @SuppressWarnings(Array("org.wartremover.warts.Null"))
   var fileIO: FileIO = scala.compiletime.uninitialized
   @BeforeAll def initIo(): Unit =
     Games.init(Files.createTempDirectory("go3d").toString)
@@ -22,7 +25,8 @@ class TestFileIo:
 
   @Test def testFileIOFailsOnNonexistingBaseFolder(): Unit =
     Assertions.assertInstanceOf(
-      classOf[IllegalArgumentException], FileIO("/tmp/this-folder-should-not-exist").failed.get
+      classOf[IllegalArgumentException],
+      FileIO("/tmp/this-folder-should-not-exist").failure.exception
     )
 
   @Test def testSaveGameFailsNonexistentGame(): Unit =
@@ -32,14 +36,14 @@ class TestFileIo:
     )
 
   @Test def testSaveGameFailsNonexistentPlayers(): Unit =
-    val gameId = Games.register(TestSize).get
+    val gameId = Games.register(TestSize).success.value
     Assertions.assertThrows(
       classOf[RuntimeException], () => TestFileIo.fileIO.saveGame(gameId)
     )
 
   @Test def testSaveGameWritesFile(): Unit =
-    val gameId = Games.register(TestSize).get
-    Games.registerPlayer(gameId, Black).get
+    val gameId = Games.register(TestSize).success.value
+    Games.registerPlayer(gameId, Black).success.value
     TestFileIo.fileIO.saveGame(gameId)
     Assertions.assertTrue(
       Files.exists(Paths.get(TestFileIo.fileIO.baseFolder, s"$gameId.json")),
@@ -47,8 +51,8 @@ class TestFileIo:
     )
 
   @Test def testSaveGameContents(): Unit =
-    val gameId = Games.register(TestSize).get
-    Games.registerPlayer(gameId, Black).get
+    val gameId = Games.register(TestSize).success.value
+    Games.registerPlayer(gameId, Black).success.value
     val path = TestFileIo.fileIO.saveGame(gameId)
 
     val source = Source.fromFile(path.toFile)
@@ -132,8 +136,8 @@ class TestFileIo:
     )
 
   @Test def testDeleteGameRemovesFile(): Unit =
-    val gameId = Games.register(TestSize).get
-    Games.registerPlayer(gameId, Black).get
+    val gameId = Games.register(TestSize).success.value
+    Games.registerPlayer(gameId, Black).success.value
     TestFileIo.fileIO.saveGame(gameId)
     Assertions.assertTrue(TestFileIo.exists(s"$gameId.json"))
     TestFileIo.fileIO.deleteGame(gameId)
@@ -147,8 +151,8 @@ class TestFileIo:
     Assertions.assertFalse(TestFileIo.fileIO.archivedExists(IdGenerator.getId))
 
   @Test def testArchivedExistsReturnsTrueAfterArchive(): Unit =
-    val gameId = Games.register(TestSize).get
-    Games.registerPlayer(gameId, Black).get
+    val gameId = Games.register(TestSize).success.value
+    Games.registerPlayer(gameId, Black).success.value
     TestFileIo.fileIO.saveGame(gameId)
     TestFileIo.fileIO.archiveGame(gameId)
     Assertions.assertTrue(TestFileIo.fileIO.archivedExists(gameId))
@@ -157,10 +161,10 @@ class TestFileIo:
     Assertions.assertTrue(TestFileIo.fileIO.loadArchivedGame(IdGenerator.getId).isFailure)
 
   @Test def testLoadArchivedGameSucceeds(): Unit =
-    val gameId = Games.register(TestSize).get
-    Games.registerPlayer(gameId, Black).get
+    val gameId = Games.register(TestSize).success.value
+    Games.registerPlayer(gameId, Black).success.value
     TestFileIo.fileIO.saveGame(gameId)
     TestFileIo.fileIO.archiveGame(gameId)
     val result = TestFileIo.fileIO.loadArchivedGame(gameId)
     Assertions.assertTrue(result.isSuccess)
-    Assertions.assertEquals(TestSize, result.get.game.size)
+    Assertions.assertEquals(TestSize, result.success.value.game.size)

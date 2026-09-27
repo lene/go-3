@@ -1,26 +1,27 @@
 package go3d
 
 import org.junit.jupiter.api.{Assertions, Test}
+import org.scalatest.TryValues.*
 
 class TestLiberties:
 
   @Test def testLibertiesFailIfWrongColor(): Unit =
-    var goban = Goban.start(TestSize).get
+    var goban = Goban.start(TestSize).success.value
     goban = goban.setStone(Move(2, 2, 2, Black))
     Assertions.assertThrows(classOf[RuntimeException], () => goban.hasLiberties(Move(2, 2, 2, Empty)))
     Assertions.assertThrows(classOf[RuntimeException], () => goban.hasLiberties(Move(2, 2, 2, Sentinel)))
 
   @Test def testLibertiesOneStone(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
 
   @Test def testLibertiesTwoDifferentStones(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
     directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 1)), White, Move(2, 2, 2, Black))
 
   @Test def testLibertiesInCenter(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
     directlySetListOfStonesAndCheckLiberties(
       goban, List((2, 2, 1), (2, 2, 3), (2, 1, 2), (2, 3, 2), (1, 2, 2)), White,
@@ -30,7 +31,7 @@ class TestLiberties:
     Assertions.assertFalse(goban.hasLiberties(Move(2, 2, 2, Black)), "\n"+goban.toString)
 
   @Test def testLibertiesOnFace(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 1)), Black, Move(2, 2, 1, Black))
     directlySetListOfStonesAndCheckLiberties(
       goban, List((2, 2, 2), (2, 1, 1), (2, 3, 1), (1, 2, 1)), White,
@@ -40,7 +41,7 @@ class TestLiberties:
     Assertions.assertFalse(goban.hasLiberties(Move(2, 2, 1, Black)), "\n"+goban.toString)
 
   @Test def testLibertiesOnEdge(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStonesAndCheckLiberties(goban, List((2, 1, 1)), Black, Move(2, 1, 1, Black))
     directlySetListOfStonesAndCheckLiberties(
       goban, List((1, 1, 1), (3, 1, 1), (2, 2, 1)), White,
@@ -50,7 +51,7 @@ class TestLiberties:
     Assertions.assertFalse(goban.hasLiberties(Move(2, 1, 1, Black)), "\n"+goban.toString)
 
   @Test def testLibertiesInCorner(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStonesAndCheckLiberties(goban, List((1, 1, 1)), Black, Move(1, 1, 1, Black))
     directlySetListOfStonesAndCheckLiberties(
       goban, List((2, 1, 1), (1, 2, 1)), White,
@@ -60,13 +61,13 @@ class TestLiberties:
     Assertions.assertFalse(goban.hasLiberties(Move(1, 1, 1, Black)), "\n"+goban.toString)
 
   @Test def testLibertiesWithNeighbor(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStones(goban, (2, 1, 1) :: (2, 1, 2) :: Nil, Black)
     directlySetListOfStones(goban, (1, 1, 1) :: (3, 1, 1) :: (2, 2, 1) :: Nil, White)
     checkHasLiberties(goban, Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Nil)
 
   @Test def testLibertiesWithNeighborCaptured(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStones(goban, (2, 1, 1) :: (2, 1, 2) :: Nil, Black)
     directlySetListOfStones(
       goban, (1, 1, 1) :: (3, 1, 1) :: (2, 2, 1) :: (1, 1, 2) :: (3, 1, 2) :: (2, 2, 2) :: Nil,
@@ -77,7 +78,7 @@ class TestLiberties:
     checkNoLiberties(goban, Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Nil)
 
   @Test def testLargerAreaCaptured(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     directlySetListOfStones(goban, (2, 1, 1) :: (2, 1, 2) :: (2, 1, 3) :: Nil, Black)
     directlySetListOfStones(goban,
       (1, 1, 1) :: (3, 1, 1) :: (2, 2, 1) :: (1, 1, 2) :: (3, 1, 2) :: (2, 2, 2) :: (1, 1, 3) ::
@@ -93,7 +94,7 @@ class TestLiberties:
     )
 
   @Test def testOneEye(): Unit =
-    val goban = Goban.start(TestSize).get
+    val goban = Goban.start(TestSize).success.value
     // eye in the (1, 1, 1) corner
     directlySetListOfStones(
       goban, (2, 1, 1) :: (1, 2, 1) :: (1, 1, 2) :: (2, 1, 2) :: (1, 2, 2) :: Nil, Black

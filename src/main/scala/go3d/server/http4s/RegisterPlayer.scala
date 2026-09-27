@@ -21,7 +21,7 @@ import scala.util.Try
 case class RegisterPlayer(gameId: String, color: Color, request: Request[IO])
   extends BaseHandler with LazyLogging:
   def handle: Try[GoResponse] =
-    val token = IdGenerator.generateAuthToken(gameId, color)
+    val token = IdGenerator.generateAuthToken
     for
       _ <- RateLimiter.check(clientIp(request))
       _ <- Games.registerPlayer(gameId, color)
