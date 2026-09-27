@@ -1,4 +1,5 @@
 GITLAB_ACCESS_TOKEN*
+migration-map.json
 
 *.class
 *.log
