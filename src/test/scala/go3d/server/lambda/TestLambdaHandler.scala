@@ -18,7 +18,15 @@ import org.scalatest.TryValues.*
 import scala.jdk.CollectionConverters._
 
 private val GameId = "ABCDEF"
-private val StatusPath = "/status/" + GameId
+private val NewGamePath = "/new/3"
+
+private def statusPath(gameId: String): String = "/status/" + gameId
+private def registerPath(gameId: String, color: String): String =
+  "/register/" + gameId + "/" + color
+private def setCenterPath(gameId: String): String = "/set/" + gameId + "/2/2/2"
+private def passPath(gameId: String): String = "/pass/" + gameId
+
+private val StatusPath = statusPath(GameId)
 private val OpenGamesPath = "/openGames"
 
 // The AWS Lambda API allows a null Context and LambdaHandler does not use it;
@@ -47,10 +55,10 @@ class TestLambdaHandler:
 
   /** A new game on the in-memory store with both players: (game id, black token, white token). */
   private def startedGame(): (String, String, String) =
-    val gameId = decode[GameCreatedResponse](call("/new/3").getBody).toTry.success.value.id
-    val black = decode[PlayerRegisteredResponse](call("/register/" + gameId + "/@").getBody)
+    val gameId = decode[GameCreatedResponse](call(NewGamePath).getBody).toTry.success.value.id
+    val black = decode[PlayerRegisteredResponse](call(registerPath(gameId, "@")).getBody)
       .toTry.success.value.authToken
-    val white = decode[PlayerRegisteredResponse](call("/register/" + gameId + "/O").getBody)
+    val white = decode[PlayerRegisteredResponse](call(registerPath(gameId, "O")).getBody)
       .toTry.success.value.authToken
     (gameId, black, white)
 
@@ -73,9 +81,9 @@ class TestLambdaHandler:
     Assertions.assertTrue(resp.getBody.contains("ids"))
 
   @Test def testWritesWithoutDynamoDBReturn503(): Unit =
-    Assertions.assertEquals(503, handler.handleRequest(request("/new/3"), null).getStatusCode)
+    Assertions.assertEquals(503, handler.handleRequest(request(NewGamePath), null).getStatusCode)
     Assertions.assertEquals(
-      503, handler.handleRequest(withAuth("/pass/" + GameId, "Bearer T"), null).getStatusCode
+      503, handler.handleRequest(withAuth(passPath(GameId), "Bearer T"), null).getStatusCode
     )
 
   @Test def testUnknownPathReturns404(): Unit =
@@ -134,47 +142,47 @@ class TestLambdaHandler:
 
   @Test def testRegisterDuplicateColorReturns400(): Unit =
     val (gameId, _, _) = startedGame()
-    Assertions.assertEquals(400, call("/register/" + gameId + "/@").getStatusCode)
+    Assertions.assertEquals(400, call(registerPath(gameId, "@")).getStatusCode)
 
   @Test def testRegisterWithEncodedColor(): Unit =
-    val gameId = decode[GameCreatedResponse](call("/new/3").getBody).toTry.success.value.id
-    val resp = call("/register/" + gameId + "/%40")
+    val gameId = decode[GameCreatedResponse](call(NewGamePath).getBody).toTry.success.value.id
+    val resp = call(registerPath(gameId, "%40"))
     Assertions.assertEquals(200, resp.getStatusCode)
     val registered = decode[PlayerRegisteredResponse](resp.getBody).toTry.success.value
     Assertions.assertEquals(Black, registered.color)
 
   @Test def testStatusWithTokenShowsReadyPlayer(): Unit =
     val (gameId, black, _) = startedGame()
-    val resp = callWithToken("/status/" + gameId, black)
+    val resp = callWithToken(statusPath(gameId), black)
     val status = decode[StatusResponse](resp.getBody).toTry.success.value
     Assertions.assertTrue(status.ready)
     Assertions.assertEquals(Some(Black), status.playerColor)
 
   @Test def testStatusWithInvalidTokenReturns401(): Unit =
     val (gameId, _, _) = startedGame()
-    val resp = callWithToken("/status/" + gameId, "WRONG")
+    val resp = callWithToken(statusPath(gameId), "WRONG")
     Assertions.assertEquals(401, resp.getStatusCode)
     Assertions.assertTrue(resp.getBody.contains("unauthorized"))
 
   @Test def testSetStoresMove(): Unit =
     val (gameId, black, _) = startedGame()
-    Assertions.assertEquals(200, callWithToken("/set/" + gameId + "/2/2/2", black).getStatusCode)
-    val status = decode[StatusResponse](call("/status/" + gameId).getBody).toTry.success.value
+    Assertions.assertEquals(200, callWithToken(setCenterPath(gameId), black).getStatusCode)
+    val status = decode[StatusResponse](call(statusPath(gameId)).getBody).toTry.success.value
     Assertions.assertEquals(Black, status.game.at(2, 2, 2))
 
   @Test def testSetWithoutTokenReturns401(): Unit =
     val (gameId, _, _) = startedGame()
-    Assertions.assertEquals(401, call("/set/" + gameId + "/2/2/2").getStatusCode)
+    Assertions.assertEquals(401, call(setCenterPath(gameId)).getStatusCode)
 
   @Test def testSetWithWrongAuthMethodReturns401(): Unit =
     val (gameId, black, _) = startedGame()
     val resp =
-      storeHandler.handleRequest(withAuth("/set/" + gameId + "/2/2/2", "Basic " + black), null)
+      storeHandler.handleRequest(withAuth(setCenterPath(gameId), "Basic " + black), null)
     Assertions.assertEquals(401, resp.getStatusCode)
 
   @Test def testSetOnWrongTurnReturns400(): Unit =
     val (gameId, _, white) = startedGame()
-    Assertions.assertEquals(400, callWithToken("/set/" + gameId + "/2/2/2", white).getStatusCode)
+    Assertions.assertEquals(400, callWithToken(setCenterPath(gameId), white).getStatusCode)
 
   @Test def testSetOutsideBoardReturns400(): Unit =
     val (gameId, black, _) = startedGame()
@@ -182,10 +190,10 @@ class TestLambdaHandler:
 
   @Test def testTwoPassesEndGameAndLaterMovesReturn410(): Unit =
     val (gameId, black, white) = startedGame()
-    Assertions.assertEquals(200, callWithToken("/pass/" + gameId, black).getStatusCode)
-    val resp = callWithToken("/pass/" + gameId, white)
+    Assertions.assertEquals(200, callWithToken(passPath(gameId), black).getStatusCode)
+    val resp = callWithToken(passPath(gameId), white)
     Assertions.assertTrue(decode[StatusResponse](resp.getBody).toTry.success.value.over)
-    Assertions.assertEquals(410, callWithToken("/pass/" + gameId, black).getStatusCode)
+    Assertions.assertEquals(410, callWithToken(passPath(gameId), black).getStatusCode)
 
   @Test def testConcurrentMoveReturns409(): Unit =
     val (gameId, black, _) = startedGame()
@@ -195,7 +203,7 @@ class TestLambdaHandler:
     )
     val racingHandler = new LambdaHandler(Some(GameService(racing, InMemoryGameArchive(false))))
     val resp = racingHandler.handleRequest(
-      withAuth("/set/" + gameId + "/2/2/2", "Bearer " + black), null
+      withAuth(setCenterPath(gameId), "Bearer " + black), null
     )
     Assertions.assertEquals(409, resp.getStatusCode)
 
