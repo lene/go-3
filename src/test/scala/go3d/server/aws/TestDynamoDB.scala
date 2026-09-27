@@ -58,39 +58,6 @@ class TestDynamoDB extends AnyFunSuite with BeforeAndAfterEach:
     DynamoDBClient.close()  // should not throw
   }
 
-  // --- DynamoDBGamesRepository ---
-
-  test("DynamoDBGamesRepository.put is no-op when DynamoDB not configured") {
-    if sys.env.contains("AWS_REGION") || sys.env.contains("AWS_DEFAULT_REGION") then
-      cancel("AWS_REGION is set in this environment")
-    val game = go3d.Game.start(3).getOrElse(fail("could not start game"))
-    // Should not throw
-    DynamoDBGamesRepository.put("testGameId", game)
-  }
-
-  test("DynamoDBGamesRepository.delete is no-op when DynamoDB not configured") {
-    if sys.env.contains("AWS_REGION") || sys.env.contains("AWS_DEFAULT_REGION") then
-      cancel("AWS_REGION is set in this environment")
-    // Should not throw
-    DynamoDBGamesRepository.delete("testGameId")
-  }
-
-  // --- DynamoDBPlayersRepository ---
-
-  test("DynamoDBPlayersRepository.put is no-op when DynamoDB not configured") {
-    if sys.env.contains("AWS_REGION") || sys.env.contains("AWS_DEFAULT_REGION") then
-      cancel("AWS_REGION is set in this environment")
-    // Should not throw
-    DynamoDBPlayersRepository.put("testGameId", Black, "testToken")
-  }
-
-  test("DynamoDBPlayersRepository.deleteGame is no-op when DynamoDB not configured") {
-    if sys.env.contains("AWS_REGION") || sys.env.contains("AWS_DEFAULT_REGION") then
-      cancel("AWS_REGION is set in this environment")
-    // Should not throw
-    DynamoDBPlayersRepository.deleteGame("testGameId")
-  }
-
   // --- Token hashing ---
 
   test("token is hashed with SHA-256 before DynamoDB storage") {

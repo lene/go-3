@@ -477,6 +477,10 @@ aws s3api put-bucket-lifecycle-configuration \
 - `src/main/scala/go3d/server/aws/DynamoDBPlayersRepository.scala`
 - `src/test/scala/go3d/server/aws/TestDynamoDB.scala`
 
+> Update (0.7.34): the best-effort, dual-write repositories were removed. The authoritative
+> store for the Lambda write path is `src/main/scala/go3d/server/service/DynamoDBGameStore.scala`
+> behind the `GameStore` trait (#124); the file-backed server no longer writes to DynamoDB.
+
 **Files Modified**:
 - `build.sbt` (add AWS SDK dependencies)
 - `src/main/scala/go3d/server/Games.scala` (dual-write on add/update)
