@@ -5,7 +5,6 @@ import com.badlogic.gdx.Gdx
 import com.badlogic.gdx.graphics.g2d.BitmapFont
 import com.badlogic.gdx.graphics.g2d.SpriteBatch
 import com.badlogic.gdx.graphics.g3d.RenderableProvider
-import scala.compiletime.uninitialized
 import com.badlogic.gdx.utils.Timer
 import com.typesafe.scalalogging.LazyLogging
 import go3d.Black
@@ -34,8 +33,8 @@ class GobanDisplay(
   private var opponentMoveTimestamp: Float = 0f
   private var lastOwnMove: Option[Position] = None
   private var lastOpponentMove: Option[Position] = None
-  private var hudBatch: SpriteBatch = uninitialized
-  private var hudFont: BitmapFont = uninitialized
+  private var hudBatch: Option[SpriteBatch] = None
+  private var hudFont: Option[BitmapFont] = None
 
   @Override def create(): Unit =
     logger.info(s"GobanDisplay.create() - client.playerColor = ${client.playerColor}")
@@ -45,8 +44,8 @@ class GobanDisplay(
         @Override def run(): Unit = client.status.foreach(updateGame)
       }, UPDATE_DELAY_SECONDS, UPDATE_INTERVAL_SECONDS)
     if replayState.isDefined then
-      hudBatch = new SpriteBatch()
-      hudFont  = new BitmapFont()
+      hudBatch = Some(new SpriteBatch())
+      hudFont  = Some(new BitmapFont())
       Gdx.input.setInputProcessor(new com.badlogic.gdx.InputAdapter {
         override def keyDown(keycode: Int): Boolean =
           keycode match
@@ -114,25 +113,14 @@ class GobanDisplay(
     if replayState.isDefined then drawHud()
 
   private def drawHud(): Unit =
-    replayState.foreach { rs =>
-      val moveStr  = s"Move ${rs.currentIndex} / ${rs.totalMoves}"
-      val colorStr = rs.currentStatus.fold("") { sr =>
-        if sr.game.isOver then "Game over"
-        else s"${sr.game.moveColor} to move"
+    for rs <- replayState; batch <- hudBatch; font <- hudFont do
+      val lineHeight = font.getLineHeight
+      val top = Gdx.graphics.getHeight - 10f
+      batch.begin()
+      rs.hudLines.zipWithIndex.foreach { (line, i) =>
+        font.draw(batch, line, 10f, top - i * lineHeight)
       }
-      val capsStr  = rs.currentStatus.fold("") { sr =>
-        val blackCaps = sr.game.captures(go3d.Black)
-        val whiteCaps = sr.game.captures(go3d.White)
-        s"Black captures: $blackCaps  White captures: $whiteCaps"
-      }
-      val lineHeight = hudFont.getLineHeight
-      val y = Gdx.graphics.getHeight - 10f
-      hudBatch.begin()
-      hudFont.draw(hudBatch, moveStr,  10f, y)
-      hudFont.draw(hudBatch, colorStr, 10f, y - lineHeight)
-      hudFont.draw(hudBatch, capsStr,  10f, y - 2 * lineHeight)
-      hudBatch.end()
-    }
+      batch.end()
 
   private def calculateFadeAlpha(elapsedTime: Float): Float =
     if elapsedTime >= cursorFadeSeconds then 1.0f
@@ -141,8 +129,8 @@ class GobanDisplay(
   @Override def dispose(): Unit =
     gdxResources.dispose()
     builder.dispose()
-    if hudBatch != null then hudBatch.dispose()
-    if hudFont  != null then hudFont.dispose()
+    hudBatch.foreach(_.dispose())
+    hudFont.foreach(_.dispose())
 
   @Override def resume(): Unit = logger.debug("resume")
 

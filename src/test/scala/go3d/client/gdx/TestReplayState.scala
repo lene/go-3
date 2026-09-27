@@ -101,3 +101,28 @@ class TestReplayState:
     state.currentStatus = Some(sr1)
     state.fetch()
     Assertions.assertEquals(Some(sr1), state.currentStatus)
+
+  @Test def testHudLinesBeforeFirstFetch(): Unit =
+    val state = new ReplayState(stubClient(Map()), from = 0, to = 3, autoPlayDelay = 1.0f)
+    Assertions.assertEquals(Seq("Move 0 / 3", "", ""), state.hudLines)
+
+  @Test def testHudLinesMidGame(): Unit =
+    val state = new ReplayState(stubClient(Map()), from = 0, to = 3, autoPlayDelay = 1.0f)
+    state.currentIndex = 2
+    state.currentStatus = Some(makeStatusResponse(2))
+    Assertions.assertEquals(
+      Seq("Move 2 / 3", s"$Black to move", "Black captures: 0  White captures: 0"),
+      state.hudLines
+    )
+
+  @Test def testHudLinesAtGameOver(): Unit =
+    val over = go3d.Game.start(3).get
+      .makeMove(go3d.Pass(Black)).get
+      .makeMove(go3d.Pass(White)).get
+    val state = new ReplayState(stubClient(Map()), from = 0, to = 2, autoPlayDelay = 1.0f)
+    state.currentIndex = 2
+    state.currentStatus = Some(StatusResponse(
+      game = over, moves = List(), ready = false, over = true, playerColor = None,
+      debug = NullRequestInfo
+    ))
+    Assertions.assertEquals("Game over", state.hudLines(1))

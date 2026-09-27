@@ -48,6 +48,17 @@ class ReplayState(
       currentIndex -= 1
       fetch()
 
+  /** Text lines of the replay HUD: move counter, side to move and captures. */
+  def hudLines: Seq[String] =
+    val moveLine = s"Move $currentIndex / $totalMoves"
+    currentStatus.fold(Seq(moveLine, "", "")) { sr =>
+      val colorLine = if sr.game.isOver then "Game over" else s"${sr.game.moveColor} to move"
+      val capturesLine =
+        s"Black captures: ${sr.game.captures(go3d.Black)}  " +
+          s"White captures: ${sr.game.captures(go3d.White)}"
+      Seq(moveLine, colorLine, capturesLine)
+    }
+
   def tick(delta: Float): Unit =
     if isPlaying then
       elapsed += delta

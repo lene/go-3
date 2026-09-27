@@ -15,15 +15,15 @@ object GDXClient extends InteractiveClient:
     private final val NUM_ANTIALIAS_SAMPLES = 4
 
     @SuppressWarnings(Array("org.wartremover.warts.Var"))
-    private var replayEnabled: Boolean = false
+    private[client] var replayEnabled: Boolean = false
     @SuppressWarnings(Array("org.wartremover.warts.Var"))
-    private var replayFrom: Int = 0
+    private[client] var replayFrom: Int = 0
     @SuppressWarnings(Array("org.wartremover.warts.Var"))
-    private var replayTo: Int = Int.MaxValue
+    private[client] var replayTo: Int = Int.MaxValue
     @SuppressWarnings(Array("org.wartremover.warts.Var"))
-    private var replaySpeed: Float = 1.0f
+    private[client] var replaySpeed: Float = 1.0f
     @SuppressWarnings(Array("org.wartremover.warts.Var"))
-    private var cursorFade: Float = 10.0f
+    private[client] var cursorFade: Float = 10.0f
 
     override def parseArgs(args: Array[String]): Try[BaseClient] =
         val result = super.parseArgs(args)
