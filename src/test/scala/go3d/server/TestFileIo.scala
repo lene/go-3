@@ -65,9 +65,11 @@ class TestFileIo:
     Assertions.assertFalse(IOForTests.exists("this file should not exist"))
 
   @Test def testGetListOfJsonFiles(): Unit =
+    val fileName = s"${IdGenerator.getId}.json"
+    TestFileIo.fileIO.writeFile(fileName, "{}")
     val matchingFiles = TestFileIo.fileIO.getListOfFiles(".json").map(f => f.getName)
     Assertions.assertTrue(
-      matchingFiles.contains("test.json"),
+      matchingFiles.contains(fileName),
       java.io.File(TestFileIo.fileIO.baseFolder).listFiles.toList.toString
     )
 
