@@ -105,7 +105,8 @@ resource "aws_dynamodb_table" "players" {
   }
 }
 
-resource "aws_s3_bucket" "archive" {
+# No access logging: private bucket of finished games; a log bucket is not worth the cost.
+resource "aws_s3_bucket" "archive" { # NOSONAR
   bucket = local.archive_bucket_name
 
   tags = {

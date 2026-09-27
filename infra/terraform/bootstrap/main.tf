@@ -28,7 +28,8 @@ locals {
 
 # --- Terraform state bucket (S3 native locking, no DynamoDB lock table needed) ---
 
-resource "aws_s3_bucket" "state" {
+# No access logging: private bucket used only by the CI roles; a log bucket is not worth the cost.
+resource "aws_s3_bucket" "state" { # NOSONAR
   bucket = local.state_bucket_name
 
   lifecycle {
