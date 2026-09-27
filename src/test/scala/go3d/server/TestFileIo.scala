@@ -69,9 +69,9 @@ class TestFileIo:
       case Left(e) => Assertions.fail(e.getMessage)
 
   @Test def testExistsToGainTrustInTestsThatUseIt(): Unit =
-    Games.fileIO.foreach(_.writeFile("test.json", "{}"))
-    Assertions.assertTrue(IOForTests.exists("test.json"))
-    Assertions.assertFalse(IOForTests.exists("this file should not exist"))
+    TestFileIo.fileIO.writeFile("test.json", "{}")
+    Assertions.assertTrue(TestFileIo.exists("test.json"))
+    Assertions.assertFalse(TestFileIo.exists("this file should not exist"))
 
   @Test def testGetListOfJsonFiles(): Unit =
     val fileName = s"${IdGenerator.getId}.json"
