@@ -21,6 +21,8 @@ import scala.concurrent.{Await, Future}
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Try}
 
+private val ArchiveKey = "archives/GAME01.json"
+
 /** The behavior every [[GameStore]] must have; each implementation runs it in a subclass. */
 abstract class GameStoreContract:
   protected def store: GameStore
@@ -112,13 +114,13 @@ abstract class GameStoreContract:
   @Test def testMarkCompletedSucceedsForExistingGame(): Unit =
     store.createGame(gameId, emptyGame).success.value
     store.registerPlayer(gameId, Black, "hashB").success.value
-    store.markCompleted(gameId, "archives/GAME01.json", 1_000_000L).success.value
+    store.markCompleted(gameId, ArchiveKey, 1_000_000L).success.value
     Assertions.assertTrue(store.getGame(gameId).success.value.isDefined)
 
   @Test def testMarkCompletedOfMissingGameFails(): Unit =
     Assertions.assertInstanceOf(
       classOf[NonexistentGame],
-      store.markCompleted(gameId, "archives/GAME01.json", 1_000_000L).failure.exception
+      store.markCompleted(gameId, ArchiveKey, 1_000_000L).failure.exception
     )
 
 class TestInMemoryGameStore extends GameStoreContract:
@@ -162,9 +164,9 @@ class TestDynamoDBGameStore extends GameStoreContract:
   @Test def testMarkCompletedSetsExpiryOnGameAndPlayers(): Unit =
     store.createGame("GAME01", Game.start(3).success.value).success.value
     store.registerPlayer("GAME01", Black, "hashB").success.value
-    store.markCompleted("GAME01", "archives/GAME01.json", 1_000_000L).success.value
+    store.markCompleted("GAME01", ArchiveKey, 1_000_000L).success.value
     val game = item(gamesTable, Map("gameId" -> "GAME01"))
-    Assertions.assertEquals(Some("archives/GAME01.json"), game.get("archiveKey").map(_.s()))
+    Assertions.assertEquals(Some(ArchiveKey), game.get("archiveKey").map(_.s()))
     Assertions.assertEquals(Some("1000000"), game.get("expiresAt").map(_.n()))
     val player = item(playersTable, Map("gameId" -> "GAME01", "color" -> Black.toString))
     Assertions.assertEquals(Some("1000000"), player.get("expiresAt").map(_.n()))
