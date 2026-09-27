@@ -1,0 +1,9 @@
+# S3 state for the go3d read-only stack. The bucket is created by ../bootstrap.
+# Copy to backend.hcl locally (backend.hcl is git-ignored); CI passes these values with
+# -backend-config options instead.
+
+bucket       = "go3d-terraform-state-<account_id>-eu-central-1"
+key          = "go3d-readonly/terraform.tfstate"
+region       = "eu-central-1"
+encrypt      = true
+use_lockfile = true

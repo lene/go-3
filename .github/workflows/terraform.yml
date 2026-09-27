@@ -1,0 +1,157 @@
+name: Terraform
+
+# Validates, plans and applies infra/terraform/go3d-readonly (the read-only Lambda stack).
+# Plan and apply authenticate to AWS through GitHub OIDC with the roles created by
+# infra/terraform/bootstrap; they are skipped until the repository variables below are set:
+#   TF_STATE_BUCKET, AWS_TF_PLAN_ROLE_ARN, AWS_TF_APPLY_ROLE_ARN (see the stack's README.md).
+# Apply only runs on master, in the protected "production" environment, from the reviewed plan.
+on:
+  pull_request:
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform.yml"
+      - "src/main/**"
+      - "build.sbt"
+  push:
+    branches: [master]
+    paths:
+      - "infra/terraform/**"
+      - ".github/workflows/terraform.yml"
+      - "src/main/**"
+      - "build.sbt"
+  workflow_dispatch:
+
+concurrency:
+  group: terraform-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TF_ROOT: infra/terraform/go3d-readonly
+  TF_VERSION: 1.10.5
+  TF_IN_AUTOMATION: "true"
+  AWS_REGION: eu-central-1
+  JAVA_VERSION: 17
+
+jobs:
+  validate:
+    name: Terraform validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+      - run: terraform fmt -check -recursive infra/terraform
+      - name: Validate stacks
+        run: |
+          for dir in infra/terraform/go3d-readonly infra/terraform/bootstrap; do
+            terraform -chdir="$dir" init -backend=false -input=false
+            terraform -chdir="$dir" validate
+          done
+
+  plan:
+    name: Terraform plan
+    needs: validate
+    if: vars.AWS_TF_PLAN_ROLE_ARN != '' && vars.TF_STATE_BUCKET != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - name: Build Lambda assembly
+        run: |
+          sbt assembly
+          jar=$(find target/scala-* -name 'go-3d-lambda-*.jar' | head -n 1)
+          test -n "$jar"
+          cp "$jar" go-3d-lambda.jar
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_TF_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - name: Plan
+        working-directory: ${{ env.TF_ROOT }}
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          terraform init -input=false \
+            -backend-config="bucket=$TF_STATE_BUCKET" \
+            -backend-config="key=go3d-readonly/terraform.tfstate" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+          terraform plan -input=false -var "lambda_jar_path=../../../go-3d-lambda.jar" -out=tfplan
+          terraform show -no-color tfplan > tfplan.txt
+          {
+            echo '### Terraform plan'
+            echo '```'
+            grep -E '^(Plan:|No changes)' tfplan.txt || true
+            echo '```'
+            echo '<details><summary>Full plan</summary>'
+            echo
+            echo '```'
+            cat tfplan.txt
+            echo '```'
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: terraform-plan
+          path: |
+            go-3d-lambda.jar
+            ${{ env.TF_ROOT }}/tfplan
+            ${{ env.TF_ROOT }}/tfplan.txt
+          retention-days: 7
+
+  apply:
+    name: Terraform apply
+    needs: plan
+    if: >-
+      github.ref == 'refs/heads/master' && github.event_name != 'pull_request' &&
+      vars.AWS_TF_APPLY_ROLE_ARN != ''
+    runs-on: ubuntu-latest
+    # configure required reviewers on this environment, so each apply is approved after
+    # reviewing the plan in the plan job's summary
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: terraform-plan
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_TF_APPLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - name: Apply reviewed plan
+        working-directory: ${{ env.TF_ROOT }}
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          test -f tfplan && test -f ../../../go-3d-lambda.jar
+          terraform init -input=false \
+            -backend-config="bucket=$TF_STATE_BUCKET" \
+            -backend-config="key=go3d-readonly/terraform.tfstate" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+          terraform apply -input=false tfplan
