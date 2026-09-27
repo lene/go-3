@@ -57,7 +57,8 @@ sbt "runMain go3d.client.AsciiClient --server localhost --port 6030 --game-id XX
 # GDX client (3D visualization, watch-only)
 sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id XXXXX"
 
-# GDX client replaying a game (Space/Backspace step forward/back)
+# GDX client replaying a game (Space/Backspace step forward/back); prints the current move on
+# one stdout line, e.g. "[10/245] black @ 3 2 3" followed by a carriage return
 sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id XXXXX --replay"
 
 # Bot client

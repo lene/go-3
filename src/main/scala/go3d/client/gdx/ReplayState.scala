@@ -1,6 +1,7 @@
 package go3d.client.gdx
 
 import com.typesafe.scalalogging.LazyLogging
+import go3d.{Black, Color, Move, Pass}
 import go3d.client.BaseClient
 import go3d.server.StatusResponse
 
@@ -33,10 +34,34 @@ class ReplayState(
     currentIndex = from
     fetch()
 
+  /** Where the one-line progress indicator is printed; replaceable in tests. */
+  private[gdx] var out: java.io.PrintStream = System.out
+  private var lastProgressLength: Int = 0
+
   def fetch(): Unit =
     client.statusAtMove(currentIndex) match
-      case Success(sr) => currentStatus = Some(sr)
+      case Success(sr) =>
+        currentStatus = Some(sr)
+        printProgress()
       case Failure(e)  => logger.error(s"ReplayState.fetch($currentIndex) failed: ${e.getMessage}")
+
+  /** Move counter and the move just played, e.g. "[10/245] black @ 3 2 3". */
+  def progressLine: String =
+    val lastMove = currentStatus.flatMap(_.game.moves.lastOption)
+    val moveText = lastMove.fold("") {
+      case move: Move => s" ${colorName(move.color)} ${move.color} ${move.x} ${move.y} ${move.z}"
+      case pass: Pass => s" ${colorName(pass.color)} ${pass.color} pass"
+    }
+    s"[$currentIndex/$totalMoves]$moveText"
+
+  /** Prints the progress line ending in a carriage return, so the output stays on one line. */
+  private def printProgress(): Unit =
+    val line = progressLine
+    out.print(line.padTo(lastProgressLength, ' ') + "\r")
+    out.flush()
+    lastProgressLength = line.length
+
+  private def colorName(color: Color): String = if color == Black then "black" else "white"
 
   def advance(): Unit =
     if currentIndex < to then

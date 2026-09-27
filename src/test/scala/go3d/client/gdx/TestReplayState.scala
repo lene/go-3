@@ -126,3 +126,42 @@ class TestReplayState:
       debug = NullRequestInfo
     ))
     Assertions.assertEquals("Game over", state.hudLines(1))
+
+  @Test def testProgressLineShowsCounterAndLastMove(): Unit =
+    val state = new ReplayState(stubClient(Map()), from = 0, to = 3, autoPlayDelay = 1.0f)
+    state.currentIndex = 2
+    state.currentStatus = Some(makeStatusResponse(2))
+    // move 2 of makeStatusResponse is white at (2, 1, 1)
+    Assertions.assertEquals(s"[2/3] white $White 2 1 1", state.progressLine)
+
+  @Test def testProgressLineAtStartHasNoMove(): Unit =
+    val state = new ReplayState(stubClient(Map()), from = 0, to = 3, autoPlayDelay = 1.0f)
+    state.currentStatus = Some(makeStatusResponse(0))
+    Assertions.assertEquals("[0/3]", state.progressLine)
+
+  @Test def testProgressLineShowsPass(): Unit =
+    val passed = go3d.Game.start(3).get.makeMove(go3d.Pass(Black)).get
+    val state = new ReplayState(stubClient(Map()), from = 0, to = 1, autoPlayDelay = 1.0f)
+    state.currentIndex = 1
+    state.currentStatus = Some(StatusResponse(
+      game = passed, moves = List(), ready = false, over = false, playerColor = None,
+      debug = NullRequestInfo
+    ))
+    Assertions.assertEquals(s"[1/1] black $Black pass", state.progressLine)
+
+  @Test def testFetchPrintsProgressOnOneLine(): Unit =
+    val client = stubClient(
+      Map(1 -> Success(makeStatusResponse(1)), 0 -> Success(makeStatusResponse(0)))
+    )
+    val state = new ReplayState(client, from = 0, to = 3, autoPlayDelay = 1.0f)
+    val buffer = new java.io.ByteArrayOutputStream()
+    state.out = new java.io.PrintStream(buffer, true, "UTF-8")
+    state.currentIndex = 1
+    state.fetch()
+    state.currentIndex = 0
+    state.fetch()
+    val first = s"[1/3] black $Black 1 1 1"
+    // the shorter second line is padded so that no characters of the first line remain
+    Assertions.assertEquals(
+      first + "\r" + "[0/3]".padTo(first.length, ' ') + "\r", buffer.toString("UTF-8")
+    )
