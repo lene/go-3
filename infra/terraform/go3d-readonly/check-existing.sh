@@ -15,6 +15,7 @@ check() {  # description, command...
   else
     echo "missing  $what"
   fi
+  return 0
 }
 
 account=$(aws sts get-caller-identity --query Account --output text)
@@ -34,7 +35,7 @@ aws resourcegroupstaggingapi get-resources --region "$REGION" \
   --tag-filters Key=Project,Values=go3d --query 'ResourceTagMappingList[].ResourceARN' \
   --output text | tr '\t' '\n' | sed 's/^/  /'
 
-if [ -n "${GITLAB_TOKEN:-}" ]; then
+if [[ -n "${GITLAB_TOKEN:-}" ]]; then
   state_url="https://gitlab.com/api/v4/projects/6643214/terraform/state/go3d-eu-central-1-prod"
   check "GitLab Terraform state go3d-eu-central-1-prod" \
     curl -sf --header "PRIVATE-TOKEN: $GITLAB_TOKEN" "$state_url"
@@ -42,6 +43,6 @@ else
   echo "skipped  GitLab Terraform state (set GITLAB_TOKEN to check)"
 fi
 
-if [ "$found" -eq 1 ]; then
+if [[ "$found" -eq 1 ]]; then
   echo "Existing resources found: import them or migrate the GitLab state before applying."
 fi

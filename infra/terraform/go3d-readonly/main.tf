@@ -130,6 +130,34 @@ resource "aws_s3_bucket_public_access_block" "archive" {
   restrict_public_buckets = true
 }
 
+data "aws_iam_policy_document" "archive_tls_only" {
+  statement {
+    sid     = "DenyInsecureTransport"
+    effect  = "Deny"
+    actions = ["s3:*"]
+    resources = [
+      aws_s3_bucket.archive.arn,
+      "${aws_s3_bucket.archive.arn}/*",
+    ]
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "archive_tls_only" {
+  bucket = aws_s3_bucket.archive.id
+  policy = data.aws_iam_policy_document.archive_tls_only.json
+
+  depends_on = [aws_s3_bucket_public_access_block.archive]
+}
+
 resource "aws_s3_bucket_versioning" "archive" {
   bucket = aws_s3_bucket.archive.id
 
