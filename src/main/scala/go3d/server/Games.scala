@@ -146,7 +146,9 @@ object Games:
       fileIO.foreach(io => Try(io.archiveGame(gameId)).failed.foreach(e =>
         Logger(Games.getClass).warn(s"Failed to archive $gameId on disk: ${e.getMessage}")
       ))
-      S3Client.archiveGame(gameId, SaveGame(game, Players(gameId)).asJson.noSpaces)
+      S3Client.archiveGame(gameId, SaveGame(game, Players(gameId)).asJson.noSpaces).failed.foreach(
+        e => Logger(Games.getClass).warn("Failed to archive " + gameId + " to S3: " + e.getMessage)
+      )
       Players.unregister(gameId)
       Tokens.unregisterGame(gameId)
     }

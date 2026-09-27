@@ -1,7 +1,6 @@
 package go3d.server.aws
 
 import com.typesafe.scalalogging.LazyLogging
-import software.amazon.awssdk.core.sync.RequestBody
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client as AwsS3Client
@@ -9,7 +8,6 @@ import software.amazon.awssdk.services.s3.model._
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 
-import java.nio.charset.StandardCharsets
 import java.time.Duration
 import scala.util.{Failure, Success, Try}
 
@@ -65,45 +63,37 @@ object S3Client extends LazyLogging:
     _initialised = false
 
   /**
-   * Upload game JSON to S3 as archives/gameId.json (best-effort).
-   * Uses AES-256 server-side encryption.
+   * Uploads game JSON to S3 as archives/gameId.json with AES-256 server-side encryption and
+   * verifies it arrived. Succeeds without uploading when S3 is not configured.
    */
-  def archiveGame(gameId: String, gameJson: String): Unit =
-    get() match
-      case None => ()
-      case Some((client, _, config)) =>
-        withRetry(s"archive game $gameId to S3") {
-          val bytes = gameJson.getBytes(StandardCharsets.UTF_8)
-          client.putObject(
-            PutObjectRequest.builder()
-              .bucket(config.bucket)
-              .key(S3Config.s3Key(gameId))
-              .contentType("application/json")
-              .contentLength(bytes.length.toLong)
-              .serverSideEncryption(ServerSideEncryption.AES256)
-              .build(),
-            RequestBody.fromBytes(bytes)
-          )
-        }
+  def archiveGame(gameId: String, gameJson: String): Try[Unit] =
+    get().fold[Try[Unit]](Success(())) { case (client, _, config) =>
+      go3d.server.service.S3GameArchive(client, config.bucket).store(gameId, gameJson).map(_ => ())
+    }
 
   /**
    * Generate a pre-signed GET URL for an archived game (5-minute expiry).
    * Returns None when S3 is not configured or the object does not exist.
    */
   def generatePresignedUrl(gameId: String): Option[String] =
-    get().flatMap { case (_, presigner, config) =>
+    get().flatMap { case (client, presigner, config) =>
       val key = S3Config.s3Key(gameId)
-      Try {
-        val getRequest = GetObjectRequest.builder()
-          .bucket(config.bucket)
-          .key(key)
-          .build()
-        val presignRequest = GetObjectPresignRequest.builder()
-          .signatureDuration(Duration.ofMinutes(PresignedUrlExpiryMinutes))
-          .getObjectRequest(getRequest)
-          .build()
-        presigner.presignGetObject(presignRequest).url().toString
-      }.toOption
+      val exists = Try(client.headObject(
+        HeadObjectRequest.builder().bucket(config.bucket).key(key).build()
+      )).isSuccess
+      Option.when(exists)(key).flatMap { _ =>
+        Try {
+          val getRequest = GetObjectRequest.builder()
+            .bucket(config.bucket)
+            .key(key)
+            .build()
+          val presignRequest = GetObjectPresignRequest.builder()
+            .signatureDuration(Duration.ofMinutes(PresignedUrlExpiryMinutes))
+            .getObjectRequest(getRequest)
+            .build()
+          presigner.presignGetObject(presignRequest).url().toString
+        }.toOption
+      }
     }
 
   private def buildClients(config: S3Config): (AwsS3Client, S3Presigner) =
@@ -116,13 +106,3 @@ object S3Client extends LazyLogging:
       .region(region)
       .build()
     (client, presigner)
-
-  private def withRetry(operation: String)(op: => Unit): Unit =
-    Try(op) match
-      case Success(_) => ()
-      case Failure(e1) =>
-        logger.warn(s"S3 $operation failed (retrying): ${e1.getMessage}")
-        Try(op) match
-          case Success(_) => ()
-          case Failure(e2) =>
-            logger.error(s"S3 $operation failed permanently: ${e2.getMessage}")
