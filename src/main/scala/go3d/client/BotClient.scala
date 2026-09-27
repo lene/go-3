@@ -70,7 +70,7 @@ object BotClient extends Client with LazyLogging:
     logger.info(s"Move: ${game.moves.length} ${executionTimeString}")
     val startTime = System.currentTimeMillis()
     val (newOver, newGame) = Try {
-      val status = client.status.get
+      val status = waitUntilReady(client).get
       makeOneMove(client, status, game, strategy)
     }.recover {
       case _: InterruptedException => exit(1); (true, game)
@@ -100,7 +100,8 @@ object BotClient extends Client with LazyLogging:
       if newStatus.over then
         logger.info(s"Game over: ${newStatus.game}")
         exit(0)
-      (true, newStatus.game)
+      // a single pass does not end the game; keep playing until the opponent passes too
+      (false, newStatus.game)
 
   private def randomMove(possible: Seq[Position]): Position =
     possible(random.nextInt(possible.length))

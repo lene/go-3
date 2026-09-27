@@ -87,3 +87,10 @@ class TestBotClient:
     Assertions.assertTrue(BotClient.executionTimeString.startsWith("(10ms last/10ms avg)"))
     BotClient.executionTimes = BotClient.executionTimes.appended(30)
     Assertions.assertTrue(BotClient.executionTimeString.startsWith("(30ms last/20ms avg)"))
+
+  @Test def testWaitUntilReadyReturnsStatusWhenReady(): Unit =
+    val client = new MockClient
+    val status = BotClient.waitUntilReady(client)
+    Assertions.assertTrue(status.isSuccess)
+    Assertions.assertTrue(status.get.ready)
+    Assertions.assertEquals(3, status.get.game.size)

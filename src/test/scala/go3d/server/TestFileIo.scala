@@ -13,6 +13,11 @@ object TestFileIo:
     Games.init(Files.createTempDirectory("go3d").toString)
     Games.fileIO.foreach(fileIO = _)
 
+  // Check this suite's own folder: other suites running in parallel may re-init the shared
+  // Games singleton with a different folder, so IOForTests (which uses Games.fileIO) can look
+  // in the wrong place.
+  def exists(filename: String): Boolean = Files.exists(Paths.get(fileIO.baseFolder, filename))
+
 class TestFileIo:
 
   @Test def testFileIOFailsOnNonexistingBaseFolder(): Unit =
@@ -65,9 +70,11 @@ class TestFileIo:
     Assertions.assertFalse(IOForTests.exists("this file should not exist"))
 
   @Test def testGetListOfJsonFiles(): Unit =
+    val fileName = s"${IdGenerator.getId}.json"
+    TestFileIo.fileIO.writeFile(fileName, "{}")
     val matchingFiles = TestFileIo.fileIO.getListOfFiles(".json").map(f => f.getName)
     Assertions.assertTrue(
-      matchingFiles.contains("test.json"),
+      matchingFiles.contains(fileName),
       java.io.File(TestFileIo.fileIO.baseFolder).listFiles.toList.toString
     )
 
@@ -128,9 +135,9 @@ class TestFileIo:
     val gameId = Games.register(TestSize).get
     Games.registerPlayer(gameId, Black).get
     TestFileIo.fileIO.saveGame(gameId)
-    Assertions.assertTrue(IOForTests.exists(s"$gameId.json"))
+    Assertions.assertTrue(TestFileIo.exists(s"$gameId.json"))
     TestFileIo.fileIO.deleteGame(gameId)
-    Assertions.assertFalse(IOForTests.exists(s"$gameId.json"))
+    Assertions.assertFalse(TestFileIo.exists(s"$gameId.json"))
 
   @Test def testDeleteGameIsIdempotent(): Unit =
     val gameId = IdGenerator.getId
