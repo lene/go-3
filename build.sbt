@@ -47,9 +47,10 @@ lazy val root = project
     Test / logBuffered := false,
     // Rendering-only classes need an OpenGL context and cannot run in unit tests; keep testable
     // logic out of them (e.g. in ReplayState) so that it is measured.
+    // Scala 3 matches these patterns against the source path with ".scala" removed.
     coverageExcludedFiles := Seq(
       "GobanDisplay", "GeometryBuilder", "Go3DInputController", "GDXResources", "ParticleMarker"
-    ).map(name => s".*/go3d/client/gdx/$name\\.scala").mkString(";"),
+    ).map(name => s".*/go3d/client/gdx/$name").mkString(";"),
     // Scallop command line parser
     libraryDependencies += "org.rogach" %% "scallop" % "5.2.0",
     // requests
