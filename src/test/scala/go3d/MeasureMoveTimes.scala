@@ -1,8 +1,9 @@
 package go3d
 
-import go3d.server.{*, given}
+import go3d.server.*
 import io.circe.parser.decode
 import scala.io.Source
+import org.scalatest.TryValues.*
 
 /**
  * Measure the time taken for each move in a saved game to identify slow moves.
@@ -42,7 +43,7 @@ object MeasureMoveTimes:
     println(s"Threshold: ${thresholdMs}ms")
     println("=" * 80)
 
-    var game = Game.start(saveGame.game.size).get
+    var game = Game.start(saveGame.game.size).success.value
     var slowMoves = 0
     var totalTime = 0L
 
@@ -52,9 +53,9 @@ object MeasureMoveTimes:
       try
         moveOrPass match
           case move: Move =>
-            game = game.makeMove(move).get
+            game = game.makeMove(move).success.value
           case pass: Pass =>
-            game = game.makeMove(pass).get
+            game = game.makeMove(pass).success.value
 
         val endTime = System.nanoTime()
         val durationMs = (endTime - startTime) / 1_000_000

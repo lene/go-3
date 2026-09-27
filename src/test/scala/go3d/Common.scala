@@ -3,6 +3,7 @@ package go3d
 import org.junit.jupiter.api.Assertions
 
 import scala.reflect.ClassTag
+import org.scalatest.TryValues.*
 
 val TestSize = MinBoardSize
 
@@ -39,14 +40,14 @@ val eyeSituation = Map(
 )
 
 def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass], verbose: Boolean = false): Game =
-  var game = Game.start(boardSize).get
+  var game = Game.start(boardSize).success.value
   for move <- moves do
-    game = game.makeMove(move).get
-    if verbose then println(move.toString+"\n"+game)
+    game = game.makeMove(move).success.value
+    if verbose then println(move.toString + "\n" + game.toString)
   game
 
 def setListOfStones(boardSize: Int, moves: List[Move | Pass]): Goban =
-  var goban = Goban.start(boardSize).get
+  var goban = Goban.start(boardSize).success.value
   for move <- moves do
     move match
       case _: Pass =>
@@ -69,12 +70,13 @@ def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]):
 
 def fromStrings(levels: Map[Int, String]): Goban =
   if levels.isEmpty then sys.error("nothing to generate")
-  val goban = Goban.start((levels.head._2.stripMargin.replace("|", "").split("\n").length)).get
+  val size = levels.head._2.stripMargin.replace("|", "").split("\n").length
+  val goban = Goban.start(size).success.value
   for (z, level) <- levels do
     val lines = level.stripMargin.replace("|", "").split("\n")
     for (line, y) <- lines.zipWithIndex do
       for (stone, x) <- line.zipWithIndex do
-        goban.stones(x+1)(y+1)(z) = Color(stone).get
+        goban.stones(x+1)(y+1)(z) = Color(stone).success.value
   goban
 
 def fromGoban(goban: Goban): Game =

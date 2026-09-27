@@ -7,6 +7,7 @@ import go3d.Move
 import go3d.Pass
 import go3d.Position
 import go3d.White
+import org.scalatest.TryValues.*
 
 object Util {
   def gameWithCornerStones(size: Int): Game =
@@ -52,18 +53,19 @@ object Util {
 
   def fromStrings(levels: Map[Int, String]): Goban =
     if levels.isEmpty then sys.error("nothing to generate")
-    val goban = Goban.start((levels.head._2.stripMargin.replace("|", "").split("\n").length)).get
+    val size = levels.head._2.stripMargin.replace("|", "").split("\n").length
+    val goban = Goban.start(size).success.value
     for (z, level) <- levels do
       val lines = level.stripMargin.replace("|", "").split("\n")
       for (line, y) <- lines.zipWithIndex do
         for (stone, x) <- line.zipWithIndex do
-          goban.stones(x + 1)(y + 1)(z) = go3d.Color(stone).get
+          goban.stones(x + 1)(y + 1)(z) = go3d.Color(stone).success.value
     goban
 
   private def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass]): Game =
-    var game = Game.start(boardSize).get
+    var game = Game.start(boardSize).success.value
     for move <- moves do
-      game = game.makeMove(move).get
+      game = game.makeMove(move).success.value
     game
 
 }

@@ -37,15 +37,20 @@ object GDXClient extends InteractiveClient:
         }
         result
 
-    def mainLoop(client: BaseClient): Unit =
+    def mainLoop(client: BaseClient): Try[Unit] =
         println("Starting 3D Go client")
+        client.status.map(status => startApplication(client, status.game.size))
+
+    private def startApplication(client: BaseClient, boardSize: Int): Unit =
         val config = getConfiguration("3D Go", 1280, 960)
         if replayEnabled then
             val state = new ReplayState(client, replayFrom, replayTo, replaySpeed)
             state.init()
-            new Lwjgl3Application(new GobanDisplay(client, cursorFade, Some(state)), config)
+            new Lwjgl3Application(
+                new GobanDisplay(client, boardSize, cursorFade, Some(state)), config
+            )
         else
-            new Lwjgl3Application(new GobanDisplay(client, cursorFade), config)
+            new Lwjgl3Application(new GobanDisplay(client, boardSize, cursorFade), config)
 
     def getConfiguration(appName: String, width: Int, height: Int): Lwjgl3ApplicationConfiguration =
         val config = new Lwjgl3ApplicationConfiguration()

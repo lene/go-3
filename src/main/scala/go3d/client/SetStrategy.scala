@@ -1,9 +1,7 @@
 package go3d.client
 
-import go3d.Black
 import go3d.Color
 import go3d.Game
-import go3d.Goban
 import go3d.Move
 import go3d.Position
 

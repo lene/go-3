@@ -3,11 +3,12 @@ package go3d.client.gdx
 import go3d.*
 import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
+import org.scalatest.TryValues.*
 
 class TestGobanDisplayIntegration:
 
   @Test def testCursorPositionsEmptyGame(): Unit =
-    val game = Game.start(3).get
+    val game = Game.start(3).success.value
 
     val ownMove = game.playerLastMove(Some(Black))
     val opponentMove = game.playerLastMove(Some(!Black))
@@ -16,7 +17,7 @@ class TestGobanDisplayIntegration:
     assertEquals(None, opponentMove)
 
   @Test def testBlackClientAfterFirstMove(): Unit =
-    val game = Game.start(3).get.makeMove(Move(1,1,1, Black)).get
+    val game = Game.start(3).success.value.makeMove(Move(1,1,1, Black)).success.value
 
     val ownMove = game.playerLastMove(Some(Black))
     val opponentMove = game.playerLastMove(Some(!Black))
@@ -25,9 +26,9 @@ class TestGobanDisplayIntegration:
     assertEquals(None, opponentMove)
 
   @Test def testWhiteClientAfterTwoMoves(): Unit =
-    val game = Game.start(3).get
-      .makeMove(Move(1,1,1, Black)).get
-      .makeMove(Move(3,3,3, White)).get
+    val game = Game.start(3).success.value
+      .makeMove(Move(1,1,1, Black)).success.value
+      .makeMove(Move(3,3,3, White)).success.value
 
     val ownMove = game.playerLastMove(Some(White))
     val opponentMove = game.playerLastMove(Some(!White))
@@ -36,9 +37,9 @@ class TestGobanDisplayIntegration:
     assertEquals(Some(Position(1,1,1)), opponentMove)
 
   @Test def testBlackClientAfterTwoMoves(): Unit =
-    val game = Game.start(3).get
-      .makeMove(Move(1,1,1, Black)).get
-      .makeMove(Move(3,3,3, White)).get
+    val game = Game.start(3).success.value
+      .makeMove(Move(1,1,1, Black)).success.value
+      .makeMove(Move(3,3,3, White)).success.value
 
     val ownMove = game.playerLastMove(Some(Black))
     val opponentMove = game.playerLastMove(Some(!Black))
@@ -48,15 +49,15 @@ class TestGobanDisplayIntegration:
 
   @Test def testCursorPositionsAfterCapture(): Unit =
     // Create a situation where a stone is captured
-    val game = Game.start(3).get
-      .makeMove(Move(2,2,2, Black)).get
-      .makeMove(Move(1,2,2, White)).get
-      .makeMove(Move(3,2,2, Black)).get
-      .makeMove(Move(2,1,2, White)).get
-      .makeMove(Move(2,3,2, Black)).get
-      .makeMove(Move(2,2,1, White)).get
-      .makeMove(Move(1,1,1, Black)).get
-      .makeMove(Move(2,2,3, White)).get  // captures Black at (2,2,2)
+    val game = Game.start(3).success.value
+      .makeMove(Move(2,2,2, Black)).success.value
+      .makeMove(Move(1,2,2, White)).success.value
+      .makeMove(Move(3,2,2, Black)).success.value
+      .makeMove(Move(2,1,2, White)).success.value
+      .makeMove(Move(2,3,2, Black)).success.value
+      .makeMove(Move(2,2,1, White)).success.value
+      .makeMove(Move(1,1,1, Black)).success.value
+      .makeMove(Move(2,2,3, White)).success.value  // captures Black at (2,2,2)
 
     val whiteOwnMove = game.playerLastMove(Some(White))
     val whiteOpponentMove = game.playerLastMove(Some(!White))
@@ -66,11 +67,11 @@ class TestGobanDisplayIntegration:
     assertEquals(Some(Position(1,1,1)), whiteOpponentMove)
 
   @Test def testCursorPositionsWithPasses(): Unit =
-    val game = Game.start(3).get
-      .makeMove(Move(1,1,1, Black)).get
-      .makeMove(Pass(White)).get
-      .makeMove(Move(2,2,2, Black)).get
-      .makeMove(Pass(White)).get
+    val game = Game.start(3).success.value
+      .makeMove(Move(1,1,1, Black)).success.value
+      .makeMove(Pass(White)).success.value
+      .makeMove(Move(2,2,2, Black)).success.value
+      .makeMove(Pass(White)).success.value
 
     val blackOwnMove = game.playerLastMove(Some(Black))
     val blackOpponentMove = game.playerLastMove(Some(!Black))
@@ -80,12 +81,12 @@ class TestGobanDisplayIntegration:
     assertEquals(None, blackOpponentMove)  // White only passed, never placed stone
 
   @Test def testCursorPositionsWithPassesBothColors(): Unit =
-    val game = Game.start(3).get
-      .makeMove(Move(1,1,1, Black)).get
-      .makeMove(Move(3,3,3, White)).get
-      .makeMove(Pass(Black)).get
-      .makeMove(Move(2,2,2, White)).get
-      .makeMove(Move(1,2,1, Black)).get  // Black plays another move after White
+    val game = Game.start(3).success.value
+      .makeMove(Move(1,1,1, Black)).success.value
+      .makeMove(Move(3,3,3, White)).success.value
+      .makeMove(Pass(Black)).success.value
+      .makeMove(Move(2,2,2, White)).success.value
+      .makeMove(Move(1,2,1, Black)).success.value  // Black plays another move after White
 
     val blackOwnMove = game.playerLastMove(Some(Black))
     val blackOpponentMove = game.playerLastMove(Some(!Black))
@@ -95,9 +96,9 @@ class TestGobanDisplayIntegration:
     assertEquals(Some(Position(2,2,2)), blackOpponentMove)
 
   @Test def testWatchOnlyClientHasNoCursors(): Unit =
-    val game = Game.start(3).get
-      .makeMove(Move(1,1,1, Black)).get
-      .makeMove(Move(2,2,2, White)).get
+    val game = Game.start(3).success.value
+      .makeMove(Move(1,1,1, Black)).success.value
+      .makeMove(Move(2,2,2, White)).success.value
 
     val ownMove = game.playerLastMove(None)
     val opponentMove = game.playerLastMove(None)
@@ -106,11 +107,11 @@ class TestGobanDisplayIntegration:
     assertEquals(None, opponentMove)
 
   @Test def testCursorSwitchingBlackPerspective(): Unit =
-    val game = Game.start(5).get
-      .makeMove(Move(3,3,3, Black)).get
-      .makeMove(Move(4,4,4, White)).get
-      .makeMove(Move(2,2,2, Black)).get
-      .makeMove(Move(5,5,5, White)).get
+    val game = Game.start(5).success.value
+      .makeMove(Move(3,3,3, Black)).success.value
+      .makeMove(Move(4,4,4, White)).success.value
+      .makeMove(Move(2,2,2, Black)).success.value
+      .makeMove(Move(5,5,5, White)).success.value
 
     // Black player's view
     val blackOwnMove = game.playerLastMove(Some(Black))
@@ -122,11 +123,11 @@ class TestGobanDisplayIntegration:
     assertEquals(Some(Position(5,5,5)), blackOpponentMove)
 
   @Test def testCursorSwitchingWhitePerspective(): Unit =
-    val game = Game.start(5).get
-      .makeMove(Move(3,3,3, Black)).get
-      .makeMove(Move(4,4,4, White)).get
-      .makeMove(Move(2,2,2, Black)).get
-      .makeMove(Move(5,5,5, White)).get
+    val game = Game.start(5).success.value
+      .makeMove(Move(3,3,3, Black)).success.value
+      .makeMove(Move(4,4,4, White)).success.value
+      .makeMove(Move(2,2,2, Black)).success.value
+      .makeMove(Move(5,5,5, White)).success.value
 
     // White player's view
     val whiteOwnMove = game.playerLastMove(Some(White))
@@ -139,15 +140,15 @@ class TestGobanDisplayIntegration:
 
   @Test def testMultiMoveSequenceBlackPerspective(): Unit =
     // Simulate a longer game from Black's perspective
-    val game = Game.start(5).get
-      .makeMove(Move(3,3,3, Black)).get  // Black #1
-      .makeMove(Move(4,4,4, White)).get  // White #1
-      .makeMove(Move(2,2,2, Black)).get  // Black #2
-      .makeMove(Move(5,5,5, White)).get  // White #2
-      .makeMove(Move(1,1,1, Black)).get  // Black #3
-      .makeMove(Move(1,2,1, White)).get  // White #3
-      .makeMove(Move(2,3,2, Black)).get  // Black #4
-      .makeMove(Move(3,4,3, White)).get  // White #4
+    val game = Game.start(5).success.value
+      .makeMove(Move(3,3,3, Black)).success.value  // Black #1
+      .makeMove(Move(4,4,4, White)).success.value  // White #1
+      .makeMove(Move(2,2,2, Black)).success.value  // Black #2
+      .makeMove(Move(5,5,5, White)).success.value  // White #2
+      .makeMove(Move(1,1,1, Black)).success.value  // Black #3
+      .makeMove(Move(1,2,1, White)).success.value  // White #3
+      .makeMove(Move(2,3,2, Black)).success.value  // Black #4
+      .makeMove(Move(3,4,3, White)).success.value  // White #4
 
     val blackOwnMove = game.playerLastMove(Some(Black))
     val blackOpponentMove = game.playerLastMove(Some(!Black))
@@ -158,15 +159,15 @@ class TestGobanDisplayIntegration:
 
   @Test def testMultiMoveSequenceWhitePerspective(): Unit =
     // Simulate a longer game from White's perspective
-    val game = Game.start(5).get
-      .makeMove(Move(3,3,3, Black)).get  // Black #1
-      .makeMove(Move(4,4,4, White)).get  // White #1
-      .makeMove(Move(2,2,2, Black)).get  // Black #2
-      .makeMove(Move(5,5,5, White)).get  // White #2
-      .makeMove(Move(1,1,1, Black)).get  // Black #3
-      .makeMove(Move(1,2,1, White)).get  // White #3
-      .makeMove(Move(2,3,2, Black)).get  // Black #4
-      .makeMove(Move(3,4,3, White)).get  // White #4
+    val game = Game.start(5).success.value
+      .makeMove(Move(3,3,3, Black)).success.value  // Black #1
+      .makeMove(Move(4,4,4, White)).success.value  // White #1
+      .makeMove(Move(2,2,2, Black)).success.value  // Black #2
+      .makeMove(Move(5,5,5, White)).success.value  // White #2
+      .makeMove(Move(1,1,1, Black)).success.value  // Black #3
+      .makeMove(Move(1,2,1, White)).success.value  // White #3
+      .makeMove(Move(2,3,2, Black)).success.value  // Black #4
+      .makeMove(Move(3,4,3, White)).success.value  // White #4
 
     val whiteOwnMove = game.playerLastMove(Some(White))
     val whiteOpponentMove = game.playerLastMove(Some(!White))
@@ -176,25 +177,25 @@ class TestGobanDisplayIntegration:
     assertEquals(Some(Position(2,3,2)), whiteOpponentMove)
 
   @Test def testCursorUpdateAfterBlackMove(): Unit =
-    val game1 = Game.start(3).get
-      .makeMove(Move(1,1,1, Black)).get
+    val game1 = Game.start(3).success.value
+      .makeMove(Move(1,1,1, Black)).success.value
 
     val blackOwnMove1 = game1.playerLastMove(Some(Black))
     assertEquals(Some(Position(1,1,1)), blackOwnMove1)
 
     // Black makes another move
     val game2 = game1
-      .makeMove(Move(2,2,2, White)).get
-      .makeMove(Move(3,3,3, Black)).get
+      .makeMove(Move(2,2,2, White)).success.value
+      .makeMove(Move(3,3,3, Black)).success.value
 
     val blackOwnMove2 = game2.playerLastMove(Some(Black))
     // Cursor should update to new move
     assertEquals(Some(Position(3,3,3)), blackOwnMove2)
 
   @Test def testNoCursorLeakageBetweenPlayers(): Unit =
-    val game = Game.start(3).get
-      .makeMove(Move(1,1,1, Black)).get
-      .makeMove(Move(2,2,2, White)).get
+    val game = Game.start(3).success.value
+      .makeMove(Move(1,1,1, Black)).success.value
+      .makeMove(Move(2,2,2, White)).success.value
 
     // Black's cursors
     val blackOwn = game.playerLastMove(Some(Black))

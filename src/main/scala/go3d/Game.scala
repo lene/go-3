@@ -57,7 +57,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     for y <- 0 to size + 1 do
       for z <- 1 to size do
         for x <- 0 to size + 1 do
-          out += goban.at(x, y, z)
+          out += goban.at(x, y, z).toString
         if z < size then out += "|"
         else if y == 1 then out += " "+White.toString*captures(Black) // Black captures White stones
         else if y == 3 then out += " "+Black.toString*captures(White) // White captures Black stones

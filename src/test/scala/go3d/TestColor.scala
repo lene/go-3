@@ -1,6 +1,7 @@
 package go3d
 
 import org.junit.jupiter.api.{Assertions, Test}
+import org.scalatest.TryValues.*
 
 class TestColor:
   @Test def testColorsNotEqual(): Unit =
@@ -19,13 +20,13 @@ class TestColor:
     // we don't care about the string representation of the other values
 
   @Test def testAllowedColors(): Unit =
-    Color(' ').get
-    Color('@').get
-    Color('O').get
-    Color('·').get
+    Color(' ').success.value
+    Color('@').success.value
+    Color('O').success.value
+    Color('·').success.value
 
   @Test def testBadColor(): Unit =
-    Assertions.assertInstanceOf(classOf[BadColor], Color('+').failed.get)
+    Assertions.assertInstanceOf(classOf[BadColor], Color('+').failure.exception)
 
   @Test def testUnaryNot(): Unit =
     Assertions.assertEquals(White, !Black)

@@ -2,6 +2,7 @@ package go3d.client
 
 import org.junit.jupiter.api.{Assertions, Disabled, Test}
 import go3d.*
+import org.scalatest.TryValues.*
 
 
 class TestSetStrategy:
@@ -171,7 +172,9 @@ class TestSetStrategy:
     checkMinimizeLibertiesEmptyBoard3(ParallelSetStrategy(3, Array("minimizeOpponentLiberties")))
 
   private def checkMinimizeLibertiesEmptyBoard3(strategy: SetStrategy): Unit =
-    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, Game.start(3).get))
+    val check = checkStrategyResults.curried(
+      strategy.minimizeOpponentLiberties(_, Game.start(3).success.value)
+    )
     val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
@@ -182,7 +185,9 @@ class TestSetStrategy:
     checkMinimizeLibertiesEmptyBoard7(ParallelSetStrategy(7, Array("minimizeOpponentLiberties")))
 
   private def checkMinimizeLibertiesEmptyBoard7(strategy: SetStrategy): Unit =
-    val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, Game.start(7).get))
+    val check = checkStrategyResults.curried(
+      strategy.minimizeOpponentLiberties(_, Game.start(7).success.value)
+    )
     val starPoints = StarPoints(7).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
@@ -204,7 +209,9 @@ class TestSetStrategy:
     checkMaximizeDistanceEmptyBoard3(ParallelSetStrategy(3, Array("maximizeDistance")))
 
   private def checkMaximizeDistanceEmptyBoard3(strategy: SetStrategy): Unit =
-    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, Game.start(7).get))
+    val check = checkStrategyResults.curried(
+      strategy.maximizeDistance(_, Game.start(7).success.value)
+    )
     val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
@@ -215,7 +222,9 @@ class TestSetStrategy:
     checkMaximizeDistanceEmptyBoard7(ParallelSetStrategy(7, Array("maximizeDistance")))
 
   private def checkMaximizeDistanceEmptyBoard7(strategy: SetStrategy): Unit =
-    val check = checkStrategyResults.curried(strategy.maximizeDistance(_, Game.start(7).get))
+    val check = checkStrategyResults.curried(
+      strategy.maximizeDistance(_, Game.start(7).success.value)
+    )
     val starPoints = StarPoints(7).all.map(p => (p.x, p.y, p.z))
     check(starPoints)(starPoints)
 
@@ -368,9 +377,9 @@ class TestSetStrategy:
     )
 
   @Test def testNarrowDownRandom(): Unit =
-    val game = Game.start(3).get
+    val game = Game.start(3).success.value
     val strategy = SetStrategy(3, Array("random"))
-    val check = checkStrategyResults.curried(pos => strategy.narrowDown(pos, game).get)
+    val check = checkStrategyResults.curried(pos => strategy.narrowDown(pos, game).success.value)
     check(
       List((1, 1, 1), (1, 1, 2), (1, 2, 1), (1, 2, 2), (2, 1, 1), (2, 1, 2), (2, 2, 1), (2, 2, 2))
     )(
@@ -382,22 +391,22 @@ class TestSetStrategy:
 
     def time[R](block: => R): Long =
       val t0 = System.nanoTime()
-      val result = block
+      val _ = block
       System.nanoTime() - t0
 
     val gameSize = 9
     val strategy = SetStrategy(gameSize, Array("prioritiseCapture"))
     for _ <- 1 to 10 do
-      var game = Game.start(gameSize).get
+      var game = Game.start(gameSize).success.value
       var result: Seq[Position] = Seq()
       var times = Seq[Long]()
       while !game.isOver do
         val color = game.moveColor
         val moves = game.possibleMoves(color)
         times = times.appended(time {
-          result = strategy.narrowDown(moves, game).get
+          result = strategy.narrowDown(moves, game).success.value
         })
-        game = game.makeMove(Move(result.head, color)).get
+        game = game.makeMove(Move(result.head, color)).success.value
       println(s"Total: ${times.sum / 1000000}ms Average: ${times.sum / times.size / 1000}us")
 
 def defaultStrategy(size: Int): SetStrategy = SetStrategy(size, Array("random"))

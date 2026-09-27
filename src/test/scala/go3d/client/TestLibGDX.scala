@@ -1,7 +1,6 @@
 package go3d.client
 
 import go3d.client.gdx.GobanDisplay
-import go3d.server.StatusResponse
 
 import com.badlogic.gdx.Version
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application
@@ -23,4 +22,4 @@ class TestLibGDX:
     */
     val dummyClient = new MockClient
     val config = GDXClient.getConfiguration("3D Go", 1280, 960)
-    new Lwjgl3Application(new GobanDisplay(dummyClient), config).exit()
+    new Lwjgl3Application(new GobanDisplay(dummyClient, 3), config).exit()

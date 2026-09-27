@@ -1,6 +1,7 @@
 package go3d.server
 
 import org.junit.jupiter.api.{Assertions, BeforeEach, Test}
+import org.scalatest.TryValues.*
 
 class TestRateLimiter:
 
@@ -25,7 +26,7 @@ class TestRateLimiter:
   @Test def testFailureIsRateLimitExceeded(): Unit =
     for _ <- 1 to 3 do RateLimiter.check("1.2.3.9", maxRequests = 3)
     val result = RateLimiter.check("1.2.3.9", maxRequests = 3)
-    Assertions.assertInstanceOf(classOf[RateLimitExceeded], result.failed.get)
+    Assertions.assertInstanceOf(classOf[RateLimitExceeded], result.failure.exception)
 
   @Test def testWindowExpiryAllowsRequests(): Unit =
     for _ <- 1 to 3 do RateLimiter.check("1.2.3.10", maxRequests = 3, windowSecs = 0)

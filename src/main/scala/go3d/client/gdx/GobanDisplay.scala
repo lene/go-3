@@ -17,10 +17,11 @@ import go3d.server.StatusResponse
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 class GobanDisplay(
   client: BaseClient,
+  boardSize: Int,
   val cursorFadeSeconds: Float = 10.0f,
   replayState: Option[ReplayState] = None
 ) extends ApplicationListener with LazyLogging:
-  private final val BOARD_SIZE: Int = client.status.get.game.size
+  private final val BOARD_SIZE: Int = boardSize
   final val UPDATE_DELAY_SECONDS = 2f
   final val UPDATE_INTERVAL_SECONDS = 1f
 

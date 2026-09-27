@@ -3,18 +3,48 @@ package go3d.server
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import go3d.Black
+import go3d.Color
 import go3d.Game
 import go3d.Move
 import go3d.server.http4s.GoHttpService
 import org.rogach.scallop._
 
 import java.security.SecureRandom
+import scala.annotation.tailrec
+import scala.util.{Failure, Success, Try}
 
 object GoServer extends LazyLogging:
 
   private val DefaultPort = 6030 // "Go3D"
 
   private def loadGames(baseDir: String): Unit = Games.loadGames(baseDir)
+
+  /// Plays a game of random moves on a board of `size`, logging timings every `printStepSize`
+  /// moves.
+  private[server] def randomGame(size: Int, printStepSize: Int): Try[Game] =
+    val random = new SecureRandom()
+    val totalMoves = size*size*size
+    val startTime = System.nanoTime()
+
+    @tailrec def play(game: Game, color: Color, startTimeForMoves: Long): Try[Game] =
+      val possible = game.possibleMoves(color)
+      if possible.isEmpty || game.moves.length > totalMoves then Success(game)
+      else game.makeMove(Move(possible(random.nextInt(possible.length)), color)) match
+        case Failure(e) => Failure(e)
+        case Success(next) =>
+          if next.moves.length % printStepSize == 0 || next.moves.length == totalMoves then
+            val stepMs = (System.nanoTime()-startTimeForMoves)/1000000
+            logger.info(s"${next.moves.length}/$totalMoves (${stepMs/printStepSize}ms/move)")
+            play(next, !color, System.nanoTime())
+          else play(next, !color, startTimeForMoves)
+
+    Game.start(size).flatMap(play(_, Black, startTime)).map { game =>
+      val totalSeconds = (System.nanoTime()-startTime)/1000000000.0
+      logger.info(s"overall: ${totalSeconds}s, ${totalSeconds*1000.0/totalMoves}ms/move")
+      logger.info(game.toString)
+      logger.info(game.score.toString)
+      game
+    }
 
   def main(args: Array[String]): Unit =
 
@@ -38,27 +68,12 @@ object GoServer extends LazyLogging:
       dependsOnAll(printStepSize, List(benchmark))
       verify()
 
-    def randomGame(size: Int, print_step_size: Int): Unit =
-      val random = new SecureRandom()
-      var game = Game.start(size).get
-      var color = Black
-      val startTime = System.nanoTime()
-      var startTimeForMoves = startTime
-      while game.possibleMoves(color).nonEmpty && game.moves.length <= size*size*size do
-        val move = Move(game.possibleMoves(color)(random.nextInt(game.possibleMoves(color).length)), color)
-        game = game.makeMove(move).get
-        if game.moves.length % print_step_size == 0 || game.moves.length == size*size*size then
-          val stepMs = (System.nanoTime()-startTimeForMoves)/1000000
-          logger.info(s"${game.moves.length}/${size*size*size} (${stepMs/print_step_size}ms/move)")
-          startTimeForMoves = System.nanoTime()
-        color = !color
-      val totalSeconds = (System.nanoTime()-startTime)/1000000000.0
-      logger.info(s"overall: ${totalSeconds}s, ${totalSeconds*1000.0/(size*size*size)}ms/move")
-      logger.info(game.toString)
-      logger.info(game.score.toString)
-
     val conf = Conf(args.toList)
-    if conf.benchmark.isSupplied then randomGame(conf.benchmark(), conf.printStepSize())
+    if conf.benchmark.isSupplied then
+      randomGame(conf.benchmark(), conf.printStepSize()).failed.foreach { e =>
+        logger.error(s"benchmark failed: ${e.getMessage}")
+        System.exit(1)
+      }
     else
       val port = conf.port()
       val saveDir = conf.saveDir()

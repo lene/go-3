@@ -1,10 +1,11 @@
 package go3d.server
 
 import org.junit.jupiter.api.{Assertions, Test}
-import scala.util.{Failure, Success}
+import scala.util.Failure
 import java.util.concurrent.{CountDownLatch, Executors}
 import scala.concurrent.{ExecutionContext, Future, Await}
 import scala.concurrent.duration._
+import org.scalatest.TryValues.*
 
 class TestConcurrentState:
 
@@ -108,7 +109,7 @@ class TestConcurrentState:
 
     val result = state.update { _ => Failure(new IllegalStateException("Test exception")) }
     Assertions.assertTrue(result.isFailure)
-    Assertions.assertInstanceOf(classOf[IllegalStateException], result.failed.get)
+    Assertions.assertInstanceOf(classOf[IllegalStateException], result.failure.exception)
 
     Assertions.assertEquals(42, state.get())
 
