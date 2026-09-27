@@ -6,7 +6,8 @@ import go3d.server.StatusResponse
 
 import scala.util.{Failure, Success}
 
-@SuppressWarnings(Array("org.wartremover.warts.Var"))
+// Any: only from s"..." interpolation in log and HUD text (see STATIC_ANALYSIS.md)
+@SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.Any"))
 class ReplayState(
   client: BaseClient,
   from: Int,

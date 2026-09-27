@@ -11,7 +11,7 @@ import requests.RequestFailedException
 
 import java.security.SecureRandom
 import java.util.NoSuchElementException
-import scala.util.{Failure, Success, Try}
+import scala.util.{Success, Try}
 
 class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val size = opt[Int](required = false)
