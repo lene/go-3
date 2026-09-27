@@ -110,6 +110,8 @@ jobs:
           # suites share global state (e.g. Games), so run them serially for a stable measurement
           sbt "set Test / parallelExecution := false" clean coverage test || true
           sbt coverageReport
+          # least covered files with the most uncovered statements, to see where coverage is lost
+          python3 ci/coverage_summary.py || true
           REPORT=$(head -n 2 target/scala-3.*.*/scoverage-report/scoverage.xml | tail -n 1 | xargs)
           for word in $REPORT; do echo "$word"; done | grep rate | tr - _ > coverage.log
           . ./coverage.log

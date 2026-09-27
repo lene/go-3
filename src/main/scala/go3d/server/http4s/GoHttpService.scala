@@ -36,6 +36,8 @@ case class GoHttpService(port: Int) extends LazyLogging:
       GetStatus(gameId, request).response
     case request@GET -> Root / "status" / GameId(gameId) / "d" =>
       GetStatus(gameId, request).response
+    case request@GET -> Root / "status" / GameId(gameId) / IntVar(moveCount) =>
+      GetStatusAtMove(gameId, moveCount, request).response
     case request@GET -> Root / "set" / GameId(gameId) / IntVar(x) / IntVar(y) / IntVar(z) =>
       DoSet(gameId, request, x, y, z).response
     case request@GET -> Root / "set" / GameId(gameId) / IntVar(x) / IntVar(y) / IntVar(z) / "d" =>
@@ -45,7 +47,7 @@ case class GoHttpService(port: Int) extends LazyLogging:
     case request@GET -> Root / "pass" / GameId(gameId) / "d" =>
       DoPass(gameId, request).response
     case GET -> Root / "openGames" => ListOpenGames().response
-    case request@GET -> Root / "archived" / GameId(gameId) =>
+    case GET -> Root / "archived" / GameId(gameId) =>
       GetArchivedGame(gameId).response
     case GET -> Root / "health" => Ok(1)
   }

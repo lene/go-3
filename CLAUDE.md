@@ -57,6 +57,10 @@ sbt "runMain go3d.client.AsciiClient --server localhost --port 6030 --game-id XX
 # GDX client (3D visualization, watch-only)
 sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id XXXXX"
 
+# GDX client replaying a game (Space/Backspace step forward/back); prints the current move on
+# one stdout line, e.g. "[10/245] black @ 3 2 3" followed by a carriage return
+sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id XXXXX --replay"
+
 # Bot client
 sbt "runMain go3d.client.BotClient --server localhost --port 6030 --size 7 --color b --strategy prioritiseCapture,closestToCenter"
 ```
@@ -107,6 +111,7 @@ The server uses **http4s with Cats Effect** for async HTTP handling:
   - `GET /new/{size}` - Create new game
   - `GET /register/{gameId}/{color}` - Register player
   - `GET /status/{gameId}` - Get current game state
+  - `GET /status/{gameId}/{moveCount}` - Game state after the first `moveCount` moves (replay)
   - `GET /set/{gameId}/{x}/{y}/{z}` - Place stone
   - `GET /pass/{gameId}` - Pass turn
   - `GET /openGames` - List available games
@@ -166,6 +171,12 @@ The `Check coverage` job compares statement coverage against the last successful
 fails if it drops by more than 0.1 percentage points (`COVERAGE_TOLERANCE` in `ci.yml`), which
 absorbs run-to-run measurement noise. It runs the test suites serially because they share global
 state. Coverage should still only go up; the tolerance is not an allowance for real drops.
+The job prints the files with the most uncovered statements (`ci/coverage_summary.py`).
+
+Rendering-only classes in `go3d.client.gdx` (`GobanDisplay`, `GeometryBuilder`,
+`Go3DInputController`, `GDXResources`, `ParticleMarker`) need an OpenGL context, so they are
+excluded from coverage (`coverageExcludedFiles` in `build.sbt`). Keep logic out of them: put it in
+testable classes such as `ReplayState` (see `ReplayState.hudLines`) and only draw in the renderer.
 
 After pushing to any branch, always monitor the CI pipeline(s) started by this push to ensure all
 jobs pass successfully. In case of failures, investigate and fix the issues before merging to main
