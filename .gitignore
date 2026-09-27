@@ -38,3 +38,12 @@ saves/
 *.png
 point.pfx
 .env
+
+# Terraform
+**/.terraform/
+terraform.tfstate
+terraform.tfstate.*
+*.tfplan
+**/backend.hcl
+crash.log
+crash.*.log
