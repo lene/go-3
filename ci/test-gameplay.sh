@@ -21,7 +21,7 @@ sleep 5
 
 # wait until the server answers: an empty list of open games yields "null"
 GAME_ID=""
-while [ "$GAME_ID" != "null" ]; do
+while [[ "$GAME_ID" != "null" ]]; do
   GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r '.ids[0]' || true)
   echo "$GAME_ID"
   sleep 1
@@ -33,7 +33,7 @@ echo "${STRATEGY_BLACK} - ${STRATEGY_WHITE}"
   --strategy "$STRATEGY_BLACK" --max-thinking-time-ms 1000 | grep 'Map(' &
 
 # wait until black has opened a game
-while [ "$GAME_ID" == "null" ]; do
+while [[ "$GAME_ID" == "null" ]]; do
   GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r '.ids[0]' || true)
   echo "$GAME_ID"
   sleep 1

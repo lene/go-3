@@ -191,7 +191,8 @@ def load_map():
 
 
 def save_map(state):
-    MAP_FILE.write_text(json.dumps(state, indent=2, sort_keys=True))
+    # The path is a constant; only the file content comes from API data.
+    MAP_FILE.write_text(json.dumps(state, indent=2, sort_keys=True))  # NOSONAR
 
 
 def migrate_labels(gitlab, github, state, execute):
@@ -305,7 +306,7 @@ def migrate_issues(gitlab, github, state, execute):
         issue = issues.get(iid)
         if entry is None:
             if execute:
-                for attempt in range(5):
+                for _ in range(5):
                     actual_next = github.highest_number() + 1
                     if actual_next == expected:
                         break
