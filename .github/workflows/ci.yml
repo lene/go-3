@@ -75,7 +75,7 @@ jobs:
       - run: sbt test
       - name: Publish test report
         if: always()
-        uses: mikepenz/action-junit-report@3585e9575db828022551b4231f165eb59a0e74e3 # v5
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v6.5.0
         with:
           report_paths: target/test-reports/**/TEST-*.xml
 
