@@ -4,3 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # Action updates are CI-only changes: the "CI Fix" prefix lets the version-consistent job
+    # skip the version bump check (see CLAUDE.md, "CI Fix Commits").
+    commit-message:
+      prefix: "CI Fix"

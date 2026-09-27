@@ -162,6 +162,11 @@ accepts pushes from the `mirror-to-gitlab.yml` workflow and runs GitLab's securi
 - `release.yml`: after CI passes on master, creates the tag and GitHub release for a new version
 - `mirror-to-gitlab.yml`: replicates branches and tags to GitLab
 
+The `Check coverage` job compares statement coverage against the last successful master run and
+fails if it drops by more than 0.1 percentage points (`COVERAGE_TOLERANCE` in `ci.yml`), which
+absorbs run-to-run measurement noise. It runs the test suites serially because they share global
+state. Coverage should still only go up; the tolerance is not an allowance for real drops.
+
 After pushing to any branch, always monitor the CI pipeline(s) started by this push to ensure all
 jobs pass successfully. In case of failures, investigate and fix the issues before merging to main
 branches.
