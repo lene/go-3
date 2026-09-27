@@ -10,7 +10,7 @@ import org.scalatest.BeforeAndAfterEach
  * and no-op behaviour only.
  *
  * Integration tests against a real S3 bucket require AWS credentials
- * and should be run manually after running infra/setup-s3.sh.
+ * and should be run manually against a bucket created by infra/terraform/go3d-readonly.
  */
 class TestS3 extends AnyFunSuite with BeforeAndAfterEach:
 

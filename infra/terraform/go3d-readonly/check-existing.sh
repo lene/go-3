@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Checks whether the go3d read-only stack already exists outside the new S3 state: resources in
-# AWS (created by an earlier apply or by the infra/setup-*.sh scripts) and GitLab-managed state.
+# AWS (created by an earlier apply or by the former infra/setup-*.sh scripts) and GitLab-managed
+# state.
 # Run before the first `terraform apply` with admin AWS credentials; see README.md.
 set -uo pipefail
 

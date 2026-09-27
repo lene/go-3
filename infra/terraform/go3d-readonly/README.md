@@ -8,7 +8,9 @@ Managed resources:
 - S3 archive bucket `go3d-game-archives-<account_id>-eu-central-1`
 - IAM role `go3d-lambda-readonly-role`
 - Lambda function `go3d-read`
-- HTTP API routes `GET /health`, `GET /status/{gameId}`, and `GET /openGames`
+- HTTP API routes `GET /health`, `GET /status/{gameId}`, and `GET /openGames`, throttled to
+  `api_throttling_rate_limit` requests per second (burst `api_throttling_burst_limit`); clients
+  over the limit get HTTP 429
 - CloudWatch log groups, alarms, and a Logs Insights baseline query
 
 All resources receive `Project=go3d`, `Environment=prod`, and `Phase=lambda-migration` tags. Use those tags for Cost Explorer cost allocation after enabling the `Project`, `Environment`, and `Phase` cost allocation tags in the AWS Billing console. The optional `go3d-account-monthly-cost` alarm is account-level because CloudWatch billing metrics are not tag-scoped.
@@ -34,10 +36,13 @@ All resources receive `Project=go3d`, `Environment=prod`, and `Phase=lambda-migr
      (from `terraform output`).
    - Environment `production` with required reviewers (and deployment branch `master`).
 3. **Existing resources**: run `./check-existing.sh` with admin credentials (and `GITLAB_TOKEN`
-   to check the old GitLab-managed state). Earlier `infra/setup-*.sh` runs or an earlier apply
-   may already have created the tables, bucket, role or function. If anything exists, either
-   migrate the old state (`terraform init -migrate-state` from the GitLab HTTP backend) or
-   `terraform import` the resources before the first apply.
+   to check the old GitLab-managed state). Earlier runs of the former `infra/setup-*.sh` scripts
+   or an earlier apply may already have created the tables, bucket, role or function. If
+   anything exists, either migrate the old state (`terraform init -migrate-state` from the GitLab
+   HTTP backend) or `terraform import` the resources before the first apply.
+4. **Canary**: after the first apply, set the repository variable `GO3D_API_URL` to
+   `terraform output -raw api_base_url`. `.github/workflows/canary.yml` then calls the read routes
+   every 15 minutes (see Baseline Metrics).
 
 ## CI/CD (`.github/workflows/terraform.yml`)
 
@@ -82,7 +87,14 @@ Expected results:
 
 ## Baseline Metrics
 
-After invoking the API enough times to include cold and warm executions, use the `go3d/read/lambda-baseline` Logs Insights query definition for:
+The canary workflow (`.github/workflows/canary.yml`) calls `/health`, `/openGames` and
+`/status/CANARY0` every 15 minutes, which includes cold and warm executions. Each run records
+status codes and response times in its job summary, and fails on a 5xx or on a response slower
+than 10 seconds. GitHub disables scheduled workflows after 60 days without repository activity;
+re-enable it in the Actions tab if that happens.
+
+After the canary has run for at least a week, use the `go3d/read/lambda-baseline` Logs Insights
+query definition for:
 
 - Lambda cold start p50, p95, p99, and max from `@initDuration`
 - Lambda warm duration p50, p95, p99, and max from `@duration`

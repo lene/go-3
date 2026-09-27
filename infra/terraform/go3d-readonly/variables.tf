@@ -101,6 +101,18 @@ variable "api_name" {
   default     = "go3d-read"
 }
 
+variable "api_throttling_burst_limit" {
+  description = "Maximum concurrent request burst the HTTP API accepts before returning 429."
+  type        = number
+  default     = 20
+}
+
+variable "api_throttling_rate_limit" {
+  description = "Steady-state requests per second the HTTP API accepts before returning 429."
+  type        = number
+  default     = 10
+}
+
 variable "log_retention_days" {
   description = "CloudWatch log retention in days."
   type        = number

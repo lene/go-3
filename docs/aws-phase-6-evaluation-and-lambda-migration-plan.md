@@ -45,6 +45,8 @@ This is appropriate for shadow writes only. It is not safe as a production sourc
 
 One region issue must be corrected before resource creation: several infra scripts default `AWS_REGION` to `us-east-1`. For this migration, run them with `AWS_REGION=eu-central-1` or update the script defaults before execution.
 
+> Update (September 2026): the `infra/setup-*.sh` scripts referenced in this report have been replaced by the Terraform stack in `infra/terraform/go3d-readonly` (defaults to `eu-central-1`), applied from GitHub Actions (`.github/workflows/terraform.yml`). The script names below are kept as a record of the June 2026 evaluation.
+
 ## Live AWS Baseline
 
 The default local AWS CLI profile is configured with dummy credentials and a dummy region. The temporary configured profiles were expired. The valid STS identity available during this evaluation was `--profile personal`; all live AWS checks below used that profile.
