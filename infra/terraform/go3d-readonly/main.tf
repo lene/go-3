@@ -358,6 +358,13 @@ resource "aws_apigatewayv2_stage" "default" {
   name        = "$default"
   auto_deploy = true
 
+  # Throttling at the API replaces the per-IP RateLimiter of the http4s server, which Lambda
+  # cannot use because its state is per instance.
+  default_route_settings {
+    throttling_burst_limit = var.api_throttling_burst_limit
+    throttling_rate_limit  = var.api_throttling_rate_limit
+  }
+
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api.arn
     format = jsonencode({

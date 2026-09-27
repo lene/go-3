@@ -1,0 +1,53 @@
+name: Canary
+
+# Calls the read-only Lambda API every 15 minutes, so the stack has regular traffic for the
+# cold/warm latency, error and cost baseline that #128 and #123 need. At this interval Lambda
+# instances are often recycled between calls, so the runs cover both cold and warm starts.
+# Skipped until the GO3D_API_URL repository variable holds the api_base_url output of
+# infra/terraform/go3d-readonly.
+
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  canary:
+    name: Call read routes
+    if: vars.GO3D_API_URL != '' && github.repository == 'lene/go-3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      API_URL: ${{ vars.GO3D_API_URL }}
+      # a response slower than this fails the run; cold starts should stay well below it
+      MAX_SECONDS: 10
+    steps:
+      - name: Call /health, /openGames and /status
+        run: |
+          # /status/CANARY0 does not exist: the 404 still exercises the DynamoDB GetItem path
+          echo "| Route | Status | Seconds |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|-------|--------|---------|" >> "$GITHUB_STEP_SUMMARY"
+          failed=0
+          for path in /health /openGames /status/CANARY0; do
+            if ! result=$(curl -sS -o /dev/null -w '%{http_code} %{time_total}' --max-time 30 \
+                "${API_URL%/}$path"); then
+              echo "::error::$path: request failed"
+              failed=1
+              continue
+            fi
+            read -r code seconds <<< "$result"
+            echo "$path $code ${seconds}s"
+            echo "| $path | $code | $seconds |" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$code" -ge 500 ]; then
+              echo "::error::$path returned $code"
+              failed=1
+            fi
+            if awk -v s="$seconds" -v max="$MAX_SECONDS" 'BEGIN { exit !(s > max) }'; then
+              echo "::error::$path took ${seconds}s (more than ${MAX_SECONDS}s)"
+              failed=1
+            fi
+          done
+          exit "$failed"
