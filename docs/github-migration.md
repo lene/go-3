@@ -18,10 +18,12 @@ export GITLAB_TOKEN=... GITHUB_TOKEN=...
 scripts/migrate_gitlab_issues.py              # dry run: check the plan it prints
 scripts/migrate_gitlab_issues.py --execute    # resumable; progress in migration-map.json
 ```
-- GitLab issue #N becomes GitHub issue #N for N ≥ 3.
+- GitLab issue #N became GitHub issue #N+1 for N ≥ 3: GitHub #3 had been used by a deleted
+  spam PR and can never be reused (`BURNED_NUMBERS` in the script). GitLab #1 and #2 became
+  GitHub #129 and #130.
+- Issue numbers in commit messages from before the migration (e.g. "issue #121") are GitLab
+  numbers; on GitHub the issue is one higher (#122).
 - Deleted GitLab issues get closed placeholder issues, so the numbers stay aligned.
-- GitLab #1 and #2 are appended after the highest GitLab number, because GitHub #1 and #2 are
-  pull requests.
 - The script copies labels, milestones and comments.
 - @-mentions are defused so they don't ping unrelated GitHub users.
 - The script aborts if a GitHub number doesn't match the one it expects.
