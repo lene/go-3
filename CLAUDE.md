@@ -57,6 +57,9 @@ sbt "runMain go3d.client.AsciiClient --server localhost --port 6030 --game-id XX
 # GDX client (3D visualization, watch-only)
 sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id XXXXX"
 
+# GDX client replaying a game (Space/Backspace step forward/back)
+sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id XXXXX --replay"
+
 # Bot client
 sbt "runMain go3d.client.BotClient --server localhost --port 6030 --size 7 --color b --strategy prioritiseCapture,closestToCenter"
 ```
@@ -107,6 +110,7 @@ The server uses **http4s with Cats Effect** for async HTTP handling:
   - `GET /new/{size}` - Create new game
   - `GET /register/{gameId}/{color}` - Register player
   - `GET /status/{gameId}` - Get current game state
+  - `GET /status/{gameId}/{moveCount}` - Game state after the first `moveCount` moves (replay)
   - `GET /set/{gameId}/{x}/{y}/{z}` - Place stone
   - `GET /pass/{gameId}` - Pass turn
   - `GET /openGames` - List available games
