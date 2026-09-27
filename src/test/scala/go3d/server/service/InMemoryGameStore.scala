@@ -69,3 +69,14 @@ class InMemoryGameArchive(failing: Boolean) extends GameArchive:
       Success("archives/" + gameId + ".json")
 
   def archived(gameId: String): Option[SaveGame] = archives.get(gameId)
+
+/** A [[GameStore]] whose every operation fails, as when DynamoDB is unreachable. */
+class FailingGameStore extends GameStore:
+  private def failure[T]: Try[T] = Failure(IllegalStateException("store unavailable"))
+  def createGame(gameId: String, game: Game): Try[Unit] = failure
+  def getGame(gameId: String): Try[Option[StoredGame]] = failure
+  def updateGame(gameId: String, expectedVersion: Long, game: Game): Try[Unit] = failure
+  def registerPlayer(gameId: String, color: Color, tokenHash: String): Try[Unit] = failure
+  def playerColor(gameId: String, tokenHash: String): Try[Option[Color]] = failure
+  def openGames(): Try[Array[String]] = failure
+  def markCompleted(gameId: String, archiveKey: String, expiresAt: Long): Try[Unit] = failure
