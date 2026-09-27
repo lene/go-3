@@ -209,4 +209,4 @@ class TestLambdaHandler:
 
   @Test def testStatusMapping(): Unit =
     Assertions.assertEquals(500, LambdaHandler.statusOf(IllegalStateException("x")))
-    Assertions.assertEquals(404, LambdaHandler.statusOf(NoSuchElementException("x")))
+    Assertions.assertEquals(404, LambdaHandler.statusOf(new NoSuchElementException("x")))
