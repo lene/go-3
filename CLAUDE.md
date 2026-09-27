@@ -178,6 +178,11 @@ Rendering-only classes in `go3d.client.gdx` (`GobanDisplay`, `GeometryBuilder`,
 excluded from coverage (`coverageExcludedFiles` in `build.sbt`). Keep logic out of them: put it in
 testable classes such as `ReplayState` (see `ReplayState.hudLines`) and only draw in the renderer.
 
+The `Check warnings` job compiles main and test sources and fails if the number of compiler
+warnings (WartRemover, `-Wunused`, deprecations) is higher than on the last successful master run;
+`ci/warning_summary.sh` prints them by kind and file. Warnings may only go down: fix new ones, or
+suppress them with a justified `@SuppressWarnings` (see STATIC_ANALYSIS.md and issue #143).
+
 After pushing to any branch, always monitor the CI pipeline(s) started by this push to ensure all
 jobs pass successfully. In case of failures, investigate and fix the issues before merging to main
 branches.

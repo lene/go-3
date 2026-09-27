@@ -1,7 +1,7 @@
 # Static Analysis Report
 
 Generated: October 19, 2025
-Updated: March 21, 2026
+Updated: March 21, 2026; current counts September 27, 2026
 
 ## Tools Configured
 
@@ -44,6 +44,28 @@ DisableSyntax.noNulls = true
 DisableSyntax.noAsInstanceOf = true
 DisableSyntax.noIsInstanceOf = true
 ```
+
+## Current Counts (CI `Check warnings` job)
+
+Measured on 27 September 2026 by the `Check warnings` job in `.github/workflows/ci.yml`, which
+compiles main and test sources and fails when the total goes up (see `ci/warning_summary.sh`).
+Total: **699** compiler warnings (241 main, 458 test).
+
+| Warning | Count (main + test) | Note |
+|---------|---------------------|------|
+| wartremover:Any | 340 | mostly `s"..."` interpolation |
+| wartremover:TryPartial | 221 | `Try#get` can throw; not tracked before - issue #143 |
+| wartremover:Var | 50 | |
+| wartremover:Return | 22 | |
+| wartremover:DefaultArguments | 19 | |
+| unused import | 13 | issue #143 |
+| unused local definition | 11 | issue #143 |
+| wartremover:Null | 8 | the sections below report 0; regressed since March |
+| wartremover:StringPlusAny | 7 | |
+| wartremover:OptionPartial | 6 | the sections below report 0; regressed since March |
+| unused explicit parameter | 2 | issue #143 |
+
+The sections below are the March 2026 report and are kept for its history of fixes.
 
 ## Findings Summary
 

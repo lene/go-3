@@ -134,6 +134,46 @@ jobs:
           path: coverage.log
           if-no-files-found: ignore
 
+  warnings:
+    name: Check warnings
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: sbt
+      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - name: Download warning count of last successful master build
+        uses: dawidd6/action-download-artifact@d63b86af1b34672e53c440b1b83979861906bad7 # v24
+        with:
+          workflow: ci.yml
+          branch: master
+          workflow_conclusion: success
+          name: warnings-log
+          path: previous-warnings
+          if_no_artifact_found: warn
+      - name: Count compiler warnings and compare
+        run: |
+          if [ -f previous-warnings/warnings.log ]; then . previous-warnings/warnings.log; fi
+          warnings_old=${warnings:-}
+          sbt -Dsbt.log.noformat=true clean compile Test/compile | tee compile.log
+          ci/warning_summary.sh compile.log
+          echo "warnings=$(grep -c '^\[warn\] -- ' compile.log || true)" > warnings.log
+          . ./warnings.log
+          echo "warnings_old=${warnings_old:-none}, warnings=$warnings"
+          if [ -n "$warnings_old" ] && [ "$warnings" -gt "$warnings_old" ]; then
+            echo "::error::compiler warnings increased from $warnings_old to $warnings"
+            exit 1
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: warnings-log
+          path: warnings.log
+          if-no-files-found: ignore
+
   benchmark:
     name: Benchmark run
     runs-on: ubuntu-latest
