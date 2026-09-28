@@ -19,12 +19,16 @@ class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val color = opt[String](required = false)
   val gameId = opt[String](required = false)
   val token = opt[String](required = false)
-  val server = opt[String](required = true)
-  val port = opt[Int](required = true)
+  val url = opt[String](required = false)
+  val server = opt[String](required = false)
+  val port = opt[Int](required = false)
   val strategy = opt[String](required = false)
   val maxThinkingTimeMs = opt[Int](required = false, default = Some(0))
   val parallel = opt[Boolean](required = false, default = Some(false))
+  val pollIntervalMs = opt[Int](required = false, default = Some(10))
   requireOne(size, gameId)
+  mutuallyExclusive(url, server)
+  mutuallyExclusive(url, port)
   dependsOnAll(size, List(color))
   dependsOnAll(token, List(gameId))
   verify()
@@ -37,7 +41,9 @@ class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
 
 object BotClient extends Client with LazyLogging:
 
-  private val PULL_WAIT_MS = 10
+  // set from --poll-interval-ms, like the other options kept in this object
+  @SuppressWarnings(Array("org.wartremover.warts.Var"))
+  private[client] var pollIntervalMs: Int = 10
   var executionTimes: List[Long] = List()
   private val random: SecureRandom = SecureRandom()
   private[client] var strategies: Array[String] = Array()
@@ -47,6 +53,8 @@ object BotClient extends Client with LazyLogging:
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
+  /// --url https://... replaces --server and --port, e.g. for the API Gateway of the Lambda server;
+  /// --poll-interval-ms sets how often to poll while waiting for the opponent (default 10)
   /// --strategy is a comma-separated list of:
   ///   closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
 
@@ -120,28 +128,31 @@ object BotClient extends Client with LazyLogging:
 
   def parseArgs(args: Array[String]): Try[BaseClient] =
     Try(new BotClientCLIConf(args.toList)).flatMap { conf =>
-      val serverURL = s"http://${conf.server()}:${conf.port()}"
       strategies = conf.strategy.toOption.fold(Array.empty[String])(_.split(','))
       maxThinkingTimeMs = conf.maxThinkingTimeMs()
       parallel = conf.parallel()
-
-      if conf.size.isSupplied then
-        colorFromString(conf.color())
-          .flatMap(color => BaseClient.create(serverURL, conf.size(), color))
-      else if conf.gameId.isSupplied then
-        if conf.token.isSupplied then
-          val playerColor = if conf.gameId().nonEmpty && conf.token().nonEmpty then
-            getPlayerColor(serverURL, conf.gameId(), conf.token())
-          else None
-          Success(BaseClient(serverURL, conf.gameId(), conf.token.toOption, playerColor))
-        else
-          colorFromString(conf.color())
-            .flatMap(color => BaseClient.register(serverURL, conf.gameId(), color))
-      else Failure(RuntimeException("Must provide either size or gameId"))
+      pollIntervalMs = conf.pollIntervalMs()
+      Client.serverUrl(conf.url.toOption, conf.server.toOption, conf.port.toOption)
+        .flatMap(connect(conf, _))
     }
 
+  private def connect(conf: BotClientCLIConf, serverURL: String): Try[BaseClient] =
+    if conf.size.isSupplied then
+      colorFromString(conf.color())
+        .flatMap(color => BaseClient.create(serverURL, conf.size(), color))
+    else if conf.gameId.isSupplied then
+      if conf.token.isSupplied then
+        val playerColor = if conf.gameId().nonEmpty && conf.token().nonEmpty then
+          getPlayerColor(serverURL, conf.gameId(), conf.token())
+        else None
+        Success(BaseClient(serverURL, conf.gameId(), conf.token.toOption, playerColor))
+      else
+        colorFromString(conf.color())
+          .flatMap(color => BaseClient.register(serverURL, conf.gameId(), color))
+    else Failure(RuntimeException("Must provide either size or gameId"))
+
   def waitUntilReady(client: BaseClient): Try[StatusResponse] =
-    client.status.flatMap(pollUntilReady(client, _, PULL_WAIT_MS, exitIfOver))
+    client.status.flatMap(pollUntilReady(client, _, pollIntervalMs, exitIfOver))
 
   private def exitIfOver(status: StatusResponse): Unit =
     if status.over then

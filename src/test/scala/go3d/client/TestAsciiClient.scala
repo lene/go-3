@@ -15,7 +15,31 @@ def assertParseFails[E <: Throwable](
 ): Unit =
   Assertions.assertInstanceOf(expected, parse(args.toArray).failure.exception)
 
+private val LocalUrl = "http://localhost:" + ClientTestPort.toString
+
 class TestAsciiClient:
+
+  @Test def testUrlReplacesServerAndPort(): Unit =
+    val client = AsciiClient.parseArgs(Array("--url", LocalUrl + "/", "--game-id", "ABCDEF"))
+    Assertions.assertEquals(LocalUrl, client.success.value.serverURL)
+
+  @Test def testUrlWithServerFails(): Unit =
+    assertParseFails(
+      classOf[ValidationFailure], AsciiClient.parseArgs,
+      "--url", LocalUrl, "--server", "localhost", "--game-id", "ABCDEF"
+    )
+
+  @Test def testUrlWithPortFails(): Unit =
+    assertParseFails(
+      classOf[ValidationFailure], AsciiClient.parseArgs,
+      "--url", LocalUrl, "--port", ClientTestPort.toString, "--game-id", "ABCDEF"
+    )
+
+  @Test def testUrlWithUnsupportedSchemeFails(): Unit =
+    assertParseFails(
+      classOf[IllegalArgumentException], AsciiClient.parseArgs,
+      "--url", "ftp://localhost", "--game-id", "ABCDEF"
+    )
 
   @Test def testBadColor(): Unit =
     assertParseFails(

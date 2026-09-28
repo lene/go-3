@@ -67,6 +67,29 @@ class TestBotClient:
     )
 
 
+  @Test def testUrlReplacesServerAndPort(): Unit =
+    val client = BotClient.parseArgs(Array(
+      "--url", "https://api.example.com/", "--game-id", "", "--token", ""
+    ))
+    Assertions.assertEquals("https://api.example.com", client.success.value.serverURL)
+
+  @Test def testUrlWithServerFails(): Unit =
+    assertParseFails(
+      classOf[ValidationFailure], BotClient.parseArgs,
+      "--url", "https://api.example.com", "--server", "localhost", "--game-id", "", "--token", ""
+    )
+
+  @Test def testPollIntervalIsParsed(): Unit =
+    BotClient.parseArgs(Array(
+      "--server", "localhost", "--port", ClientTestPort.toString, "--game-id", "",  "--token", "",
+      "--poll-interval-ms", "500"
+    )).success.value
+    Assertions.assertEquals(500, BotClient.pollIntervalMs)
+    BotClient.parseArgs(Array(
+      "--server", "localhost", "--port", ClientTestPort.toString, "--game-id", "",  "--token", ""
+    )).success.value
+    Assertions.assertEquals(10, BotClient.pollIntervalMs)
+
   @Test def testExecutionTimeString(): Unit =
     Assertions.assertEquals("", BotClient.executionTimeString)
     BotClient.executionTimes = BotClient.executionTimes.appended(10)
