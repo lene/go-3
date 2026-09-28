@@ -32,12 +32,18 @@ import scala.util.{Failure, Success, Try}
 class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable: String)
   extends GameStore:
 
+  // the TTL attribute and its placeholders in update expressions
+  private val ExpiresAttribute = "expiresAt"
+  private val ExpiresName = "#expires"
+  private val ExpiresValue = ":expires"
+
   def createGame(gameId: String, game: Game): Try[Unit] =
     Try(client.putItem(
       PutItemRequest.builder().tableName(gamesTable)
         .item(Map(
           "gameId" -> str(gameId), "game" -> str(game.asJson.noSpaces), "version" -> num(0L),
-          "lastModified" -> num(System.currentTimeMillis()), "expiresAt" -> num(inactiveExpiry())
+          "lastModified" -> num(System.currentTimeMillis()),
+          ExpiresAttribute -> num(inactiveExpiry())
         ).asJava)
         .conditionExpression("attribute_not_exists(gameId)")
         .build()
@@ -75,12 +81,12 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
         .conditionExpression("#version = :expected")
         .expressionAttributeNames(Map(
           "#game" -> "game", "#version" -> "version", "#modified" -> "lastModified",
-          "#expires" -> "expiresAt"
+          ExpiresName -> ExpiresAttribute
         ).asJava)
         .expressionAttributeValues(Map(
           ":game" -> str(game.asJson.noSpaces), ":next" -> num(expectedVersion + 1),
           ":now" -> num(System.currentTimeMillis()), ":expected" -> num(expectedVersion),
-          ":expires" -> num(expiresAt)
+          ExpiresValue -> num(expiresAt)
         ).asJava)
         .build()
     ).build()
@@ -98,7 +104,7 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
         .item(Map(
           "gameId" -> str(gameId), "color" -> str(color.toString),
           "authTokenHash" -> str(tokenHash), "createdAt" -> num(System.currentTimeMillis() / 1000L),
-          "expiresAt" -> num(inactiveExpiry())
+          ExpiresAttribute -> num(inactiveExpiry())
         ).asJava)
         .conditionExpression("attribute_not_exists(gameId)")
         .build()
@@ -130,10 +136,10 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
         .updateExpression("SET #archiveKey = :key, #expires = :expires")
         .conditionExpression("attribute_exists(gameId)")
         .expressionAttributeNames(
-          Map("#archiveKey" -> "archiveKey", "#expires" -> "expiresAt").asJava
+          Map("#archiveKey" -> "archiveKey", ExpiresName -> ExpiresAttribute).asJava
         )
         .expressionAttributeValues(Map(
-          ":key" -> str(archiveKey), ":expires" -> num(expiresAt)
+          ":key" -> str(archiveKey), ExpiresValue -> num(expiresAt)
         ).asJava)
         .build()
     ).build()
@@ -157,8 +163,8 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
             .updateExpression("SET #expires = :expires")
             // never create a player row that has no token
             .conditionExpression("attribute_exists(gameId)")
-            .expressionAttributeNames(Map("#expires" -> "expiresAt").asJava)
-            .expressionAttributeValues(Map(":expires" -> num(expiresAt)).asJava)
+            .expressionAttributeNames(Map(ExpiresName -> ExpiresAttribute).asJava)
+            .expressionAttributeValues(Map(ExpiresValue -> num(expiresAt)).asJava)
             .build()
         ).build()
       )
