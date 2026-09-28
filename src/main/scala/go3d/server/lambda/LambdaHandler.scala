@@ -3,34 +3,51 @@ package go3d.server.lambda
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
 import com.amazonaws.services.lambda.runtime.events.{APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent}
 import com.typesafe.scalalogging.LazyLogging
-import go3d.server.{NullRequestInfo, OpenGamesResponse, StatusResponse}
-import go3d.server.service.{DynamoDBGameStore, GameStore, StoredGame}
-import go3d.server.given  // Circe encoders from Jsonify.scala
+import go3d.{BadBoardSize, BadColor, Color, GameOver, GoException, IllegalMove}
+import go3d.server.{
+  AuthorizationError, AuthorizationMethodWrong, AuthorizationMissing, DuplicateColor, GoResponse,
+  IdGenerator, NonexistentGame, NotReadyToSet, OpenGamesResponse, ServerException,
+  encodeGoResponse
+}
+import go3d.server.service.{
+  ConcurrentModification, DynamoDBGameStore, GameService, S3GameArchive, UnconfiguredArchive
+}
+import io.circe.Json
 import io.circe.syntax._
 
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
+/** The server has no game store configured, so it cannot accept writes. */
+class ServiceUnavailable extends ServerException("game store is not configured")
+
 /**
- * AWS Lambda handler for read-only game endpoints.
+ * AWS Lambda handler for the game API, on top of [[GameService]]. The routes and responses are
+ * those of the http4s server (`http4s/GoHttpService.scala`):
  *
- * Routes (Phase 5 — read-only):
- *   GET /health          → 200 "1"
- *   GET /status/{gameId} → 200 StatusResponse, or 404 if the game does not exist
- *   GET /openGames       → 200 OpenGamesResponse
- * A failing store read returns 500, so it shows in the API Gateway and Lambda error metrics.
+ *   GET /health                    → 200 1
+ *   GET /openGames                 → OpenGamesResponse
+ *   GET /new/{size}                → GameCreatedResponse
+ *   GET /register/{gameId}/{color} → PlayerRegisteredResponse with the bearer token
+ *   GET /status/{gameId}           → StatusResponse; with a bearer token also moves and `ready`
+ *   GET /set/{gameId}/{x}/{y}/{z}  → StatusResponse (bearer token required)
+ *   GET /pass/{gameId}             → StatusResponse (bearer token required)
  *
- * @param store the games; None when DynamoDB is not configured (no AWS_REGION), in which case
- *              every game is not found and there are no open games
+ * The token is sent as `Authentication: Bearer <token>`. Errors map to the http4s statuses (see
+ * [[LambdaHandler.statusOf]]); a move that lost a race with another request returns 409 and the
+ * client should refetch the status.
+ *
+ * @param service None when DynamoDB is not configured: reads then find no games and writes
+ *                return 503
  */
-class LambdaHandler(store: Option[GameStore])
+class LambdaHandler(service: Option[GameService])
   extends RequestHandler[APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent]
   with LazyLogging:
 
-  /** Used by the Lambda runtime: the DynamoDB tables configured in the environment. */
-  def this() = this(DynamoDBGameStore.fromEnv())
-
-  private val StatusPath = "/status/(.+)".r
+  /** Used by the Lambda runtime: DynamoDB and S3 as configured in the environment. */
+  def this() = this(LambdaHandler.serviceFromEnv())
 
   def handleRequest(
     event: APIGatewayProxyRequestEvent,
@@ -38,28 +55,63 @@ class LambdaHandler(store: Option[GameStore])
   ): APIGatewayProxyResponseEvent =
     val path = Option(event.getPath).getOrElse("/")
     logger.info("Lambda request: " + Option(event.getHttpMethod).getOrElse("") + " " + path)
-    path match
-      case "/health" =>
-        jsonResponse(200, "1")
-      case StatusPath(gameId) =>
-        store.fold[Try[Option[StoredGame]]](Success(None))(_.getGame(gameId)) match
-          case Success(Some(stored)) =>
-            val game = stored.game
-            val status = StatusResponse(game, List(), false, game.isOver, None, NullRequestInfo)
-            jsonResponse(200, status.asJson.noSpaces)
-          case Success(None) =>
-            jsonResponse(404, "{\"error\":\"Game " + gameId + " not found\"}")
-          case Failure(e) => serverError("reading game " + gameId, e)
-      case "/openGames" =>
-        store.fold[Try[Array[String]]](Success(Array.empty))(_.openGames()) match
-          case Success(ids) => jsonResponse(200, OpenGamesResponse(ids).asJson.noSpaces)
-          case Failure(e) => serverError("reading open games", e)
-      case _ =>
-        jsonResponse(404, "{\"error\":\"Not found: " + path + "\"}")
+    val token = bearerToken(event)
+    segments(path) match
+      case List("health") => jsonResponse(200, "1")
+      case List("openGames") =>
+        respond(service.fold[Try[GoResponse]](Success(OpenGamesResponse(Array.empty)))(
+          _.openGames().map(OpenGamesResponse(_))
+        ))
+      case List("new", IntSegment(size)) => respond(writeService.flatMap(_.newGame(size)))
+      case List("register", GameIdSegment(gameId), ColorSegment(color)) =>
+        respond(writeService.flatMap(_.register(gameId, color)))
+      case List("status", GameIdSegment(gameId)) =>
+        respond(
+          service.fold[Try[GoResponse]](Failure(NonexistentGame(gameId, List())))(s =>
+            token.flatMap(t => s.status(gameId, t))
+          )
+        )
+      case List("set", GameIdSegment(gameId), IntSegment(x), IntSegment(y), IntSegment(z)) =>
+        respond(requiredToken(token).flatMap(t => writeService.flatMap(_.set(gameId, t, x, y, z))))
+      case List("pass", GameIdSegment(gameId)) =>
+        respond(requiredToken(token).flatMap(t => writeService.flatMap(_.pass(gameId, t))))
+      case _ => errorResponse(404, "Not found: " + path)
 
-  private def serverError(operation: String, e: Throwable): APIGatewayProxyResponseEvent =
-    logger.error(operation + " failed", e)
-    jsonResponse(500, "{\"error\":\"internal error\"}")
+  private def writeService: Try[GameService] =
+    service.fold[Try[GameService]](Failure(ServiceUnavailable()))(Success(_))
+
+  /**
+   * The bearer token of the request: None without an `Authentication` header, a failure when the
+   * header is not `Bearer <token>`.
+   */
+  private def bearerToken(event: APIGatewayProxyRequestEvent): Try[Option[String]] =
+    val headers = Option(event.getHeaders).fold(Map.empty[String, String])(_.asScala.toMap)
+    headers.collectFirst { case (name, value) if name.equalsIgnoreCase("Authentication") => value }
+      .fold[Try[Option[String]]](Success(None)) { value =>
+        value.trim.split("\\s+").toList match
+          case List(method, token) if method.equalsIgnoreCase("Bearer") => Success(Some(token))
+          case parts => Failure(AuthorizationMethodWrong(parts.headOption.getOrElse("")))
+      }
+
+  private def requiredToken(token: Try[Option[String]]): Try[String] =
+    token.flatMap(_.fold[Try[String]](Failure(AuthorizationMissing(Map())))(Success(_)))
+
+  private def respond(result: Try[GoResponse]): APIGatewayProxyResponseEvent =
+    result match
+      case Success(response) => jsonResponse(200, response.asJson.noSpaces)
+      case Failure(e) =>
+        val status = LambdaHandler.statusOf(e)
+        if status >= 500 then logger.error("request failed", e)
+        // authorization failures and unexpected errors do not echo details back to the client
+        val message = e match
+          case _: AuthorizationError => "unauthorized"
+          case _: ServerException | _: GoException | _: NoSuchElementException =>
+            e.getClass.getSimpleName + ": " + e.getMessage
+          case _ => "internal error"
+        errorResponse(status, message)
+
+  private def errorResponse(statusCode: Int, message: String): APIGatewayProxyResponseEvent =
+    jsonResponse(statusCode, Json.obj("error" -> Json.fromString(message)).noSpaces)
 
   private def jsonResponse(statusCode: Int, body: String): APIGatewayProxyResponseEvent =
     val resp = new APIGatewayProxyResponseEvent()
@@ -67,3 +119,37 @@ class LambdaHandler(store: Option[GameStore])
     resp.setBody(body)
     resp.setHeaders(Map("Content-Type" -> "application/json").asJava)
     resp
+
+  /** The URL-decoded path segments; none for a malformed path, which then matches no route. */
+  private def segments(path: String): List[String] =
+    Try(path.split('/').toList.filter(_.nonEmpty).map(URLDecoder.decode(_, StandardCharsets.UTF_8)))
+      .getOrElse(List())
+
+  private object IntSegment:
+    def unapply(segment: String): Option[Int] = segment.toIntOption
+
+  private object GameIdSegment:
+    def unapply(segment: String): Option[String] = Some(segment).filter(IdGenerator.isValidId)
+
+  private object ColorSegment:
+    def unapply(segment: String): Option[Color] = segment.headOption.flatMap(Color(_).toOption)
+
+object LambdaHandler:
+  /** The service on the DynamoDB tables and S3 bucket in the environment, if DynamoDB is set up. */
+  def serviceFromEnv(): Option[GameService] =
+    DynamoDBGameStore.fromEnv().map(store =>
+      GameService(store, S3GameArchive.fromEnv().getOrElse(UnconfiguredArchive))
+    )
+
+  /** The HTTP status for a failed request, as the http4s server's `BaseHandler` maps it. */
+  def statusOf(e: Throwable): Int =
+    e match
+      case _: BadBoardSize | _: BadColor | _: DuplicateColor | _: NotReadyToSet => 400
+      case _: NoSuchElementException | _: NonexistentGame => 404
+      case _: AuthorizationError => 401
+      case _: ConcurrentModification => 409
+      case _: ServiceUnavailable => 503
+      case _: ServerException => 500
+      case _: IllegalMove => 400
+      case _: GameOver => 410
+      case _ => 500

@@ -282,3 +282,8 @@ class TestGameService:
     Assertions.assertTrue(service.openGames().success.value.contains(gameId))
     service.register(gameId, White).success.value
     Assertions.assertFalse(service.openGames().success.value.contains(gameId))
+
+class TestUnconfiguredArchive:
+  @Test def testArchiveFails(): Unit =
+    val saveGame = go3d.server.SaveGame(Game.start(3).success.value, Map())
+    Assertions.assertTrue(UnconfiguredArchive.archive("G1", saveGame).isFailure)
