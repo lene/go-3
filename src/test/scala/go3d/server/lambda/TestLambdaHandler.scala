@@ -25,6 +25,9 @@ private def registerPath(gameId: String, color: String): String =
   "/register/" + gameId + "/" + color
 private def setCenterPath(gameId: String): String = "/set/" + gameId + "/2/2/2"
 private def passPath(gameId: String): String = "/pass/" + gameId
+private def replayPath(gameId: String, moveCount: Int): String =
+  statusPath(gameId) + "/" + moveCount.toString
+private def archivedPath(gameId: String): String = "/archived/" + gameId
 
 private val StatusPath = statusPath(GameId)
 private val OpenGamesPath = "/openGames"
@@ -206,6 +209,47 @@ class TestLambdaHandler:
       withAuth(setCenterPath(gameId), "Bearer " + black), null
     )
     Assertions.assertEquals(409, resp.getStatusCode)
+
+  @Test def testRegisterEmptyColorReturns400(): Unit =
+    val gameId = decode[GameCreatedResponse](call(NewGamePath).getBody).toTry.success.value.id
+    Assertions.assertEquals(400, call(registerPath(gameId, "%20")).getStatusCode)
+
+  @Test def testStatusAtMoveReplaysGame(): Unit =
+    val (gameId, black, _) = startedGame()
+    Assertions.assertEquals(200, callWithToken(setCenterPath(gameId), black).getStatusCode)
+    val before = call(replayPath(gameId, 0))
+    Assertions.assertEquals(200, before.getStatusCode)
+    val empty = decode[StatusResponse](before.getBody).toTry.success.value
+    Assertions.assertEquals(go3d.Empty, empty.game.at(2, 2, 2))
+    val after = decode[StatusResponse](call(replayPath(gameId, 1)).getBody).toTry.success.value
+    Assertions.assertEquals(Black, after.game.at(2, 2, 2))
+
+  @Test def testStatusAtMoveOfMissingGameReturns404(): Unit =
+    Assertions.assertEquals(404, call(replayPath(GameId, 1)).getStatusCode)
+    Assertions.assertEquals(
+      404, handler.handleRequest(request(replayPath(GameId, 1)), null).getStatusCode
+    )
+
+  @Test def testArchivedFinishedGameRedirects(): Unit =
+    val (gameId, black, white) = startedGame()
+    Assertions.assertEquals(200, callWithToken(passPath(gameId), black).getStatusCode)
+    Assertions.assertEquals(200, callWithToken(passPath(gameId), white).getStatusCode)
+    val resp = call(archivedPath(gameId))
+    Assertions.assertEquals(302, resp.getStatusCode)
+    Assertions.assertTrue(resp.getHeaders.get("Location").contains(gameId))
+
+  @Test def testArchivedRunningGameReturns404(): Unit =
+    val (gameId, _, _) = startedGame()
+    Assertions.assertEquals(404, call(archivedPath(gameId)).getStatusCode)
+    Assertions.assertEquals(
+      404, handler.handleRequest(request(archivedPath(gameId)), null).getStatusCode
+    )
+
+  @Test def testArchivedWithFailingArchiveReturns500(): Unit =
+    val failing = new LambdaHandler(Some(GameService(store, InMemoryGameArchive(true))))
+    Assertions.assertEquals(
+      500, failing.handleRequest(request(archivedPath(GameId)), null).getStatusCode
+    )
 
   @Test def testStatusMapping(): Unit =
     Assertions.assertEquals(500, LambdaHandler.statusOf(IllegalStateException("x")))

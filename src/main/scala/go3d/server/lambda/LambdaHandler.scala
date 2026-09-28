@@ -32,6 +32,8 @@ class ServiceUnavailable extends ServerException("game store is not configured")
  *   GET /new/{size}                → GameCreatedResponse
  *   GET /register/{gameId}/{color} → PlayerRegisteredResponse with the bearer token
  *   GET /status/{gameId}           → StatusResponse; with a bearer token also moves and `ready`
+ *   GET /status/{gameId}/{n}       → StatusResponse of the game after its first n moves
+ *   GET /archived/{gameId}         → 302 to a pre-signed S3 URL of the finished game's archive
  *   GET /set/{gameId}/{x}/{y}/{z}  → StatusResponse (bearer token required)
  *   GET /pass/{gameId}             → StatusResponse (bearer token required)
  *
@@ -66,11 +68,14 @@ class LambdaHandler(service: Option[GameService])
       case List("register", GameIdSegment(gameId), ColorSegment(color)) =>
         respond(writeService.flatMap(_.register(gameId, color)))
       case List("status", GameIdSegment(gameId)) =>
-        respond(
-          service.fold[Try[GoResponse]](Failure(NonexistentGame(gameId, List())))(s =>
-            token.flatMap(t => s.status(gameId, t))
-          )
-        )
+        respond(readService(gameId).flatMap(s => token.flatMap(t => s.status(gameId, t))))
+      case List("status", GameIdSegment(gameId), IntSegment(moveCount)) =>
+        respond(readService(gameId).flatMap(_.statusAt(gameId, moveCount)))
+      case List("archived", GameIdSegment(gameId)) =>
+        readService(gameId).flatMap(_.archivedUrl(gameId)) match
+          case Success(Some(url)) => redirect(url)
+          case Success(None) => errorResponse(404, "no archive of game " + gameId)
+          case Failure(e) => respond(Failure(e))
       case List("set", GameIdSegment(gameId), IntSegment(x), IntSegment(y), IntSegment(z)) =>
         respond(requiredToken(token).flatMap(t => writeService.flatMap(_.set(gameId, t, x, y, z))))
       case List("pass", GameIdSegment(gameId)) =>
@@ -79,6 +84,10 @@ class LambdaHandler(service: Option[GameService])
 
   private def writeService: Try[GameService] =
     service.fold[Try[GameService]](Failure(ServiceUnavailable()))(Success(_))
+
+  /** Without a store there are no games, so reading one finds nothing. */
+  private def readService(gameId: String): Try[GameService] =
+    service.fold[Try[GameService]](Failure(NonexistentGame(gameId, List())))(Success(_))
 
   /**
    * The bearer token of the request: None without an `Authentication` header, a failure when the
@@ -112,6 +121,13 @@ class LambdaHandler(service: Option[GameService])
 
   private def errorResponse(statusCode: Int, message: String): APIGatewayProxyResponseEvent =
     jsonResponse(statusCode, Json.obj("error" -> Json.fromString(message)).noSpaces)
+
+  private def redirect(url: String): APIGatewayProxyResponseEvent =
+    val resp = new APIGatewayProxyResponseEvent()
+    resp.setStatusCode(302)
+    resp.setBody("")
+    resp.setHeaders(Map("Location" -> url).asJava)
+    resp
 
   private def jsonResponse(statusCode: Int, body: String): APIGatewayProxyResponseEvent =
     val resp = new APIGatewayProxyResponseEvent()

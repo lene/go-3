@@ -1,5 +1,6 @@
 package go3d.server
 
+import go3d.BadColor
 import go3d.Black
 import go3d.Color
 import go3d.White
@@ -37,16 +38,19 @@ object Players:
     activePlayers.get(gameId).exists(_.get().size == 2)
 
   /**
-   * Register a player for a game (thread-safe).
+   * Register a black or white player for a game (thread-safe); any other color fails with
+   * [[BadColor]].
    */
   def register(gameId: String, color: Color): Try[Unit] =
-    val state = activePlayers.getOrElseUpdate(
-      gameId,
-      new ConcurrentState(Map.empty[Color, Player])
-    )
-    state.update { players =>
-      if players.contains(color) then Failure(DuplicateColor(gameId, color))
-      else Success(players + (color -> Player(color, gameId)))
-    }.map(_ => ())
+    if color != Black && color != White then Failure(BadColor(color.ascii))
+    else
+      val state = activePlayers.getOrElseUpdate(
+        gameId,
+        new ConcurrentState(Map.empty[Color, Player])
+      )
+      state.update { players =>
+        if players.contains(color) then Failure(DuplicateColor(gameId, color))
+        else Success(players + (color -> Player(color, gameId)))
+      }.map(_ => ())
 
   def unregister(gameId: String): Unit = activePlayers.remove(gameId)

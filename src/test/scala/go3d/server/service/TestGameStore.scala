@@ -171,14 +171,42 @@ class TestDynamoDBGameStore extends GameStoreContract:
     val player = item(playersTable, Map("gameId" -> "GAME01", "color" -> Black.toString))
     Assertions.assertEquals(Some("1000000"), player.get("expiresAt").map(_.n()))
 
-  @Test def testActiveGameHasNoExpiry(): Unit =
+  @Test def testActiveGameExpiresAfterInactivity(): Unit =
+    val before = System.currentTimeMillis() / 1000L + DynamoDBGameStore.InactiveRetentionSeconds
     store.createGame("GAME01", Game.start(3).success.value).success.value
     store.registerPlayer("GAME01", Black, "hashB").success.value
-    Assertions.assertEquals(None, item(gamesTable, Map("gameId" -> "GAME01")).get("expiresAt"))
-    Assertions.assertEquals(
-      None,
-      item(playersTable, Map("gameId" -> "GAME01", "color" -> Black.toString)).get("expiresAt")
+    Assertions.assertTrue(gameExpiry() >= before)
+    Assertions.assertTrue(playerExpiry(Black) >= before)
+
+  @Test def testUpdateRefreshesExpiryOfGameAndPlayers(): Unit =
+    val game = Game.start(3).success.value
+    store.createGame("GAME01", game).success.value
+    store.registerPlayer("GAME01", Black, "hashB").success.value
+    setExpiry(gamesTable, Map("gameId" -> "GAME01"))
+    setExpiry(playersTable, Map("gameId" -> "GAME01", "color" -> Black.toString))
+    store.updateGame("GAME01", 0L, game.makeMove(Move(2, 2, 2, Black)).success.value).success.value
+    Assertions.assertTrue(gameExpiry() > 1L)
+    Assertions.assertTrue(playerExpiry(Black) > 1L)
+    Assertions.assertEquals(Some(gameExpiry()), Some(playerExpiry(Black)))
+
+  private def gameExpiry(): Long = expiry(item(gamesTable, Map("gameId" -> "GAME01")))
+
+  private def playerExpiry(color: go3d.Color): Long =
+    expiry(item(playersTable, Map("gameId" -> "GAME01", "color" -> color.toString)))
+
+  private def expiry(attributes: Map[String, AttributeValue]): Long =
+    attributes.get("expiresAt").flatMap(_.n().toLongOption).getOrElse(0L)
+
+  /** Sets `expiresAt` of the item to 1, so a later refresh is visible. */
+  private def setExpiry(table: String, key: Map[String, String]): Unit =
+    client.updateItem(
+      UpdateItemRequest.builder().tableName(table)
+        .key(key.map((k, v) => k -> AttributeValue.builder().s(v).build()).asJava)
+        .updateExpression("SET expiresAt = :one")
+        .expressionAttributeValues(Map(":one" -> AttributeValue.builder().n("1").build()).asJava)
+        .build()
     )
+    ()
 
   private def item(table: String, key: Map[String, String]): Map[String, AttributeValue] =
     client.getItem(

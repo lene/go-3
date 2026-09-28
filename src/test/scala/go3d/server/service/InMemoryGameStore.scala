@@ -68,6 +68,10 @@ class InMemoryGameArchive(failing: Boolean) extends GameArchive:
       archives.update(gameId, saveGame)
       Success("archives/" + gameId + ".json")
 
+  def url(gameId: String): Try[Option[String]] =
+    if failing then Failure(IllegalStateException("archive unavailable"))
+    else Success(archives.get(gameId).map(_ => "memory://archives/" + gameId + ".json"))
+
   def archived(gameId: String): Option[SaveGame] = archives.get(gameId)
 
 /** A [[GameStore]] whose every operation fails, as when DynamoDB is unreachable. */

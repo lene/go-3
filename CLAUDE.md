@@ -115,6 +115,10 @@ The server uses **http4s with Cats Effect** for async HTTP handling:
   - `GET /set/{gameId}/{x}/{y}/{z}` - Place stone
   - `GET /pass/{gameId}` - Pass turn
   - `GET /openGames` - List available games
+  - `GET /archived/{gameId}` - Archived game (local file, or a redirect to a pre-signed S3 URL)
+
+  The AWS Lambda handler (`lambda/LambdaHandler.scala`) serves the same routes on top of
+  `service/GameService`, with DynamoDB as the store and S3 as the archive.
 
 - **Request Handlers** (`http4s/` subpackage): Each route has a handler class (e.g., `StartNewGame`, `DoSet`, `DoPass`, `RegisterPlayer`) that extends `BaseHandler` and implements authentication/authorization
 

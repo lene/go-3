@@ -4,11 +4,8 @@ import com.typesafe.scalalogging.LazyLogging
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient
 import software.amazon.awssdk.regions.Region
 import software.amazon.awssdk.services.s3.S3Client as AwsS3Client
-import software.amazon.awssdk.services.s3.model._
 import software.amazon.awssdk.services.s3.presigner.S3Presigner
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest
 
-import java.time.Duration
 import scala.util.{Failure, Success, Try}
 
 /**
@@ -67,8 +64,9 @@ object S3Client extends LazyLogging:
    * verifies it arrived. Succeeds without uploading when S3 is not configured.
    */
   def archiveGame(gameId: String, gameJson: String): Try[Unit] =
-    get().fold[Try[Unit]](Success(())) { case (client, _, config) =>
-      go3d.server.service.S3GameArchive(client, config.bucket).store(gameId, gameJson).map(_ => ())
+    get().fold[Try[Unit]](Success(())) { case (client, presigner, config) =>
+      go3d.server.service.S3GameArchive(client, presigner, config.bucket).store(gameId, gameJson)
+        .map(_ => ())
     }
 
   /**
@@ -77,23 +75,8 @@ object S3Client extends LazyLogging:
    */
   def generatePresignedUrl(gameId: String): Option[String] =
     get().flatMap { case (client, presigner, config) =>
-      val key = S3Config.s3Key(gameId)
-      val exists = Try(client.headObject(
-        HeadObjectRequest.builder().bucket(config.bucket).key(key).build()
-      )).isSuccess
-      Option.when(exists)(key).flatMap { _ =>
-        Try {
-          val getRequest = GetObjectRequest.builder()
-            .bucket(config.bucket)
-            .key(key)
-            .build()
-          val presignRequest = GetObjectPresignRequest.builder()
-            .signatureDuration(Duration.ofMinutes(PresignedUrlExpiryMinutes))
-            .getObjectRequest(getRequest)
-            .build()
-          presigner.presignGetObject(presignRequest).url().toString
-        }.toOption
-      }
+      go3d.server.service.S3GameArchive(client, presigner, config.bucket).url(gameId).toOption
+        .flatten
     }
 
   private def buildClients(config: S3Config): (AwsS3Client, S3Presigner) =

@@ -1,6 +1,7 @@
 package go3d.server.service
 
 import go3d.BadBoardSize
+import go3d.BadColor
 import go3d.Black
 import go3d.Color
 import go3d.Game
@@ -107,6 +108,16 @@ class TestGameService:
     Assertions.assertInstanceOf(
       classOf[GameOver], service.register(gameId, Black).failure.exception
     )
+
+  @Test def testRegisterEmptyColorFails(): Unit =
+    val gameId = service.newGame(3).success.value.id
+    Assertions.assertInstanceOf(
+      classOf[BadColor], service.register(gameId, go3d.Empty).failure.exception
+    )
+    Assertions.assertInstanceOf(
+      classOf[BadColor], service.register(gameId, go3d.Sentinel).failure.exception
+    )
+    Assertions.assertTrue(service.openGames().success.value.isEmpty)
 
   @Test def testStatusOfNonexistentGameFails(): Unit =
     Assertions.assertInstanceOf(
@@ -226,6 +237,42 @@ class TestGameService:
       classOf[Ko], service.set(gameId, black, 2, 2, 3).failure.exception
     )
 
+  /** A started game with black at 1,1,1 and white at 3,3,3: its id. */
+  private def gameWithTwoMoves(): String =
+    val (gameId, black, white) = startedGame(3)
+    service.set(gameId, black, 1, 1, 1).success.value
+    service.set(gameId, white, 3, 3, 3).success.value
+    gameId
+
+  @Test def testStatusAtMoveReplaysFirstMoves(): Unit =
+    val status = service.statusAt(gameWithTwoMoves(), 1).success.value
+    Assertions.assertEquals(1, status.game.moves.length)
+    Assertions.assertEquals(Black, status.game.at(1, 1, 1))
+    Assertions.assertEquals(go3d.Empty, status.game.at(3, 3, 3))
+    Assertions.assertFalse(status.ready)
+    Assertions.assertEquals(None, status.playerColor)
+
+  @Test def testStatusAtMoveClampsCount(): Unit =
+    val gameId = gameWithTwoMoves()
+    Assertions.assertEquals(0, service.statusAt(gameId, -1).success.value.game.moves.length)
+    Assertions.assertEquals(0, service.statusAt(gameId, 0).success.value.game.moves.length)
+    Assertions.assertEquals(2, service.statusAt(gameId, 99).success.value.game.moves.length)
+
+  @Test def testStatusAtMoveOfNonexistentGameFails(): Unit =
+    Assertions.assertInstanceOf(
+      classOf[NonexistentGame], service.statusAt("NOGAME", 1).failure.exception
+    )
+
+  @Test def testArchivedUrlOnlyForFinishedGame(): Unit =
+    val (running, _, _) = startedGame(3)
+    Assertions.assertEquals(None, service.archivedUrl(running).success.value)
+    val (finished, _, _) = finishedGame()
+    Assertions.assertTrue(service.archivedUrl(finished).success.value.exists(_.contains(finished)))
+
+  @Test def testArchivedUrlFailsWhenArchiveFails(): Unit =
+    val failingService = serviceFor(store, InMemoryGameArchive(true))
+    Assertions.assertTrue(failingService.archivedUrl("G1").isFailure)
+
   @Test def testTwoPassesEndGame(): Unit =
     val (gameId, _, _) = finishedGame()
     Assertions.assertTrue(service.status(gameId, None).success.value.over)
@@ -287,3 +334,6 @@ class TestUnconfiguredArchive:
   @Test def testArchiveFails(): Unit =
     val saveGame = go3d.server.SaveGame(Game.start(3).success.value, Map())
     Assertions.assertTrue(UnconfiguredArchive.archive("G1", saveGame).isFailure)
+
+  @Test def testUnconfiguredArchiveHasNoUrl(): Unit =
+    Assertions.assertEquals(None, UnconfiguredArchive.url("G1").success.value)
