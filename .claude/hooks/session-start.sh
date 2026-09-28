@@ -16,13 +16,24 @@ LAUNCHER="$HOME/.sbt/launchers/$SBT_VERSION/sbt-launch.jar"
 WRAPPER="$HOME/.local/bin/sbt"
 
 mkdir -p "$(dirname "$LAUNCHER")" "$(dirname "$WRAPPER")"
+# SHA-256 of the launcher, pinned here because Maven Central only publishes SHA-1 and MD5;
+# update it together with project/build.properties
+declare -A LAUNCHER_SHA256=(
+  [1.11.7]=f92a2095ac75008764fe3b2b793ffe624c4fbef5bfd9b0022e4bc2daf668c651
+)
+HTTPS_ONLY="=https"
+CURL=(curl -sSfL --proto "$HTTPS_ONLY" --proto-redir "$HTTPS_ONLY" --retry 3)
+
 if [[ ! -s "$LAUNCHER" ]]; then
-  JAR_URL="$MIRROR/org/scala-sbt/sbt-launch/$SBT_VERSION/sbt-launch-$SBT_VERSION.jar"
-  # HTTPS only, also on redirects; the launcher must match the checksum Maven Central publishes
-  curl -sSfL --proto '=https' --proto-redir '=https' --retry 3 -o "$LAUNCHER.tmp" "$JAR_URL"
-  EXPECTED_SHA1=$(curl -sSfL --proto '=https' --proto-redir '=https' --retry 3 "$JAR_URL.sha1")
-  if [[ "$(sha1sum "$LAUNCHER.tmp" | cut -d' ' -f1)" != "${EXPECTED_SHA1:0:40}" ]]; then
-    echo "sbt launcher checksum mismatch" >&2
+  EXPECTED=${LAUNCHER_SHA256[$SBT_VERSION]:-}
+  if [[ -z "$EXPECTED" ]]; then
+    echo "no pinned SHA-256 for sbt launcher $SBT_VERSION in $0" >&2
+    exit 1
+  fi
+  "${CURL[@]}" -o "$LAUNCHER.tmp" \
+    "$MIRROR/org/scala-sbt/sbt-launch/$SBT_VERSION/sbt-launch-$SBT_VERSION.jar"
+  if ! echo "$EXPECTED  $LAUNCHER.tmp" | sha256sum --check --status; then
+    echo "sbt launcher $SBT_VERSION does not match its pinned SHA-256" >&2
     rm -f "$LAUNCHER.tmp"
     exit 1
   fi
