@@ -9,6 +9,15 @@ import scala.util.Try
 
 val ClientTestPort = 64556
 
+// command line options used by the client tests
+val ServerOpt = "--server"
+val PortOpt = "--port"
+val UrlOpt = "--url"
+val GameIdOpt = "--game-id"
+val TokenOpt = "--token"
+val SizeOpt = "--size"
+val ColorOpt = "--color"
+
 /// Asserts that parsing `args` with `parse` fails with an exception of type `expected`.
 def assertParseFails[E <: Throwable](
   expected: Class[E], parse: Array[String] => Try[BaseClient], args: String*
@@ -20,65 +29,65 @@ private val LocalUrl = "http://localhost:" + ClientTestPort.toString
 class TestAsciiClient:
 
   @Test def testUrlReplacesServerAndPort(): Unit =
-    val client = AsciiClient.parseArgs(Array("--url", LocalUrl + "/", "--game-id", "ABCDEF"))
+    val client = AsciiClient.parseArgs(Array(UrlOpt, LocalUrl + "/", GameIdOpt, "ABCDEF"))
     Assertions.assertEquals(LocalUrl, client.success.value.serverURL)
 
   @Test def testUrlWithServerFails(): Unit =
     assertParseFails(
       classOf[ValidationFailure], AsciiClient.parseArgs,
-      "--url", LocalUrl, "--server", "localhost", "--game-id", "ABCDEF"
+      UrlOpt, LocalUrl, ServerOpt, "localhost", GameIdOpt, "ABCDEF"
     )
 
   @Test def testUrlWithPortFails(): Unit =
     assertParseFails(
       classOf[ValidationFailure], AsciiClient.parseArgs,
-      "--url", LocalUrl, "--port", ClientTestPort.toString, "--game-id", "ABCDEF"
+      UrlOpt, LocalUrl, PortOpt, ClientTestPort.toString, GameIdOpt, "ABCDEF"
     )
 
   @Test def testUrlWithUnsupportedSchemeFails(): Unit =
     assertParseFails(
       classOf[IllegalArgumentException], AsciiClient.parseArgs,
-      "--url", "ftp://localhost", "--game-id", "ABCDEF"
+      UrlOpt, "ftp://localhost", GameIdOpt, "ABCDEF"
     )
 
   @Test def testBadColor(): Unit =
     assertParseFails(
       classOf[BadColor], AsciiClient.parseArgs,
-      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--color", "bx"
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, SizeOpt, "3", ColorOpt, "bx"
     )
 
   @Test def testUnknownHost(): Unit =
     assertParseFails(
       classOf[UnknownHostException], AsciiClient.parseArgs,
-      "--server", "doesnt-exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
+      ServerOpt, "doesnt-exist", PortOpt, ClientTestPort.toString, SizeOpt, "3", ColorOpt, "b"
     )
 
   @Test def testMissingServer(): Unit =
     assertParseFails(
       classOf[NoSuchElementException], AsciiClient.parseArgs,
-      "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
+      PortOpt, ClientTestPort.toString, SizeOpt, "3", ColorOpt, "b"
     )
 
   @Test def testMissingPort(): Unit =
     assertParseFails(
       classOf[NoSuchElementException], AsciiClient.parseArgs,
-      "--server", "localhost", "--size", "3", "--color", "b"
+      ServerOpt, "localhost", SizeOpt, "3", ColorOpt, "b"
     )
 
   @Test def testMissingColor(): Unit =
     assertParseFails(
       classOf[ValidationFailure], AsciiClient.parseArgs,
-      "--server", "localhost", "--port", ClientTestPort.toString
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString
     )
 
   @Test def testMissingSize(): Unit =
     assertParseFails(
       classOf[ValidationFailure], AsciiClient.parseArgs,
-      "--server", "localhost", "--port", ClientTestPort.toString, "--color", "b"
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, ColorOpt, "b"
     )
 
   @Test def testConflictingArguments(): Unit =
     assertParseFails(
       classOf[ValidationFailure], AsciiClient.parseArgs,
-      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--game-id", "1"
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, SizeOpt, "3", GameIdOpt, "1"
     )
