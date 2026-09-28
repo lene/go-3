@@ -1,10 +1,13 @@
 name: Terraform
 
-# Validates, plans and applies infra/terraform/go3d-readonly (the read-only Lambda stack).
+# Validates, plans and applies infra/terraform/go3d-readonly: the production stack (read-only
+# routes) on pull requests and master, or the staging stack (staging.tfvars, write routes
+# enabled) when dispatched manually with environment=staging.
 # Plan and apply authenticate to AWS through GitHub OIDC with the roles created by
 # infra/terraform/bootstrap; they are skipped until the repository variables below are set:
 #   TF_STATE_BUCKET, AWS_TF_PLAN_ROLE_ARN, AWS_TF_APPLY_ROLE_ARN (see the stack's README.md).
-# Apply only runs on master, in the protected "production" environment, from the reviewed plan.
+# Apply only runs on master, in the "production" or "staging" GitHub environment, from the
+# reviewed plan.
 on:
   pull_request:
     paths:
@@ -20,9 +23,15 @@ on:
       - "src/main/**"
       - "build.sbt"
   workflow_dispatch:
+    inputs:
+      environment:
+        description: Stack to plan and apply
+        type: choice
+        options: [production, staging]
+        default: production
 
 concurrency:
-  group: terraform-${{ github.ref }}
+  group: terraform-${{ github.ref }}-${{ inputs.environment || 'production' }}
   cancel-in-progress: false
 
 permissions:
@@ -34,6 +43,8 @@ env:
   TF_IN_AUTOMATION: "true"
   AWS_REGION: eu-central-1
   JAVA_VERSION: 17
+  # production or staging; each has its own state key, and staging its own tfvars
+  STACK_ENV: ${{ inputs.environment || 'production' }}
 
 jobs:
   validate:
@@ -87,16 +98,21 @@ jobs:
         env:
           TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
         run: |
+          if [ "$STACK_ENV" = staging ]; then state_key=go3d-staging/terraform.tfstate
+          else state_key=go3d-readonly/terraform.tfstate; fi
           terraform init -input=false \
             -backend-config="bucket=$TF_STATE_BUCKET" \
-            -backend-config="key=go3d-readonly/terraform.tfstate" \
+            -backend-config="key=$state_key" \
             -backend-config="region=$AWS_REGION" \
             -backend-config="encrypt=true" \
             -backend-config="use_lockfile=true"
-          terraform plan -input=false -var "lambda_jar_path=../../../go-3d-lambda.jar" -out=tfplan
+          var_file=()
+          if [ "$STACK_ENV" = staging ]; then var_file=(-var-file=staging.tfvars); fi
+          terraform plan -input=false "${var_file[@]}" \
+            -var "lambda_jar_path=../../../go-3d-lambda.jar" -out=tfplan
           terraform show -no-color tfplan > tfplan.txt
           {
-            echo '### Terraform plan'
+            echo "### Terraform plan ($STACK_ENV)"
             echo '```'
             grep -E '^(Plan:|No changes)' tfplan.txt || true
             echo '```'
@@ -125,7 +141,7 @@ jobs:
     runs-on: ubuntu-latest
     # configure required reviewers on this environment, so each apply is approved after
     # reviewing the plan in the plan job's summary
-    environment: production
+    environment: ${{ inputs.environment || 'production' }}
     permissions:
       contents: read
       id-token: write
@@ -148,9 +164,11 @@ jobs:
           TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
         run: |
           test -f tfplan && test -f ../../../go-3d-lambda.jar
+          if [ "$STACK_ENV" = staging ]; then state_key=go3d-staging/terraform.tfstate
+          else state_key=go3d-readonly/terraform.tfstate; fi
           terraform init -input=false \
             -backend-config="bucket=$TF_STATE_BUCKET" \
-            -backend-config="key=go3d-readonly/terraform.tfstate" \
+            -backend-config="key=$state_key" \
             -backend-config="region=$AWS_REGION" \
             -backend-config="encrypt=true" \
             -backend-config="use_lockfile=true"

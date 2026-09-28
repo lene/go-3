@@ -7,9 +7,15 @@ locals {
 
   common_tags = merge(var.tags, local.required_tags)
 
+  # appended to names that are fixed per account, so a staging stack does not collide with prod
+  name_suffix = var.environment == "prod" ? "" : "-${var.environment}"
+
   archive_bucket_name = coalesce(
     var.archive_bucket_name,
-    "go3d-game-archives-${data.aws_caller_identity.current.account_id}-${var.aws_region}"
+    join("-", [
+      "go3d-game-archives", data.aws_caller_identity.current.account_id,
+      "${var.aws_region}${local.name_suffix}"
+    ])
   )
 
   read_routes = toset([
@@ -17,6 +23,17 @@ locals {
     "GET /status/{gameId}",
     "GET /openGames",
   ])
+
+  write_routes = toset([
+    "GET /new/{size}",
+    "GET /register/{gameId}/{color}",
+    "GET /set/{gameId}/{x}/{y}/{z}",
+    "GET /pass/{gameId}",
+  ])
+
+  api_routes = (
+    var.enable_write_routes ? setunion(local.read_routes, local.write_routes) : local.read_routes
+  )
 
   api_error_alarms = {
     "4xx" = {
@@ -279,6 +296,41 @@ resource "aws_iam_role_policy" "lambda_read" {
   policy = data.aws_iam_policy_document.lambda_read.json
 }
 
+# Writes of the game service (GameService, DynamoDBGameStore, S3GameArchive): conditional puts
+# and updates, the completion transaction, and archive uploads.
+data "aws_iam_policy_document" "lambda_write" {
+  statement {
+    sid = "DynamoDBWrite"
+
+    actions = [
+      "dynamodb:ConditionCheckItem",
+      "dynamodb:PutItem",
+      "dynamodb:UpdateItem",
+    ]
+
+    resources = [
+      aws_dynamodb_table.active_games.arn,
+      aws_dynamodb_table.players.arn,
+    ]
+  }
+
+  statement {
+    sid = "S3ArchiveWrite"
+
+    actions = ["s3:PutObject"]
+
+    resources = ["${aws_s3_bucket.archive.arn}/archives/*"]
+  }
+}
+
+resource "aws_iam_role_policy" "lambda_write" {
+  count = var.enable_write_routes ? 1 : 0
+
+  name   = "go3d-lambda-write"
+  role   = aws_iam_role.lambda_readonly.id
+  policy = data.aws_iam_policy_document.lambda_write.json
+}
+
 resource "aws_cloudwatch_log_group" "lambda" {
   name              = "/aws/lambda/${var.lambda_function_name}"
   retention_in_days = var.log_retention_days
@@ -310,6 +362,7 @@ resource "aws_lambda_function" "read" {
   depends_on = [
     aws_cloudwatch_log_group.lambda,
     aws_iam_role_policy.lambda_read,
+    aws_iam_role_policy.lambda_write,
     aws_iam_role_policy_attachment.lambda_basic_execution,
   ]
 
@@ -346,7 +399,7 @@ resource "aws_apigatewayv2_integration" "read_lambda" {
 }
 
 resource "aws_apigatewayv2_route" "read" {
-  for_each = local.read_routes
+  for_each = local.api_routes
 
   api_id    = aws_apigatewayv2_api.read.id
   route_key = each.value
@@ -478,7 +531,7 @@ resource "aws_cloudwatch_metric_alarm" "api_errors" {
 resource "aws_cloudwatch_metric_alarm" "dynamodb_throttles" {
   for_each = local.dynamodb_read_operations
 
-  alarm_name          = "go3d-dynamodb-${replace(each.key, "_", "-")}-throttles"
+  alarm_name          = "go3d-dynamodb-${replace(each.key, "_", "-")}-throttles${local.name_suffix}"
   alarm_description   = "DynamoDB throttled requests for ${each.value.table_name} ${each.value.operation}"
   namespace           = "AWS/DynamoDB"
   metric_name         = "ThrottledRequests"
@@ -499,14 +552,16 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_throttles" {
   ok_actions    = var.alarm_actions
 
   tags = {
-    Name = "go3d-dynamodb-${replace(each.key, "_", "-")}-throttles"
+    Name = "go3d-dynamodb-${replace(each.key, "_", "-")}-throttles${local.name_suffix}"
   }
 }
 
 resource "aws_cloudwatch_metric_alarm" "dynamodb_system_errors" {
   for_each = local.dynamodb_read_operations
 
-  alarm_name          = "go3d-dynamodb-${replace(each.key, "_", "-")}-system-errors"
+  alarm_name = (
+    "go3d-dynamodb-${replace(each.key, "_", "-")}-system-errors${local.name_suffix}"
+  )
   alarm_description   = "DynamoDB system errors for ${each.value.table_name} ${each.value.operation}"
   namespace           = "AWS/DynamoDB"
   metric_name         = "SystemErrors"
@@ -527,7 +582,7 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_system_errors" {
   ok_actions    = var.alarm_actions
 
   tags = {
-    Name = "go3d-dynamodb-${replace(each.key, "_", "-")}-system-errors"
+    Name = "go3d-dynamodb-${replace(each.key, "_", "-")}-system-errors${local.name_suffix}"
   }
 }
 
@@ -560,7 +615,7 @@ resource "aws_cloudwatch_metric_alarm" "monthly_cost" {
 }
 
 resource "aws_cloudwatch_query_definition" "lambda_baseline" {
-  name = "go3d/read/lambda-baseline"
+  name = "go3d/read/lambda-baseline${local.name_suffix}"
 
   log_group_names = [
     aws_cloudwatch_log_group.lambda.name,
