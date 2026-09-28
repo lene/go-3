@@ -5,7 +5,7 @@
 # shared egress address (HTTP 429).
 set -euo pipefail
 
-if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ]; then
+if [[ "${CLAUDE_CODE_REMOTE:-}" != "true" ]]; then
   exit 0
 fi
 
@@ -16,9 +16,16 @@ LAUNCHER="$HOME/.sbt/launchers/$SBT_VERSION/sbt-launch.jar"
 WRAPPER="$HOME/.local/bin/sbt"
 
 mkdir -p "$(dirname "$LAUNCHER")" "$(dirname "$WRAPPER")"
-if [ ! -s "$LAUNCHER" ]; then
-  curl -sSfL --retry 3 -o "$LAUNCHER.tmp" \
-    "$MIRROR/org/scala-sbt/sbt-launch/$SBT_VERSION/sbt-launch-$SBT_VERSION.jar"
+if [[ ! -s "$LAUNCHER" ]]; then
+  JAR_URL="$MIRROR/org/scala-sbt/sbt-launch/$SBT_VERSION/sbt-launch-$SBT_VERSION.jar"
+  # HTTPS only, also on redirects; the launcher must match the checksum Maven Central publishes
+  curl -sSfL --proto '=https' --proto-redir '=https' --retry 3 -o "$LAUNCHER.tmp" "$JAR_URL"
+  EXPECTED_SHA1=$(curl -sSfL --proto '=https' --proto-redir '=https' --retry 3 "$JAR_URL.sha1")
+  if [[ "$(sha1sum "$LAUNCHER.tmp" | cut -d' ' -f1)" != "${EXPECTED_SHA1:0:40}" ]]; then
+    echo "sbt launcher checksum mismatch" >&2
+    rm -f "$LAUNCHER.tmp"
+    exit 1
+  fi
   mv "$LAUNCHER.tmp" "$LAUNCHER"
 fi
 
