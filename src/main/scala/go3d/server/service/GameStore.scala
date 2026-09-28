@@ -54,3 +54,6 @@ trait GameStore:
 trait GameArchive:
   /** Stores and verifies the archive of a finished game and returns its key. */
   def archive(gameId: String, saveGame: go3d.server.SaveGame): Try[String]
+
+  /** A short-lived URL to download the archive of `gameId`; None when there is no archive. */
+  def url(gameId: String): Try[Option[String]]

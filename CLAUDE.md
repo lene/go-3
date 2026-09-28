@@ -23,6 +23,12 @@ sbt compile
 sbt clean
 ```
 
+In Claude Code on the web, the SessionStart hook `.claude/hooks/session-start.sh` installs an
+`sbt` wrapper in `~/.local/bin` that resolves everything from Google's mirror of Maven Central
+(the default sbt repository is not reachable there), and compiles once to warm the cache. Compile
+and run the affected tests locally before pushing; the DynamoDB Local and S3Mock suites skip
+without `DYNAMODB_TEST_ENDPOINT`/`S3_TEST_ENDPOINT` and only run in CI.
+
 The `universal:packageBin` command creates `target/universal/go-3d-<VERSION>.zip` containing executables in `bin/` and libraries in `lib/`.
 
 ### Testing
@@ -115,6 +121,10 @@ The server uses **http4s with Cats Effect** for async HTTP handling:
   - `GET /set/{gameId}/{x}/{y}/{z}` - Place stone
   - `GET /pass/{gameId}` - Pass turn
   - `GET /openGames` - List available games
+  - `GET /archived/{gameId}` - Archived game (local file, or a redirect to a pre-signed S3 URL)
+
+  The AWS Lambda handler (`lambda/LambdaHandler.scala`) serves the same routes on top of
+  `service/GameService`, with DynamoDB as the store and S3 as the archive.
 
 - **Request Handlers** (`http4s/` subpackage): Each route has a handler class (e.g., `StartNewGame`, `DoSet`, `DoPass`, `RegisterPlayer`) that extends `BaseHandler` and implements authentication/authorization
 

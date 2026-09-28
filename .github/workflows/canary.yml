@@ -27,11 +27,11 @@ jobs:
     steps:
       - name: Call /health, /openGames and /status
         run: |
-          # /status/CANARY0 does not exist: the 404 still exercises the DynamoDB GetItem path
+          # no game CANARY exists: the 404 still does a DynamoDB GetItem (ids are 6 base62 chars)
           echo "| Route | Status | Seconds |" >> "$GITHUB_STEP_SUMMARY"
           echo "|-------|--------|---------|" >> "$GITHUB_STEP_SUMMARY"
           failed=0
-          for path in /health /openGames /status/CANARY0; do
+          for path in /health /openGames /status/CANARY; do
             if ! result=$(curl -sS -o /dev/null -w '%{http_code} %{time_total}' --max-time 30 \
                 "${API_URL%/}$path"); then
               echo "::error::$path: request failed"

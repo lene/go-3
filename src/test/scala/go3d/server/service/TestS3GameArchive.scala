@@ -9,14 +9,16 @@ import org.scalatest.TryValues.*
 import software.amazon.awssdk.auth.credentials.{AwsBasicCredentials, StaticCredentialsProvider}
 import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient
 import software.amazon.awssdk.regions.Region
-import software.amazon.awssdk.services.s3.S3Client
+import software.amazon.awssdk.services.s3.{S3Client, S3Configuration}
 import software.amazon.awssdk.services.s3.model.{
   CreateBucketRequest, DeleteBucketRequest, DeleteObjectRequest, GetObjectRequest,
   ListObjectsV2Request
 }
+import software.amazon.awssdk.services.s3.presigner.S3Presigner
 
 import java.net.URI
 import java.nio.charset.StandardCharsets
+import scala.io.Source
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
@@ -28,18 +30,28 @@ class TestS3GameArchive:
   private val endpoint = sys.env.get("S3_TEST_ENDPOINT")
   private val bucket = "go3d-test-" + java.util.UUID.randomUUID().toString
 
+  private val endpointUri = URI.create(endpoint.getOrElse("http://localhost:9090"))
+  private val credentials =
+    StaticCredentialsProvider.create(AwsBasicCredentials.create("local", "local"))
+
   private lazy val client: S3Client =
     S3Client.builder()
-      .endpointOverride(URI.create(endpoint.getOrElse("http://localhost:9090")))
+      .endpointOverride(endpointUri)
       .region(Region.EU_CENTRAL_1)
       .forcePathStyle(true)
-      .credentialsProvider(
-        StaticCredentialsProvider.create(AwsBasicCredentials.create("local", "local"))
-      )
+      .credentialsProvider(credentials)
       .httpClientBuilder(UrlConnectionHttpClient.builder())
       .build()
 
-  private lazy val archive = new S3GameArchive(client, bucket)
+  private lazy val presigner: S3Presigner =
+    S3Presigner.builder()
+      .endpointOverride(endpointUri)
+      .region(Region.EU_CENTRAL_1)
+      .serviceConfiguration(S3Configuration.builder().pathStyleAccessEnabled(true).build())
+      .credentialsProvider(credentials)
+      .build()
+
+  private lazy val archive = new S3GameArchive(client, presigner, bucket)
 
   private def saveGame(gameId: String): SaveGame =
     SaveGame(Game.start(3).success.value, Map(Black -> Player(Black, gameId)))
@@ -59,6 +71,7 @@ class TestS3GameArchive:
         client.deleteBucket(DeleteBucketRequest.builder().bucket(bucket).build())
       }
       client.close()
+      presigner.close()
 
   @Test def testArchiveReturnsKeyOfGame(): Unit =
     Assertions.assertEquals(
@@ -73,5 +86,16 @@ class TestS3GameArchive:
     Assertions.assertEquals(saveGame("GAME01").asJson.noSpaces, stored)
 
   @Test def testArchiveToMissingBucketFails(): Unit =
-    val missing = new S3GameArchive(client, bucket + "-missing")
+    val missing = new S3GameArchive(client, presigner, bucket + "-missing")
     Assertions.assertTrue(missing.archive("GAME01", saveGame("GAME01")).isFailure)
+
+  @Test def testUrlOfArchivedGameDownloadsIt(): Unit =
+    archive.archive("GAME01", saveGame("GAME01")).success.value
+    val url = archive.url("GAME01").success.value
+    Assertions.assertTrue(url.isDefined)
+    val source = Source.fromURL(url.getOrElse(""), StandardCharsets.UTF_8.name())
+    try Assertions.assertEquals(saveGame("GAME01").asJson.noSpaces, source.mkString)
+    finally source.close()
+
+  @Test def testUrlOfMissingArchiveIsNone(): Unit =
+    Assertions.assertEquals(None, archive.url("NOGAME").success.value)

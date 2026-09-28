@@ -1,6 +1,7 @@
 package go3d.server.service
 
 import com.typesafe.scalalogging.LazyLogging
+import go3d.BadColor
 import go3d.Black
 import go3d.Color
 import go3d.Game
@@ -46,9 +47,11 @@ class GameService(
       _ <- store.createGame(gameId, game)
     yield GameCreatedResponse(gameId, size)
 
+  /** Registers a black or white player; any other color fails with [[BadColor]]. */
   def register(gameId: String, color: Color): Try[PlayerRegisteredResponse] =
     val token = newToken()
     for
+      _ <- check(color == Black || color == White, BadColor(color.ascii))
       stored <- existing(gameId)
       _ <- check(!stored.game.isOver, GameOver(stored.game))
       _ <- store.registerPlayer(gameId, color, SecurityUtils.sha256(token))
@@ -73,6 +76,19 @@ class GameService(
         val ready = game.isTurn(c) && stored.players.size == 2
         StatusResponse(game, game.possibleMoves(c), ready, game.isOver, Some(c), NullRequestInfo)
       }
+
+  /**
+   * The game after its first `moveCount` moves, for replaying it; the count is clamped to the
+   * moves played so far.
+   */
+  def statusAt(gameId: String, moveCount: Int): Try[StatusResponse] =
+    for
+      stored <- existing(gameId)
+      game <- stored.game.atMove(moveCount.max(0).min(stored.game.moves.length))
+    yield StatusResponse(game, List(), false, game.isOver, None, NullRequestInfo)
+
+  /** A short-lived download URL for the archive of a finished game; None when it has none. */
+  def archivedUrl(gameId: String): Try[Option[String]] = archive.url(gameId)
 
   def set(gameId: String, token: String, x: Int, y: Int, z: Int): Try[StatusResponse] =
     play(gameId, token, color => Try(Move(x, y, z, color)))

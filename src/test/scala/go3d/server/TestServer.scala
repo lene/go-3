@@ -594,18 +594,19 @@ class TestServer:
     Assertions.assertTrue(fileIO.getActiveGames.contains(gameData.id))
 
   @Test def testFinishedGameIsNoLongerActive(): Unit =
+    // checks this game's id, not the number of active games: other suites add games in parallel
     val gameData: GameData = setUpGame(3)
-    val previousNumberOfActiveGames = Games.numActiveGames
+    Assertions.assertTrue(Games.activeGameIds.exists(_ == gameData.id))
     gameData.pass(Black)
     gameData.pass(White)
-    Assertions.assertEquals(previousNumberOfActiveGames - 1, Games.numActiveGames)
+    Assertions.assertFalse(Games.activeGameIds.exists(_ == gameData.id))
 
   @Test def testFinishedGameIsListedAsArchived(): Unit =
     val gameData: GameData = setUpGame(3)
-    val previousNumberOfArchivedGames = Games.numArchivedGames
+    Assertions.assertFalse(Games.archivedGameIds.exists(_ == gameData.id))
     gameData.pass(Black)
     gameData.pass(White)
-    Assertions.assertEquals(previousNumberOfArchivedGames + 1, Games.numArchivedGames)
+    Assertions.assertTrue(Games.archivedGameIds.exists(_ == gameData.id))
 
   @Test def testFinishedGameIsMovedToArchiveFolder(): Unit =
     val gameData: GameData = setUpGame(3)

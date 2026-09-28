@@ -8,7 +8,8 @@ Managed resources:
 - S3 archive bucket `go3d-game-archives-<account_id>-eu-central-1`
 - IAM role `go3d-lambda-readonly-role`
 - Lambda function `go3d-read`
-- HTTP API routes `GET /health`, `GET /status/{gameId}`, and `GET /openGames`, throttled to
+- HTTP API routes `GET /health`, `GET /status/{gameId}`, `GET /status/{gameId}/{moveCount}`,
+  `GET /archived/{gameId}` and `GET /openGames`, throttled to
   `api_throttling_rate_limit` requests per second (burst `api_throttling_burst_limit`); clients
   over the limit get HTTP 429
 - CloudWatch log groups, alarms, and a Logs Insights baseline query
@@ -117,7 +118,7 @@ Expected results:
 ## Baseline Metrics
 
 The canary workflow (`.github/workflows/canary.yml`) calls `/health`, `/openGames` and
-`/status/CANARY0` every 15 minutes, which includes cold and warm executions. Each run records
+`/status/CANARY` every 15 minutes, which includes cold and warm executions. Each run records
 status codes and response times in its job summary, and fails on a 5xx or on a response slower
 than 10 seconds. GitHub disables scheduled workflows after 60 days without repository activity;
 re-enable it in the Actions tab if that happens.

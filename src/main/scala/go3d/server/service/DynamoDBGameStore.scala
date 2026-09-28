@@ -19,21 +19,31 @@ import scala.util.{Failure, Success, Try}
  * [[GameStore]] on DynamoDB, the authoritative store of the Lambda server.
  *
  * Games table (partition key `gameId`): `game` (JSON), `version`, `lastModified` (Unix millis),
- * and after completion `archiveKey` and the TTL attribute `expiresAt` (Unix seconds).
- * Players table (partition key `gameId`, sort key `color`): `authTokenHash`, `createdAt`, and
- * after completion `expiresAt`. Active games and players never expire.
+ * the TTL attribute `expiresAt` (Unix seconds), and after completion `archiveKey`.
+ * Players table (partition key `gameId`, sort key `color`): `authTokenHash`, `createdAt` and
+ * `expiresAt`.
+ *
+ * An active game and its players expire [[DynamoDBGameStore.InactiveRetentionSeconds]] after the
+ * last write, so abandoned games are removed; every move refreshes the expiry. On completion the
+ * expiry becomes the one passed to [[markCompleted]].
  *
  * Reads are strongly consistent, so a request sees the writes of the previous one.
  */
 class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable: String)
   extends GameStore:
 
+  // the TTL attribute and its placeholders in update expressions
+  private val ExpiresAttribute = "expiresAt"
+  private val ExpiresName = "#expires"
+  private val ExpiresValue = ":expires"
+
   def createGame(gameId: String, game: Game): Try[Unit] =
     Try(client.putItem(
       PutItemRequest.builder().tableName(gamesTable)
         .item(Map(
           "gameId" -> str(gameId), "game" -> str(game.asJson.noSpaces), "version" -> num(0L),
-          "lastModified" -> num(System.currentTimeMillis())
+          "lastModified" -> num(System.currentTimeMillis()),
+          ExpiresAttribute -> num(inactiveExpiry())
         ).asJava)
         .conditionExpression("attribute_not_exists(gameId)")
         .build()
@@ -57,21 +67,31 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
         yield Option(StoredGame(game, registered.keySet, version))
     }
 
+  /**
+   * Stores the game if its version is still `expectedVersion`, and refreshes the expiry of the
+   * game and its players in the same transaction.
+   */
   def updateGame(gameId: String, expectedVersion: Long, game: Game): Try[Unit] =
-    Try(client.updateItem(
-      UpdateItemRequest.builder().tableName(gamesTable).key(gameKey(gameId))
-        .updateExpression("SET #game = :game, #version = :next, #modified = :now")
-        .conditionExpression("#version = :expected")
-        .expressionAttributeNames(
-          Map("#game" -> "game", "#version" -> "version", "#modified" -> "lastModified").asJava
+    val expiresAt = inactiveExpiry()
+    val update = TransactWriteItem.builder().update(
+      Update.builder().tableName(gamesTable).key(gameKey(gameId))
+        .updateExpression(
+          "SET #game = :game, #version = :next, #modified = :now, #expires = :expires"
         )
+        .conditionExpression("#version = :expected")
+        .expressionAttributeNames(Map(
+          "#game" -> "game", "#version" -> "version", "#modified" -> "lastModified",
+          ExpiresName -> ExpiresAttribute
+        ).asJava)
         .expressionAttributeValues(Map(
           ":game" -> str(game.asJson.noSpaces), ":next" -> num(expectedVersion + 1),
-          ":now" -> num(System.currentTimeMillis()), ":expected" -> num(expectedVersion)
+          ":now" -> num(System.currentTimeMillis()), ":expected" -> num(expectedVersion),
+          ExpiresValue -> num(expiresAt)
         ).asJava)
         .build()
-    )).map(_ => ()).recoverWith {
-      case _: ConditionalCheckFailedException =>
+    ).build()
+    writeWithPlayerExpiry(gameId, update, expiresAt).recoverWith {
+      case e: TransactionCanceledException if gameCheckFailed(e) || conflicted(e) =>
         getGame(gameId).flatMap(stored =>
           if stored.isEmpty then Failure(NonexistentGame(gameId, List()))
           else Failure(ConcurrentModification(gameId, expectedVersion))
@@ -83,7 +103,8 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
       PutItemRequest.builder().tableName(playersTable)
         .item(Map(
           "gameId" -> str(gameId), "color" -> str(color.toString),
-          "authTokenHash" -> str(tokenHash), "createdAt" -> num(System.currentTimeMillis() / 1000L)
+          "authTokenHash" -> str(tokenHash), "createdAt" -> num(System.currentTimeMillis() / 1000L),
+          ExpiresAttribute -> num(inactiveExpiry())
         ).asJava)
         .conditionExpression("attribute_not_exists(gameId)")
         .build()
@@ -115,32 +136,46 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
         .updateExpression("SET #archiveKey = :key, #expires = :expires")
         .conditionExpression("attribute_exists(gameId)")
         .expressionAttributeNames(
-          Map("#archiveKey" -> "archiveKey", "#expires" -> "expiresAt").asJava
+          Map("#archiveKey" -> "archiveKey", ExpiresName -> ExpiresAttribute).asJava
         )
         .expressionAttributeValues(Map(
-          ":key" -> str(archiveKey), ":expires" -> num(expiresAt)
+          ":key" -> str(archiveKey), ExpiresValue -> num(expiresAt)
         ).asJava)
         .build()
     ).build()
+    writeWithPlayerExpiry(gameId, completeGame, expiresAt).recoverWith {
+      case e: TransactionCanceledException if gameCheckFailed(e) =>
+        Failure(NonexistentGame(gameId, List()))
+    }
+
+  /**
+   * Writes `gameWrite` together with setting `expiresAt` on every registered player of the game,
+   * in one transaction. `gameWrite` is the first item, which [[gameCheckFailed]] relies on.
+   */
+  private def writeWithPlayerExpiry(
+    gameId: String, gameWrite: TransactWriteItem, expiresAt: Long
+  ): Try[Unit] =
     players(gameId).flatMap { registered =>
       val expirePlayers = registered.keys.toList.map(color =>
         TransactWriteItem.builder().update(
           Update.builder().tableName(playersTable)
             .key(Map("gameId" -> str(gameId), "color" -> str(color.toString)).asJava)
             .updateExpression("SET #expires = :expires")
-            .expressionAttributeNames(Map("#expires" -> "expiresAt").asJava)
-            .expressionAttributeValues(Map(":expires" -> num(expiresAt)).asJava)
+            // never create a player row that has no token
+            .conditionExpression("attribute_exists(gameId)")
+            .expressionAttributeNames(Map(ExpiresName -> ExpiresAttribute).asJava)
+            .expressionAttributeValues(Map(ExpiresValue -> num(expiresAt)).asJava)
             .build()
         ).build()
       )
       Try(client.transactWriteItems(
-        TransactWriteItemsRequest.builder().transactItems((completeGame :: expirePlayers).asJava)
+        TransactWriteItemsRequest.builder().transactItems((gameWrite :: expirePlayers).asJava)
           .build()
-      )).map(_ => ()).recoverWith {
-        case e: TransactionCanceledException if gameCheckFailed(e) =>
-          Failure(NonexistentGame(gameId, List()))
-      }
+      )).map(_ => ())
     }
+
+  private def inactiveExpiry(): Long =
+    System.currentTimeMillis() / 1000L + DynamoDBGameStore.InactiveRetentionSeconds
 
   /** The registered players of a game with the hashes of their tokens. */
   private def players(gameId: String): Try[Map[Color, String]] =
@@ -160,9 +195,13 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
       }
     }
 
-  /** The first item of the transaction, the game's update, failed its `attribute_exists`. */
+  /** The first item of the transaction, the game's write, failed its condition. */
   private def gameCheckFailed(e: TransactionCanceledException): Boolean =
     e.cancellationReasons().asScala.headOption.exists(_.code() == "ConditionalCheckFailed")
+
+  /** Another transaction on the same items was in progress, such as a concurrent move. */
+  private def conflicted(e: TransactionCanceledException): Boolean =
+    e.cancellationReasons().asScala.exists(_.code() == "TransactionConflict")
 
   private def parseColor(value: String): Try[Color] =
     value.headOption.fold[Try[Color]](Failure(IllegalStateException("empty color")))(Color(_))
@@ -182,6 +221,9 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
   private def num(value: Long): AttributeValue = AttributeValue.builder().n(value.toString).build()
 
 object DynamoDBGameStore:
+  /** An active game and its players are deleted this long after the last write to the game. */
+  val InactiveRetentionSeconds: Long = 30L * 24 * 3600
+
   /** The store for the tables configured in the environment, if DynamoDB is configured. */
   def fromEnv(): Option[DynamoDBGameStore] =
     DynamoDBClient.get().map { case (client, config) =>

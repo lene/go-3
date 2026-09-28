@@ -21,6 +21,8 @@ locals {
   read_routes = toset([
     "GET /health",
     "GET /status/{gameId}",
+    "GET /status/{gameId}/{moveCount}",
+    "GET /archived/{gameId}",
     "GET /openGames",
   ])
 
@@ -288,6 +290,16 @@ data "aws_iam_policy_document" "lambda_read" {
 
     resources = ["${aws_s3_bucket.archive.arn}/*"]
   }
+
+  # Without ListBucket, HeadObject on a missing archive returns 403 instead of 404, and
+  # /archived/{gameId} could not tell a missing archive from a real error.
+  statement {
+    sid = "S3ListArchive"
+
+    actions = ["s3:ListBucket"]
+
+    resources = [aws_s3_bucket.archive.arn]
+  }
 }
 
 resource "aws_iam_role_policy" "lambda_read" {
@@ -352,7 +364,6 @@ resource "aws_lambda_function" "read" {
 
   environment {
     variables = {
-      AWS_REGION             = var.aws_region
       DYNAMODB_GAMES_TABLE   = aws_dynamodb_table.active_games.name
       DYNAMODB_PLAYERS_TABLE = aws_dynamodb_table.players.name
       S3_ARCHIVE_BUCKET      = aws_s3_bucket.archive.bucket
