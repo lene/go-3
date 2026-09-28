@@ -57,6 +57,35 @@ All resources receive `Project=go3d`, `Environment=prod`, and `Phase=lambda-migr
 
 Issue #101 requires CI to produce the reviewed plan before #128 is applied.
 
+## Staging stack
+
+`staging.tfvars` describes a second copy of the stack with `-staging` names, its own state key
+(`go3d-staging/terraform.tfstate`) and `enable_write_routes = true`: the Lambda then also serves
+`GET /new/{size}`, `/register/{gameId}/{color}`, `/set/{gameId}/{x}/{y}/{z}` and
+`/pass/{gameId}`, with write access to its own tables and to `archives/*` in its own bucket.
+Production keeps `enable_write_routes = false` until the cutover (#125).
+
+One-time setup:
+
+1. Re-apply `../bootstrap`, so the apply role also trusts the GitHub environment `staging`.
+2. Create the GitHub environment `staging` (deployment branch `master`; reviewers optional).
+
+Deploy: run the Terraform workflow manually on `master` with `environment = staging`. The plan
+and apply jobs use the staging state and tfvars; apply runs in the `staging` environment.
+
+Smoke test (tokens from the register responses):
+
+```bash
+API="$(terraform output -raw api_base_url)"   # after init with the staging state key
+ID=$(curl -s "$API/new/3" | jq -r .id)
+BLACK=$(curl -s "$API/register/$ID/%40" | jq -r .authToken)
+WHITE=$(curl -s "$API/register/$ID/O" | jq -r .authToken)
+curl -s -H "Authentication: Bearer $BLACK" "$API/set/$ID/2/2/2"
+curl -s -H "Authentication: Bearer $WHITE" "$API/pass/$ID"
+curl -s -H "Authentication: Bearer $BLACK" "$API/pass/$ID"   # game over: archived to S3
+curl -s "$API/status/$ID" | jq .over
+```
+
 ## Local use
 
 ```bash

@@ -101,6 +101,12 @@ variable "api_name" {
   default     = "go3d-read"
 }
 
+variable "enable_write_routes" {
+  description = "Expose the write routes (new, register, set, pass) and let the Lambda write."
+  type        = bool
+  default     = false
+}
+
 variable "api_throttling_burst_limit" {
   description = "Maximum concurrent request burst the HTTP API accepts before returning 429."
   type        = number

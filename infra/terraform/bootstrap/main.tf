@@ -165,7 +165,10 @@ data "aws_iam_policy_document" "apply_trust" {
     condition {
       test     = "StringEquals"
       variable = "${local.github_oidc_url}:sub"
-      values   = ["repo:${var.github_repository}:environment:production"]
+      values = [
+        "repo:${var.github_repository}:environment:production",
+        "repo:${var.github_repository}:environment:staging",
+      ]
     }
   }
 }
