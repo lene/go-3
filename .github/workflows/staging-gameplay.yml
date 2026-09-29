@@ -1,0 +1,62 @@
+name: Staging gameplay
+
+# Plays one bot-vs-bot game through the staging API (the Lambda write path), as the acceptance
+# test for the staging stack. Run it by hand after applying staging; it is skipped until the
+# GO3D_STAGING_API_URL repository variable holds the staging stack's api_base_url output.
+
+on:
+  workflow_dispatch:
+    inputs:
+      board_size:
+        description: Board size (odd, at least 3)
+        default: '5'
+      strategy_black:
+        description: Strategy for black
+        default: random
+      strategy_white:
+        description: Strategy for white
+        default: random
+
+permissions:
+  contents: read
+
+concurrency:
+  group: staging-gameplay
+  cancel-in-progress: false
+
+jobs:
+  gameplay:
+    name: Bot vs bot on staging
+    if: vars.GO3D_STAGING_API_URL != '' && github.repository == 'lene/go-3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      API_URL: ${{ vars.GO3D_STAGING_API_URL }}
+      BOARD_SIZE: ${{ inputs.board_size }}
+      STRATEGY_BLACK: ${{ inputs.strategy_black }}
+      STRATEGY_WHITE: ${{ inputs.strategy_white }}
+      # two bots polling at this interval stay well below the API's throttling limit
+      POLL_INTERVAL_MS: 500
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: sbt
+      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - run: sbt "Universal / packageBin"
+      - name: Unpack deployable
+        run: |
+          unzip -q target/universal/go-3d-*.zip
+          echo "INSTALL_DIR=$(find "$PWD" -maxdepth 1 -type d -name 'go-3d-*' | head -n 1)" \
+            >> "$GITHUB_ENV"
+      - run: sudo apt-get -q update && sudo apt-get -y install time
+      - run: ci/test-gameplay.sh
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: always()
+        with:
+          name: staging-gameplay
+          path: |
+            white.log
+            results.*.*.csv

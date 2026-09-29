@@ -69,6 +69,10 @@ sbt "runMain go3d.client.GDXClient --server localhost --port 6030 --game-id XXXX
 
 # Bot client
 sbt "runMain go3d.client.BotClient --server localhost --port 6030 --size 7 --color b --strategy prioritiseCapture,closestToCenter"
+
+# Any client against a server by URL instead of --server/--port, e.g. the Lambda API over HTTPS;
+# --poll-interval-ms keeps bots below the API Gateway throttling limit
+sbt "runMain go3d.client.BotClient --url https://abc.execute-api.eu-central-1.amazonaws.com --game-id XXXXXX --color w --poll-interval-ms 500"
 ```
 
 ### Docker

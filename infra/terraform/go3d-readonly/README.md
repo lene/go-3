@@ -87,6 +87,18 @@ curl -s -H "Authentication: Bearer $BLACK" "$API/pass/$ID"   # game over: archiv
 curl -s "$API/status/$ID" | jq .over
 ```
 
+Full game: set the repository variable `GO3D_STAGING_API_URL` to the staging `api_base_url`, then
+run the `Staging gameplay` workflow (`.github/workflows/staging-gameplay.yml`) by hand. It builds
+the clients and plays one bot-vs-bot game through the API with `ci/test-gameplay.sh` and
+`API_URL`; the bots poll every 500 ms to stay below the API throttling limit. The same works
+locally:
+
+```bash
+sbt "Universal / packageBin" && unzip -q target/universal/go-3d-*.zip
+API_URL="$API" INSTALL_DIR="$(ls -d "$PWD"/go-3d-*/)" BOARD_SIZE=5 POLL_INTERVAL_MS=500 \
+  ci/test-gameplay.sh
+```
+
 ## Local use
 
 ```bash

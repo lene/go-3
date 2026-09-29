@@ -6,10 +6,11 @@ import go3d.Color
 import go3d.server.StatusResponse
 
 import java.io.IOException
+import java.net.URI
 import java.net.ConnectException
 import java.net.UnknownHostException
 import scala.annotation.tailrec
-import scala.util.{Success, Try}
+import scala.util.{Failure, Success, Try}
 
 trait ClientTrait:
   def mainLoop(client: BaseClient): Try[Unit]
@@ -64,3 +65,25 @@ abstract class Client extends ClientTrait with LazyLogging:
     if message.nonEmpty then logger.info(message)
     System.exit(status)
   def exit(status: Int): Unit = exit("", status)
+
+object Client:
+  /**
+   * The server's base URL: `url` when given, which must be an absolute http or https URL and is
+   * returned without a trailing slash; otherwise `http://server:port`. Without `url`, a missing
+   * server or port fails with a NoSuchElementException naming the option.
+   */
+  def serverUrl(url: Option[String], server: Option[String], port: Option[Int]): Try[String] =
+    url.fold(
+      for
+        s <- server.fold[Try[String]](Failure(new NoSuchElementException("server")))(Success(_))
+        p <- port.fold[Try[Int]](Failure(new NoSuchElementException("port")))(Success(_))
+      yield "http://" + s + ":" + p.toString
+    ) { u =>
+      Try(URI.create(u)).toOption
+        .filter(uri => Option(uri.getHost).isDefined)
+        .flatMap(uri => Option(uri.getScheme).map(_.toLowerCase))
+        .filter(scheme => scheme == "http" || scheme == "https")
+        .fold[Try[String]](
+          Failure(IllegalArgumentException("--url must be an http or https URL: " + u))
+        )(_ => Success(u.stripSuffix("/")))
+    }

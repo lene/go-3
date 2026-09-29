@@ -11,61 +11,84 @@ class TestBotClient:
   @Test def testBadColor(): Unit =
     assertParseFails(
       classOf[BadColor], BotClient.parseArgs,
-      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--color", "bx"
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, SizeOpt, "3", ColorOpt, "bx"
     )
 
   @Test def testUnknownHost(): Unit =
     assertParseFails(
       classOf[UnknownHostException], BotClient.parseArgs,
-      "--server", "doesnt-exist", "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
+      ServerOpt, "doesnt-exist", PortOpt, ClientTestPort.toString, SizeOpt, "3", ColorOpt, "b"
     )
 
   @Test def testMissingServer(): Unit =
     assertParseFails(
       classOf[NoSuchElementException], BotClient.parseArgs,
-      "--port", ClientTestPort.toString, "--size", "3", "--color", "b"
+      PortOpt, ClientTestPort.toString, SizeOpt, "3", ColorOpt, "b"
     )
 
   @Test def testMissingPort(): Unit =
     assertParseFails(
       classOf[NoSuchElementException], BotClient.parseArgs,
-      "--server", "localhost", "--size", "3", "--color", "b"
+      ServerOpt, "localhost", SizeOpt, "3", ColorOpt, "b"
     )
 
   @Test def testMissingColor(): Unit =
     assertParseFails(
       classOf[ValidationFailure], BotClient.parseArgs,
-      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3"
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, SizeOpt, "3"
     )
 
   @Test def testMissingSize(): Unit =
     assertParseFails(
       classOf[ValidationFailure], BotClient.parseArgs,
-      "--server", "localhost", "--port", ClientTestPort.toString, "--color", "b"
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, ColorOpt, "b"
     )
 
   @Test def testConflictingArguments(): Unit =
     assertParseFails(
       classOf[ValidationFailure], BotClient.parseArgs,
-      "--server", "localhost", "--port", ClientTestPort.toString, "--size", "3", "--game-id", "1"
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, SizeOpt, "3", GameIdOpt, "1"
     )
 
   @Test def testStrategyIsParsed(): Unit =
     BotClient.parseArgs(Array(
-      "--server", "localhost", "--port", ClientTestPort.toString, "--game-id", "",  "--token", "",
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, GameIdOpt, "",  TokenOpt, "",
       "--strategy", "random"
     ))
     Assertions.assertTrue(Array("random").sameElements(BotClient.strategies))
 
   @Test def testStrategyWithMultipleElementsIsParsed(): Unit =
     BotClient.parseArgs(Array(
-      "--server", "localhost", "--port", ClientTestPort.toString, "--game-id", "",  "--token", "",
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, GameIdOpt, "",  TokenOpt, "",
       "--strategy", "closestToStarPoints,prioritiseCapture"
     ))
     Assertions.assertTrue(
       Array("closestToStarPoints","prioritiseCapture").sameElements(BotClient.strategies)
     )
 
+
+  @Test def testUrlReplacesServerAndPort(): Unit =
+    val client = BotClient.parseArgs(Array(
+      UrlOpt, "https://api.example.com/", GameIdOpt, "", TokenOpt, ""
+    ))
+    Assertions.assertEquals("https://api.example.com", client.success.value.serverURL)
+
+  @Test def testUrlWithServerFails(): Unit =
+    assertParseFails(
+      classOf[ValidationFailure], BotClient.parseArgs,
+      UrlOpt, "https://api.example.com", ServerOpt, "localhost", GameIdOpt, "", TokenOpt, ""
+    )
+
+  @Test def testPollIntervalIsParsed(): Unit =
+    BotClient.parseArgs(Array(
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, GameIdOpt, "",  TokenOpt, "",
+      "--poll-interval-ms", "500"
+    )).success.value
+    Assertions.assertEquals(500, BotClient.pollIntervalMs)
+    BotClient.parseArgs(Array(
+      ServerOpt, "localhost", PortOpt, ClientTestPort.toString, GameIdOpt, "",  TokenOpt, ""
+    )).success.value
+    Assertions.assertEquals(10, BotClient.pollIntervalMs)
 
   @Test def testExecutionTimeString(): Unit =
     Assertions.assertEquals("", BotClient.executionTimeString)
