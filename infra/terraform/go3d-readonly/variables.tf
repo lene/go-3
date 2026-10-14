@@ -116,13 +116,17 @@ variable "enable_write_routes" {
 variable "api_throttling_burst_limit" {
   description = "Maximum concurrent request burst the HTTP API accepts before returning 429."
   type        = number
-  default     = 20
+  default     = 100
 }
 
 variable "api_throttling_rate_limit" {
-  description = "Steady-state requests per second the HTTP API accepts before returning 429."
+  description = <<-EOT
+    Steady-state requests per second the whole HTTP API (all clients together) accepts before
+    returning 429. It is also the only cost guard against a flood: 50 req/s sustained for a month
+    would cost about $130 for API Gateway alone, so keep it as low as the expected load allows.
+  EOT
   type        = number
-  default     = 10
+  default     = 50
 }
 
 variable "log_retention_days" {
