@@ -99,6 +99,24 @@ API_URL="$API" INSTALL_DIR="$(ls -d "$PWD"/go-3d-*/)" BOARD_SIZE=5 POLL_INTERVAL
   ci/test-gameplay.sh
 ```
 
+## Teardown
+
+Run the `Terraform destroy` workflow (`.github/workflows/terraform-destroy.yml`) by hand on
+`master`, choose the `environment` and type its name again in `confirm`. The plan job lists what
+would be deleted; the destroy job then waits for approval in that GitHub environment and applies
+exactly the plan you reviewed. Nothing is deleted before that approval.
+
+- Staging sets `archive_force_destroy = true`, so its bucket goes with its test archives.
+  Terraform destroys with the values stored in state, so apply a change to
+  `archive_force_destroy` (run the Terraform workflow) before you destroy.
+- Production does not: if its archive bucket still holds game archives, the destroy stops at the
+  bucket and the archives stay. Export them first and empty the bucket yourself if you really
+  want it gone.
+- The bootstrap stack (state bucket, OIDC provider, plan and apply roles) is not part of this
+  and stays until you remove it by hand; its state bucket has `prevent_destroy`.
+- Afterwards, unset `GO3D_STAGING_API_URL` (or `GO3D_API_URL` for production), so the staging
+  gameplay workflow and the canary skip instead of failing against a missing API.
+
 ## Local use
 
 ```bash

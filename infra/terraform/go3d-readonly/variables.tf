@@ -39,6 +39,12 @@ variable "archive_bucket_name" {
   }
 }
 
+variable "archive_force_destroy" {
+  description = "Delete the archive bucket with all its objects on destroy. Only for disposable stacks."
+  type        = bool
+  default     = false
+}
+
 variable "lambda_function_name" {
   description = "Read-only Lambda function name."
   type        = string
