@@ -225,6 +225,19 @@ resource "aws_s3_bucket_lifecycle_configuration" "archive" {
     }
   }
 
+  rule {
+    id     = "lambda-jar-old-versions"
+    status = "Enabled"
+
+    filter {
+      prefix = "lambda/"
+    }
+
+    noncurrent_version_expiration {
+      noncurrent_days = 30
+    }
+  }
+
   depends_on = [aws_s3_bucket_versioning.archive]
 }
 
@@ -352,15 +365,27 @@ resource "aws_cloudwatch_log_group" "lambda" {
   }
 }
 
+# The assembly jar exceeds the 70 MB limit of a direct CreateFunction upload, so it goes via S3.
+resource "aws_s3_object" "lambda_jar" {
+  bucket      = aws_s3_bucket.archive.id
+  key         = "lambda/${var.lambda_function_name}.jar"
+  source      = var.lambda_jar_path
+  source_hash = filemd5(var.lambda_jar_path)
+
+  depends_on = [aws_s3_bucket_versioning.archive]
+}
+
 resource "aws_lambda_function" "read" {
-  function_name    = var.lambda_function_name
-  role             = aws_iam_role.lambda_readonly.arn
-  runtime          = var.lambda_runtime
-  handler          = var.lambda_handler
-  filename         = var.lambda_jar_path
-  source_code_hash = filebase64sha256(var.lambda_jar_path)
-  memory_size      = var.lambda_memory_mb
-  timeout          = var.lambda_timeout_seconds
+  function_name     = var.lambda_function_name
+  role              = aws_iam_role.lambda_readonly.arn
+  runtime           = var.lambda_runtime
+  handler           = var.lambda_handler
+  s3_bucket         = aws_s3_object.lambda_jar.bucket
+  s3_key            = aws_s3_object.lambda_jar.key
+  s3_object_version = aws_s3_object.lambda_jar.version_id
+  source_code_hash  = filebase64sha256(var.lambda_jar_path)
+  memory_size       = var.lambda_memory_mb
+  timeout           = var.lambda_timeout_seconds
 
   environment {
     variables = {
@@ -445,7 +470,7 @@ resource "aws_apigatewayv2_stage" "default" {
   }
 
   tags = {
-    Name = "${var.api_name}-$default"
+    Name = "${var.api_name}-default"
   }
 }
 
