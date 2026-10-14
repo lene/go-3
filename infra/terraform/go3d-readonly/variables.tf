@@ -34,7 +34,7 @@ variable "archive_bucket_name" {
   default     = null
 
   validation {
-    condition     = var.archive_bucket_name == null || length(trimspace(var.archive_bucket_name)) > 0
+    condition     = var.archive_bucket_name == null ? true : length(trimspace(var.archive_bucket_name)) > 0
     error_message = "archive_bucket_name must be null or a non-empty string."
   }
 }
