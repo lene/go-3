@@ -35,6 +35,10 @@ All resources receive `Project=go3d`, `Environment=prod`, and `Phase=lambda-migr
 2. **GitHub settings**:
    - Repository variables: `TF_STATE_BUCKET`, `AWS_TF_PLAN_ROLE_ARN`, `AWS_TF_APPLY_ROLE_ARN`
      (from `terraform output`).
+   - Repository variable `ALARM_EMAIL`: address that receives the CloudWatch alarm
+     notifications (production only; `staging.tfvars` opts out). The Terraform apply creates SNS
+     topics and sends a confirmation mail per topic (one in `eu-central-1`, one in `us-east-1`
+     for the billing alarm); alarms notify nobody until you confirm the subscriptions.
    - Environment `production` with required reviewers (and deployment branch `master`).
 3. **Existing resources**: run `./check-existing.sh` with admin credentials (and `GITLAB_TOKEN`
    to check the old GitLab-managed state). Earlier runs of the former `infra/setup-*.sh` scripts

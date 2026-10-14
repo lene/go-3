@@ -97,6 +97,8 @@ jobs:
         working-directory: ${{ env.TF_ROOT }}
         env:
           TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+          # recipient of the alarm notifications; unset means no topics (staging.tfvars opts out)
+          TF_VAR_alarm_email: ${{ vars.ALARM_EMAIL }}
         run: |
           if [ "$STACK_ENV" = staging ]; then state_key=go3d-staging/terraform.tfstate
           else state_key=go3d-readonly/terraform.tfstate; fi

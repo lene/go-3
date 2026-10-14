@@ -10,6 +10,12 @@ locals {
   # appended to names that are fixed per account, so a staging stack does not collide with prod
   name_suffix = var.environment == "prod" ? "" : "-${var.environment}"
 
+  alarm_email_set = var.alarm_email != null ? length(trimspace(var.alarm_email)) > 0 : false
+
+  alarm_actions = concat(var.alarm_actions, aws_sns_topic.alarms[*].arn)
+  # billing metrics exist only in us-east-1, and an alarm can only notify a topic in its region
+  billing_alarm_actions = concat(var.alarm_actions, aws_sns_topic.billing_alarms[*].arn)
+
   archive_bucket_name = coalesce(
     var.archive_bucket_name,
     join("-", [
@@ -486,6 +492,33 @@ resource "aws_lambda_permission" "api_gateway" {
   source_arn    = "${aws_apigatewayv2_api.read.execution_arn}/*/*"
 }
 
+# Unencrypted topics: CloudWatch alarms cannot publish to topics using the AWS managed SNS key.
+resource "aws_sns_topic" "alarms" { # NOSONAR
+  count = local.alarm_email_set ? 1 : 0
+  name  = "go3d-alarms${local.name_suffix}"
+}
+
+resource "aws_sns_topic_subscription" "alarms_email" {
+  count     = local.alarm_email_set ? 1 : 0
+  topic_arn = aws_sns_topic.alarms[0].arn
+  protocol  = "email"
+  endpoint  = var.alarm_email
+}
+
+resource "aws_sns_topic" "billing_alarms" { # NOSONAR
+  count    = local.alarm_email_set && var.billing_alarm_enabled ? 1 : 0
+  provider = aws.billing
+  name     = "go3d-billing-alarms${local.name_suffix}"
+}
+
+resource "aws_sns_topic_subscription" "billing_alarms_email" {
+  count     = local.alarm_email_set && var.billing_alarm_enabled ? 1 : 0
+  provider  = aws.billing
+  topic_arn = aws_sns_topic.billing_alarms[0].arn
+  protocol  = "email"
+  endpoint  = var.alarm_email
+}
+
 resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   alarm_name          = "${var.lambda_function_name}-errors"
   alarm_description   = "Lambda errors for ${var.lambda_function_name}"
@@ -503,8 +536,8 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
     FunctionName = aws_lambda_function.read.function_name
   }
 
-  alarm_actions = var.alarm_actions
-  ok_actions    = var.alarm_actions
+  alarm_actions = local.alarm_actions
+  ok_actions    = local.alarm_actions
 
   tags = {
     Name = "${var.lambda_function_name}-errors"
@@ -532,8 +565,8 @@ resource "aws_cloudwatch_metric_alarm" "lambda_init_duration" {
     version       = var.lambda_insights_function_version_dimension
   }
 
-  alarm_actions = var.alarm_actions
-  ok_actions    = var.alarm_actions
+  alarm_actions = local.alarm_actions
+  ok_actions    = local.alarm_actions
 
   tags = {
     Name = "${var.lambda_function_name}-init-duration-p95"
@@ -560,8 +593,8 @@ resource "aws_cloudwatch_metric_alarm" "api_errors" {
     Stage = aws_apigatewayv2_stage.default.name
   }
 
-  alarm_actions = var.alarm_actions
-  ok_actions    = var.alarm_actions
+  alarm_actions = local.alarm_actions
+  ok_actions    = local.alarm_actions
 
   tags = {
     Name = "${var.api_name}-api-${each.key}"
@@ -588,8 +621,8 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_throttles" {
     TableName = each.value.table_name
   }
 
-  alarm_actions = var.alarm_actions
-  ok_actions    = var.alarm_actions
+  alarm_actions = local.alarm_actions
+  ok_actions    = local.alarm_actions
 
   tags = {
     Name = "go3d-dynamodb-${replace(each.key, "_", "-")}-throttles${local.name_suffix}"
@@ -618,8 +651,8 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_system_errors" {
     TableName = each.value.table_name
   }
 
-  alarm_actions = var.alarm_actions
-  ok_actions    = var.alarm_actions
+  alarm_actions = local.alarm_actions
+  ok_actions    = local.alarm_actions
 
   tags = {
     Name = "go3d-dynamodb-${replace(each.key, "_", "-")}-system-errors${local.name_suffix}"
@@ -646,8 +679,8 @@ resource "aws_cloudwatch_metric_alarm" "monthly_cost" {
     Currency = var.billing_currency
   }
 
-  alarm_actions = var.alarm_actions
-  ok_actions    = var.alarm_actions
+  alarm_actions = local.billing_alarm_actions
+  ok_actions    = local.billing_alarm_actions
 
   tags = {
     Name = "go3d-account-monthly-cost"

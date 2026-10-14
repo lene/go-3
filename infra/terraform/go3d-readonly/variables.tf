@@ -131,6 +131,12 @@ variable "log_retention_days" {
   default     = 7
 }
 
+variable "alarm_email" {
+  description = "Email address notified when an alarm fires. Null or empty creates no topic."
+  type        = string
+  default     = null
+}
+
 variable "alarm_actions" {
   description = "SNS topic ARNs or other action ARNs to notify when alarms fire."
   type        = list(string)
