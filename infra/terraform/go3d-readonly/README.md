@@ -103,6 +103,17 @@ API_URL="$API" INSTALL_DIR="$(ls -d "$PWD"/go-3d-*/)" BOARD_SIZE=5 POLL_INTERVAL
   ci/test-gameplay.sh
 ```
 
+## Load test
+
+Run the `Load test` workflow by hand (`.github/workflows/load-test.yml`), or `ci/load-test.sh`
+with `API_URL`. Against staging it plays `games` concurrent games to the end through the write
+routes while `status_per_min` status requests per minute hit `/status` (defaults: 100 games, 1000
+per minute, 60 s). Against production, which has no write routes before the cutover, it only
+loads `/status`. The summary lists count, 429s, 5xx and p50/p95/max per route; any 5xx, unexpected
+answer, unfinished game or missing archive fails the run. 429s are expected above the throttling
+limit and are counted, not failures. The client-side times include the network, so read the
+server-side p95 (API Gateway `IntegrationLatency`, Lambda `Duration`) in CloudWatch.
+
 ## Teardown
 
 Run the `Terraform destroy` workflow (`.github/workflows/terraform-destroy.yml`) by hand on

@@ -1,0 +1,59 @@
+name: Load test
+
+# Runs ci/load-test.sh by hand: concurrent games and a status request load through the API
+# (#125). Against staging it plays full games through the write routes; against production,
+# which has no write routes before the cutover, it only loads /status. Needs the repository
+# variable GO3D_STAGING_API_URL or GO3D_API_URL.
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: API to load
+        type: choice
+        options: [staging, production]
+        default: staging
+      games:
+        description: Concurrent games (staging only)
+        default: '100'
+      status_per_min:
+        description: Status requests per minute
+        default: '1000'
+      duration_seconds:
+        description: Length of the status load in seconds
+        default: '60'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: load-test
+  cancel-in-progress: false
+
+jobs:
+  load-test:
+    name: Load test on ${{ inputs.target }}
+    if: github.repository == 'lene/go-3'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      API_URL: ${{ inputs.target == 'production' && vars.GO3D_API_URL || vars.GO3D_STAGING_API_URL }}
+      GAMES: ${{ inputs.target == 'production' && '0' || inputs.games }}
+      STATUS_PER_MIN: ${{ inputs.status_per_min }}
+      DURATION_SECONDS: ${{ inputs.duration_seconds }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Check the API URL
+        run: test -n "$API_URL" || { echo "::error::the repository variable for ${{ inputs.target }} is not set"; exit 1; }
+      - name: Run the load test
+        shell: bash
+        run: |
+          status=0
+          ci/load-test.sh | tee load-test.txt || status=$?
+          {
+            echo "### Load test on ${{ inputs.target }}: $GAMES games, $STATUS_PER_MIN status/min for ${DURATION_SECONDS}s"
+            echo '```'
+            cat load-test.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
