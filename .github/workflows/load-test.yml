@@ -22,6 +22,12 @@ on:
       duration_seconds:
         description: Length of the status load in seconds
         default: '60'
+      think_seconds:
+        description: Pause after every move (0 fires requests back to back)
+        default: '1'
+      ramp_seconds:
+        description: Games start at random moments within this many seconds
+        default: '10'
 
 permissions:
   contents: read
@@ -41,6 +47,8 @@ jobs:
       GAMES: ${{ inputs.target == 'production' && '0' || inputs.games }}
       STATUS_PER_MIN: ${{ inputs.status_per_min }}
       DURATION_SECONDS: ${{ inputs.duration_seconds }}
+      THINK_SECONDS: ${{ inputs.think_seconds }}
+      RAMP_SECONDS: ${{ inputs.ramp_seconds }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Check the API URL
