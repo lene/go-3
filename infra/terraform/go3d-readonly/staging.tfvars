@@ -9,5 +9,8 @@ lambda_role_name        = "go3d-lambda-staging-role"
 api_name                = "go3d-staging"
 enable_write_routes     = true
 
+# staging games are disposable: let the destroy workflow delete the bucket with its archives
+archive_force_destroy = true
+
 # the billing alarm watches the whole account, and production already has it
 billing_alarm_enabled = false

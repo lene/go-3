@@ -1,0 +1,151 @@
+name: Terraform destroy
+
+# Manual teardown of the staging or production stack of infra/terraform/go3d-readonly.
+# The plan job shows what would be deleted with the read-only plan role; the destroy job then
+# waits for approval in the GitHub environment and applies exactly that plan with the apply
+# role. The bootstrap stack (state bucket, OIDC provider, roles) is never touched.
+# A stack whose archive bucket still holds objects fails at the bucket unless it sets
+# archive_force_destroy (staging does, production does not), so game archives are not deleted
+# by accident.
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Stack to destroy
+        type: choice
+        options: [staging, production]
+        default: staging
+      confirm:
+        description: Type the environment name again to confirm
+        type: string
+        required: true
+
+# same group as terraform.yml, so a destroy never runs next to an apply of the same stack
+concurrency:
+  group: terraform-${{ github.ref }}-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  TF_ROOT: infra/terraform/go3d-readonly
+  TF_VERSION: 1.10.5
+  TF_IN_AUTOMATION: "true"
+  AWS_REGION: eu-central-1
+  STACK_ENV: ${{ inputs.environment }}
+
+jobs:
+  guard:
+    name: Check confirmation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require master and a matching confirmation
+        env:
+          CONFIRM: ${{ inputs.confirm }}
+        run: |
+          if [ "$GITHUB_REF" != refs/heads/master ]; then
+            echo "::error::Run this workflow on master, not on $GITHUB_REF"; exit 1
+          fi
+          if [ "$CONFIRM" != "$STACK_ENV" ]; then
+            echo "::error::confirm must be exactly '$STACK_ENV'"; exit 1
+          fi
+
+  plan:
+    name: Plan destroy
+    needs: guard
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_TF_PLAN_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - name: Plan destroy
+        working-directory: ${{ env.TF_ROOT }}
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          # the configuration hashes the jar, but a destroy never uploads it
+          echo placeholder > ../../../go-3d-lambda.jar
+          if [ "$STACK_ENV" = staging ]; then state_key=go3d-staging/terraform.tfstate
+          else state_key=go3d-readonly/terraform.tfstate; fi
+          terraform init -input=false \
+            -backend-config="bucket=$TF_STATE_BUCKET" \
+            -backend-config="key=$state_key" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+          var_file=()
+          if [ "$STACK_ENV" = staging ]; then var_file=(-var-file=staging.tfvars); fi
+          terraform plan -destroy -input=false "${var_file[@]}" \
+            -var "lambda_jar_path=../../../go-3d-lambda.jar" -out=tfplan
+          terraform show -no-color tfplan > tfplan.txt
+          {
+            echo "### Terraform destroy plan ($STACK_ENV)"
+            echo '```'
+            grep -E '^(Plan:|No changes)' tfplan.txt || true
+            echo '```'
+            echo '<details><summary>Full plan</summary>'
+            echo
+            echo '```'
+            cat tfplan.txt
+            echo '```'
+            echo '</details>'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: terraform-destroy-plan
+          path: |
+            ${{ env.TF_ROOT }}/tfplan
+            ${{ env.TF_ROOT }}/tfplan.txt
+          retention-days: 7
+
+  destroy:
+    name: Terraform destroy
+    needs: plan
+    runs-on: ubuntu-latest
+    # required reviewers on this environment approve the destroy after reading the plan job's
+    # summary
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: terraform-destroy-plan
+          # both files come from TF_ROOT, so the artifact has no directory prefix
+          path: ${{ env.TF_ROOT }}
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_TF_APPLY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+          terraform_wrapper: false
+      - name: Apply the reviewed destroy plan
+        working-directory: ${{ env.TF_ROOT }}
+        env:
+          TF_STATE_BUCKET: ${{ vars.TF_STATE_BUCKET }}
+        run: |
+          test -f tfplan
+          echo placeholder > ../../../go-3d-lambda.jar
+          if [ "$STACK_ENV" = staging ]; then state_key=go3d-staging/terraform.tfstate
+          else state_key=go3d-readonly/terraform.tfstate; fi
+          terraform init -input=false \
+            -backend-config="bucket=$TF_STATE_BUCKET" \
+            -backend-config="key=$state_key" \
+            -backend-config="region=$AWS_REGION" \
+            -backend-config="encrypt=true" \
+            -backend-config="use_lockfile=true"
+          terraform apply -input=false tfplan

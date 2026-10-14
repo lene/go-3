@@ -126,7 +126,8 @@ resource "aws_dynamodb_table" "players" {
 
 # No access logging: private bucket of finished games; a log bucket is not worth the cost.
 resource "aws_s3_bucket" "archive" { # NOSONAR
-  bucket = local.archive_bucket_name
+  bucket        = local.archive_bucket_name
+  force_destroy = var.archive_force_destroy
 
   tags = {
     Name = local.archive_bucket_name
@@ -371,6 +372,9 @@ resource "aws_s3_object" "lambda_jar" {
   key         = "lambda/${var.lambda_function_name}.jar"
   source      = var.lambda_jar_path
   source_hash = filemd5(var.lambda_jar_path)
+
+  # a build artifact, not data: delete all its versions so the bucket can be removed
+  force_destroy = true
 
   depends_on = [aws_s3_bucket_versioning.archive]
 }
