@@ -103,8 +103,11 @@ data "aws_iam_policy_document" "state_access" {
     resources = [aws_s3_bucket.state.arn]
   }
   statement {
-    actions   = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
-    resources = ["${aws_s3_bucket.state.arn}/go3d-readonly/*"]
+    actions = ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"]
+    resources = [
+      "${aws_s3_bucket.state.arn}/go3d-readonly/*",
+      "${aws_s3_bucket.state.arn}/go3d-staging/*",
+    ]
   }
 }
 
