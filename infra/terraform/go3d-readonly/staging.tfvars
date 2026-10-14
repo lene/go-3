@@ -12,5 +12,8 @@ enable_write_routes     = true
 # staging games are disposable: let the destroy workflow delete the bucket with its archives
 archive_force_destroy = true
 
+# staging alarms stay silent: the email goes to the production topics only
+alarm_email = null
+
 # the billing alarm watches the whole account, and production already has it
 billing_alarm_enabled = false
