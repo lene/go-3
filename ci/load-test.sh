@@ -10,11 +10,16 @@
 #                     production stack that has no write routes yet
 #   STATUS_PER_MIN    status requests per minute (default 1000)
 #   DURATION_SECONDS  length of the status load (default 60)
+#   THINK_SECONDS     pause after every move, like a player thinking (default 1); 0 fires the
+#                     requests back to back, a far harsher load than real clients produce
+#   RAMP_SECONDS      games start at random moments within this time (default 10); 0 starts all
+#                     of them at once, which makes every one of them hit a cold Lambda
 #   STATUS_PATH       path requested by the status load when there is no game to ask for
 #                     (default /status/CANARY, a 404 that still reads DynamoDB)
 #
-# 429 answers to game requests are retried after a pause and counted; 429 answers to status
-# requests are only counted, so the throttling shows up in the summary.
+# 429 answers to game requests are retried after a short random pause and counted; a game whose
+# request still fails is abandoned and counted as failed. 429 answers to status requests are only
+# counted, so the throttling shows up in the summary.
 # Client-side times include the network; judge the server-side p95 in CloudWatch.
 set -euo pipefail
 # curl prints times with a decimal point; awk would read them wrongly in a comma locale
@@ -26,8 +31,10 @@ GAMES=${GAMES:-100}
 STATUS_PER_MIN=${STATUS_PER_MIN:-1000}
 DURATION_SECONDS=${DURATION_SECONDS:-60}
 STATUS_PATH=${STATUS_PATH:-/status/CANARY}
+THINK_SECONDS=${THINK_SECONDS:-1}
+RAMP_SECONDS=${RAMP_SECONDS:-10}
 OUT=$(mktemp)
-export API OUT STATUS_PATH
+export API OUT STATUS_PATH THINK_SECONDS RAMP_SECONDS
 
 # one LABEL URL [TOKEN]: one request, logged as "label code seconds"; the body goes to stdout
 one() {
@@ -39,31 +46,43 @@ one() {
   # only a successful body is passed on, so a retried request leaves one JSON document
   if [[ "$code" =~ ^[23] ]]; then cat "$body"; rm -f "$body"; return 0; fi
   rm -f "$body"
+  [[ "$code" == 429 ]] && return 2
   return 1
 }
 
-# req LABEL URL [TOKEN]: like one, retrying while the API throttles
+# req LABEL URL [TOKEN]: like one, retrying with a short random pause while the API throttles
 req() {
-  local n=0
-  until one "$@"; do
-    [[ "$(tail -n1 "$OUT" | cut -d' ' -f2)" == 429 && $((++n)) -lt 30 ]] || return 1
-    sleep 0.3
+  local n=0 rc
+  while :; do
+    rc=0
+    one "$@" || rc=$?
+    (( rc == 0 )) && return 0
+    (( rc == 2 && ++n < 60 )) || return 1
+    sleep "0.$((3 + RANDOM % 5))"
   done
 }
 
 # shellcheck disable=SC2329 # run through bash -c by xargs
 play_game() {
   local black=(1/1/1 1/1/3 1/3/1 1/3/3) white=(3/3/3 3/3/1 3/1/3 3/1/1)
-  local id btoken wtoken i
-  id=$(req new "$API/new/3" | jq -r .id)
-  btoken=$(req register "$API/register/$id/%40" | jq -r .authToken)
-  wtoken=$(req register "$API/register/$id/O" | jq -r .authToken)
+  local reply id btoken wtoken i
+  sleep "$((RANDOM % (RAMP_SECONDS + 1)))"
+  reply=$(req new "$API/new/3") || return 1
+  id=$(jq -r .id <<< "$reply")
+  reply=$(req register "$API/register/$id/%40") || return 1
+  btoken=$(jq -r .authToken <<< "$reply")
+  reply=$(req register "$API/register/$id/O") || return 1
+  wtoken=$(jq -r .authToken <<< "$reply")
+  # a failed request abandons the game: carrying on would only produce wrong-turn errors
   for i in 0 1 2 3; do
-    req set "$API/set/$id/${black[i]}" "$btoken" > /dev/null
-    req set "$API/set/$id/${white[i]}" "$wtoken" > /dev/null
+    req set "$API/set/$id/${black[i]}" "$btoken" > /dev/null || return 1
+    sleep "$THINK_SECONDS"
+    req set "$API/set/$id/${white[i]}" "$wtoken" > /dev/null || return 1
+    sleep "$THINK_SECONDS"
   done
-  req pass "$API/pass/$id" "$btoken" > /dev/null
-  req pass "$API/pass/$id" "$wtoken" > /dev/null
+  req pass "$API/pass/$id" "$btoken" > /dev/null || return 1
+  sleep "$THINK_SECONDS"
+  req pass "$API/pass/$id" "$wtoken" > /dev/null || return 1
   echo "$id" >> "$OUT.games"
 }
 
@@ -93,10 +112,16 @@ status_load &
 status_pid=$!
 failed=0
 if (( GAMES > 0 )); then
-  seq "$GAMES" | xargs -P "$GAMES" -I{} bash -c 'play_game {}' || failed=1
+  # shellcheck disable=SC2016 # $OUT must expand in the child shell, which gets it exported
+  seq "$GAMES" | xargs -P "$GAMES" -I{} bash -c 'play_game {} || echo abandoned >> "$OUT.failed"' \
+    || failed=1
 fi
 wait "$status_pid"
 echo "load phase took $((SECONDS - start))s"
+if [[ -s "$OUT.failed" ]]; then
+  echo "games abandoned after a failed request: $(wc -l < "$OUT.failed") of $GAMES"
+  failed=1
+fi
 
 # every game must be over and archived
 verified=0
