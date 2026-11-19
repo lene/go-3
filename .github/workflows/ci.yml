@@ -84,6 +84,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
+          check-latest: true
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
       - run: sbt test
@@ -118,6 +119,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
+          check-latest: true
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
       - name: Download coverage of last successful master build
@@ -170,6 +172,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
+          check-latest: true
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
       - name: Download warning count of last successful master build
@@ -210,6 +213,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
+          check-latest: true
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
       - run: sbt "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
@@ -223,6 +227,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
+          check-latest: true
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
       - run: sbt compile
@@ -302,6 +307,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
+          check-latest: true
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
       - run: sbt "Universal / packageBin"
@@ -340,6 +346,7 @@ jobs:
         with:
           context: .
           push: true
+          pull: true # always take the latest patched base images (e.g. CVE-2026-114938)
           build-args: version=${{ needs.version.outputs.version }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -471,6 +478,7 @@ jobs:
         with:
           distribution: temurin
           java-version: ${{ env.JAVA_VERSION }}
+          check-latest: true
           cache: sbt
       - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
       - uses: scalacenter/sbt-dependency-submission@7b2f7e1418cb4a77fee99f9eb07c3f7577b9a867 # v3
