@@ -9,7 +9,8 @@ import go3d.server.{
   decodePlayerRegisteredResponse, decodeStatusResponse
 }
 import go3d.server.service.{
-  FailingGameStore, GameService, InMemoryGameArchive, InMemoryGameStore, InterleavingStore
+  FailingGameStore, GamePositions, GameService, InMemoryGameArchive, InMemoryGameStore,
+  InterleavingStore
 }
 import io.circe.parser.decode
 import org.junit.jupiter.api.{Assertions, Test}
@@ -57,13 +58,30 @@ class TestLambdaHandler:
     storeHandler.handleRequest(withAuth(path, "Bearer " + token), null)
 
   /** A new game on the in-memory store with both players: (game id, black token, white token). */
-  private def startedGame(): (String, String, String) =
-    val gameId = decode[GameCreatedResponse](call(NewGamePath).getBody).toTry.success.value.id
+  private def startedGame(): (String, String, String) = startedGameOfSize(3)
+
+  private def startedGameOfSize(size: Int): (String, String, String) =
+    val gameId = decode[GameCreatedResponse](call("/new/" + size.toString).getBody)
+      .toTry.success.value.id
     val black = decode[PlayerRegisteredResponse](call(registerPath(gameId, "@")).getBody)
       .toTry.success.value.authToken
     val white = decode[PlayerRegisteredResponse](call(registerPath(gameId, "O")).getBody)
       .toTry.success.value.authToken
     (gameId, black, white)
+
+  private def setPath(gameId: String, position: (Int, Int, Int)): String =
+    val (x, y, z) = position
+    "/set/" + gameId + "/" + x.toString + "/" + y.toString + "/" + z.toString
+
+  /** Plays the positions in order, black first, alternating. */
+  private def playPositions(
+      gameId: String,
+      black: String,
+      white: String,
+      positions: List[GamePositions.Position]
+  ): Unit =
+    for (token, position) <- GamePositions.withTokens(black, white, positions) do
+      Assertions.assertEquals(200, callWithToken(setPath(gameId, position), token).getStatusCode)
 
   @Test def testHealthReturns200(): Unit =
     val resp = handler.handleRequest(request("/health"), null)
@@ -193,6 +211,33 @@ class TestLambdaHandler:
     val (gameId, black, _) = startedGame()
     Assertions.assertEquals(400, callWithToken("/set/" + gameId + "/4/1/1", black).getStatusCode)
 
+  @Test def testSetWithWrongTokenReturns401(): Unit =
+    val (gameId, _, _) = startedGame()
+    val resp = callWithToken(setCenterPath(gameId), "WRONG")
+    Assertions.assertEquals(401, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("unauthorized"))
+
+  @Test def testSetOnOccupiedPositionReturns400(): Unit =
+    val (gameId, black, white) = startedGame()
+    Assertions.assertEquals(200, callWithToken(setCenterPath(gameId), black).getStatusCode)
+    val resp = callWithToken(setCenterPath(gameId), white)
+    Assertions.assertEquals(400, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("PositionOccupied"))
+
+  @Test def testSuicideReturns400(): Unit =
+    val (gameId, black, white) = startedGame()
+    playPositions(gameId, black, white, GamePositions.BeforeSuicide)
+    val resp = callWithToken(setPath(gameId, (1, 1, 1)), black)
+    Assertions.assertEquals(400, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("Suicide"))
+
+  @Test def testKoReturns400(): Unit =
+    val (gameId, black, white) = startedGameOfSize(5)
+    playPositions(gameId, black, white, GamePositions.BeforeKo)
+    val resp = callWithToken(setPath(gameId, (2, 2, 3)), black)
+    Assertions.assertEquals(400, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("Ko"))
+
   @Test def testTwoPassesEndGameAndLaterMovesReturn410(): Unit =
     val (gameId, black, white) = startedGame()
     Assertions.assertEquals(200, callWithToken(passPath(gameId), black).getStatusCode)
@@ -261,4 +306,5 @@ class TestLambdaHandler:
 
   @Test def testStatusMapping(): Unit =
     Assertions.assertEquals(500, LambdaHandler.statusOf(IllegalStateException("x")))
+    Assertions.assertEquals(400, LambdaHandler.statusOf(go3d.IllegalMove("x")))
     Assertions.assertEquals(404, LambdaHandler.statusOf(new NoSuchElementException("x")))

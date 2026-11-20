@@ -47,6 +47,9 @@ trait GameStore:
     */
   def markCompleted(gameId: String, archiveKey: String, expiresAt: Long): Try[Unit]
 
+  /** Ids of finished games that have no archive key, as left behind by a failed archive. */
+  def unarchivedFinishedGames(): Try[List[String]]
+
 /** Long-term storage for finished games. */
 trait GameArchive:
   /** Stores and verifies the archive of a finished game and returns its key. */

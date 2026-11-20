@@ -1,5 +1,6 @@
 package go3d.server.service
 
+import com.typesafe.scalalogging.LazyLogging
 import go3d.Black
 import go3d.Color
 import go3d.Game
@@ -29,7 +30,8 @@ import scala.util.{Failure, Success, Try}
   * Reads are strongly consistent, so a request sees the writes of the previous one.
   */
 class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable: String)
-    extends GameStore:
+    extends GameStore
+    with LazyLogging:
 
   // the TTL attribute and its placeholders in update expressions
   private val ExpiresAttribute = "expiresAt"
@@ -134,6 +136,33 @@ class DynamoDBGameStore(client: DynamoDbClient, gamesTable: String, playersTable
         .collect { case (gameId, colors) if colors == List(Black.toString) => gameId }
         .toArray
     }
+
+  /** Scans the games table, which has no index for this: it is small and the job is manual. */
+  def unarchivedFinishedGames(): Try[List[String]] =
+    Try(client.scanPaginator(
+      ScanRequest.builder().tableName(gamesTable).consistentRead(true)
+        .filterExpression("attribute_not_exists(#archiveKey)")
+        .projectionExpression("#gameId, #game")
+        .expressionAttributeNames(Map(
+          "#archiveKey" -> "archiveKey",
+          "#gameId" -> "gameId",
+          "#game" -> "game"
+        ).asJava)
+        .build()
+    ).items().asScala.toList).map(_.flatMap(finishedGameId))
+
+  /** The id of the item's game if it is over. An unreadable item is logged and skipped, so one
+    * corrupt row does not stop the recovery of the other games.
+    */
+  private def finishedGameId(item: java.util.Map[String, AttributeValue]): Option[String] =
+    val read =
+      for
+        gameId <- attribute(item.asScala, "gameId").map(_.s())
+        json <- attribute(item.asScala, "game").map(_.s())
+        game <- decode[Game](json).toTry
+      yield (gameId, game)
+    read.failed.foreach(e => logger.error(s"unreadable game item skipped: ${e.getMessage}"))
+    read.toOption.collect { case (gameId, game) if game.isOver => gameId }
 
   /** Sets the game's archive key and expiry, and its players' expiry, in one transaction. */
   def markCompleted(gameId: String, archiveKey: String, expiresAt: Long): Try[Unit] =

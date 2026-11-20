@@ -69,6 +69,12 @@ variable "lambda_handler" {
   default     = "go3d.server.lambda.LambdaHandler::handleRequest"
 }
 
+variable "lambda_archive_recovery_handler" {
+  description = "Entry point of the manual archive recovery job, deployed from the same JAR (only with enable_write_routes)."
+  type        = string
+  default     = "go3d.server.lambda.ArchiveRecoveryHandler::handleRequest"
+}
+
 variable "lambda_jar_path" {
   description = "Path to the sbt assembly JAR to deploy."
   type        = string
@@ -98,6 +104,17 @@ variable "lambda_timeout_seconds" {
   validation {
     condition     = var.lambda_timeout_seconds >= 1 && var.lambda_timeout_seconds <= 900
     error_message = "lambda_timeout_seconds must be between 1 and 900."
+  }
+}
+
+variable "archive_recovery_timeout_seconds" {
+  description = "Timeout in seconds of the archive recovery job, which archives every unarchived finished game in one invocation."
+  type        = number
+  default     = 300
+
+  validation {
+    condition     = var.archive_recovery_timeout_seconds >= 1 && var.archive_recovery_timeout_seconds <= 900
+    error_message = "archive_recovery_timeout_seconds must be between 1 and 900."
   }
 }
 
@@ -161,6 +178,12 @@ variable "api_4xx_alarm_threshold" {
 
 variable "api_5xx_alarm_threshold" {
   description = "HTTP API 5xx count threshold over the alarm period."
+  type        = number
+  default     = 1
+}
+
+variable "archive_failure_alarm_threshold" {
+  description = "Failed archives of finished games over the alarm period that trigger the alarm."
   type        = number
   default     = 1
 }

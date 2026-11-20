@@ -53,6 +53,11 @@ class InMemoryGameStore extends GameStore:
         games.update(gameId, entry.copy(completion = Some((archiveKey, expiresAt))))
         Success(())
 
+  def unarchivedFinishedGames(): Try[List[String]] =
+    Success(games.collect {
+      case (gameId, entry) if entry.game.isOver && entry.completion.isEmpty => gameId
+    }.toList)
+
   /** The archive key and expiry recorded by [[markCompleted]]. */
   def completion(gameId: String): Option[(String, Long)] = games.get(gameId).flatMap(_.completion)
 
@@ -85,3 +90,4 @@ class FailingGameStore extends GameStore:
   def playerColor(gameId: String, tokenHash: String): Try[Option[Color]] = failure
   def openGames(): Try[Array[String]] = failure
   def markCompleted(gameId: String, archiveKey: String, expiresAt: Long): Try[Unit] = failure
+  def unarchivedFinishedGames(): Try[List[String]] = failure

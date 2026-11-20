@@ -110,7 +110,7 @@ class GameService(
       newGame <- move(color).flatMap(stored.game.makeMove)
       _ <- store.updateGame(gameId, stored.version, newGame)
     yield
-      if newGame.isOver then complete(gameId, newGame, stored.players)
+      if newGame.isOver then archiveLogged(gameId, newGame, stored.players)
       StatusResponse(
         newGame,
         newGame.possibleMoves(color),
@@ -120,16 +120,38 @@ class GameService(
         NullRequestInfo
       )
 
+  /** Archives every finished game that has no archive key, which a failed archive at the end of
+    * the game leaves behind. Safe to run repeatedly: a game is archived once, and the next run
+    * does not find it again. A failure for one game is logged and does not stop the others.
+    * Fails only if the store cannot list the games.
+    */
+  def recoverArchives(): Try[ArchiveRecovery] =
+    store.unarchivedFinishedGames().map { gameIds =>
+      val results = gameIds.map(gameId => gameId -> recoverArchive(gameId))
+      ArchiveRecovery(
+        results.collect { case (gameId, Success(_)) => gameId },
+        results.collect { case (gameId, Failure(_)) => gameId }
+      )
+    }
+
+  private def recoverArchive(gameId: String): Try[Unit] =
+    existing(gameId).flatMap(stored =>
+      archiveLogged(gameId, stored.game, stored.players)
+    )
+
   /** Archives a finished game, then marks it completed so the store can expire it. The move that
     * ended the game is already stored, so a failure here does not fail the request: the game
-    * stays in the store without an expiry and can be archived again later.
+    * stays in the store with its inactivity expiry and without an archive key, and
+    * [[recoverArchives]] archives it later. The failure is logged with
+    * [[GameService.ArchiveFailedMarker]], which the alarm on archive failures matches.
     */
-  private def complete(gameId: String, game: Game, players: Set[Color]): Unit =
+  private def archiveLogged(gameId: String, game: Game, players: Set[Color]): Try[Unit] =
     val saveGame = SaveGame(game, players.map(c => c -> Player(c, gameId)).toMap)
     val expiresAt = now() / 1000L + GameService.RetentionSeconds
-    archive.archive(gameId, saveGame)
+    val result = archive.archive(gameId, saveGame)
       .flatMap(key => store.markCompleted(gameId, key, expiresAt))
-      .failed.foreach(e => logger.error("archiving finished game " + gameId + " failed", e))
+    result.failed.foreach(e => logger.error(GameService.archiveFailureMessage(gameId), e))
+    result
 
   private def existing(gameId: String): Try[StoredGame] =
     store.getGame(gameId).flatMap(
@@ -144,9 +166,22 @@ class GameService(
   private def check(condition: Boolean, error: => Throwable): Try[Unit] =
     if condition then Success(()) else Failure(error)
 
+/** The outcome of [[GameService.recoverArchives]]: the ids of the games archived by the run and of
+  * those that could not be.
+  */
+case class ArchiveRecovery(archived: List[String], failed: List[String])
+
 object GameService:
   /** Finished games and their players stay in the store this long after the game ends. */
   val RetentionSeconds: Long = 7L * 24 * 3600
+
+  /** Starts the error log line of a failed archive. The CloudWatch metric filter in
+    * `infra/terraform/go3d-readonly/main.tf` matches this text, so change both together.
+    */
+  val ArchiveFailedMarker: String = "ARCHIVE_FAILED"
+
+  /** The error log line of a failed archive of the game; it starts with the marker. */
+  def archiveFailureMessage(gameId: String): String = s"$ArchiveFailedMarker game $gameId"
 
   def apply(store: GameStore, archive: GameArchive): GameService =
     new GameService(
