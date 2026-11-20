@@ -7,8 +7,11 @@ import scala.util.{Failure, Success, Try}
   *
   * Protects the /new and /register endpoints from being used to create
   * large numbers of games or registrations from a single source.
+  *
+  * The server uses the shared [[RateLimiter]] object; the class lets tests have a limiter of their
+  * own that other suites cannot reset.
   */
-object RateLimiter:
+class SlidingWindowRateLimiter:
 
   val DefaultWindowSecs: Long = 60L
   val DefaultMaxRequests: Int = 10
@@ -30,3 +33,5 @@ object RateLimiter:
       Success(())
 
   private[server] def reset(): Unit = requestLog.clear()
+
+object RateLimiter extends SlidingWindowRateLimiter
