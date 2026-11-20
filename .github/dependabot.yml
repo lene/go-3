@@ -10,3 +10,10 @@ updates:
     # skip the version bump check (see CLAUDE.md, "CI Fix Commits").
     commit-message:
       prefix: "CI Fix"
+  # Builder and runtime image tags and digests in the Dockerfile
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    commit-message:
+      prefix: "CI Fix"

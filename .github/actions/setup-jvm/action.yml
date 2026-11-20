@@ -7,6 +7,6 @@ runs:
     - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
       with:
         distribution: temurin
-        java-version: 17
+        java-version: 25
         cache: sbt
     - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
