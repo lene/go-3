@@ -686,6 +686,10 @@ fields @timestamp, @message
 - Remove dual-write (DynamoDB becomes source of truth)
 - Migrate existing file-based saves to DynamoDB
 
+> Update (2026-11-20): the file migration is dropped. Existing file-backed games are discarded and
+> the cutover starts with empty tables, so there is no migration script, no S3 backup of saves
+> and no DynamoDB-to-file rollback export. Rollback routes traffic back to the old server.
+
 **Endpoints Migrated**:
 - `GET /new/{size}` (create game)
 - `GET /register/{gameId}/{color}` (register player)
@@ -783,6 +787,28 @@ ab -n 100 -c 100 http://api.go3d.example.com/health
 - ✅ Documentation complete
 - ✅ Existing server kept as backup for 30 days
 - ✅ After 30 days: existing server decommissioned
+
+---
+
+## Implementation Status (2026-11-20)
+
+The phases above are the original plan. What differs in the code and in
+`infra/terraform/go3d-readonly`, which replaced the `infra/setup-*.sh` scripts:
+
+| Plan | Implemented |
+|------|-------------|
+| Dual-write, file is source of truth (Phase 3) | Removed in 0.7.34; `DynamoDBGameStore` behind `GameStore` is the single write path of the Lambda |
+| Players expire 24 hours after creation | Games and their players expire 30 days after the last write and 7 days after completion |
+| 10 req/s per IP at API Gateway | Whole-API throttle (default 50 req/s, burst 100); the per-IP `RateLimiter` stays in the http4s server |
+| REST API | HTTP API with Lambda proxy integration |
+| Archive, then expire | The S3 object is verified with HeadObject before the game is marked completed; a failed archive is only logged (an alarm and a manual re-archive job are planned, #124) |
+| Write routes for production | Implemented; production keeps them off (`enable_write_routes = false`) until the cutover (#125); a staging stack has them on |
+| Migrate saves to DynamoDB | Dropped, see Phase 7 |
+| S3 Object Lock, MFA delete, WAF, CloudTrail, VPC endpoints | Deferred; not in the Terraform stack (versioning, SSE-S3, public access block, TLS-only policy and lifecycle rules are) |
+| Lambda runtime `java21` | `java25` |
+
+Status of the gates and open work: issues #123, #124, #125 and #128 and
+`docs/aws-phase-6-evaluation-and-lambda-migration-plan.md`.
 
 ---
 
@@ -935,7 +961,8 @@ addSbtPlugin("com.github.sbt" % "sbt-native-packager" % "1.9.16") // Docker (if 
 
 ---
 
-**Document Version**: 1.0
-**Last Updated**: 2025-01-19
+**Document Version**: 1.1
+**Last Updated**: 2026-11-20
 **Author**: Claude Code (with human oversight)
-**Status**: Draft (pending Phase 1 implementation)
+**Status**: Living plan. Phases 2-5 are implemented with Terraform, and the Phase 7 write path is
+implemented but off in production until the cutover (#125). See "Implementation Status".
