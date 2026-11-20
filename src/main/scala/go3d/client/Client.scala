@@ -39,7 +39,8 @@ abstract class Client extends ClientTrait with LazyLogging:
       case _: BadColor => exit(s"not a color, must be either black/b/@ or white/w/O", 1)
       case e: NoSuchElementException => exit(s"missing argument: --${e.getMessage}", 1)
       case e: IllegalArgumentException => exit(s"missing argument: ${e.getMessage}", 1)
-      case e: Throwable => exit(s"unexpected error: ${e.getMessage} ${e.getStackTrace.mkString("\n")}", 1)
+      case e: Throwable =>
+        exit(s"unexpected error: ${e.getMessage} ${e.getStackTrace.mkString("\n")}", 1)
     }
 
   def init(): Unit = {}
@@ -48,7 +49,10 @@ abstract class Client extends ClientTrait with LazyLogging:
   /// the last status before each wait.
   @tailrec
   protected final def pollUntilReady(
-    client: BaseClient, status: StatusResponse, waitMs: Int, onWait: StatusResponse => Unit
+      client: BaseClient,
+      status: StatusResponse,
+      waitMs: Int,
+      onWait: StatusResponse => Unit
   ): Try[StatusResponse] =
     if status.ready then Success(status)
     else
@@ -59,7 +63,7 @@ abstract class Client extends ClientTrait with LazyLogging:
         case failure => failure
 
   protected def exceptionToParam(e: NoSuchElementException): String =
-      "--" + e.getMessage //.substring("key not found: ".length).replace('_', '-')
+    "--" + e.getMessage // .substring("key not found: ".length).replace('_', '-')
 
   def exit(message: String, status: Int): Unit =
     if message.nonEmpty then logger.info(message)
@@ -67,11 +71,10 @@ abstract class Client extends ClientTrait with LazyLogging:
   def exit(status: Int): Unit = exit("", status)
 
 object Client:
-  /**
-   * The server's base URL: `url` when given, which must be an absolute http or https URL and is
-   * returned without a trailing slash; otherwise `http://server:port`. Without `url`, a missing
-   * server or port fails with a NoSuchElementException naming the option.
-   */
+  /** The server's base URL: `url` when given, which must be an absolute http or https URL and is
+    * returned without a trailing slash; otherwise `http://server:port`. Without `url`, a missing
+    * server or port fails with a NoSuchElementException naming the option.
+    */
   def serverUrl(url: Option[String], server: Option[String], port: Option[Int]): Try[String] =
     url.fold(
       for

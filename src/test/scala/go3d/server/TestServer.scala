@@ -62,18 +62,22 @@ class TestServer:
 
   @Test def testNewGameFailsWithBadSize(): Unit =
     Assertions.assertThrows(
-      classOf[IOException], () => getJson(s"http://localhost:$TestPort/new/1")
+      classOf[IOException],
+      () => getJson(s"http://localhost:$TestPort/new/1")
     )
     Assertions.assertThrows(
-      classOf[IOException], () => getJson(s"http://localhost:$TestPort/new/4")
+      classOf[IOException],
+      () => getJson(s"http://localhost:$TestPort/new/4")
     )
     Assertions.assertThrows(
-      classOf[IOException], () => getJson(s"http://localhost:$TestPort/new/27")
+      classOf[IOException],
+      () => getJson(s"http://localhost:$TestPort/new/27")
     )
 
   @Test def testNewGameWithBadSizeSetsStatus400(): Unit =
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/new/27", Status.BadRequest.code
+      s"http://localhost:$TestPort/new/27",
+      Status.BadRequest.code
     )
 
   @Test def testRegisterOnePlayer(): Unit =
@@ -85,7 +89,8 @@ class TestServer:
   @Test def testRegisterBadColorSetsStatus404(): Unit =
     val newGameResponse = GameData.create(TestSize)
     assertFailsWithStatus(
-      s"${GameData.ServerURL}/register/${newGameResponse.id}/X", Status.NotFound.code
+      s"${GameData.ServerURL}/register/${newGameResponse.id}/X",
+      Status.NotFound.code
     )
 
   @Test def testRegisterTwoPlayers(): Unit =
@@ -139,13 +144,15 @@ class TestServer:
     val newGameResponse = GameData.create(TestSize)
     GameData.register(newGameResponse.id, Black)
     Assertions.assertThrows(
-      classOf[IOException], () => GameData.register(newGameResponse.id, Black)
+      classOf[IOException],
+      () => GameData.register(newGameResponse.id, Black)
     )
 
   @Test def testRegisterAtNonexistentGameFails(): Unit =
     val newGameResponse = GameData.create(TestSize)
     Assertions.assertThrows(
-      classOf[IOException], () => GameData.register(newGameResponse.id + "NOPE!", Black)
+      classOf[IOException],
+      () => GameData.register(newGameResponse.id + "NOPE!", Black)
     )
 
   @Test def testGetStatusAfterBothRegisteredForBlackIsReady(): Unit =
@@ -201,7 +208,8 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     Assertions.assertFalse(gameData.status(White).ready)
     Assertions.assertThrows(
-      classOf[RequestFailedException], () => gameData.set(White, 1, 1, 1)
+      classOf[RequestFailedException],
+      () => gameData.set(White, 1, 1, 1)
     )
 
   @Test def testSetStoneWhenNotReadySetsStatus400(): Unit =
@@ -292,28 +300,23 @@ class TestServer:
     playListOfMoves(gameData, CaptureMoves.dropRight(1))
     val game = gameData.status().game
     for move <- CaptureMoves.dropRight(1) do
-      Assertions.assertEquals(move.color, game.at(move.position), move.toString+"\n"+game.toString)
+      Assertions.assertEquals(
+        move.color,
+        game.at(move.position),
+        move.toString + "\n" + game.toString
+      )
 
   @Test def testCaptureStone(): Unit =
     val gameData = setUpGame(TestSize)
     playListOfMoves(gameData, CaptureMoves)
     val game = gameData.status().game
-    Assertions.assertEquals(Empty, game.at(Position(2, 2, 1)), "\n"+game.toString)
+    Assertions.assertEquals(Empty, game.at(Position(2, 2, 1)), "\n" + game.toString)
 
   @Test def testCaptureTwoDisjointStonesWithOneMove(): Unit =
-    val moves = List[Move | Pass](
-      Move(2, 1, 1, Black), Move(1, 1, 1, White),
-      Move(4, 1, 1, Black), Move(5, 1, 1, White),
-      Pass(Black), Move(2, 2, 1, White),
-      Pass(Black), Move(4, 2, 1, White),
-      Pass(Black), Move(2, 1, 2, White),
-      Pass(Black), Move(4, 1, 2, White),
-      Pass(Black)
-    )
     val gameData = setUpGame(5)
-    val statusResponse = playListOfMoves(gameData, moves)
+    val statusResponse = playListOfMoves(gameData, TwoDisjointStonesCaptureSetup)
     Assertions.assertTrue(statusResponse.game.captures.isEmpty)
-    val statusResponseAgain = playListOfMoves(gameData,List(Move(3, 1, 1, White)))
+    val statusResponseAgain = playListOfMoves(gameData, List(Move(3, 1, 1, White)))
     Assertions.assertEquals(2, statusResponseAgain.game.captures(White))
 
   @Test def testPlayRandomGame(): Unit =
@@ -324,7 +327,8 @@ class TestServer:
     val gameData = setUpGame(TestSize)
     gameData.playRandomGame(false)
     Assertions.assertTrue(
-      IOForTests.exists(gameData.id + ".json"), s"${gameData.id} in ${IOForTests.files}?"
+      IOForTests.exists(gameData.id + ".json"),
+      s"${gameData.id} in ${IOForTests.files}?"
     )
 
   @Test def testSavedRandomGameIsSameAsPlayed(): Unit =
@@ -346,28 +350,32 @@ class TestServer:
   @Test def testTooLongURLSetsStatus414WhenSetting(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 404,
+      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X",
+      404,
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenSettingEvenIfNotReady(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X", 404,
+      s"http://localhost:$TestPort/set/${gameData.id}/12/12/12/X",
+      404,
       Map("Authentication" -> s"Bearer ${gameData.token(White)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenPassing(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/pass/${gameData.id}/X", 404,
+      s"http://localhost:$TestPort/pass/${gameData.id}/X",
+      404,
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testTooLongURLSetsStatus414WhenFetchingStatus(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/status/${gameData.id}/X", 404,
+      s"http://localhost:$TestPort/status/${gameData.id}/X",
+      404,
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
@@ -382,14 +390,16 @@ class TestServer:
   @Test def testNonexistentGameSetsStatus404WhenSetting(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/set/NOPE!!/1/1/1", 404,
+      s"http://localhost:$TestPort/set/NOPE!!/1/1/1",
+      404,
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
   @Test def testNonexistentGameSetsStatus404WhenPassing(): Unit =
     val gameData = setUpGame(TestSize)
     assertFailsWithStatus(
-      s"http://localhost:$TestPort/pass/NOPE!!", 404,
+      s"http://localhost:$TestPort/pass/NOPE!!",
+      404,
       Map("Authentication" -> s"Bearer ${gameData.token(Black)}")
     )
 
@@ -535,7 +545,8 @@ class TestServer:
     val gameData: GameData = setUpGame(3)
     gameData.set(Move(Position(1, 1, 1), Black))
     Assertions.assertThrows(
-      classOf[RequestFailedException], () => gameData.set(Move(Position(1, 1, 1), Black))
+      classOf[RequestFailedException],
+      () => gameData.set(Move(Position(1, 1, 1), Black))
     )
 
   @Test def testSettingTheSameColorTwiceErrorMessageContainsWhy(): Unit =
@@ -546,14 +557,20 @@ class TestServer:
     catch
       case e: RequestFailedException =>
         Assertions.assertEquals(Status.BadRequest.code, e.response.statusCode)
-        Assertions.assertTrue(e.response.text().contains(classOf[NotReadyToSet].getSimpleName), e.response.text())
+        Assertions.assertTrue(
+          e.response.text().contains(classOf[NotReadyToSet].getSimpleName),
+          e.response.text()
+        )
 
   @Test def testSettingToSuicideErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)
     playListOfMoves(
-      gameData, List(
-        Move(Position(1, 1, 2), Black), Pass(White),
-        Move(Position(1, 2, 1), Black), Pass(White),
+      gameData,
+      List(
+        Move(Position(1, 1, 2), Black),
+        Pass(White),
+        Move(Position(1, 2, 1), Black),
+        Pass(White),
         Move(Position(2, 1, 1), Black)
       )
     )
@@ -562,7 +579,10 @@ class TestServer:
     catch
       case e: RequestFailedException =>
         Assertions.assertEquals(Status.BadRequest.code, e.response.statusCode)
-        Assertions.assertTrue(e.response.text().contains(classOf[Suicide].getSimpleName), e.response.text())
+        Assertions.assertTrue(
+          e.response.text().contains(classOf[Suicide].getSimpleName),
+          e.response.text()
+        )
 
   @Test def testSettingOutsideBoardErrorMessageContainsWhy(): Unit =
     val gameData: GameData = setUpGame(3)
@@ -612,7 +632,10 @@ class TestServer:
     val gameData: GameData = setUpGame(3)
     gameData.pass(Black)
     gameData.pass(White)
-    Assertions.assertTrue(fileIO.getArchivedGames.contains(gameData.id), s"${fileIO.getArchivedGames} does not contain ${gameData.id}")
+    Assertions.assertTrue(
+      fileIO.getArchivedGames.contains(gameData.id),
+      s"${fileIO.getArchivedGames} does not contain ${gameData.id}"
+    )
     Assertions.assertFalse(fileIO.getActiveGames.contains(gameData.id))
 
   @Test def testCursorPositioningInRealGame(): Unit =
@@ -658,7 +681,7 @@ class TestServer:
       (White, Position(4, 4, 4)),
       (Black, Position(2, 2, 2)),
       (White, Position(5, 5, 5)),
-      (Black, Position(1, 1, 1)),
+      (Black, Position(1, 1, 1))
     )
 
     var lastBlackMove: Option[Position] = None
@@ -687,8 +710,8 @@ class TestServer:
 
   @Test def testReplayEndpointReturnsMidGameState(): Unit =
     val gameSize = 5
-    val newJson  = Source.fromURL(s"http://localhost:$TestPort/new/$gameSize").mkString
-    val gameId   = decode[go3d.server.GameCreatedResponse](newJson).toOption.value.id
+    val newJson = Source.fromURL(s"http://localhost:$TestPort/new/$gameSize").mkString
+    val gameId = decode[go3d.server.GameCreatedResponse](newJson).toOption.value.id
 
     val blackJson = Source.fromURL(s"http://localhost:$TestPort/register/$gameId/@").mkString
     val blackToken =
@@ -763,13 +786,18 @@ def setUpGame(size: Int): GameData =
 def gameWithBlackAt111(size: Int): StatusResponse =
   setUpGame(size).set(Move(Position(1, 1, 1), Black))
 
-def assertFailsWithStatus(url: String, expectedStatus: Int,
-                          headers: Map[String, String] = Map()): Unit =
+def assertFailsWithStatus(
+    url: String,
+    expectedStatus: Int,
+    headers: Map[String, String] = Map()
+): Unit =
   Try(requests.get(url, headers = headers)) match
     case Success(_) => Assertions.fail("request unexpectedly succeeded")
     case Failure(e: RequestFailedException) => Assertions.assertEquals(
-      expectedStatus, e.response.statusCode, e.response.text()
-    )
+        expectedStatus,
+        e.response.statusCode,
+        e.response.text()
+      )
     case Failure(e) => Assertions.fail(
-      s"expected RequestFailedException, got ${e.getClass.getSimpleName}"
-    )
+        s"expected RequestFailedException, got ${e.getClass.getSimpleName}"
+      )

@@ -12,6 +12,25 @@ val CaptureMoves =
     Move(2, 3, 1, Black) :: Move(2, 1, 2, White) :: Move(3, 2, 1, Black) :: Move(2, 3, 2, White) ::
     Move(1, 2, 1, Black) :: Nil
 
+/** White stones around two disjoint black stones on a size 5 board: one white move at (3, 1, 1)
+  * captures both.
+  */
+val TwoDisjointStonesCaptureSetup: List[Move | Pass] = List(
+  Move(2, 1, 1, Black),
+  Move(1, 1, 1, White),
+  Move(4, 1, 1, Black),
+  Move(5, 1, 1, White),
+  Pass(Black),
+  Move(2, 2, 1, White),
+  Pass(Black),
+  Move(4, 2, 1, White),
+  Pass(Black),
+  Move(2, 1, 2, White),
+  Pass(Black),
+  Move(4, 1, 2, White),
+  Pass(Black)
+)
+
 val eyeSituation = Map(
   1 ->
     """     |
@@ -31,7 +50,7 @@ val eyeSituation = Map(
       | O   |
       |     |
       |     |""",
-    4 ->
+  4 ->
     """     |
       | O   |
       |     |
@@ -60,11 +79,11 @@ def checkStonesOnBoard(game: GoGame, moves: List[Move | Pass]): Unit =
       case _: Pass =>
       case m: Move => Assertions.assertEquals(m.color, game.at(m.position))
 
-
 def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]): Unit =
   def assertCollectionEqual[T](expected: Seq[T], actual: Seq[T]): Unit =
     Assertions.assertTrue(
-      expected.sortBy(_.toString) == actual.sortBy(_.toString), s"$actual == $expected"
+      expected.sortBy(_.toString) == actual.sortBy(_.toString),
+      s"$actual == $expected"
     )
   assertCollectionEqual(for (p <- expected) yield Position(p._1, p._2, p._3), actual)
 
@@ -76,7 +95,7 @@ def fromStrings(levels: Map[Int, String]): Goban =
     val lines = level.stripMargin.replace("|", "").split("\n")
     for (line, y) <- lines.zipWithIndex do
       for (stone, x) <- line.zipWithIndex do
-        goban.stones(x+1)(y+1)(z) = Color(stone).success.value
+        goban.stones(x + 1)(y + 1)(z) = Color(stone).success.value
   goban
 
 def fromGoban(goban: Goban): Game =

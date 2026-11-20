@@ -37,10 +37,9 @@ object Players:
   def isReady(gameId: String): Boolean =
     activePlayers.get(gameId).exists(_.get().size == 2)
 
-  /**
-   * Register a black or white player for a game (thread-safe); any other color fails with
-   * [[BadColor]].
-   */
+  /** Register a black or white player for a game (thread-safe); any other color fails with
+    * [[BadColor]].
+    */
   def register(gameId: String, color: Color): Try[Unit] =
     if color != Black && color != White then Failure(BadColor(color.ascii))
     else

@@ -32,13 +32,15 @@ class TestFileIo:
   @Test def testSaveGameFailsNonexistentGame(): Unit =
     val gameId = "mock"
     Assertions.assertThrows(
-      classOf[NoSuchElementException], () => TestFileIo.fileIO.saveGame(gameId)
+      classOf[NoSuchElementException],
+      () => TestFileIo.fileIO.saveGame(gameId)
     )
 
   @Test def testSaveGameFailsNonexistentPlayers(): Unit =
     val gameId = Games.register(TestSize).success.value
     Assertions.assertThrows(
-      classOf[RuntimeException], () => TestFileIo.fileIO.saveGame(gameId)
+      classOf[RuntimeException],
+      () => TestFileIo.fileIO.saveGame(gameId)
     )
 
   @Test def testSaveGameWritesFile(): Unit =
@@ -132,7 +134,8 @@ class TestFileIo:
     val differentRandomContent = IdGenerator.getId
     TestFileIo.fileIO.writeFile(s"$gameId.json", s"{$differentRandomContent}")
     Assertions.assertThrows(
-      classOf[RuntimeException], () => TestFileIo.fileIO.archiveGame(gameId)
+      classOf[RuntimeException],
+      () => TestFileIo.fileIO.archiveGame(gameId)
     )
 
   @Test def testDeleteGameRemovesFile(): Unit =

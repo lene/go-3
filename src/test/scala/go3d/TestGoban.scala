@@ -11,22 +11,22 @@ class TestGoban:
 
   @Test def testMemoryAllocation(): Unit =
     val goban = Goban.start(TestSize).success.value
-    Assertions.assertEquals(TestSize+2, goban.stones.length)
-    Assertions.assertEquals(TestSize+2, goban.stones(0).length)
-    Assertions.assertEquals(TestSize+2, goban.stones(TestSize+1).length)
-    Assertions.assertEquals(TestSize+2, goban.stones(0)(0).length)
-    Assertions.assertEquals(TestSize+2, goban.stones(TestSize+1)(TestSize+1).length)
+    Assertions.assertEquals(TestSize + 2, goban.stones.length)
+    Assertions.assertEquals(TestSize + 2, goban.stones(0).length)
+    Assertions.assertEquals(TestSize + 2, goban.stones(TestSize + 1).length)
+    Assertions.assertEquals(TestSize + 2, goban.stones(0)(0).length)
+    Assertions.assertEquals(TestSize + 2, goban.stones(TestSize + 1)(TestSize + 1).length)
 
   @Test def testSentinels(): Unit =
     val goban = Goban.start(TestSize).success.value
     Assertions.assertEquals(Sentinel, goban.stones(0)(0)(0))
-    Assertions.assertEquals(Sentinel, goban.stones(TestSize+1)(TestSize+1)(TestSize+1))
+    Assertions.assertEquals(Sentinel, goban.stones(TestSize + 1)(TestSize + 1)(TestSize + 1))
     for x <- 1 to TestSize do
       Assertions.assertEquals(Sentinel, goban.stones(x)(0)(0))
-      Assertions.assertEquals(Sentinel, goban.stones(x)(TestSize+1)(TestSize+1))
+      Assertions.assertEquals(Sentinel, goban.stones(x)(TestSize + 1)(TestSize + 1))
       for y <- 1 to TestSize do
         Assertions.assertEquals(Sentinel, goban.stones(x)(y)(0))
-        Assertions.assertEquals(Sentinel, goban.stones(x)(y)(TestSize+1))
+        Assertions.assertEquals(Sentinel, goban.stones(x)(y)(TestSize + 1))
         for z <- 1 to TestSize do Assertions.assertEquals(Empty, goban.stones(x)(y)(z))
 
   @Test def testBoardSizeTooSmall(): Unit =
@@ -34,7 +34,8 @@ class TestGoban:
 
   @Test def testBoardSizeTooBig(): Unit =
     Assertions.assertInstanceOf(
-      classOf[BadBoardSize], Goban.start(MaxBoardSize+2).failure.exception
+      classOf[BadBoardSize],
+      Goban.start(MaxBoardSize + 2).failure.exception
     )
 
   @Test def testBoardSizeEven(): Unit =
@@ -46,9 +47,10 @@ class TestGoban:
 
   @Test def testAtWithIntsOnBorder(): Unit =
     val empty = Goban.start(TestSize).success.value
-    for x <- 0 to TestSize+1
-      y <- 0 to TestSize+1 by TestSize+1
-      z <- 0 to TestSize+1 by TestSize+1
+    for
+      x <- 0 to TestSize + 1
+      y <- 0 to TestSize + 1 by TestSize + 1
+      z <- 0 to TestSize + 1 by TestSize + 1
     do
       Assertions.assertEquals(Sentinel, empty.at(x, y, z))
 
@@ -59,7 +61,8 @@ class TestGoban:
   @Test def testSetStoneWithMoveOutsideBoard(): Unit =
     val empty = Goban.start(TestSize).success.value
     Assertions.assertThrows(
-      classOf[RuntimeException], () => empty.setStone(Move(TestSize+2, TestSize+2, TestSize+2, Black))
+      classOf[RuntimeException],
+      () => empty.setStone(Move(TestSize + 2, TestSize + 2, TestSize + 2, Black))
     )
 
   @Test def testSetStoneWithInts(): Unit =
@@ -73,35 +76,40 @@ class TestGoban:
   @Test def testSetStoneWithIntsOutsideBoard(): Unit =
     val empty = Goban.start(TestSize).success.value
     Assertions.assertThrows(
-      classOf[RuntimeException], () => empty.setStone(TestSize+2, TestSize+2, TestSize+2, Black)
+      classOf[RuntimeException],
+      () => empty.setStone(TestSize + 2, TestSize + 2, TestSize + 2, Black)
     )
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val board = Goban.start(TestSize).success.value.setStone(Move(2, 2, 2, Black))
     Assertions.assertInstanceOf(
-      classOf[PositionOccupied], board.checkValid(Move(2, 2, 2, White)).failure.exception
+      classOf[PositionOccupied],
+      board.checkValid(Move(2, 2, 2, White)).failure.exception
     )
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = Goban.start(TestSize).success.value
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.checkValid(Move(TestSize+1, 2, 2, White)).failure.exception
+      classOf[OutsideBoard],
+      empty.checkValid(Move(TestSize + 1, 2, 2, White)).failure.exception
     )
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.checkValid(Move(2, TestSize+1, 2, White)).failure.exception
+      classOf[OutsideBoard],
+      empty.checkValid(Move(2, TestSize + 1, 2, White)).failure.exception
     )
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.checkValid(Move(2, 2, TestSize+1, White)).failure.exception
+      classOf[OutsideBoard],
+      empty.checkValid(Move(2, 2, TestSize + 1, White)).failure.exception
     )
 
   @Test def testDeepCopy2D(): Unit =
-    val original = Array(Array(1, 2), Array(3,4))
+    val original = Array(Array(1, 2), Array(3, 4))
     val cloned = deepCopy(original)
     cloned(0)(0) = 9
     Assertions.assertEquals(1, original(0)(0))
 
   @Test def testDeepCopy3D(): Unit =
-    val original = Array(Array(Array(1, 2), Array(3,4)), Array(Array(5, 6), Array(7,8)))
+    val original = Array(Array(Array(1, 2), Array(3, 4)), Array(Array(5, 6), Array(7, 8)))
     val cloned = deepCopy(original)
     cloned(0)(0)(0) = 9
     Assertions.assertEquals(1, original(0)(0)(0))
@@ -116,7 +124,9 @@ class TestGoban:
     val goban = setListOfStones(TestSize, CaptureMoves.dropRight(1))
     for move <- CaptureMoves.dropRight(1) do
       Assertions.assertEquals(
-        move.color, goban.at(move.position), move.toString+"\n"+goban.toString
+        move.color,
+        goban.at(move.position),
+        move.toString + "\n" + goban.toString
       )
 
   @Test def testFromStrings(): Unit =
@@ -127,11 +137,17 @@ class TestGoban:
       2 -> """   |
              | @ |
              |   |"""
-      ))
-      checkStonesOnBoard(goban, 
-        List(Move(2, 1, 1, Black), Move(1, 2, 1, Black), Move(3, 2, 1, Black), 
-          Move(2, 3, 1, Black), Move(2, 2, 2, Black))
+    ))
+    checkStonesOnBoard(
+      goban,
+      List(
+        Move(2, 1, 1, Black),
+        Move(1, 2, 1, Black),
+        Move(3, 2, 1, Black),
+        Move(2, 3, 1, Black),
+        Move(2, 2, 2, Black)
       )
+    )
 
   @Test def testEqualGobansAreEqual(): Unit =
     val goban1 = fromStrings(Map(
@@ -295,6 +311,13 @@ class TestGoban:
           |   |"""
     ))
     Assertions.assertEquals(
-      Set(Position(1, 2, 2), Position(2, 2, 1), Position(2, 1, 2), Position(2, 2, 3), Position(2, 3, 2), Position(3, 2, 2)),
+      Set(
+        Position(1, 2, 2),
+        Position(2, 2, 1),
+        Position(2, 1, 2),
+        Position(2, 2, 3),
+        Position(2, 3, 2),
+        Position(3, 2, 2)
+      ),
       goban.neighbors(Black)
     )

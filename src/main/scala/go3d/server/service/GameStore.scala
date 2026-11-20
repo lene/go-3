@@ -13,26 +13,24 @@ class GameExists(val gameId: String) extends ServerException("game " + gameId + 
 
 /** Another request changed the game since it was read; the client should refetch and retry. */
 class ConcurrentModification(val gameId: String, expectedVersion: Long)
-  extends ServerException(
-    "game " + gameId + " changed concurrently, expected version " + expectedVersion.toString
-  )
+    extends ServerException(
+      "game " + gameId + " changed concurrently, expected version " + expectedVersion.toString
+    )
 
-/**
- * Authoritative storage for games and player registrations.
- *
- * Every write reports failure through its `Try`; implementations must never log and swallow
- * errors, because the store is the only copy of the game state.
- */
+/** Authoritative storage for games and player registrations.
+  *
+  * Every write reports failure through its `Try`; implementations must never log and swallow
+  * errors, because the store is the only copy of the game state.
+  */
 trait GameStore:
   /** Stores a new game at version 0; fails with [[GameExists]] if the id is taken. */
   def createGame(gameId: String, game: Game): Try[Unit]
 
   def getGame(gameId: String): Try[Option[StoredGame]]
 
-  /**
-   * Replaces the game if its stored version is still `expectedVersion`, then increments the
-   * version; fails with [[ConcurrentModification]] otherwise.
-   */
+  /** Replaces the game if its stored version is still `expectedVersion`, then increments the
+    * version; fails with [[ConcurrentModification]] otherwise.
+    */
   def updateGame(gameId: String, expectedVersion: Long, game: Game): Try[Unit]
 
   /** Fails with [[go3d.server.DuplicateColor]] if `color` is already registered. */
@@ -44,10 +42,9 @@ trait GameStore:
   /** Games with a black player waiting for white. */
   def openGames(): Try[Array[String]]
 
-  /**
-   * Records that the finished game is archived under `archiveKey`; the game and its players
-   * may be deleted after `expiresAt` (Unix seconds).
-   */
+  /** Records that the finished game is archived under `archiveKey`; the game and its players
+    * may be deleted after `expiresAt` (Unix seconds).
+    */
   def markCompleted(gameId: String, archiveKey: String, expiresAt: Long): Try[Unit]
 
 /** Long-term storage for finished games. */

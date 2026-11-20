@@ -24,33 +24,45 @@ class TestNeighbors:
     val empty = Goban.start(TestSize).success.value
     val interiorNeighbors = empty.neighbors(Position(2, 2, 2))
     assertPositionsEqual(
-      List((2, 2, 1), (2, 2, 3), (2, 1, 2), (2, 3, 2), (1, 2, 2), (3, 2, 2)), interiorNeighbors
+      List((2, 2, 1), (2, 2, 3), (2, 1, 2), (2, 3, 2), (1, 2, 2), (3, 2, 2)),
+      interiorNeighbors
     )
 
   @Test def testNeighborsOuterCorner(): Unit =
     val empty = Goban.start(TestSize).success.value
     val cornerNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize))
     assertPositionsEqual(
-      List((TestSize, TestSize, TestSize-1), (TestSize, TestSize-1, TestSize),
-        (TestSize-1, TestSize, TestSize)),
+      List(
+        (TestSize, TestSize, TestSize - 1),
+        (TestSize, TestSize - 1, TestSize),
+        (TestSize - 1, TestSize, TestSize)
+      ),
       cornerNeighbors
     )
 
   @Test def testNeighborsOuterEdge(): Unit =
     val empty = Goban.start(TestSize).success.value
-    val edgeNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize-1))
+    val edgeNeighbors = empty.neighbors(Position(TestSize, TestSize, TestSize - 1))
     assertPositionsEqual(
-      List((TestSize, TestSize, TestSize), (TestSize, TestSize, TestSize-2),
-        (TestSize, TestSize-1, TestSize-1), (TestSize-1, TestSize, TestSize-1)),
+      List(
+        (TestSize, TestSize, TestSize),
+        (TestSize, TestSize, TestSize - 2),
+        (TestSize, TestSize - 1, TestSize - 1),
+        (TestSize - 1, TestSize, TestSize - 1)
+      ),
       edgeNeighbors
     )
 
   @Test def testNeighborsOuterFace(): Unit =
     val empty = Goban.start(TestSize).success.value
-    val faceNeighbors = empty.neighbors(Position(TestSize, TestSize-1, TestSize-1))
+    val faceNeighbors = empty.neighbors(Position(TestSize, TestSize - 1, TestSize - 1))
     assertPositionsEqual(
-      List((TestSize, TestSize-1, TestSize), (TestSize, TestSize-1, TestSize-2),
-        (TestSize, TestSize, TestSize-1), (TestSize, TestSize-2, TestSize-1),
-        (TestSize-1, TestSize-1, TestSize-1)),
+      List(
+        (TestSize, TestSize - 1, TestSize),
+        (TestSize, TestSize - 1, TestSize - 2),
+        (TestSize, TestSize, TestSize - 1),
+        (TestSize, TestSize - 2, TestSize - 1),
+        (TestSize - 1, TestSize - 1, TestSize - 1)
+      ),
       faceNeighbors
     )

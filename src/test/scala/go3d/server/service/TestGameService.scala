@@ -48,7 +48,9 @@ class TestGameService:
 
   private def serviceFor(gameStore: GameStore, gameArchive: GameArchive): GameService =
     new GameService(
-      gameStore, gameArchive, () => NowMillis,
+      gameStore,
+      gameArchive,
+      () => NowMillis,
       () => "G" + counter.incrementAndGet().toString,
       () => "T" + counter.incrementAndGet().toString
     )
@@ -79,19 +81,22 @@ class TestGameService:
 
   @Test def testNewGameWithBadSizeFails(): Unit =
     Assertions.assertInstanceOf(
-      classOf[BadBoardSize], service.newGame(1).failure.exception
+      classOf[BadBoardSize],
+      service.newGame(1).failure.exception
     )
 
   @Test def testRegisterNonexistentGameFails(): Unit =
     Assertions.assertInstanceOf(
-      classOf[NonexistentGame], service.register("NOGAME", Black).failure.exception
+      classOf[NonexistentGame],
+      service.register("NOGAME", Black).failure.exception
     )
 
   @Test def testRegisterDuplicateColorFails(): Unit =
     val gameId = service.newGame(3).success.value.id
     service.register(gameId, Black).success.value
     Assertions.assertInstanceOf(
-      classOf[DuplicateColor], service.register(gameId, Black).failure.exception
+      classOf[DuplicateColor],
+      service.register(gameId, Black).failure.exception
     )
 
   @Test def testRegisterReturnsDistinctTokens(): Unit =
@@ -106,22 +111,26 @@ class TestGameService:
   @Test def testRegisterAfterGameOverFails(): Unit =
     val (gameId, _, _) = finishedGame()
     Assertions.assertInstanceOf(
-      classOf[GameOver], service.register(gameId, Black).failure.exception
+      classOf[GameOver],
+      service.register(gameId, Black).failure.exception
     )
 
   @Test def testRegisterEmptyColorFails(): Unit =
     val gameId = service.newGame(3).success.value.id
     Assertions.assertInstanceOf(
-      classOf[BadColor], service.register(gameId, go3d.Empty).failure.exception
+      classOf[BadColor],
+      service.register(gameId, go3d.Empty).failure.exception
     )
     Assertions.assertInstanceOf(
-      classOf[BadColor], service.register(gameId, go3d.Sentinel).failure.exception
+      classOf[BadColor],
+      service.register(gameId, go3d.Sentinel).failure.exception
     )
     Assertions.assertTrue(service.openGames().success.value.isEmpty)
 
   @Test def testStatusOfNonexistentGameFails(): Unit =
     Assertions.assertInstanceOf(
-      classOf[NonexistentGame], service.status("NOGAME", None).failure.exception
+      classOf[NonexistentGame],
+      service.status("NOGAME", None).failure.exception
     )
 
   @Test def testStatusWithoutTokenShowsBoardOnly(): Unit =
@@ -150,14 +159,16 @@ class TestGameService:
   @Test def testStatusWithInvalidTokenFails(): Unit =
     val (gameId, _, _) = startedGame(3)
     Assertions.assertInstanceOf(
-      classOf[InvalidToken], service.status(gameId, Some("WRONG")).failure.exception
+      classOf[InvalidToken],
+      service.status(gameId, Some("WRONG")).failure.exception
     )
 
   @Test def testTokenOfOtherGameIsInvalid(): Unit =
     val (_, black, _) = startedGame(3)
     val (otherGameId, _, _) = startedGame(3)
     Assertions.assertInstanceOf(
-      classOf[InvalidToken], service.set(otherGameId, black, 1, 1, 1).failure.exception
+      classOf[InvalidToken],
+      service.set(otherGameId, black, 1, 1, 1).failure.exception
     )
 
   @Test def testSetStoresMove(): Unit =
@@ -173,31 +184,36 @@ class TestGameService:
 
   @Test def testSetOnNonexistentGameFails(): Unit =
     Assertions.assertInstanceOf(
-      classOf[NonexistentGame], service.set("NOGAME", "T1", 1, 1, 1).failure.exception
+      classOf[NonexistentGame],
+      service.set("NOGAME", "T1", 1, 1, 1).failure.exception
     )
 
   @Test def testSetWithInvalidTokenFails(): Unit =
     val (gameId, _, _) = startedGame(3)
     Assertions.assertInstanceOf(
-      classOf[InvalidToken], service.set(gameId, "WRONG", 1, 1, 1).failure.exception
+      classOf[InvalidToken],
+      service.set(gameId, "WRONG", 1, 1, 1).failure.exception
     )
 
   @Test def testSetOnWrongTurnFails(): Unit =
     val (gameId, _, white) = startedGame(3)
     Assertions.assertInstanceOf(
-      classOf[NotReadyToSet], service.set(gameId, white, 1, 1, 1).failure.exception
+      classOf[NotReadyToSet],
+      service.set(gameId, white, 1, 1, 1).failure.exception
     )
 
   @Test def testPassOnWrongTurnFails(): Unit =
     val (gameId, _, white) = startedGame(3)
     Assertions.assertInstanceOf(
-      classOf[NotReadyToSet], service.pass(gameId, white).failure.exception
+      classOf[NotReadyToSet],
+      service.pass(gameId, white).failure.exception
     )
 
   @Test def testSetOutsideBoardFails(): Unit =
     val (gameId, black, _) = startedGame(3)
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], service.set(gameId, black, 4, 1, 1).failure.exception
+      classOf[OutsideBoard],
+      service.set(gameId, black, 4, 1, 1).failure.exception
     )
 
   @Test def testSetBelowBoardFails(): Unit =
@@ -208,7 +224,8 @@ class TestGameService:
     val (gameId, black, white) = startedGame(3)
     service.set(gameId, black, 2, 2, 2).success.value
     Assertions.assertInstanceOf(
-      classOf[PositionOccupied], service.set(gameId, white, 2, 2, 2).failure.exception
+      classOf[PositionOccupied],
+      service.set(gameId, white, 2, 2, 2).failure.exception
     )
 
   @Test def testSuicideFails(): Unit =
@@ -221,20 +238,31 @@ class TestGameService:
     service.set(gameId, black, 3, 2, 3).success.value
     service.set(gameId, white, 1, 1, 2).success.value
     Assertions.assertInstanceOf(
-      classOf[Suicide], service.set(gameId, black, 1, 1, 1).failure.exception
+      classOf[Suicide],
+      service.set(gameId, black, 1, 1, 1).failure.exception
     )
 
   @Test def testKoFails(): Unit =
     val (gameId, black, white) = startedGame(5)
     // the position of TestGame.testPossibleMovesWithKo: white's last move captures 2,2,3
     val moves = List(
-      (black, (2, 2, 3)), (white, (2, 2, 4)), (black, (2, 3, 2)), (white, (2, 3, 3)),
-      (black, (2, 1, 2)), (white, (2, 1, 3)), (black, (3, 2, 2)), (white, (3, 2, 3)),
-      (black, (1, 2, 2)), (white, (1, 2, 3)), (black, (2, 2, 1)), (white, (2, 2, 2))
+      (black, (2, 2, 3)),
+      (white, (2, 2, 4)),
+      (black, (2, 3, 2)),
+      (white, (2, 3, 3)),
+      (black, (2, 1, 2)),
+      (white, (2, 1, 3)),
+      (black, (3, 2, 2)),
+      (white, (3, 2, 3)),
+      (black, (1, 2, 2)),
+      (white, (1, 2, 3)),
+      (black, (2, 2, 1)),
+      (white, (2, 2, 2))
     )
     for (token, (x, y, z)) <- moves do service.set(gameId, token, x, y, z).success.value
     Assertions.assertInstanceOf(
-      classOf[Ko], service.set(gameId, black, 2, 2, 3).failure.exception
+      classOf[Ko],
+      service.set(gameId, black, 2, 2, 3).failure.exception
     )
 
   /** A started game with black at 1,1,1 and white at 3,3,3: its id. */
@@ -260,7 +288,8 @@ class TestGameService:
 
   @Test def testStatusAtMoveOfNonexistentGameFails(): Unit =
     Assertions.assertInstanceOf(
-      classOf[NonexistentGame], service.statusAt("NOGAME", 1).failure.exception
+      classOf[NonexistentGame],
+      service.statusAt("NOGAME", 1).failure.exception
     )
 
   @Test def testArchivedUrlOnlyForFinishedGame(): Unit =
@@ -303,7 +332,8 @@ class TestGameService:
   @Test def testMoveAfterGameOverFails(): Unit =
     val (gameId, black, _) = finishedGame()
     Assertions.assertInstanceOf(
-      classOf[GameOver], service.set(gameId, black, 1, 1, 1).failure.exception
+      classOf[GameOver],
+      service.set(gameId, black, 1, 1, 1).failure.exception
     )
 
   @Test def testConcurrentMoveFails(): Unit =
@@ -311,16 +341,20 @@ class TestGameService:
     val stored = store.getGame(gameId).success.value
     // another request stores a move between this request's read and its write
     val racingService = serviceFor(
-      InterleavingStore(store, () =>
-        stored.foreach(s => store.updateGame(gameId, s.version, s.game).success.value)
+      InterleavingStore(
+        store,
+        () =>
+          stored.foreach(s => store.updateGame(gameId, s.version, s.game).success.value)
       ),
       archive
     )
     Assertions.assertInstanceOf(
-      classOf[ConcurrentModification], racingService.set(gameId, black, 1, 1, 1).failure.exception
+      classOf[ConcurrentModification],
+      racingService.set(gameId, black, 1, 1, 1).failure.exception
     )
     Assertions.assertEquals(
-      go3d.Empty, service.status(gameId, None).success.value.game.at(1, 1, 1)
+      go3d.Empty,
+      service.status(gameId, None).success.value.game.at(1, 1, 1)
     )
 
   @Test def testOpenGamesListsGamesWaitingForWhite(): Unit =

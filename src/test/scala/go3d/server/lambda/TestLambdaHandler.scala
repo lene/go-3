@@ -86,7 +86,8 @@ class TestLambdaHandler:
   @Test def testWritesWithoutDynamoDBReturn503(): Unit =
     Assertions.assertEquals(503, handler.handleRequest(request(NewGamePath), null).getStatusCode)
     Assertions.assertEquals(
-      503, handler.handleRequest(withAuth(passPath(GameId), "Bearer T"), null).getStatusCode
+      503,
+      handler.handleRequest(withAuth(passPath(GameId), "Bearer T"), null).getStatusCode
     )
 
   @Test def testUnknownPathReturns404(): Unit =
@@ -127,7 +128,8 @@ class TestLambdaHandler:
 
   @Test def testOpenGamesStoreFailureReturns500(): Unit =
     Assertions.assertEquals(
-      500, failingHandler.handleRequest(request(OpenGamesPath), null).getStatusCode
+      500,
+      failingHandler.handleRequest(request(OpenGamesPath), null).getStatusCode
     )
 
   @Test def testNewGameReturnsValidId(): Unit =
@@ -201,12 +203,15 @@ class TestLambdaHandler:
   @Test def testConcurrentMoveReturns409(): Unit =
     val (gameId, black, _) = startedGame()
     val stored = store.getGame(gameId).success.value
-    val racing = InterleavingStore(store, () =>
-      stored.foreach(s => store.updateGame(gameId, s.version, s.game).success.value)
+    val racing = InterleavingStore(
+      store,
+      () =>
+        stored.foreach(s => store.updateGame(gameId, s.version, s.game).success.value)
     )
     val racingHandler = new LambdaHandler(Some(GameService(racing, InMemoryGameArchive(false))))
     val resp = racingHandler.handleRequest(
-      withAuth(setCenterPath(gameId), "Bearer " + black), null
+      withAuth(setCenterPath(gameId), "Bearer " + black),
+      null
     )
     Assertions.assertEquals(409, resp.getStatusCode)
 
@@ -227,7 +232,8 @@ class TestLambdaHandler:
   @Test def testStatusAtMoveOfMissingGameReturns404(): Unit =
     Assertions.assertEquals(404, call(replayPath(GameId, 1)).getStatusCode)
     Assertions.assertEquals(
-      404, handler.handleRequest(request(replayPath(GameId, 1)), null).getStatusCode
+      404,
+      handler.handleRequest(request(replayPath(GameId, 1)), null).getStatusCode
     )
 
   @Test def testArchivedFinishedGameRedirects(): Unit =
@@ -242,13 +248,15 @@ class TestLambdaHandler:
     val (gameId, _, _) = startedGame()
     Assertions.assertEquals(404, call(archivedPath(gameId)).getStatusCode)
     Assertions.assertEquals(
-      404, handler.handleRequest(request(archivedPath(gameId)), null).getStatusCode
+      404,
+      handler.handleRequest(request(archivedPath(gameId)), null).getStatusCode
     )
 
   @Test def testArchivedWithFailingArchiveReturns500(): Unit =
     val failing = new LambdaHandler(Some(GameService(store, InMemoryGameArchive(true))))
     Assertions.assertEquals(
-      500, failing.handleRequest(request(archivedPath(GameId)), null).getStatusCode
+      500,
+      failing.handleRequest(request(archivedPath(GameId)), null).getStatusCode
     )
 
   @Test def testStatusMapping(): Unit =

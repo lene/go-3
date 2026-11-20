@@ -12,8 +12,8 @@ private val CenterLevel = "   \n @ \n   "
 class TestJsonify:
 
   @Test def testEqualMapsAreEqual(): Unit =
-    val map1 = Map(1->"a")
-    val map2 = Map(1->"a")
+    val map1 = Map(1 -> "a")
+    val map2 = Map(1 -> "a")
     Assertions.assertEquals(map1, map2)
 
   @Test def testUseCirceForColorJson(): Unit =
@@ -104,7 +104,8 @@ class TestJsonify:
 
   @Test def testFromStringsWithTooFewLevels(): Unit =
     Assertions.assertInstanceOf(
-      classOf[JsonDecodeError], gobanFromStrings(Array(EmptyLevel, CenterLevel)).failure.exception
+      classOf[JsonDecodeError],
+      gobanFromStrings(Array(EmptyLevel, CenterLevel)).failure.exception
     )
 
   @Test def testFromStringsWithTruncatedLastLevel(): Unit =
@@ -149,7 +150,7 @@ class TestJsonify:
     val game = playListOfMoves(TestSize, CaptureMoves)
     val players = Map(
       (Black -> Player(Black, "game ID")),
-      (White -> Player(White, "game ID")),
+      (White -> Player(White, "game ID"))
     )
     val saveGame = SaveGame(game, players)
     val json = saveGame.asJson.noSpaces
@@ -172,7 +173,10 @@ class TestJsonify:
 
   @Test def testUseCirceForPlayerRegisteredResponseJson(): Unit =
     val response = PlayerRegisteredResponse(
-      Game.start(TestSize).success.value, Black, "token", true,
+      Game.start(TestSize).success.value,
+      Black,
+      "token",
+      true,
       RequestInfo(Map("header name" -> "header value"), "query", "path", false)
     )
     val json = response.asJson.noSpaces
@@ -180,7 +184,11 @@ class TestJsonify:
 
   @Test def testUseCirceForStatusResponseJson(): Unit =
     val response = StatusResponse(
-      Game.start(TestSize).success.value, List(Position(1, 1, 1)), true, false, None,
+      Game.start(TestSize).success.value,
+      List(Position(1, 1, 1)),
+      true,
+      false,
+      None,
       RequestInfo(Map("header name" -> "header value"), "query", "path", false)
     )
     val json = response.asJson.noSpaces

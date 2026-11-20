@@ -4,7 +4,6 @@ import org.junit.jupiter.api.{Assertions, Disabled, Test}
 import go3d.*
 import org.scalatest.TryValues.*
 
-
 class TestSetStrategy:
 
   @Test def testBestBy(): Unit =
@@ -22,38 +21,34 @@ class TestSetStrategy:
     val check = checkStrategyResults.curried(strategy.closestToCenter)
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
     check(
-      List((1, 1, 1),(1, 2, 2), (2, 1, 2), (2, 2, 2), (3, 3, 3)))(
+      List((1, 1, 1), (1, 2, 2), (2, 1, 2), (2, 2, 2), (3, 3, 3))
+    )(
       List((2, 2, 2))
     )
     check(List((1, 1, 1), (1, 2, 2), (3, 3, 3)))(List((1, 2, 2)))
     check(
-      List((1, 1, 1), (1, 2, 2), (2, 1, 2), (3, 3, 3)))(
+      List((1, 1, 1), (1, 2, 2), (2, 1, 2), (3, 3, 3))
+    )(
       List((1, 2, 2), (2, 1, 2))
     )
     check(
-      List((1, 1, 1), (1, 1, 2), (2, 1, 1), (3, 3, 3)))(
+      List((1, 1, 1), (1, 1, 2), (2, 1, 1), (3, 3, 3))
+    )(
       List((1, 1, 2), (2, 1, 1))
     )
-    val allCornerPoints = List((1, 1, 1), (1, 1, 3), (1, 3, 1), (1, 3, 3), (3, 1, 1), (3, 1, 3), (3, 3, 1), (3, 3, 3))
+    val allCornerPoints =
+      List((1, 1, 1), (1, 1, 3), (1, 3, 1), (1, 3, 3), (3, 1, 1), (3, 1, 3), (3, 3, 1), (3, 3, 3))
     check(allCornerPoints)(allCornerPoints)
 
   @Test def testOnStarPointsStrategyCornerStarPointsSmallBoard(): Unit =
-    val strategy = defaultStrategy(3)
-    val check = checkStrategyResults.curried(strategy.onStarPoints)
-    check(
-      List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(
-      List((1, 1, 1), (3, 3, 3))
-    )
-    check(
-      List((1, 1, 1), (1, 1, 3), (2, 2, 2), (3, 3, 1), (3, 3, 3)))(
-      List((1, 1, 1), (1, 1, 3), (3, 3, 1), (3, 3, 3))
-    )
+    checkSmallBoardCornerStarPoints(defaultStrategy(3).onStarPoints)
 
   @Test def testOnStarPointsStrategyCornerStarPoints(): Unit =
     val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.onStarPoints)
     check(
-      List((2, 2, 2), (4, 4, 4), (6, 6, 6)))(
+      List((2, 2, 2), (4, 4, 4), (6, 6, 6))
+    )(
       List((2, 2, 2), (6, 6, 6))
     )
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
@@ -79,22 +74,14 @@ class TestSetStrategy:
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))
 
   @Test def testClosestToStarPointsStrategyCornerStarPointsSmallBoard(): Unit =
-    val strategy = defaultStrategy(3)
-    val check = checkStrategyResults.curried(strategy.closestToStarPoints)
-    check(
-      List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(
-      List((1, 1, 1), (3, 3, 3))
-    )
-    check(
-      List((1, 1, 1), (1, 1, 3), (2, 2, 2), (3, 3, 1), (3, 3, 3)))(
-      List((1, 1, 1), (1, 1, 3), (3, 3, 1), (3, 3, 3))
-    )
+    checkSmallBoardCornerStarPoints(defaultStrategy(3).closestToStarPoints)
 
   @Test def testClosestToStarPointsStrategyCornerStarPoints(): Unit =
     val strategy = defaultStrategy(7)
     val check = checkStrategyResults.curried(strategy.closestToStarPoints)
     check(
-      List((2, 2, 2), (4, 4, 4), (6, 6, 6)))(
+      List((2, 2, 2), (4, 4, 4), (6, 6, 6))
+    )(
       List((2, 2, 2), (6, 6, 6))
     )
     check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((2, 2, 2)))
@@ -130,7 +117,8 @@ class TestSetStrategy:
     val check = checkStrategyResults.curried(strategy.maximizeOwnLiberties(_, game))
     check(List((2, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(List((2, 2, 2)))
     check(
-      List((2, 2, 3), (2, 3, 2), (3, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(
+      List((2, 2, 3), (2, 3, 2), (3, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2))
+    )(
       List((2, 2, 3), (2, 3, 2), (3, 2, 2))
     )
     check(game.goban.emptyPositions.map(p => (p.x, p.y, p.z)))(List((2, 2, 2)))
@@ -143,8 +131,14 @@ class TestSetStrategy:
 
   private def checkMaximizeLiberties2(strategy: SetStrategy): Unit =
     val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))
-    Assertions.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions, game).contains(Position(2, 2, 2)))
-    Assertions.assertFalse(strategy.maximizeOwnLiberties(game.goban.emptyPositions, game).contains(Position(1, 1, 1)))
+    Assertions.assertFalse(strategy.maximizeOwnLiberties(
+      game.goban.emptyPositions,
+      game
+    ).contains(Position(2, 2, 2)))
+    Assertions.assertFalse(strategy.maximizeOwnLiberties(
+      game.goban.emptyPositions,
+      game
+    ).contains(Position(1, 1, 1)))
 
   @Test def testMinimizeLiberties(): Unit =
     checkMinimizeLiberties(SetStrategy(3, Array("minimizeOpponentLiberties")))
@@ -157,11 +151,13 @@ class TestSetStrategy:
     val check = checkStrategyResults.curried(strategy.minimizeOpponentLiberties(_, game))
     check(List((2, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(List((2, 3, 3), (3, 2, 3), (3, 3, 2)))
     check(
-      List((2, 2, 3), (2, 3, 2), (3, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2)))(
+      List((2, 2, 3), (2, 3, 2), (3, 2, 2), (2, 3, 3), (3, 2, 3), (3, 3, 2))
+    )(
       List((2, 3, 3), (3, 2, 3), (3, 3, 2))
     )
     check(
-      game.goban.emptyPositions.map(p => (p.x, p.y, p.z)))(
+      game.goban.emptyPositions.map(p => (p.x, p.y, p.z))
+    )(
       game.goban.neighbors(Position(3, 3, 3)).map(p => (p.x, p.y, p.z))
     )
 
@@ -336,14 +332,26 @@ class TestSetStrategy:
 
   @Test def testPrioritiseCapture2Stones1Liberty(): Unit =
     check3BoardForPossibleMoves(
-      List(Move(1, 1, 1, Black), Move(1, 1, 2, White), Pass(Black), Move(1, 2, 1, White), Pass(Black)),
+      List(
+        Move(1, 1, 1, Black),
+        Move(1, 1, 2, White),
+        Pass(Black),
+        Move(1, 2, 1, White),
+        Pass(Black)
+      ),
       List((2, 1, 1)),
       false
     )
 
   @Test def testPrioritiseCapture2Stones1LibertyParallel(): Unit =
     check3BoardForPossibleMoves(
-      List(Move(1, 1, 1, Black), Move(1, 1, 2, White), Pass(Black), Move(1, 2, 1, White), Pass(Black)),
+      List(
+        Move(1, 1, 1, Black),
+        Move(1, 1, 2, White),
+        Pass(Black),
+        Move(1, 2, 1, White),
+        Pass(Black)
+      ),
       List((2, 1, 1)),
       true
     )
@@ -364,14 +372,26 @@ class TestSetStrategy:
 
   @Test def testPrioritiseCapture2DifferentAreasDifferentSizeChoosesSmaller(): Unit =
     check3BoardForPossibleMoves(
-      List(Move(1, 1, 1, Black), Pass(White), Move(1, 1, 2, Black), Pass(White), Move(3, 3, 3, Black)),
+      List(
+        Move(1, 1, 1, Black),
+        Pass(White),
+        Move(1, 1, 2, Black),
+        Pass(White),
+        Move(3, 3, 3, Black)
+      ),
       List((2, 3, 3), (3, 2, 3), (3, 3, 2)),
       false
     )
 
   @Test def testPrioritiseCapture2DifferentAreasDifferentSizeChoosesSmallerParallel(): Unit =
     check3BoardForPossibleMoves(
-      List(Move(1, 1, 1, Black), Pass(White), Move(1, 1, 2, Black), Pass(White), Move(3, 3, 3, Black)),
+      List(
+        Move(1, 1, 1, Black),
+        Pass(White),
+        Move(1, 1, 2, Black),
+        Pass(White),
+        Move(3, 3, 3, Black)
+      ),
       List((2, 3, 3), (3, 2, 3), (3, 3, 2)),
       true
     )
@@ -412,16 +432,29 @@ class TestSetStrategy:
 def defaultStrategy(size: Int): SetStrategy = SetStrategy(size, Array("random"))
 
 def checkStrategyResults(
-  strategy: Seq[Position] => Seq[Position],
-  toCheck: Seq[(Int, Int, Int)], expected: Seq[(Int, Int, Int)]
+    strategy: Seq[Position] => Seq[Position],
+    toCheck: Seq[(Int, Int, Int)],
+    expected: Seq[(Int, Int, Int)]
 ): Unit =
-    assertPositionsEqual(expected, strategy(toCheck.map(e => Position(e._1, e._2, e._3))))
+  assertPositionsEqual(expected, strategy(toCheck.map(e => Position(e._1, e._2, e._3))))
+
+/** On a size 3 board only the corner points are star points, the center is not. */
+def checkSmallBoardCornerStarPoints(strategy: Seq[Position] => Seq[Position]): Unit =
+  val check = checkStrategyResults.curried(strategy)
+  check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((1, 1, 1), (3, 3, 3)))
+  check(List((1, 1, 1), (1, 1, 3), (2, 2, 2), (3, 3, 1), (3, 3, 3)))(
+    List((1, 1, 1), (1, 1, 3), (3, 3, 1), (3, 3, 3))
+  )
 
 def check3BoardForPossibleMoves(
-  moves: List[Move|Pass], expected: List[(Int, Int, Int)], parallel: Boolean
+    moves: List[Move | Pass],
+    expected: List[(Int, Int, Int)],
+    parallel: Boolean
 ): Unit =
   val strategy = SetStrategy.create(3, Array("prioritiseCapture"), 0, parallel)
   val game = playListOfMoves(3, moves)
   val check = checkStrategyResults.curried(strategy.prioritiseCapture(_, game))
-  val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z)).toSet -- moves.collect { case m: Move => m }.map(m => (m.x, m.y, m.z))
+  val starPoints = StarPoints(3).all.map(p => (p.x, p.y, p.z)).toSet -- moves.collect {
+    case m: Move => m
+  }.map(m => (m.x, m.y, m.z))
   check(starPoints.toList)(expected)

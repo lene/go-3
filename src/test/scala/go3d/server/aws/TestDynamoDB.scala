@@ -6,13 +6,12 @@ import go3d.server.SecurityUtils
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.BeforeAndAfterEach
 
-/**
- * Unit tests for DynamoDB integration layer.
- *
- * These tests verify configuration and no-op behaviour without an AWS account.
- * Integration tests against a real DynamoDB table require AWS credentials and
- * should be run manually: `sbt "testOnly go3d.server.aws.TestDynamoDB"`
- */
+/** Unit tests for DynamoDB integration layer.
+  *
+  * These tests verify configuration and no-op behaviour without an AWS account.
+  * Integration tests against a real DynamoDB table require AWS credentials and
+  * should be run manually: `sbt "testOnly go3d.server.aws.TestDynamoDB"`
+  */
 class TestDynamoDB extends AnyFunSuite with BeforeAndAfterEach:
 
   override def beforeEach(): Unit =
@@ -55,7 +54,7 @@ class TestDynamoDB extends AnyFunSuite with BeforeAndAfterEach:
 
   test("DynamoDBClient.close is idempotent") {
     DynamoDBClient.close()
-    DynamoDBClient.close()  // should not throw
+    DynamoDBClient.close() // should not throw
   }
 
   // --- Token hashing ---
@@ -65,7 +64,7 @@ class TestDynamoDB extends AnyFunSuite with BeforeAndAfterEach:
     val hash = SecurityUtils.sha256(token)
     assert(hash.length == 64)
     assert(hash != token)
-    assert(hash == SecurityUtils.sha256(token))  // deterministic
+    assert(hash == SecurityUtils.sha256(token)) // deterministic
   }
 
   test("SHA-256 hash is consistent for same input") {

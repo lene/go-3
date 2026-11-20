@@ -3,15 +3,14 @@ package go3d.server.aws
 import org.scalatest.funsuite.AnyFunSuite
 import org.scalatest.BeforeAndAfterEach
 
-/**
- * Unit tests for S3 integration layer.
- *
- * All tests run without AWS credentials — they verify configuration
- * and no-op behaviour only.
- *
- * Integration tests against a real S3 bucket require AWS credentials
- * and should be run manually against a bucket created by infra/terraform/go3d-readonly.
- */
+/** Unit tests for S3 integration layer.
+  *
+  * All tests run without AWS credentials — they verify configuration
+  * and no-op behaviour only.
+  *
+  * Integration tests against a real S3 bucket require AWS credentials
+  * and should be run manually against a bucket created by infra/terraform/go3d-readonly.
+  */
 class TestS3 extends AnyFunSuite with BeforeAndAfterEach:
 
   override def beforeEach(): Unit = S3Client.close()

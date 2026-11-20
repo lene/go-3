@@ -19,9 +19,13 @@ class ThinkingTimeLimiter(val maxThinkingTimeMs: Int) extends LazyLogging:
     if maxThinkingTimeMs <= 0
     then possible.size
     else
-      val targetSize = (baseSize * maxThinkingTimeMs / lastThinkingTimeMs.max(1)).max(1).min(possible.size)
+      val targetSize = (baseSize * maxThinkingTimeMs / lastThinkingTimeMs.max(1)).max(
+        1
+      ).min(possible.size)
       logger.info(s"Previous thinking time: $lastThinkingTimeMs ms")
-      logger.info(s"Choosing $targetSize / ${possible.size} to satisfy max thinking time of $maxThinkingTimeMs ms")
+      logger.info(
+        s"Choosing $targetSize / ${possible.size} to meet the $maxThinkingTimeMs ms limit"
+      )
       targetSize
 
   def recordThinkingTime(choiceFunction: => Try[Seq[Position]]): Try[Seq[Position]] =

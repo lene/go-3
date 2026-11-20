@@ -8,7 +8,8 @@ case class GameData(id: String, token: Map[Color, String]):
 
   def status(color: Color): StatusResponse =
     getSR(
-      s"${GameData.ServerURL}/status/${id}", Map("Authentication" -> s"Bearer ${token(color)}")
+      s"${GameData.ServerURL}/status/${id}",
+      Map("Authentication" -> s"Bearer ${token(color)}")
     )
   def status(): StatusResponse = getSR(s"${GameData.ServerURL}/status/${id}", Map())
 
@@ -32,7 +33,6 @@ case class GameData(id: String, token: Map[Color, String]):
         set(Move(randomChoice(statusResponse.game.possibleMoves(color)), color))
       else
         pass(color)
-
 
     while !gameOver do
       val statusResponse = status(color)

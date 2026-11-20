@@ -33,13 +33,14 @@ class TestPosition:
     val center = Position(2, 3, 4)
     var neighbors = List[Position]()
     for
-      x <- center.x-1 to center.x+1
-      y <- center.y-1 to center.y+1
-      z <- center.z-1 to center.z+1
+      x <- center.x - 1 to center.x + 1
+      y <- center.y - 1 to center.y + 1
+      z <- center.z - 1 to center.z + 1
       if (center - Position(x, y, z)).abs == 1
     do
       neighbors = neighbors.appended(Position(x, y, z))
     assertPositionsEqual(
-      List((1, 3, 4), (3, 3, 4), (2, 2, 4), (2, 4, 4), (2, 3, 3), (2, 3, 5)), neighbors
+      List((1, 3, 4), (3, 3, 4), (2, 2, 4), (2, 4, 4), (2, 3, 3), (2, 3, 5)),
+      neighbors
     )
     Assertions.assertFalse(neighbors.contains(Position(2, 3, 4)))

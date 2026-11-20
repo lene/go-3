@@ -14,10 +14,10 @@ import go3d.Position
 import scala.collection.immutable.List
 import scala.jdk.CollectionConverters._
 
-
 case class GDXResources(boardSize: Int):
 
-  private val cameraPosition = Vector3(-boardSize*2f, boardSize*1f, -boardSize*1f).scl(3f/4f)
+  private val cameraPosition =
+    Vector3(-boardSize * 2f, boardSize * 1f, -boardSize * 1f).scl(3f / 4f)
   private val environment: Environment = createEnvironment
   private val camera: PerspectiveCamera = createCamera(cameraPosition)
   Gdx.input.setInputProcessor(new Go3DInputMultiplexer(camera))
@@ -45,7 +45,6 @@ case class GDXResources(boardSize: Int):
     redMarker.render(modelBatch, opponentMove, opponentFadeAlpha)
     modelBatch.end()
 
-
   def resize(): Unit =
     camera.viewportWidth = Gdx.graphics.getWidth.toFloat
     camera.viewportHeight = Gdx.graphics.getHeight.toFloat
@@ -62,10 +61,11 @@ case class GDXResources(boardSize: Int):
     localEnv
 
   private def createCamera(cameraPos: Vector3): PerspectiveCamera =
-    val cam = new PerspectiveCamera(67, Gdx.graphics.getWidth.toFloat, Gdx.graphics.getHeight.toFloat) {
-      near = 1.0
-      far = 300.0
-    }
+    val cam =
+      new PerspectiveCamera(67, Gdx.graphics.getWidth.toFloat, Gdx.graphics.getHeight.toFloat) {
+        near = 1.0
+        far = 300.0
+      }
     cam.position.set(cameraPos)
     cam.lookAt(0, 0, 0)
     cam.update()

@@ -59,10 +59,11 @@ class GeometryBuilder(boardSize: Int):
     stonesOfColor(game, Black).map(createModel(BLACK, _, STONE_RADIUS, game.size)) :++
       stonesOfColor(game, White).map(createModel(WHITE, _, STONE_RADIUS, game.size))
 
-  def createGrid(boardSize: Int): List[RenderableProvider] =
-    (1 to boardSize).map(y => horizontalGrid(y, boardSize)).toList :++
-      (-boardSize / 2 to boardSize / 2).map(z => verticalGrid(z, boardSize)).toList :++
-      createStarPoints(boardSize)
+  def createGrid(boardSize: Int): List[RenderableProvider] = (1 to boardSize).map(y =>
+    horizontalGrid(y, boardSize)
+  ).toList :++
+    (-boardSize / 2 to boardSize / 2).map(z => verticalGrid(z, boardSize)).toList :++
+    createStarPoints(boardSize)
 
   def cursor: ModelInstance =
     createModel(CURSOR, Position(CENTER, CENTER, CENTER), STONE_RADIUS, boardSize)
@@ -85,36 +86,64 @@ class GeometryBuilder(boardSize: Int):
   def createModels(boardSize: Int): Map[String, Model] =
     Map(
       WHITE -> modelBuilder.createSphere(
-        1, 1, 1, 2 * SPHERE_DIVISIONS, SPHERE_DIVISIONS,
-        WHITE_MATERIAL, Usage.Position | Usage.Normal
+        1,
+        1,
+        1,
+        2 * SPHERE_DIVISIONS,
+        SPHERE_DIVISIONS,
+        WHITE_MATERIAL,
+        Usage.Position | Usage.Normal
       ),
       BLACK -> modelBuilder.createSphere(
-        1, 1, 1, 2 * SPHERE_DIVISIONS, SPHERE_DIVISIONS,
-        BLACK_MATERIAL, Usage.Position | Usage.Normal
+        1,
+        1,
+        1,
+        2 * SPHERE_DIVISIONS,
+        SPHERE_DIVISIONS,
+        BLACK_MATERIAL,
+        Usage.Position | Usage.Normal
       ),
       CURSOR -> modelBuilder.createSphere(
-        1, 1, 1, SPHERE_DIVISIONS, SPHERE_DIVISIONS / 2,
-        GL20.GL_LINES, CURSOR_MATERIAL, Usage.Position | Usage.Normal
+        1,
+        1,
+        1,
+        SPHERE_DIVISIONS,
+        SPHERE_DIVISIONS / 2,
+        GL20.GL_LINES,
+        CURSOR_MATERIAL,
+        Usage.Position | Usage.Normal
       ),
       GRID -> modelBuilder.createLineGrid(
-        boardSize - 1, boardSize - 1, 1, 1,
-        GRID_MATERIAL, Usage.Position | Usage.Normal
+        boardSize - 1,
+        boardSize - 1,
+        1,
+        1,
+        GRID_MATERIAL,
+        Usage.Position | Usage.Normal
       ),
       STAR_POINT -> modelBuilder.createSphere(
-        STAR_POINT_RADIUS, STAR_POINT_RADIUS, STAR_POINT_RADIUS, 8, 4,
-        GRID_MATERIAL, Usage.Position | Usage.Normal
-      ),
+        STAR_POINT_RADIUS,
+        STAR_POINT_RADIUS,
+        STAR_POINT_RADIUS,
+        8,
+        4,
+        GRID_MATERIAL,
+        Usage.Position | Usage.Normal
+      )
     )
 
   def createModel(name: String, pos: Position, scale: Float, boardSize: Int): ModelInstance =
     val instance = new ModelInstance(models(name))
     val offset = -(boardSize + 1) / 2f
     instance.transform.setToTranslationAndScaling(
-      pos.x.toFloat + offset, pos.y.toFloat + offset, pos.z.toFloat + offset,
-      scale, scale, scale
+      pos.x.toFloat + offset,
+      pos.y.toFloat + offset,
+      pos.z.toFloat + offset,
+      scale,
+      scale,
+      scale
     )
     instance
-
 
 def stonesOfColor(game: Game, col: go3d.Color): List[Position] =
   @tailrec

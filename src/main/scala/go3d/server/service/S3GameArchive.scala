@@ -16,14 +16,13 @@ import java.nio.charset.StandardCharsets
 import java.time.Duration
 import scala.util.{Failure, Success, Try}
 
-/**
- * [[GameArchive]] on S3: each finished game is stored as JSON under `archives/<gameId>.json`
- * and verified with a HeadObject before its key is returned, so a game is only marked completed
- * (and eventually expired from DynamoDB) once its archive exists. Archives are downloaded through
- * pre-signed URLs, valid for [[S3Client.PresignedUrlExpiryMinutes]].
- */
+/** [[GameArchive]] on S3: each finished game is stored as JSON under `archives/<gameId>.json`
+  * and verified with a HeadObject before its key is returned, so a game is only marked completed
+  * (and eventually expired from DynamoDB) once its archive exists. Archives are downloaded through
+  * pre-signed URLs, valid for [[S3Client.PresignedUrlExpiryMinutes]].
+  */
 class S3GameArchive(client: AwsS3Client, presigner: S3Presigner, bucket: String)
-  extends GameArchive:
+    extends GameArchive:
 
   def archive(gameId: String, saveGame: SaveGame): Try[String] =
     store(gameId, saveGame.asJson.noSpaces)
@@ -44,10 +43,11 @@ class S3GameArchive(client: AwsS3Client, presigner: S3Presigner, bucket: String)
       head <- Try(client.headObject(HeadObjectRequest.builder().bucket(bucket).key(key).build()))
       _ <-
         if head.contentLength() == bytes.length.toLong then Success(())
-        else Failure(IllegalStateException(
-          "archive " + key + " has " + head.contentLength().toString + " bytes, expected "
-            + bytes.length.toString
-        ))
+        else
+          Failure(IllegalStateException(
+            "archive " + key + " has " + head.contentLength().toString + " bytes, expected "
+              + bytes.length.toString
+          ))
     yield key
 
   /** Signs a GET of the archive of `gameId` after checking with HeadObject that it exists. */
@@ -58,12 +58,13 @@ class S3GameArchive(client: AwsS3Client, presigner: S3Presigner, bucket: String)
       .recover { case e: S3Exception if e.statusCode() == 404 => false }
       .flatMap(exists =>
         if !exists then Success(Option.empty[String])
-        else Try(Option(presigner.presignGetObject(
-          GetObjectPresignRequest.builder()
-            .signatureDuration(Duration.ofMinutes(S3Client.PresignedUrlExpiryMinutes.toLong))
-            .getObjectRequest(GetObjectRequest.builder().bucket(bucket).key(key).build())
-            .build()
-        ).url().toString))
+        else
+          Try(Option(presigner.presignGetObject(
+            GetObjectPresignRequest.builder()
+              .signatureDuration(Duration.ofMinutes(S3Client.PresignedUrlExpiryMinutes.toLong))
+              .getObjectRequest(GetObjectRequest.builder().bucket(bucket).key(key).build())
+              .build()
+          ).url().toString))
       )
 
 object S3GameArchive:

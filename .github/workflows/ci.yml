@@ -18,7 +18,6 @@ env:
   TEST_RUN_MAX_RUNNING_TIME: 60
   DEPLOYABLE_BASE_NAME: go-3d
   DOCKER_IMAGE: ghcr.io/${{ github.repository }}/server
-  JAVA_VERSION: 17
 
 jobs:
   version:
@@ -80,13 +79,7 @@ jobs:
       S3_TEST_ENDPOINT: http://localhost:9090
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          check-latest: true
-          cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - uses: ./.github/actions/setup-jvm
       - run: sbt test
       - name: Publish test report
         if: always()
@@ -115,13 +108,7 @@ jobs:
       S3_TEST_ENDPOINT: http://localhost:9090
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          check-latest: true
-          cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - uses: ./.github/actions/setup-jvm
       - name: Download coverage of last successful master build
         uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
@@ -168,13 +155,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          check-latest: true
-          cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - uses: ./.github/actions/setup-jvm
       - name: Download warning count of last successful master build
         uses: dawidd6/action-download-artifact@eab87c9830c39eff17e5a6eadb20bfb4bc880477 # v27
         with:
@@ -209,13 +190,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          check-latest: true
-          cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - uses: ./.github/actions/setup-jvm
       - run: sbt "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
 
   check-runtime:
@@ -223,13 +198,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          check-latest: true
-          cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - uses: ./.github/actions/setup-jvm
       - run: sbt compile
       - name: Run benchmark and check user time
         run: |
@@ -243,6 +212,21 @@ jobs:
         with:
           name: runtime-log
           path: runtime.log
+
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/setup-jvm
+      - run: sbt scalafmtCheckAll
+      # scalafmt cannot wrap long string literals and comments, so check them directly
+      - name: Check line length
+        run: |
+          if grep -rnE '.{101,}' src --include='*.scala'; then
+            echo "::error::lines longer than 100 characters"
+            exit 1
+          fi
 
   version-consistent:
     name: Version is new and consistent
@@ -303,13 +287,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          check-latest: true
-          cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - uses: ./.github/actions/setup-jvm
       - run: sbt "Universal / packageBin"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -474,11 +452,5 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
-        with:
-          distribution: temurin
-          java-version: ${{ env.JAVA_VERSION }}
-          check-latest: true
-          cache: sbt
-      - uses: sbt/setup-sbt@6158cb0903b8ceeae04f830055f3155e1b6a5ad7 # v1
+      - uses: ./.github/actions/setup-jvm
       - uses: scalacenter/sbt-dependency-submission@7b2f7e1418cb4a77fee99f9eb07c3f7577b9a867 # v3

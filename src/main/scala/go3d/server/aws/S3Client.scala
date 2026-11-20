@@ -8,12 +8,11 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner
 
 import scala.util.{Failure, Success, Try}
 
-/**
- * S3 archival client for game JSON storage.
- *
- * Lazily initialised from environment; no-op when S3 not configured.
- * Uses UrlConnectionHttpClient (shares the dependency with DynamoDB).
- */
+/** S3 archival client for game JSON storage.
+  *
+  * Lazily initialised from environment; no-op when S3 not configured.
+  * Uses UrlConnectionHttpClient (shares the dependency with DynamoDB).
+  */
 object S3Client extends LazyLogging:
 
   private var _client: Option[AwsS3Client] = None
@@ -26,7 +25,7 @@ object S3Client extends LazyLogging:
   /** Returns (client, presigner, config) when S3 is configured, None otherwise. */
   def get(): Option[(AwsS3Client, S3Presigner, S3Config)] =
     if !_initialised then init()
-    for c <- _client ; p <- _presigner ; cfg <- _config yield (c, p, cfg)
+    for c <- _client; p <- _presigner; cfg <- _config yield (c, p, cfg)
 
   def init(): Unit =
     _initialised = true
@@ -59,20 +58,18 @@ object S3Client extends LazyLogging:
     _config = None
     _initialised = false
 
-  /**
-   * Uploads game JSON to S3 as archives/gameId.json with AES-256 server-side encryption and
-   * verifies it arrived. Succeeds without uploading when S3 is not configured.
-   */
+  /** Uploads game JSON to S3 as archives/gameId.json with AES-256 server-side encryption and
+    * verifies it arrived. Succeeds without uploading when S3 is not configured.
+    */
   def archiveGame(gameId: String, gameJson: String): Try[Unit] =
     get().fold[Try[Unit]](Success(())) { case (client, presigner, config) =>
       go3d.server.service.S3GameArchive(client, presigner, config.bucket).store(gameId, gameJson)
         .map(_ => ())
     }
 
-  /**
-   * Generate a pre-signed GET URL for an archived game (5-minute expiry).
-   * Returns None when S3 is not configured or the object does not exist.
-   */
+  /** Generate a pre-signed GET URL for an archived game (5-minute expiry).
+    * Returns None when S3 is not configured or the object does not exist.
+    */
   def generatePresignedUrl(gameId: String): Option[String] =
     get().flatMap { case (client, presigner, config) =>
       go3d.server.service.S3GameArchive(client, presigner, config.bucket).url(gameId).toOption

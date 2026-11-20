@@ -11,18 +11,18 @@ class TestGame:
 
   @Test def testEmptyBoardToStringEmptyPlaces(): Unit =
     val game = Game.start(TestSize).success.value
-    Assertions.assertEquals(Math.pow(TestSize, 3).toInt+7, game.toString.count(_ == ' '))
+    Assertions.assertEquals(Math.pow(TestSize, 3).toInt + 7, game.toString.count(_ == ' '))
 
   @Test def testEmptyBoardToStringSentinels(): Unit =
     val game = Game.start(TestSize).success.value
     Assertions.assertEquals(
-      2*(TestSize+2)*TestSize + 2*TestSize*TestSize,
+      2 * (TestSize + 2) * TestSize + 2 * TestSize * TestSize,
       game.toString.count(_ == '·')
     )
 
   @Test def testEmptyBoardToStringNewlines(): Unit =
     val game = Game.start(TestSize).success.value
-    Assertions.assertTrue(TestSize+2 <= game.toString.count(_ == '\n'))
+    Assertions.assertTrue(TestSize + 2 <= game.toString.count(_ == '\n'))
 
   @Test def testEmptyBoardAt(): Unit =
     val empty = Game.start(TestSize).success.value
@@ -31,43 +31,48 @@ class TestGame:
 
   @Test def testSetStone(): Unit =
     val board = Game.start(TestSize).success.value.makeMove(Move(2, 2, 2, Black)).success.value
-    Assertions.assertEquals(board.at(Position(2, 2, 2)), Black, "\n"+board.toString)
+    Assertions.assertEquals(board.at(Position(2, 2, 2)), Black, "\n" + board.toString)
 
   @Test def testSetStoneAtOccupiedPositionFails(): Unit =
     val board = Game.start(TestSize).success.value.makeMove(Move(2, 2, 2, Black)).success.value
     Assertions.assertInstanceOf(
-      classOf[PositionOccupied], board.makeMove(Move(2, 2, 2, White)).failure.exception
+      classOf[PositionOccupied],
+      board.makeMove(Move(2, 2, 2, White)).failure.exception
     )
 
   @Test def testSetStoneOutsideBoardFails(): Unit =
     val empty = Game.start(TestSize).success.value
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.makeMove(Move(TestSize+1, 2, 2, White)).failure.exception
+      classOf[OutsideBoard],
+      empty.makeMove(Move(TestSize + 1, 2, 2, White)).failure.exception
     )
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.makeMove(Move(2, TestSize+1, 2, White)).failure.exception
+      classOf[OutsideBoard],
+      empty.makeMove(Move(2, TestSize + 1, 2, White)).failure.exception
     )
     Assertions.assertInstanceOf(
-      classOf[OutsideBoard], empty.makeMove(Move(2, 2, TestSize+1, White)).failure.exception
+      classOf[OutsideBoard],
+      empty.makeMove(Move(2, 2, TestSize + 1, White)).failure.exception
     )
 
   @Test def testSetTwoSubsequentStonesOfDifferentColorSucceeds(): Unit =
     val firstMove = Game.start(TestSize).success.value.makeMove(Move(2, 2, 2, Black)).success.value
     val secondMove = firstMove.makeMove(Move(2, 2, 1, White)).success.value
-    Assertions.assertEquals(secondMove.at(Position(2, 2, 2)), Black, "\n"+secondMove.toString)
-    Assertions.assertEquals(secondMove.at(Position(2, 2, 1)), White, "\n"+secondMove.toString)
+    Assertions.assertEquals(secondMove.at(Position(2, 2, 2)), Black, "\n" + secondMove.toString)
+    Assertions.assertEquals(secondMove.at(Position(2, 2, 1)), White, "\n" + secondMove.toString)
 
   @Test def testSetTwoSubsequentStonesOfSameColorFails(): Unit =
     val firstMove = Game.start(TestSize).success.value.makeMove(Move(2, 2, 2, Black)).success.value
     Assertions.assertInstanceOf(
-      classOf[WrongTurn], firstMove.makeMove(Move(2, 2, 1, Black)).failure.exception
+      classOf[WrongTurn],
+      firstMove.makeMove(Move(2, 2, 1, Black)).failure.exception
     )
 
   @Test def testSetAndPassSucceeds(): Unit =
     val firstMove = Game.start(TestSize).success.value.makeMove(Move(2, 2, 2, Black)).success.value
     val secondMove = firstMove.makeMove(Pass(White)).success.value
-    Assertions.assertEquals(secondMove.at(Position(2, 2, 2)), Black, "\n"+secondMove.toString)
-    Assertions.assertEquals(secondMove.at(Position(2, 2, 1)), Empty, "\n"+secondMove.toString)
+    Assertions.assertEquals(secondMove.at(Position(2, 2, 2)), Black, "\n" + secondMove.toString)
+    Assertions.assertEquals(secondMove.at(Position(2, 2, 1)), Empty, "\n" + secondMove.toString)
 
   @Test def testGameOverAfterTwoConsecutivePasses(): Unit =
     val firstMove = Game.start(TestSize).success.value.makeMove(Pass(Black)).success.value
@@ -77,13 +82,17 @@ class TestGame:
     val game = playListOfMoves(TestSize, CaptureMoves.dropRight(1))
     for move <- CaptureMoves.dropRight(1) do
       Assertions.assertEquals(
-        move.color, game.at(move.position), move.toString+"\n"+game.toString
+        move.color,
+        game.at(move.position),
+        move.toString + "\n" + game.toString
       )
 
   @Test def testCaptureStone(): Unit =
     val game = playListOfMoves(TestSize, CaptureMoves)
     Assertions.assertEquals(
-      Empty, game.at(Position(2, 2, 1)), "\n"+game.toString
+      Empty,
+      game.at(Position(2, 2, 1)),
+      "\n" + game.toString
     )
 
   @Test def testCaptureStoneDoesNotRemoveOthers(): Unit =
@@ -91,20 +100,25 @@ class TestGame:
     val presentStones = CaptureMoves.filterNot(move => move == Move(2, 2, 1, White))
     for move <- presentStones do
       Assertions.assertEquals(
-        move.color, game.at(move.position), move.toString+"\n"+game.toString
+        move.color,
+        game.at(move.position),
+        move.toString + "\n" + game.toString
       )
 
   @Test def testDoNotCaptureStoneWithNeighbors(): Unit =
     val moves =
       Move(1, 1, 1, Black) :: Move(2, 1, 1, White) ::
-      Move(3, 1, 1, Black) :: Move(2, 1, 2, White) ::
-      Move(2, 2, 1, Black) :: Nil
+        Move(3, 1, 1, Black) :: Move(2, 1, 2, White) ::
+        Move(2, 2, 1, Black) :: Nil
     val game = playListOfMoves(TestSize, moves)
     checkStonesOnBoard(game, moves)
 
   @Test def testTwoNonConsecutivePasses(): Unit =
     val moves = List[Move | Pass](
-      Move(1, 1, 1, Black), Pass(White), Move(3, 1, 1, Black), Pass(White)
+      Move(1, 1, 1, Black),
+      Pass(White),
+      Move(3, 1, 1, Black),
+      Pass(White)
     )
     playListOfMoves(TestSize, moves)
 
@@ -123,7 +137,9 @@ class TestGame:
 
   @Test def testConnectedStoneTwoUnconnectedStones(): Unit =
     val moves = List[Move | Pass](
-      Move(1, 1, 1, Black), Pass(White), Move(2, 2, 1, Black)
+      Move(1, 1, 1, Black),
+      Pass(White),
+      Move(2, 2, 1, Black)
     )
     val game = playListOfMoves(TestSize, moves)
     Assertions.assertEquals(1, game.connectedStones(Move(1, 1, 1, Black)).size)
@@ -131,7 +147,9 @@ class TestGame:
 
   @Test def testConnectedStoneTwoConnectedStones(): Unit =
     val moves = List[Move | Pass](
-      Move(1, 1, 1, Black), Pass(White), Move(2, 1, 1, Black)
+      Move(1, 1, 1, Black),
+      Pass(White),
+      Move(2, 1, 1, Black)
     )
     val game = playListOfMoves(TestSize, moves)
     Assertions.assertEquals(2, game.connectedStones(Move(1, 1, 1, Black)).size)
@@ -139,9 +157,16 @@ class TestGame:
 
   @Test def testConnectedStoneMinimalEye(): Unit =
     val moves = List[Move | Pass](
-      Move(2, 1, 1, Black), Pass(White), Move(1, 2, 1, Black), Pass(White),
-      Move(2, 1, 2, Black), Pass(White), Move(1, 2, 2, Black), Pass(White),
-      Move(1, 1, 2, Black), Pass(White)
+      Move(2, 1, 1, Black),
+      Pass(White),
+      Move(1, 2, 1, Black),
+      Pass(White),
+      Move(2, 1, 2, Black),
+      Pass(White),
+      Move(1, 2, 2, Black),
+      Pass(White),
+      Move(1, 1, 2, Black),
+      Pass(White)
     )
     val game = playListOfMoves(TestSize, moves)
     Assertions.assertEquals(5, game.connectedStones(Move(2, 1, 1, Black)).size)
@@ -155,26 +180,17 @@ class TestGame:
       1 -> """@O@|
              | @ |
              |   |""",
-      2 ->"""@O@|
+      2 -> """@O@|
             | @ |
             |   |"""
     )
     var game = fromGoban(fromStrings(captureSituation))
     game = game.makeMove(Move(2, 1, 3, Black)).success.value
-    Assertions.assertEquals(Empty, game.at(Position(2, 1, 1)), "\n"+game.toString)
-    Assertions.assertEquals(Empty, game.at(Position(2, 1, 2)), "\n"+game.toString)
+    Assertions.assertEquals(Empty, game.at(Position(2, 1, 1)), "\n" + game.toString)
+    Assertions.assertEquals(Empty, game.at(Position(2, 1, 2)), "\n" + game.toString)
 
   @Test def testCaptureTwoDisjointStonesWithOneMove(): Unit =
-    val moves = List[Move | Pass](
-      Move(2, 1, 1, Black), Move(1, 1, 1, White),
-      Move(4, 1, 1, Black), Move(5, 1, 1, White),
-      Pass(Black), Move(2, 2, 1, White),
-      Pass(Black), Move(4, 2, 1, White),
-      Pass(Black), Move(2, 1, 2, White),
-      Pass(Black), Move(4, 1, 2, White),
-      Pass(Black)
-    )
-    var game = playListOfMoves(5, moves)
+    var game = playListOfMoves(5, TwoDisjointStonesCaptureSetup)
     Assertions.assertTrue(game.captures.isEmpty)
     game = game.makeMove(Move(3, 1, 1, White)).success.value
     Assertions.assertEquals(2, game.captures(White))
@@ -189,22 +205,34 @@ class TestGame:
 
   def buildEye(): Game =
     val moves = List[Move | Pass](
-      Move(2, 1, 1, Black), Pass(White), Move(1, 2, 1, Black), Pass(White),
-      Move(2, 1, 2, Black), Pass(White), Move(1, 2, 2, Black), Pass(White),
-      Move(1, 1, 2, Black),
+      Move(2, 1, 1, Black),
+      Pass(White),
+      Move(1, 2, 1, Black),
+      Pass(White),
+      Move(2, 1, 2, Black),
+      Pass(White),
+      Move(1, 2, 2, Black),
+      Pass(White),
+      Move(1, 1, 2, Black)
     )
     playListOfMoves(TestSize, moves)
 
   final val BLACK_AREA_SIZE = 5
 
   def encircleEye(game: Game): Game =
-    val moves = List[Move | Pass](
-      Move(1, 3, 1, White), Pass(Black), Move(2, 2, 1, White), Pass(Black),
-      Move(3, 1, 1, White), Pass(Black), Move(1, 3, 2, White), Pass(Black),
-      Move(2, 2, 2, White), Pass(Black), Move(3, 1, 2, White), Pass(Black),
-      Move(1, 1, 3, White), Pass(Black), Move(2, 1, 3, White), Pass(Black),
-      Move(1, 2, 3, White), Pass(Black)
+    val whiteStones = List(
+      Move(1, 3, 1, White),
+      Move(2, 2, 1, White),
+      Move(3, 1, 1, White),
+      Move(1, 3, 2, White),
+      Move(2, 2, 2, White),
+      Move(3, 1, 2, White),
+      Move(1, 1, 3, White),
+      Move(2, 1, 3, White),
+      Move(1, 2, 3, White)
     )
+    // Black passes after every white stone
+    val moves = whiteStones.flatMap(stone => List[Move | Pass](stone, Pass(Black)))
     var nextGame = game
     for move <- moves do
       nextGame = nextGame.makeMove(move).success.value
@@ -244,7 +272,8 @@ class TestGame:
   @Test def testSettingStoneIntoNotEncircledEyeIsSuicide(): Unit =
     val game = buildEye()
     Assertions.assertInstanceOf(
-      classOf[Suicide], game.checkValid(Move(1, 1, 1, White)).failure.exception
+      classOf[Suicide],
+      game.checkValid(Move(1, 1, 1, White)).failure.exception
     )
 
   @Test def testDetectKo(): Unit =
@@ -254,12 +283,13 @@ class TestGame:
     Assertions.assertEquals(1, game.captures(White))
     Assertions.assertEquals(Move(2, 2, 3, Black), game.lastCapture(0))
     Assertions.assertInstanceOf(
-      classOf[Ko], game.checkValid(Move(2, 2, 3, Black)).failure.exception
+      classOf[Ko],
+      game.checkValid(Move(2, 2, 3, Black)).failure.exception
     )
 
   @Test def testPossibleMovesForBlackEmptyBoard(): Unit =
     val empty = Game.start(TestSize).success.value
-    Assertions.assertEquals(TestSize*TestSize*TestSize, empty.possibleMoves(Black).length)
+    Assertions.assertEquals(TestSize * TestSize * TestSize, empty.possibleMoves(Black).length)
 
   @Test def testPossibleMovesForWhiteEmptyBoard(): Unit =
     val empty = Game.start(TestSize).success.value
@@ -267,27 +297,33 @@ class TestGame:
 
   @Test def testPossibleMovesAfterOneMove(): Unit =
     val board = Game.start(TestSize).success.value.makeMove(Move(1, 1, 1, Black)).success.value
-    Assertions.assertEquals(TestSize*TestSize*TestSize-1, board.possibleMoves(White).length)
+    Assertions.assertEquals(TestSize * TestSize * TestSize - 1, board.possibleMoves(White).length)
     Assertions.assertEquals(0, board.possibleMoves(Black).length)
 
   @Test def testPossibleMovesWithSuicide(): Unit =
     val game = buildEye()
-    Assertions.assertEquals(TestSize*TestSize*TestSize-6, game.possibleMoves(White).length)
+    Assertions.assertEquals(TestSize * TestSize * TestSize - 6, game.possibleMoves(White).length)
     Assertions.assertEquals(0, game.possibleMoves(Black).length)
 
   @Test def testPossibleMovesWithKo(): Unit =
     val moves = List[Move | Pass](
-      Move(2, 2, 3, Black), Move(2, 2, 4, White),
-      Move(2, 3, 2, Black), Move(2, 3, 3, White),
-      Move(2, 1, 2, Black), Move(2, 1, 3, White),
-      Move(3, 2, 2, Black), Move(3, 2, 3, White),
-      Move(1, 2, 2, Black), Move(1, 2, 3, White),
-      Move(2, 2, 1, Black), Move(2, 2, 2, White)
+      Move(2, 2, 3, Black),
+      Move(2, 2, 4, White),
+      Move(2, 3, 2, Black),
+      Move(2, 3, 3, White),
+      Move(2, 1, 2, Black),
+      Move(2, 1, 3, White),
+      Move(3, 2, 2, Black),
+      Move(3, 2, 3, White),
+      Move(1, 2, 2, Black),
+      Move(1, 2, 3, White),
+      Move(2, 2, 1, Black),
+      Move(2, 2, 2, White)
     )
     val game = playListOfMoves(5, moves)
-    Assertions.assertEquals(5*5*5-moves.length, game.possibleMoves(Black).length)
+    Assertions.assertEquals(5 * 5 * 5 - moves.length, game.possibleMoves(Black).length)
     Assertions.assertFalse(game.possibleMoves(Black).contains(Move(2, 2, 3, Black)))
-    Assertions.assertEquals(5*5*5-moves.length, game.possibleMoves(Black).length)
+    Assertions.assertEquals(5 * 5 * 5 - moves.length, game.possibleMoves(Black).length)
     Assertions.assertFalse(game.possibleMoves(Black).contains(Move(2, 2, 3, Black)))
 
   @Test def testScoring(): Unit =
@@ -450,4 +486,3 @@ class TestGame:
       .makeMove(Move(3, 3, 3, White)).success.value
     val result = game.atMove(game.moves.length).success.value
     Assertions.assertEquals(game.goban, result.goban)
-

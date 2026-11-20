@@ -7,7 +7,8 @@ class TestClient:
 
   @Test def testServerAndPortMakeHttpUrl(): Unit =
     Assertions.assertEquals(
-      "http://localhost:6030", Client.serverUrl(None, Some("localhost"), Some(6030)).success.value
+      "http://localhost:6030",
+      Client.serverUrl(None, Some("localhost"), Some(6030)).success.value
     )
 
   @Test def testHttpsUrlIsUsedWithoutTrailingSlash(): Unit =
@@ -16,7 +17,8 @@ class TestClient:
 
   @Test def testUrlTakesPrecedenceOverServerAndPort(): Unit =
     Assertions.assertEquals(
-      "http://other:1", Client.serverUrl(Some("http://other:1"), Some("x"), Some(2)).success.value
+      "http://other:1",
+      Client.serverUrl(Some("http://other:1"), Some("x"), Some(2)).success.value
     )
 
   @Test def testUrlWithoutSchemeFails(): Unit =
@@ -33,8 +35,10 @@ class TestClient:
 
   @Test def testMissingServerOrPortNamesOption(): Unit =
     Assertions.assertEquals(
-      "server", Client.serverUrl(None, None, Some(6030)).failure.exception.getMessage
+      "server",
+      Client.serverUrl(None, None, Some(6030)).failure.exception.getMessage
     )
     Assertions.assertEquals(
-      "port", Client.serverUrl(None, Some("localhost"), None).failure.exception.getMessage
+      "port",
+      Client.serverUrl(None, Some("localhost"), None).failure.exception.getMessage
     )

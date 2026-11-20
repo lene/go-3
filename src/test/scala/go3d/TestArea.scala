@@ -8,17 +8,16 @@ class TestArea:
     1 ->
       """   |
         | @ |
-        |   """,
+        |   """
   ))
 
   @Test def testAreasEmptyBoard(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
       1 -> """   |
              |   |
-             |   """,
+             |   """
     ))
     Assertions.assertEquals(0, goban.areas.size)
-
 
   @Test def testAreasOneStone(): Unit =
     Assertions.assertEquals(1, stoneInCenter.areas.size)
@@ -88,8 +87,8 @@ class TestArea:
     ))
     Assertions.assertEquals(
       Set(Black, White),
-      goban.areas.foldLeft(Set[Color]())((colors, area) => colors + area.color),
-  )
+      goban.areas.foldLeft(Set[Color]())((colors, area) => colors + area.color)
+    )
 
   @Test def testAreaFailsIfMultipleColors(): Unit =
     Assertions.assertThrows(
@@ -99,40 +98,44 @@ class TestArea:
 
   @Test def testAreaFailsIfFieldEmpty(): Unit =
     Assertions.assertThrows(
-      classOf[RuntimeException], () => Area(Set(Move(1, 1, 1, Empty)), 1, defaultGoban)
+      classOf[RuntimeException],
+      () => Area(Set(Move(1, 1, 1, Empty)), 1, defaultGoban)
     )
 
   @Test def testAreaFailsIfAreaEmpty(): Unit =
     Assertions.assertThrows(classOf[RuntimeException], () => Area(Set(), 1, defaultGoban))
 
   @Test def testOuterHullOfSetWithEmptyArea(): Unit =
-    Assertions.assertThrows(classOf[RuntimeException], () => stoneInCenter.areas.head.outerHullOfSet(Set()))
+    Assertions.assertThrows(
+      classOf[RuntimeException],
+      () => stoneInCenter.areas.head.outerHullOfSet(Set())
+    )
 
   @Test def testWithinOuterHull(): Unit =
     val area = stoneInCenter.areas.head
     Assertions.assertEquals(Set(Position(2, 2, 1)), area.withinOuterHull.toSet)
 
   @Test def testAreasOneStoneAreaSize(): Unit =
-      val goban = gobanWithAreasFromStrings(Map(
-        1 ->
-          """   |
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """   |
             | @ |
-            |   """,
-      ))
-      Assertions.assertEquals(1, goban.areas.head.size)
+            |   """
+    ))
+    Assertions.assertEquals(1, goban.areas.head.size)
 
   @Test def testAreas5DisconnectedStonesSizes(): Unit =
-      val goban = gobanWithAreasFromStrings(Map(
-        1 ->
-          """ @ |
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """ @ |
             |@ @
             | @ """,
-        2 ->
-          """   |
+      2 ->
+        """   |
             | @ |
             |   |"""
-      ))
-      goban.areas.foreach(a => Assertions.assertEquals(1, a.size))
+    ))
+    goban.areas.foreach(a => Assertions.assertEquals(1, a.size))
 
   @Test def testBothColorsSizes(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
@@ -144,24 +147,24 @@ class TestArea:
     goban.areas.foreach(a => Assertions.assertEquals(1, a.size))
 
   @Test def testAreas9ConnectedStonesSize(): Unit =
-      val goban = gobanWithAreasFromStrings(Map(
-        1 ->
-          """@@ |
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """@@ |
             |@ @
             | @@""",
-        2 ->
-          """   |
+      2 ->
+        """   |
             |@@ |
             | @ |"""
-      ))
-      Assertions.assertEquals(9, goban.areas.head.size)
+    ))
+    Assertions.assertEquals(9, goban.areas.head.size)
 
   @Test def testAreasOneStoneOuterHull(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
       2 ->
         """   |
           | @ |
-          |   """,
+          |   """
     ))
     Assertions.assertEquals((Position(2, 2, 2), Position(2, 2, 2)), goban.areas.head.outerHull)
 
@@ -174,7 +177,7 @@ class TestArea:
       2 ->
         """   |
           | @ |
-          |   """,
+          |   """
     ))
     Assertions.assertEquals((Position(2, 2, 1), Position(2, 2, 2)), goban.areas.head.outerHull)
 
@@ -187,26 +190,26 @@ class TestArea:
       2 ->
         """   |
           | @@|
-          |   """,
+          |   """
     ))
     Assertions.assertEquals(1, goban.areas.size)
     Assertions.assertEquals((Position(2, 1, 1), Position(3, 2, 2)), goban.areas.head.outerHull)
 
   @Test def testInsideNoInside(): Unit =
-      val goban = gobanWithAreasFromStrings(Map(
-        1 ->
-          """   |
+    val goban = gobanWithAreasFromStrings(Map(
+      1 ->
+        """   |
             | @ |
-            |   |""",
-      ))
-      Assertions.assertEquals(Set(), goban.areas.head.inside)
+            |   |"""
+    ))
+    Assertions.assertEquals(Set(), goban.areas.head.inside)
 
   @Test def testToString(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
       1 ->
         """   |
           | @ |
-          |   |""",
+          |   |"""
     ))
     Assertions.assertTrue(goban.areas.head.toString.contains(Position(2, 2, 1).toString))
 
@@ -215,7 +218,7 @@ class TestArea:
       1 ->
         """   |
           | @ |
-          |   |""",
+          |   |"""
     ))
     Assertions.assertTrue(goban.areas.head.contains(Position(2, 2, 1)))
 
@@ -224,7 +227,7 @@ class TestArea:
       1 ->
         """   |
           | @ |
-          |   |""",
+          |   |"""
     ))
     Assertions.assertFalse(goban.areas.head.contains(Position(2, 2, 2)))
 
@@ -280,14 +283,12 @@ class TestArea:
       3 ->
         """   |
           | @@|
-          |   """,
+          |   """
     ))
 
     val blackArea = getOnlyAreaOfColor(goban, Black)
     val blackPositions = goban.allPositions.filter(p => goban.at(p) == Black)
-    blackPositions.foreach(
-      p => Assertions.assertEquals(Set.empty, blackArea.insideArea(p))
-    )
+    blackPositions.foreach(p => Assertions.assertEquals(Set.empty, blackArea.insideArea(p)))
 
   @Test def testInsideAreaOneEmpty(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
@@ -302,7 +303,7 @@ class TestArea:
       3 ->
         """   |
           | @@|
-          |   """,
+          |   """
     ))
 
     val blackArea = getOnlyAreaOfColor(goban, Black)
@@ -322,7 +323,7 @@ class TestArea:
       3 ->
         """   |
           | @@|
-          |   """,
+          |   """
     ))
 
     val blackArea = getOnlyAreaOfColor(goban, Black)
@@ -342,7 +343,7 @@ class TestArea:
       3 ->
         """   |
           |@@@|
-          | @ """,
+          | @ """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertEquals(2, blackArea.insideArea(Position(2, 2, 2)).size)
@@ -364,7 +365,7 @@ class TestArea:
       3 ->
         """   |
           |@@@|
-          | @ """,
+          | @ """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertEquals(2, blackArea.insideArea(Position(2, 2, 2)).size)
@@ -386,7 +387,7 @@ class TestArea:
       3 ->
         """   |
           |@@@|
-          | @ """,
+          | @ """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertEquals(3, blackArea.insideArea(Position(2, 2, 2)).size)
@@ -408,7 +409,7 @@ class TestArea:
       3 ->
         """   |
           |@@@|
-          | @ """,
+          | @ """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertEquals(3, blackArea.insideArea(Position(2, 2, 2)).size)
@@ -436,7 +437,7 @@ class TestArea:
           |  @@@|
           |    @|
           |     |
-          |     """,
+          |     """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertTrue(blackArea.insideArea(Position(1, 1, 1)).isEmpty)
@@ -454,11 +455,11 @@ class TestArea:
       3 ->
         """   |
           |@@@|
-          | @ """,
+          | @ """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
-    goban.allPositions.foreach(
-      pos => Assertions.assertFalse(blackArea.onBorderOfAreaButNotBoard(pos), s"pos: $pos")
+    goban.allPositions.foreach(pos =>
+      Assertions.assertFalse(blackArea.onBorderOfAreaButNotBoard(pos), s"pos: $pos")
     )
 
   @Test def testOnBorderOfOuterHullButNotBoardOuterHullSmallerThanBoard(): Unit =
@@ -470,20 +471,32 @@ class TestArea:
       2 ->
         """   |
           |@@ |
-          |@@ """,
+          |@@ """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
-    Seq(  // on border of board
-      Position(1, 2, 1), Position(1, 3, 1), Position(2, 3, 1),
-      Position(1, 2, 2), Position(1, 3, 2), Position(2, 3, 2)).foreach(
-        pos => Assertions.assertFalse(blackArea.onBorderOfAreaButNotBoard(pos))
-    )
-    Seq(  // not on outer hull
-      Position(1, 1, 1), Position(2, 1, 1), Position(3, 1, 1), Position(3, 2, 1), Position(3, 3, 1),
-      Position(1, 1, 2), Position(2, 1, 2), Position(3, 1, 2), Position(3, 2, 2), Position(3, 3, 2),
-      Position(1, 1, 3), Position(1, 2, 3), Position(1, 3, 3)).foreach(
-        pos => Assertions.assertFalse(blackArea.onBorderOfAreaButNotBoard(pos))
-    )
+    Seq( // on border of board
+      Position(1, 2, 1),
+      Position(1, 3, 1),
+      Position(2, 3, 1),
+      Position(1, 2, 2),
+      Position(1, 3, 2),
+      Position(2, 3, 2)
+    ).foreach(pos => Assertions.assertFalse(blackArea.onBorderOfAreaButNotBoard(pos)))
+    Seq( // not on outer hull
+      Position(1, 1, 1),
+      Position(2, 1, 1),
+      Position(3, 1, 1),
+      Position(3, 2, 1),
+      Position(3, 3, 1),
+      Position(1, 1, 2),
+      Position(2, 1, 2),
+      Position(3, 1, 2),
+      Position(3, 2, 2),
+      Position(3, 3, 2),
+      Position(1, 1, 3),
+      Position(1, 2, 3),
+      Position(1, 3, 3)
+    ).foreach(pos => Assertions.assertFalse(blackArea.onBorderOfAreaButNotBoard(pos)))
     // on outer hull, inside board boundary
     Assertions.assertTrue(blackArea.onBorderOfAreaButNotBoard(Position(2, 2, 2)))
 
@@ -496,7 +509,7 @@ class TestArea:
       2 ->
         """   |
           |@@ |
-          |@@ """,
+          |@@ """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertEquals(Set(Position(1, 3, 1)), blackArea.allInsideAreas)
@@ -514,7 +527,7 @@ class TestArea:
       3 ->
         """   |
           |@@@|
-          | @ """,
+          | @ """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertEquals(
@@ -541,10 +554,13 @@ class TestArea:
           |  @@@|
           |    @|
           |     |
-          |     """,
+          |     """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
-    Assertions.assertEquals(Set(Position(5, 2, 1), Position(4, 2, 2), Position(5, 2, 2)), blackArea.allInsideAreas)
+    Assertions.assertEquals(
+      Set(Position(5, 2, 1), Position(4, 2, 2), Position(5, 2, 2)),
+      blackArea.allInsideAreas
+    )
 
   @Test def testIsAliveThreeEmpty(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
@@ -565,7 +581,7 @@ class TestArea:
           |  @@@|
           |    @|
           |     |
-          |     """,
+          |     """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertTrue(blackArea.isAlive)
@@ -589,7 +605,7 @@ class TestArea:
           |  @@@|
           |    @|
           |     |
-          |     """,
+          |     """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertTrue(blackArea.isAlive, s"${blackArea.isAlive}")
@@ -613,7 +629,7 @@ class TestArea:
           |  @@@|
           |    @|
           |     |
-          |     """,
+          |     """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertFalse(blackArea.isAlive, s"${blackArea.isAlive}")
@@ -637,7 +653,7 @@ class TestArea:
           |  @@@|
           |    @|
           |     |
-          |     """,
+          |     """
     ))
     val blackArea = getOnlyAreaOfColor(goban, Black)
     Assertions.assertFalse(blackArea.isAlive, s"${blackArea.isAlive}")

@@ -3,12 +3,11 @@ package go3d.server
 import scala.collection.concurrent
 import scala.util.{Failure, Success, Try}
 
-/**
- * Per-IP rate limiter using a sliding window.
- *
- * Protects the /new and /register endpoints from being used to create
- * large numbers of games or registrations from a single source.
- */
+/** Per-IP rate limiter using a sliding window.
+  *
+  * Protects the /new and /register endpoints from being used to create
+  * large numbers of games or registrations from a single source.
+  */
 object RateLimiter:
 
   val DefaultWindowSecs: Long = 60L
@@ -17,9 +16,9 @@ object RateLimiter:
   private val requestLog = concurrent.TrieMap[String, List[Long]]()
 
   def check(
-    ip: String,
-    maxRequests: Int = DefaultMaxRequests,
-    windowSecs: Long = DefaultWindowSecs
+      ip: String,
+      maxRequests: Int = DefaultMaxRequests,
+      windowSecs: Long = DefaultWindowSecs
   ): Try[Unit] =
     val now = System.currentTimeMillis()
     val cutoff = now - windowSecs * 1000L

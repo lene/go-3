@@ -11,7 +11,12 @@ private val MockGameId = "mock id"
 
 def mockStatus(ready: Boolean, moves: List[Position]): StatusResponse =
   StatusResponse(
-    Game.start(3).success.value, moves, ready, false, None, RequestInfo(Map(), "", "", false)
+    Game.start(3).success.value,
+    moves,
+    ready,
+    false,
+    None,
+    RequestInfo(Map(), "", "", false)
   )
 
 class MockClient extends BaseClient(MockServer, MockGameId, None, None):

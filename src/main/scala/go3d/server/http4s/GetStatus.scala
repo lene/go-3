@@ -18,7 +18,11 @@ case class GetStatus(gameId: String, request: Request[IO]) extends BaseHandler w
         case Some(p) =>
           val ready = game.isTurn(p.color) && Games.isReady(gameId)
           StatusResponse(
-            game, game.possibleMoves(p.color), ready, game.isOver, Some(p.color),
+            game,
+            game.possibleMoves(p.color),
+            ready,
+            game.isOver,
+            Some(p.color),
             requestInfo.debugInfo
           )
         case None =>

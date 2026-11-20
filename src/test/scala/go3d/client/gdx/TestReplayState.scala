@@ -14,9 +14,16 @@ class TestReplayState:
   private def makeStatusResponse(moveCount: Int): StatusResponse =
     var game = go3d.Game.start(3).success.value
     for i <- 1 to moveCount do
-      val pos = go3d.Position(((i-1) % 3) + 1, ((i-1) / 3 % 3) + 1, ((i-1) / 9) + 1)
+      val pos = go3d.Position(((i - 1) % 3) + 1, ((i - 1) / 3 % 3) + 1, ((i - 1) / 9) + 1)
       game = game.makeMove(go3d.Move(pos, if i % 2 == 1 then Black else White)).getOrElse(game)
-    StatusResponse(game = game, moves = List(), ready = false, over = false, playerColor = None, debug = NullRequestInfo)
+    StatusResponse(
+      game = game,
+      moves = List(),
+      ready = false,
+      over = false,
+      playerColor = None,
+      debug = NullRequestInfo
+    )
 
   private def stubClient(responses: Map[Int, Try[StatusResponse]]): BaseClient =
     new BaseClient("http://test", "TESTID", None, None):
@@ -26,7 +33,8 @@ class TestReplayState:
   @Test def testAdvanceIncrementsCurrentIndex(): Unit =
     val sr1 = makeStatusResponse(1)
     val sr2 = makeStatusResponse(2)
-    val client = stubClient(Map(0 -> Success(makeStatusResponse(0)), 1 -> Success(sr1), 2 -> Success(sr2)))
+    val client =
+      stubClient(Map(0 -> Success(makeStatusResponse(0)), 1 -> Success(sr1), 2 -> Success(sr2)))
     val state = new ReplayState(client, from = 0, to = 3, autoPlayDelay = 1.0f)
     state.currentIndex = 1
     state.currentStatus = Some(sr1)
@@ -123,7 +131,11 @@ class TestReplayState:
     val state = new ReplayState(stubClient(Map()), from = 0, to = 2, autoPlayDelay = 1.0f)
     state.currentIndex = 2
     state.currentStatus = Some(StatusResponse(
-      game = over, moves = List(), ready = false, over = true, playerColor = None,
+      game = over,
+      moves = List(),
+      ready = false,
+      over = true,
+      playerColor = None,
       debug = NullRequestInfo
     ))
     Assertions.assertEquals("Game over", state.hudLines(1))
@@ -145,7 +157,11 @@ class TestReplayState:
     val state = new ReplayState(stubClient(Map()), from = 0, to = 1, autoPlayDelay = 1.0f)
     state.currentIndex = 1
     state.currentStatus = Some(StatusResponse(
-      game = passed, moves = List(), ready = false, over = false, playerColor = None,
+      game = passed,
+      moves = List(),
+      ready = false,
+      over = false,
+      playerColor = None,
       debug = NullRequestInfo
     ))
     Assertions.assertEquals(s"[1/1] black $Black pass", state.progressLine)
@@ -164,5 +180,6 @@ class TestReplayState:
     val first = s"[1/3] black $Black 1 1 1"
     // the shorter second line is padded so that no characters of the first line remain
     Assertions.assertEquals(
-      first + "\r" + "[0/3]".padTo(first.length, ' ') + "\r", buffer.toString("UTF-8")
+      first + "\r" + "[0/3]".padTo(first.length, ' ') + "\r",
+      buffer.toString("UTF-8")
     )

@@ -10,10 +10,10 @@ import scala.util.{Failure, Success}
 // Any: only from s"..." interpolation in log and HUD text (see STATIC_ANALYSIS.md)
 @SuppressWarnings(Array("org.wartremover.warts.Var", "org.wartremover.warts.Any"))
 class ReplayState(
-  client: BaseClient,
-  from: Int,
-  private var to: Int,
-  autoPlayDelay: Float
+    client: BaseClient,
+    from: Int,
+    private var to: Int,
+    autoPlayDelay: Float
 ) extends LazyLogging:
 
   var currentIndex: Int = from
@@ -43,7 +43,7 @@ class ReplayState(
       case Success(sr) =>
         currentStatus = Some(sr)
         printProgress()
-      case Failure(e)  => logger.error(s"ReplayState.fetch($currentIndex) failed: ${e.getMessage}")
+      case Failure(e) => logger.error(s"ReplayState.fetch($currentIndex) failed: ${e.getMessage}")
 
   /** Move counter and the move just played, e.g. "[10/245] black @ 3 2 3". */
   def progressLine: String =

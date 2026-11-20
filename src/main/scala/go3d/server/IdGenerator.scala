@@ -1,6 +1,5 @@
 package go3d.server
 
-
 import java.security.SecureRandom
 import scala.annotation.tailrec
 
@@ -15,7 +14,7 @@ object IdGenerator:
     token.length == TokenLength && token.forall(base62.contains)
 
   @tailrec private def getBase62(length: Int, str: String = ""): String =
-    if length <= 0 then str else getBase62(length-1, str + base62(random.nextInt(62)).toString)
+    if length <= 0 then str else getBase62(length - 1, str + base62(random.nextInt(62)).toString)
 
   private val base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz".toCharArray
   assert(base62.length == 62)
