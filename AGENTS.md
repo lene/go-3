@@ -3,7 +3,7 @@
 
 ## go-3
 
-3D Go (Weiqi/Baduk) on a cubic lattice: game server, ASCII/libGDX/bot clients, and an AWS Lambda + DynamoDB + S3 deployment managed with Terraform. Scala 3.8.2, sbt 1.11.7, http4s + Cats Effect, circe. Architecture, commands and test-game recipes: `docs/development.md`; AWS design and migration plan: `AWS.md`, `docs/aws-phase-6-evaluation-and-lambda-migration-plan.md`.
+3D Go (Weiqi/Baduk) on a cubic lattice: game server, ASCII/libGDX/bot clients, and an AWS Lambda + DynamoDB + S3 deployment managed with Terraform. Scala 3 (versions in `build.sbt`, `project/build.properties`), http4s + Cats Effect, circe. Code structure: `docs/architecture.md`; commands and test-game recipes: `docs/development.md`; AWS design and migration plan: `AWS.md`, `docs/aws-phase-6-evaluation-and-lambda-migration-plan.md`.
 
 ## Policy
 
