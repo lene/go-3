@@ -58,6 +58,8 @@ class InMemoryGameStore extends GameStore:
       case (gameId, entry) if entry.game.isOver && entry.completion.isEmpty => gameId
     }.toList)
 
+  def gameCount: Int = games.size
+
   /** The archive key and expiry recorded by [[markCompleted]]. */
   def completion(gameId: String): Option[(String, Long)] = games.get(gameId).flatMap(_.completion)
 

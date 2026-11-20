@@ -70,6 +70,31 @@ class TestFileIo:
         Assertions.assertTrue(value.players.contains(Black))
       case Left(e) => Assertions.fail(e.getMessage)
 
+  @Test def testSaveAndLoadKeepsKomi(): Unit =
+    val gameId = Games.register(TestSize, 6.5).success.value
+    Games.registerPlayer(gameId, Black).success.value
+    val path = TestFileIo.fileIO.saveGame(gameId)
+    val contents = Files.readString(path)
+    Assertions.assertTrue(contents.contains("\"komi\":6.5"), contents)
+    Assertions.assertEquals(6.5, Games.readGame(path.toFile).success.value.game.komi)
+
+  @Test def testSaveAndLoadArchivedGameKeepsKomi(): Unit =
+    val gameId = Games.register(TestSize, 6.5).success.value
+    Games.registerPlayer(gameId, Black).success.value
+    TestFileIo.fileIO.saveGame(gameId)
+    TestFileIo.fileIO.archiveGame(gameId)
+    Assertions.assertEquals(6.5, TestFileIo.fileIO.loadArchivedGame(gameId).success.value.game.komi)
+
+  @Test def testRegisteredGameHasDefaultKomi(): Unit =
+    val gameId = Games.register(TestSize).success.value
+    Assertions.assertEquals(0.5, Games(gameId).komi)
+
+  @Test def testRegisterWithInvalidKomiFails(): Unit =
+    Assertions.assertInstanceOf(
+      classOf[BadKomi],
+      Games.register(TestSize, 7.0).failure.exception
+    )
+
   @Test def testExistsToGainTrustInTestsThatUseIt(): Unit =
     TestFileIo.fileIO.writeFile("test.json", "{}")
     Assertions.assertTrue(TestFileIo.exists("test.json"))

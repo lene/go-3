@@ -3,6 +3,7 @@ package go3d.client
 import go3d.Black
 import go3d.Game
 import go3d.Goban
+import go3d.Komi
 import go3d.Move
 import go3d.Pass
 import go3d.Position
@@ -53,7 +54,8 @@ object Util {
         |O   O|"""
     )),
     Array(),
-    Map()
+    Map(),
+    Komi.Default
   )
 
   def fromStrings(levels: Map[Int, String]): Goban =

@@ -5,7 +5,7 @@ import com.amazonaws.services.lambda.runtime.events.{
   APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent
 }
 import com.typesafe.scalalogging.LazyLogging
-import go3d.{BadBoardSize, BadColor, Color, GameOver, GoException, IllegalMove}
+import go3d.{BadBoardSize, BadColor, Color, GameOver, GoException, IllegalMove, Komi}
 import go3d.server.{
   AuthorizationError, AuthorizationMethodWrong, AuthorizationMissing, DuplicateColor, GoResponse,
   IdGenerator, NonexistentGame, NotReadyToSet, OpenGamesResponse, ServerException,
@@ -30,7 +30,7 @@ class ServiceUnavailable extends ServerException("game store is not configured")
   *
   *   GET /health                    → 200 1
   *   GET /openGames                 → OpenGamesResponse
-  *   GET /new/{size}                → GameCreatedResponse
+  *   GET /new/{size}[?komi=k]       → GameCreatedResponse; komi 0.5 unless given (see [[Komi]])
   *   GET /register/{gameId}/{color} → PlayerRegisteredResponse with the bearer token
   *   GET /status/{gameId}           → StatusResponse; with a bearer token also moves and `ready`
   *   GET /status/{gameId}/{n}       → StatusResponse of the game after its first n moves
@@ -65,7 +65,11 @@ class LambdaHandler(service: Option[GameService])
         respond(service.fold[Try[GoResponse]](Success(OpenGamesResponse(Array.empty)))(
           _.openGames().map(OpenGamesResponse(_))
         ))
-      case List("new", IntSegment(size)) => respond(writeService.flatMap(_.newGame(size)))
+      case List("new", IntSegment(size)) =>
+        respond(
+          Komi.fromQuery(komiValues(event), size)
+            .flatMap(komi => writeService.flatMap(_.newGame(size, komi)))
+        )
       case List("register", GameIdSegment(gameId), ColorSegment(color)) =>
         respond(writeService.flatMap(_.register(gameId, color)))
       case List("status", GameIdSegment(gameId)) =>
@@ -82,6 +86,12 @@ class LambdaHandler(service: Option[GameService])
       case List("pass", GameIdSegment(gameId)) =>
         respond(requiredToken(token).flatMap(t => writeService.flatMap(_.pass(gameId, t))))
       case _ => errorResponse(404, "Not found: " + path)
+
+  /** The raw values of the `komi` query parameter; None if the request has none. */
+  private def komiValues(event: APIGatewayProxyRequestEvent): Option[Seq[String]] =
+    Option(event.getMultiValueQueryStringParameters)
+      .flatMap(params => Option(params.get(Komi.QueryParameter)))
+      .map(_.asScala.toSeq)
 
   private def writeService: Try[GameService] =
     service.fold[Try[GameService]](Failure(ServiceUnavailable()))(Success(_))

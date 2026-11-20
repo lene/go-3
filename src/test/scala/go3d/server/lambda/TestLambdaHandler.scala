@@ -3,7 +3,7 @@ package go3d.server.lambda
 import com.amazonaws.services.lambda.runtime.events.{
   APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent
 }
-import go3d.Black
+import go3d.{BadKomiTexts, Black, White}
 import go3d.server.{
   GameCreatedResponse, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
   decodePlayerRegisteredResponse, decodeStatusResponse
@@ -57,12 +57,30 @@ class TestLambdaHandler:
   private def callWithToken(path: String, token: String): APIGatewayProxyResponseEvent =
     storeHandler.handleRequest(withAuth(path, "Bearer " + token), null)
 
+  private def withKomiValues(path: String, values: List[String]): APIGatewayProxyRequestEvent =
+    request(path).withMultiValueQueryStringParameters(Map("komi" -> values.asJava).asJava)
+
+  private def newGameWithKomiValues(values: List[String]): APIGatewayProxyResponseEvent =
+    storeHandler.handleRequest(withKomiValues(NewGamePath, values), null)
+
   /** A new game on the in-memory store with both players: (game id, black token, white token). */
   private def startedGame(): (String, String, String) = startedGameOfSize(3)
 
   private def startedGameOfSize(size: Int): (String, String, String) =
-    val gameId = decode[GameCreatedResponse](call("/new/" + size.toString).getBody)
-      .toTry.success.value.id
+    startedGameWithKomiValues(size, None)
+
+  private def startedGameWithKomi(komi: String): (String, String, String) =
+    startedGameWithKomiValues(3, Some(List(komi)))
+
+  private def startedGameWithKomiValues(
+      size: Int,
+      komiValues: Option[List[String]]
+  ): (String, String, String) =
+    val path = "/new/" + size.toString
+    val created = komiValues.fold(call(path))(values =>
+      storeHandler.handleRequest(withKomiValues(path, values), null)
+    )
+    val gameId = decode[GameCreatedResponse](created.getBody).toTry.success.value.id
     val black = decode[PlayerRegisteredResponse](call(registerPath(gameId, "@")).getBody)
       .toTry.success.value.authToken
     val white = decode[PlayerRegisteredResponse](call(registerPath(gameId, "O")).getBody)
@@ -156,6 +174,106 @@ class TestLambdaHandler:
     val created = decode[GameCreatedResponse](resp.getBody).toTry.success.value
     Assertions.assertEquals(5, created.size)
     Assertions.assertTrue(go3d.server.IdGenerator.isValidId(created.id))
+
+  private def statusOfGame(gameId: String): StatusResponse =
+    decode[StatusResponse](call(statusPath(gameId)).getBody).toTry.success.value
+
+  @Test def testNewGameWithoutKomiHasDefaultKomi(): Unit =
+    val (gameId, _, _) = startedGame()
+    Assertions.assertEquals(0.5, statusOfGame(gameId).game.komi)
+
+  @Test def testNewGameWithKomiHasThatKomi(): Unit =
+    for komi <- List("6.5", "-0.5", "26.5", "6.50") do
+      val gameId = decode[GameCreatedResponse](newGameWithKomiValues(List(komi)).getBody)
+        .toTry.success.value.id
+      Assertions.assertEquals(komi.toDouble, statusOfGame(gameId).game.komi)
+
+  @Test def testKomiIsInRegisterResponseAndStatusJson(): Unit =
+    val gameId = decode[GameCreatedResponse](newGameWithKomiValues(List("6.5")).getBody)
+      .toTry.success.value.id
+    val registered = call(registerPath(gameId, "@")).getBody
+    Assertions.assertEquals(
+      6.5,
+      decode[PlayerRegisteredResponse](registered).toTry.success.value.game.komi
+    )
+    Assertions.assertTrue(call(statusPath(gameId)).getBody.contains("\"komi\":6.5"))
+
+  @Test def testUnrelatedQueryParametersAreIgnored(): Unit =
+    val event = request(NewGamePath)
+      .withMultiValueQueryStringParameters(Map("other" -> List("x").asJava).asJava)
+    val resp = storeHandler.handleRequest(event, null)
+    Assertions.assertEquals(200, resp.getStatusCode)
+    val gameId = decode[GameCreatedResponse](resp.getBody).toTry.success.value.id
+    Assertions.assertEquals(0.5, statusOfGame(gameId).game.komi)
+
+  @Test def testNewGameWithBadKomiReturns400AndCreatesNoGame(): Unit =
+    val emptyStore = InMemoryGameStore()
+    val emptyStoreHandler =
+      new LambdaHandler(Some(GameService(emptyStore, InMemoryGameArchive(false))))
+    for text <- BadKomiTexts do
+      val resp = emptyStoreHandler.handleRequest(withKomiValues(NewGamePath, List(text)), null)
+      Assertions.assertEquals(400, resp.getStatusCode, "[" + text + "]")
+      Assertions.assertTrue(resp.getBody.contains("BadKomi"), resp.getBody)
+    Assertions.assertEquals(0, emptyStore.gameCount)
+
+  @Test def testBadKomiErrorDoesNotEchoInput(): Unit =
+    val resp = newGameWithKomiValues(List("secret-input-123"))
+    Assertions.assertEquals(400, resp.getStatusCode)
+    Assertions.assertFalse(resp.getBody.contains("secret-input-123"), resp.getBody)
+    Assertions.assertTrue(decode[io.circe.Json](resp.getBody).isRight, resp.getBody)
+
+  @Test def testNewGameWithBareKomiParameterReturns400(): Unit =
+    Assertions.assertEquals(400, newGameWithKomiValues(List("")).getStatusCode)
+    Assertions.assertEquals(400, newGameWithKomiValues(List()).getStatusCode)
+
+  @Test def testNewGameWithRepeatedKomiParameterReturns400(): Unit =
+    Assertions.assertEquals(400, newGameWithKomiValues(List("6.5", "6.5")).getStatusCode)
+    Assertions.assertEquals(400, newGameWithKomiValues(List("6.5", "7.5")).getStatusCode)
+
+  @Test def testNewGameWithKomiBeyondBoardPointsReturns400(): Unit =
+    Assertions.assertEquals(200, newGameWithKomiValues(List("26.5")).getStatusCode)
+    Assertions.assertEquals(400, newGameWithKomiValues(List("27.5")).getStatusCode)
+
+  @Test def testNewGameWithBadSizeAndKomiReturns400(): Unit =
+    val resp = storeHandler.handleRequest(withKomiValues("/new/4", List("7")), null)
+    Assertions.assertEquals(400, resp.getStatusCode)
+
+  @Test def testKomiSurvivesMovesAndReplay(): Unit =
+    val (gameId, black, white) = startedGameWithKomi("6.5")
+    Assertions.assertEquals(200, callWithToken(setCenterPath(gameId), black).getStatusCode)
+    val set = callWithToken(setPath(gameId, (1, 1, 1)), white)
+    Assertions.assertEquals(6.5, decode[StatusResponse](set.getBody).toTry.success.value.game.komi)
+    val passed = callWithToken(passPath(gameId), black)
+    Assertions.assertEquals(
+      6.5,
+      decode[StatusResponse](passed.getBody).toTry.success.value.game.komi
+    )
+    for count <- 0 to 3 do
+      val replayed = decode[StatusResponse](call(replayPath(gameId, count)).getBody)
+      Assertions.assertEquals(6.5, replayed.toTry.success.value.game.komi)
+
+  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it. */
+  private def finishedGameWith(komiValues: Option[List[String]]): go3d.Game =
+    val (gameId, black, white) = startedGameWithKomiValues(3, komiValues)
+    playPositions(gameId, black, white, GamePositions.BlackLeadsByOne)
+    Assertions.assertEquals(200, callWithToken(passPath(gameId), white).getStatusCode)
+    val last = callWithToken(passPath(gameId), black)
+    decode[StatusResponse](last.getBody).toTry.success.value.game
+
+  @Test def testWinnerWithoutKomiIsBlack(): Unit =
+    val game = finishedGameWith(None)
+    Assertions.assertTrue(game.isOver)
+    Assertions.assertEquals(0.5, game.komi)
+    Assertions.assertEquals(Some(Black), game.winner)
+
+  @Test def testWinnerWithKomiHalfIsBlack(): Unit =
+    Assertions.assertEquals(Some(Black), finishedGameWith(Some(List("0.5"))).winner)
+
+  @Test def testWinnerWithLargeKomiIsWhite(): Unit =
+    val game = finishedGameWith(Some(List("6.5")))
+    Assertions.assertTrue(game.isOver)
+    Assertions.assertEquals(6.5, game.komi)
+    Assertions.assertEquals(Some(White), game.winner)
 
   @Test def testNewGameWithBadSizeReturns400(): Unit =
     Assertions.assertEquals(400, call("/new/4").getStatusCode)

@@ -8,6 +8,12 @@ object GamePositions:
   val BeforeSuicide: List[Position] =
     List((3, 3, 3), (2, 1, 1), (3, 3, 2), (1, 2, 1), (3, 2, 3), (1, 1, 2))
 
+  /** Black, white, black on a board of size 3, none of them capturing. White then passes and black
+    * passes: black has 2 points and white 1, so the winner is black with a komi below 1 and white
+    * with a larger one.
+    */
+  val BlackLeadsByOne: List[Position] = List((2, 2, 2), (1, 1, 1), (3, 3, 3))
+
   /** The position of `TestGame.testPossibleMovesWithKo` on a board of size 5: white's last move
     * captures 2,2,3, so black playing there again is a ko.
     */

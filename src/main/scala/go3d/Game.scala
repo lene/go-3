@@ -4,14 +4,21 @@ import collection.mutable
 import scala.util.{Failure, Success, Try}
 
 object Game:
-  def start(size: Int): Try[Game] =
-    Goban.start(size).map(goban => Game(size, goban, Array(), Map[Int, Array[Move]]()))
+  def start(size: Int): Try[Game] = start(size, Komi.Default)
+
+  /** A game on an empty board of `size`; fails for an invalid size, then for an invalid komi. */
+  def start(size: Int, komi: Double): Try[Game] =
+    for
+      goban <- Goban.start(size)
+      validKomi <- Komi.validate(komi, size)
+    yield Game(size, goban, Array(), Map[Int, Array[Move]](), validKomi)
 
 class Game(
     val size: Int,
     val goban: Goban,
     val moves: Array[Move | Pass],
-    val captures: Map[Int, Array[Move]]
+    val captures: Map[Int, Array[Move]],
+    val komi: Double
 ) extends GoGame:
 
   def captures(color: Color): Int = captures.values.filter(_(0).color != color).flatten.size
@@ -19,7 +26,7 @@ class Game(
 
   override def equals(obj: Any): Boolean =
     obj match
-      case g: Game => goban == g.goban && toString == g.toString
+      case g: Game => goban == g.goban && toString == g.toString && komi == g.komi
       case _ => false
 
   def at(pos: Position): Color = goban.at(pos)
@@ -34,7 +41,7 @@ class Game(
     )
 
   def atMove(count: Int): Try[Game] =
-    moves.take(count).foldLeft(Game.start(size)) { (acc, move) =>
+    moves.take(count).foldLeft(Game.start(size, komi)) { (acc, move) =>
       acc.flatMap(_.makeMove(move))
     }
 
@@ -43,11 +50,11 @@ class Game(
 
   def makeMove(move: Move | Pass): Try[Game] =
     move match
-      case _: Pass => Success(Game(size, goban, moves.appended(move), captures))
+      case _: Pass => Success(Game(size, goban, moves.appended(move), captures, komi))
       case m: Move =>
         checkValid(m).map { _ =>
           val newboard = setStone(m)
-          Game(size, newboard.goban, moves.appended(move), newboard.captures)
+          Game(size, newboard.goban, moves.appended(move), newboard.captures, komi)
         }
 
   def checkValid(move: Move): Try[Unit] =
@@ -99,6 +106,15 @@ class Game(
         case None =>
     scores.toMap
 
+  /** The player with the higher score once the komi is added to White's, or None while the game is
+    * not over. The komi is a half-integer and the scores are integers, so there is no tie.
+    */
+  def winner: Option[Color] =
+    if !isOver then None
+    else
+      val scores = score
+      if scores(White) + komi > scores(Black) then Some(White) else Some(Black)
+
   private def boundaryColor(area: Set[Move]): Option[Color] =
     val boundaryColors = mutable.Set[Color]()
     for stone <- area do
@@ -129,7 +145,7 @@ class Game(
     val newMoves = moves.appended(move)
     val captured = (board - newBoard).toArray
     val newCaptures = if captured.nonEmpty then captures + (moves.length -> captured) else captures
-    Game(size, newBoard, newMoves, newCaptures)
+    Game(size, newBoard, newMoves, newCaptures, komi)
 
   private def captureNeighbors(board: Goban, neighbors: Seq[Position], color: Color): Goban =
     if neighbors.isEmpty then board

@@ -6,6 +6,12 @@ class BadColor(val color: Char) extends IllegalMove(message = s"bad color charac
 class OutsideBoard(x: Int, y: Int, z: Int)
     extends IllegalMove(message = s"outside board: $x, $y, $z")
 class BadBoardSize(size: Int, reason: String) extends IllegalMove(message = s"$size is $reason")
+
+/** The message does not name the rejected value, which comes from a request or a stored game. */
+class BadKomi
+    extends IllegalMove(
+      message = "komi must be a half-integer such as 0.5 or -6.5, at most size^3 in magnitude"
+    )
 class PositionOccupied(move: Move, color: Color)
     extends IllegalMove(message = s"occupied: $move with $color")
 class Ko(move: Move) extends IllegalMove(message = "ko at " + move.toString)

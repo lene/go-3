@@ -691,7 +691,8 @@ fields @timestamp, @message
 > and no DynamoDB-to-file rollback export. Rollback routes traffic back to the old server.
 
 **Endpoints Migrated**:
-- `GET /new/{size}` (create game)
+- `GET /new/{size}[?komi=k]` (create game; the Lambda reads `komi` from the multi-value query
+  string, so a repeated or bare `komi` is a 400 as on the http4s server)
 - `GET /register/{gameId}/{color}` (register player)
 - `GET /set/{gameId}/{x}/{y}/{z}` (place stone)
 - `GET /pass/{gameId}` (pass turn)

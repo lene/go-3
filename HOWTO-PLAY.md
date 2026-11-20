@@ -11,7 +11,7 @@ sbt "runMain go3d.server.GoServer --port 6030 --save-dir saves"
 
 Create a game (replace SIZE with desired board size, e.g., 5, 7, or 9):
 ```bash
-# Create game
+# Create game (komi 0.5; for another, append "?komi=6.5": a half-integer, 400 otherwise)
 GAME_ID=$(curl -s http://localhost:6030/new/SIZE | jq -r '.id')
 echo "Game ID: $GAME_ID"
 

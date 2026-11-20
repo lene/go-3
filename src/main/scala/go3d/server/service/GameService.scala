@@ -6,6 +6,7 @@ import go3d.Black
 import go3d.Color
 import go3d.Game
 import go3d.GameOver
+import go3d.Komi
 import go3d.Move
 import go3d.Pass
 import go3d.White
@@ -42,9 +43,11 @@ class GameService(
     newToken: () => String
 ) extends LazyLogging:
 
-  def newGame(size: Int): Try[GameCreatedResponse] =
+  def newGame(size: Int): Try[GameCreatedResponse] = newGame(size, Komi.Default)
+
+  def newGame(size: Int, komi: Double): Try[GameCreatedResponse] =
     for
-      game <- Game.start(size)
+      game <- Game.start(size, komi)
       gameId = newId()
       _ <- store.createGame(gameId, game)
     yield GameCreatedResponse(gameId, size)

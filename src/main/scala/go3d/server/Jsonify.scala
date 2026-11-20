@@ -4,6 +4,7 @@ import go3d.Color
 import go3d.Game
 import go3d.Goban
 import go3d.HasColor
+import go3d.Komi
 import go3d.Move
 import go3d.Pass
 import go3d.Position
@@ -131,8 +132,21 @@ implicit val encodeGame: Encoder[Game] =
       ("size", Json.fromInt(game.size)),
       ("goban", game.goban.asJson),
       ("moves", game.moves.asJson),
-      ("captures", game.captures.asJson)
+      ("captures", game.captures.asJson),
+      ("komi", Json.fromDoubleOrNull(game.komi))
     )
+
+/** The komi of a stored game: records from before komi existed have none, or a null one, and get
+  * the default komi. A stored komi must be valid for the size of the game.
+  */
+private def decodeKomi(c: HCursor, size: Int): Decoder.Result[Double] =
+  c.downField("komi").as[Option[Double]].flatMap {
+    case None => Right(Komi.Default)
+    case Some(komi) =>
+      Komi.validate(komi, size).toEither.left.map(e =>
+        DecodingFailure(e.getMessage, c.downField("komi").history)
+      )
+  }
 
 implicit val decodeGame: Decoder[Game] =
   (c: HCursor) =>
@@ -141,7 +155,8 @@ implicit val decodeGame: Decoder[Game] =
       goban <- c.downField("goban").as[Goban]
       moves <- c.downField("moves").as[Array[Move | Pass]]
       captures <- c.downField("captures").as[Map[Int, Array[Move]]]
-    yield new Game(size, goban, moves, captures)
+      komi <- decodeKomi(c, size)
+    yield new Game(size, goban, moves, captures, komi)
 
 implicit val encodePlayer: Encoder[Player] =
   (player: Player) =>

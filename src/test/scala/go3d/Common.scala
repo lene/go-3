@@ -12,6 +12,54 @@ val CaptureMoves =
     Move(2, 3, 1, Black) :: Move(2, 1, 2, White) :: Move(3, 2, 1, Black) :: Move(2, 3, 2, White) ::
     Move(1, 2, 1, Black) :: Nil
 
+/** Komi texts that `/new/3?komi=...` rejects: integers, no number, a rounded number, no value and
+  * a komi beyond 3^3. Cases that are not one plain text (a bare or repeated parameter) are listed
+  * by the suites that test them.
+  */
+val BadKomiTexts: List[String] = List(
+  "0",
+  "7",
+  "-7",
+  "abc",
+  "NaN",
+  "6.5f",
+  "1e2",
+  ".5",
+  "6.",
+  "",
+  "27.5",
+  "-27.5",
+  "6.5000000000000001"
+)
+
+/** A game of size 3 without captures, ended by two passes: black has 2 points, white 1. */
+val BlackLeadsByOneMoves: List[Move | Pass] = List(
+  Move(2, 2, 2, Black),
+  Move(1, 1, 1, White),
+  Move(3, 3, 3, Black),
+  Pass(White),
+  Pass(Black)
+)
+
+/** A game of size 3 without captures, ended by two passes: black has 7 points, white 1. */
+val BlackLeadsBySixMoves: List[Move | Pass] = List(
+  Move(2, 2, 2, Black),
+  Move(1, 1, 1, White),
+  Move(3, 3, 3, Black),
+  Pass(White),
+  Move(1, 3, 3, Black),
+  Pass(White),
+  Move(3, 1, 3, Black),
+  Pass(White),
+  Move(3, 3, 1, Black),
+  Pass(White),
+  Move(1, 3, 1, Black),
+  Pass(White),
+  Move(3, 1, 1, Black),
+  Pass(White),
+  Pass(Black)
+)
+
 /** White stones around two disjoint black stones on a size 5 board: one white move at (3, 1, 1)
   * captures both.
   */
@@ -65,6 +113,11 @@ def playListOfMoves(boardSize: Int, moves: Iterable[Move | Pass], verbose: Boole
     if verbose then println(move.toString + "\n" + game.toString)
   game
 
+def playListOfMovesWithKomi(boardSize: Int, komi: Double, moves: Iterable[Move | Pass]): Game =
+  moves.foldLeft(Game.start(boardSize, komi).success.value) { (game, move) =>
+    game.makeMove(move).success.value
+  }
+
 def setListOfStones(boardSize: Int, moves: List[Move | Pass]): Goban =
   var goban = Goban.start(boardSize).success.value
   for move <- moves do
@@ -99,4 +152,4 @@ def fromStrings(levels: Map[Int, String]): Goban =
   goban
 
 def fromGoban(goban: Goban): Game =
-  Game(goban.size, goban, Array(), Map())
+  Game(goban.size, goban, Array(), Map(), Komi.Default)

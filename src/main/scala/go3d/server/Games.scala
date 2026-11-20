@@ -3,6 +3,7 @@ package go3d.server
 import com.typesafe.scalalogging.Logger
 import go3d.Color
 import go3d.Game
+import go3d.Komi
 import go3d.server.aws.S3Client
 import go3d.server.given // Circe encoders for SaveGame serialisation
 import io.circe.parser._
@@ -51,10 +52,12 @@ object Games:
         case Failure(e) => logger.warn(s"${saveFile.getName}: ${e.getMessage}")
     logger.info(s"${Games.numActiveGames} active games loaded, ${Games.numArchivedGames} archived")
 
+  def register(boardSize: Int): Try[String] = register(boardSize, Komi.Default)
+
   /** Register a new game with lock-free thread safety.
     */
-  def register(boardSize: Int): Try[String] =
-    go3d.Game.start(boardSize).map { game =>
+  def register(boardSize: Int, komi: Double): Try[String] =
+    go3d.Game.start(boardSize, komi).map { game =>
       val gameId = IdGenerator.getId
       activeGames.put(gameId, new ConcurrentState(game))
       lastActivity(gameId) = System.currentTimeMillis()

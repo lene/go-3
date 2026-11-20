@@ -53,9 +53,10 @@ Implemented rule behavior:
 - Generate possible legal moves for the active player.
 - Score by stones on board plus captures plus enclosed empty territory.
 
+Komi is a field of `Game`: the points added to White's score, 0.5 unless chosen with `/new/{size}?komi=k`. `Game.winner` compares White's score plus komi with Black's once the game is over. Only half-integers up to size³ are valid, so a game never ties.
+
 Not currently represented as first-class game features:
 
-- Komi.
 - Handicap setup, despite `MaxHandicaps` existing as a constant.
 - Resignation.
 - Clocks.
@@ -80,7 +81,7 @@ The HTTP API is JSON-based, except for plain error strings in many failure cases
 
 | Endpoint | Auth | Behavior |
 | --- | --- | --- |
-| `GET /new/{size}` | No | Creates a new active game and returns `GameCreatedResponse`. |
+| `GET /new/{size}[?komi=k]` | No | Creates a new active game with komi `k` (default 0.5; a half-integer, else 400) and returns `GameCreatedResponse`. |
 | `GET /register/{gameId}/{color}` | No | Registers a player color and returns a bearer token in `PlayerRegisteredResponse`. |
 | `GET /status/{gameId}` | Optional | Returns board state, legal moves if authenticated as active player, readiness, and game-over status. |
 | `GET /status/{gameId}/d` | Optional | Same as status, with debug request info only when authorized. |
@@ -306,7 +307,7 @@ This design is simple and convenient, but it means:
 
 Game creation and player registration are separate:
 
-1. `/new/{size}` creates the game and returns a game ID.
+1. `/new/{size}` (optionally with `?komi=k`) creates the game and returns a game ID.
 2. `/register/{gameId}/{color}` creates a token and registers a color.
 3. The client uses that token as a bearer token for status and moves.
 
@@ -604,7 +605,7 @@ IDs are six base62 characters. The collision probability is low for small deploy
 
 ### Rule Completeness
 
-The rule engine is sufficient for this game variant, but it is not a full configurable Go rules engine. In particular, ko is a simple immediate recapture check, scoring is custom territory logic, and features such as komi, handicap setup, and resignation are absent.
+The rule engine is sufficient for this game variant, but it is not a full configurable Go rules engine. In particular, ko is a simple immediate recapture check, scoring is custom territory logic, and features such as handicap setup and resignation are absent.
 
 ### Performance Scaling
 

@@ -486,3 +486,115 @@ class TestGame:
       .makeMove(Move(3, 3, 3, White)).success.value
     val result = game.atMove(game.moves.length).success.value
     Assertions.assertEquals(game.goban, result.goban)
+
+  private val Komi65 = 6.5
+
+  @Test def testGameStartsWithDefaultKomi(): Unit =
+    Assertions.assertEquals(Komi.Default, Game.start(TestSize).success.value.komi)
+
+  @Test def testGameStartsWithGivenKomi(): Unit =
+    val game = Game.start(TestSize, Komi65).success.value
+    Assertions.assertEquals(Komi65, game.komi)
+    Assertions.assertEquals(TestSize, game.size)
+    Assertions.assertTrue(game.moves.isEmpty)
+
+  @Test def testGameStartsWithNegativeKomi(): Unit =
+    Assertions.assertEquals(-0.5, Game.start(TestSize, -0.5).success.value.komi)
+
+  @Test def testGameStartWithIntegerKomiFails(): Unit =
+    for komi <- List(0.0, 1.0, 7.0, -7.0) do
+      Assertions.assertInstanceOf(classOf[BadKomi], Game.start(TestSize, komi).failure.exception)
+
+  @Test def testGameStartWithUnusableKomiFails(): Unit =
+    val unusable =
+      List(Double.NaN, Double.PositiveInfinity, Double.NegativeInfinity, 6.500000000000001)
+    for komi <- unusable do
+      Assertions.assertInstanceOf(classOf[BadKomi], Game.start(TestSize, komi).failure.exception)
+
+  @Test def testGameStartWithKomiBeyondBoardPointsFails(): Unit =
+    Assertions.assertEquals(26.5, Game.start(3, 26.5).success.value.komi)
+    Assertions.assertEquals(-26.5, Game.start(3, -26.5).success.value.komi)
+    Assertions.assertInstanceOf(classOf[BadKomi], Game.start(3, 27.5).failure.exception)
+    Assertions.assertInstanceOf(classOf[BadKomi], Game.start(3, -27.5).failure.exception)
+
+  @Test def testGameStartChecksSizeBeforeKomi(): Unit =
+    Assertions.assertInstanceOf(classOf[BadBoardSize], Game.start(4, 7.0).failure.exception)
+    Assertions.assertInstanceOf(classOf[BadBoardSize], Game.start(1, 99.5).failure.exception)
+
+  @Test def testKomiSurvivesPass(): Unit =
+    val game = Game.start(TestSize, Komi65).success.value.makeMove(Pass(Black)).success.value
+    Assertions.assertEquals(Komi65, game.komi)
+
+  @Test def testKomiSurvivesMove(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, Komi65, List(Move(2, 2, 2, Black)))
+    Assertions.assertEquals(Komi65, game.komi)
+
+  @Test def testKomiSurvivesCapture(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, Komi65, CaptureMoves)
+    Assertions.assertTrue(game.captures.nonEmpty)
+    Assertions.assertEquals(Komi65, game.komi)
+
+  @Test def testKomiSurvivesAtMove(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, Komi65, CaptureMoves)
+    for count <- 0 to game.moves.length do
+      Assertions.assertEquals(Komi65, game.atMove(count).success.value.komi)
+
+  @Test def testAtMoveOfGameWithKomiEqualsGameBuiltFromItsMoves(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, Komi65, CaptureMoves)
+    Assertions.assertEquals(game, game.atMove(game.moves.length).success.value)
+
+  @Test def testGamesWithDifferentKomiAreNotEqual(): Unit =
+    Assertions.assertNotEquals(
+      Game.start(TestSize, 0.5).success.value,
+      Game.start(TestSize, Komi65).success.value
+    )
+    Assertions.assertEquals(
+      Game.start(TestSize, Komi65).success.value,
+      Game.start(TestSize, Komi65).success.value
+    )
+
+  @Test def testKomiDoesNotChangeScoreOrItsToString(): Unit =
+    val withKomi = playListOfMovesWithKomi(TestSize, Komi65, BlackLeadsByOneMoves)
+    val withDefault = playListOfMovesWithKomi(TestSize, Komi.Default, BlackLeadsByOneMoves)
+    Assertions.assertEquals(withDefault.score, withKomi.score)
+    Assertions.assertEquals(withDefault.toString, withKomi.toString)
+
+  @Test def testWinnerIsNoneWhileGameIsNotOver(): Unit =
+    val empty = Game.start(TestSize).success.value
+    Assertions.assertEquals(None, empty.winner)
+    val oneMove = empty.makeMove(Move(2, 2, 2, Black)).success.value
+    Assertions.assertEquals(None, oneMove.winner)
+    val onePass = oneMove.makeMove(Pass(White)).success.value
+    Assertions.assertEquals(None, onePass.winner)
+
+  @Test def testWinnerWithSmallKomiIsBlackWhenBlackLeads(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, Komi.Default, BlackLeadsByOneMoves)
+    Assertions.assertEquals(2, game.score(Black))
+    Assertions.assertEquals(1, game.score(White))
+    Assertions.assertEquals(Some(Black), game.winner)
+
+  @Test def testWinnerWithLargeKomiIsWhiteWhenBlackLeadsByOne(): Unit =
+    Assertions.assertEquals(
+      Some(White),
+      playListOfMovesWithKomi(TestSize, Komi65, BlackLeadsByOneMoves).winner
+    )
+
+  @Test def testKomiAboveLeadFlipsWinnerAndKomiBelowLeadDoesNot(): Unit =
+    val sixAhead = playListOfMovesWithKomi(TestSize, Komi65, BlackLeadsBySixMoves)
+    Assertions.assertEquals(6, sixAhead.score(Black) - sixAhead.score(White))
+    Assertions.assertEquals(Some(White), sixAhead.winner)
+    Assertions.assertEquals(
+      Some(Black),
+      playListOfMovesWithKomi(TestSize, 5.5, BlackLeadsBySixMoves).winner
+    )
+
+  @Test def testDefaultKomiMakesWhiteWinAnEmptyBoard(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, Komi.Default, List(Pass(Black), Pass(White)))
+    Assertions.assertEquals(0, game.score(Black))
+    Assertions.assertEquals(0, game.score(White))
+    Assertions.assertEquals(Some(White), game.winner)
+
+  @Test def testNegativeKomiMakesBlackWinEqualScores(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, -0.5, List(Pass(Black), Pass(White)))
+    Assertions.assertEquals(game.score(Black), game.score(White))
+    Assertions.assertEquals(Some(Black), game.winner)

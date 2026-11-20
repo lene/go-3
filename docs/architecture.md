@@ -25,6 +25,9 @@ The game logic is split between two key classes:
   - Capture tracking (maps move index to captured stones)
   - Game-over detection (two consecutive passes or board full)
   - Scoring (territory + captures)
+  - Komi: points added to White's score, set when the game is created (default 0.5) and stored
+    in the game JSON; `Game.winner` compares White's score plus komi with Black's once the game is
+    over. Only half-integers up to size³ are valid (`Komi.scala`), so a game never ties
 
 Key domain types:
 - `Position(x, y, z)`: Coordinates on the board (1-indexed)
@@ -39,7 +42,8 @@ The server uses **http4s with Cats Effect** for async HTTP handling:
 
 - **`GoServer`**: Main entry point, initializes HTTP server and game loading
 - **`GoHttpService`** (`http4s/GoHttpService.scala`): Defines HTTP routes:
-  - `GET /new/{size}` - Create new game
+  - `GET /new/{size}[?komi=k]` - Create new game; `k` is a half-integer such as `6.5` or `-0.5`,
+    default `0.5`; anything else, or `komi` more than once, is a 400
   - `GET /register/{gameId}/{color}` - Register player
   - `GET /status/{gameId}` - Get current game state
   - `GET /status/{gameId}/{moveCount}` - Game state after the first `moveCount` moves (replay)
@@ -104,4 +108,5 @@ This simplifies neighbor checking by avoiding bounds checks.
 
 ### JSON serialization
 Uses Circe for encoding game state, moves, and API responses. See `server/Jsonify.scala` for
-encoders/decoders.
+encoders/decoders. A game's `komi` is a number field of the game JSON, so every store keeps it
+(files, DynamoDB, the S3 archive); a stored game without it decodes with komi 0.5.

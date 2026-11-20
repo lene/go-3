@@ -80,6 +80,26 @@ class TestServer:
       Status.BadRequest.code
     )
 
+  private def komiOfNewGame(query: String): Double =
+    val created = getGCR(s"${GameData.ServerURL}/new/$TestSize$query")
+    getSR(s"${GameData.ServerURL}/status/${created.id}", Map()).game.komi
+
+  @Test def testNewGameHasDefaultKomi(): Unit =
+    Assertions.assertEquals(0.5, komiOfNewGame(""))
+
+  @Test def testNewGameWithKomiHasThatKomi(): Unit =
+    Assertions.assertEquals(6.5, komiOfNewGame("?komi=6.5"))
+    Assertions.assertEquals(-0.5, komiOfNewGame("?komi=-0.5"))
+
+  @Test def testNewGameWithBadKomiSetsStatus400(): Unit =
+    val queries = BadKomiTexts.map(text => s"?komi=$text") ++ List("?komi", "?komi=6.5&komi=6.5")
+    for query <- queries do
+      RateLimiter.reset()
+      assertFailsWithStatus(
+        s"${GameData.ServerURL}/new/$TestSize$query",
+        Status.BadRequest.code
+      )
+
   @Test def testRegisterOnePlayer(): Unit =
     val newGameResponse = GameData.create(TestSize)
     val registerResponse = GameData.register(newGameResponse.id, Black)
