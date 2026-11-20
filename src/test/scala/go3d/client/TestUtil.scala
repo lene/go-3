@@ -19,7 +19,6 @@ class TestUtil:
         3 ->
           """O O|
             |   |
-            |O O""",
+            |O O"""
       ))
     )
-

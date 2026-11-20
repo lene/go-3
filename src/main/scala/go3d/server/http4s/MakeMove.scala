@@ -13,7 +13,7 @@ import org.http4s.Request
 import scala.util.{Failure, Try}
 
 abstract case class MakeMove(gameId: String, request: Request[IO])
-  extends BaseHandler with MakeMoveTrait with LazyLogging:
+    extends BaseHandler with MakeMoveTrait with LazyLogging:
   def handle: Try[GoResponse] =
     for
       requestInfo <- RequestInfo(request)
@@ -24,8 +24,12 @@ abstract case class MakeMove(gameId: String, request: Request[IO])
         else game.makeMove(makeMove(requestInfo.path, player.color))
       }
     yield
-      logger.info(s"${requestInfo.path}, ${player.color}".replaceAll("[\r\n]"," "))
+      logger.info(s"${requestInfo.path}, ${player.color}".replaceAll("[\r\n]", " "))
       StatusResponse(
-        newGame, newGame.possibleMoves(player.color), false, newGame.isOver, Some(player.color),
+        newGame,
+        newGame.possibleMoves(player.color),
+        false,
+        newGame.isOver,
+        Some(player.color),
         requestInfo.debugInfo
       )

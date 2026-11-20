@@ -7,8 +7,12 @@ object Game:
   def start(size: Int): Try[Game] =
     Goban.start(size).map(goban => Game(size, goban, Array(), Map[Int, Array[Move]]()))
 
-class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
-           val captures: Map[Int, Array[Move]]) extends GoGame:
+class Game(
+    val size: Int,
+    val goban: Goban,
+    val moves: Array[Move | Pass],
+    val captures: Map[Int, Array[Move]]
+) extends GoGame:
 
   def captures(color: Color): Int = captures.values.filter(_(0).color != color).flatten.size
   def lastCapture: Array[Move] = if captures.isEmpty then Array() else captures.last._2
@@ -23,10 +27,10 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def isOver: Boolean =
     moves.length >= size * size * size || (
-      moves.length >= 2 && ((moves.last, moves.init.last) match
-        case (_: Pass, _: Pass) => true
-        case _ => false
-      )
+      moves.length >= 2 &&
+        ((moves.last, moves.init.last) match
+          case (_: Pass, _: Pass) => true
+          case _ => false)
     )
 
   def atMove(count: Int): Try[Game] =
@@ -48,9 +52,10 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def checkValid(move: Move): Try[Unit] =
     if !isDifferentPlayer(move.color) then Failure(WrongTurn(move))
-    else goban.checkValid(move).flatMap { _ =>
-      if isKo(move) then Failure(Ko(move)) else Success(())
-    }
+    else
+      goban.checkValid(move).flatMap { _ =>
+        if isKo(move) then Failure(Ko(move)) else Success(())
+      }
 
   override def toString: String =
     var out = "\n"
@@ -59,8 +64,10 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
         for x <- 0 to size + 1 do
           out += goban.at(x, y, z).toString
         if z < size then out += "|"
-        else if y == 1 then out += " "+White.toString*captures(Black) // Black captures White stones
-        else if y == 3 then out += " "+Black.toString*captures(White) // White captures Black stones
+        else if y == 1 then
+          out += " " + White.toString * captures(Black) // Black captures White stones
+        else if y == 3 then
+          out += " " + Black.toString * captures(White) // White captures Black stones
       out += "\n"
     for (move, caps) <- captures.toSeq.sortBy(x => x._1) do out += s"$move: ${caps.toList}\n"
     out += score.toString
@@ -74,7 +81,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
 
   def possibleMoves(color: Color): List[Position] =
     if !isDifferentPlayer(color) then return List()
-    if moves.length >= size*size*size then return List()
+    if moves.length >= size * size * size then return List()
     if moves.isEmpty && color == White then return List()
     if moves.isEmpty && color == Black then return goban.allPositions.toList
     if moves.nonEmpty && color == moves.last.color then return List()
@@ -102,7 +109,10 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
     if boundaryColors.size == 1 then return Some(boundaryColors.head)
     None
 
-  private def addToConnectedAreas(emptyPositions: Seq[Position], areas: Set[Set[Move]]): Set[Set[Move]] =
+  private def addToConnectedAreas(
+      emptyPositions: Seq[Position],
+      areas: Set[Set[Move]]
+  ): Set[Set[Move]] =
     if emptyPositions.isEmpty then return areas
     val connected = connectedStones(Move(emptyPositions.last, Empty))
     addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
@@ -119,7 +129,7 @@ class Game(val size: Int, val goban: Goban, val moves: Array[Move | Pass],
   private def doCaptures(move: Move, board: Goban): Game =
     val newBoard = captureNeighbors(board, board.neighbors(move.position), move.color)
     val newMoves = moves.appended(move)
-    val captured = (board-newBoard).toArray
+    val captured = (board - newBoard).toArray
     val newCaptures = if captured.nonEmpty then captures + (moves.length -> captured) else captures
     Game(size, newBoard, newMoves, newCaptures)
 

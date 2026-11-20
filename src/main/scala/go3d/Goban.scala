@@ -13,13 +13,12 @@ object Goban:
     else if size % 2 == 0 then Failure(BadBoardSize(size, "even"))
     else Success(new Goban(size, initializeBoard(size)))
 
-class Goban private[go3d](val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
+class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
   lazy val areas: Set[Area] = calculateAreas()
   private lazy val allNeighbors: Map[Position, Set[Move]] = neighborsMap()
   lazy val allPositions: Seq[Position] =
     for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield new Position(x, y, z)
-
 
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
@@ -50,7 +49,8 @@ class Goban private[go3d](val size: Int, val stones: Array[Array[Array[Color]]])
     out
 
   def checkValid(move: Move): Try[Unit] =
-    if move.x > size || move.y > size || move.z > size then Failure(OutsideBoard(move.x, move.y, move.z))
+    if move.x > size || move.y > size || move.z > size then
+      Failure(OutsideBoard(move.x, move.y, move.z))
     else if at(move.position) != Empty then Failure(PositionOccupied(move, at(move.position)))
     else if isSuicide(move) then Failure(Suicide(move))
     else Success(())
@@ -118,9 +118,9 @@ class Goban private[go3d](val size: Int, val stones: Array[Array[Array[Color]]])
 
   def neighbors(position: Position): Seq[Position] =
     for (
-      x <- position.x-1 to position.x+1;
-      y <- position.y-1 to position.y+1;
-      z <- position.z-1 to position.z+1
+      x <- position.x - 1 to position.x + 1;
+      y <- position.y - 1 to position.y + 1;
+      z <- position.z - 1 to position.z + 1
       if isNeighbor(position, x, y, z)
     ) yield new Position(x, y, z)
 
@@ -147,9 +147,7 @@ class Goban private[go3d](val size: Int, val stones: Array[Array[Array[Color]]])
   private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then return false
     val wouldBeBoardAfterMove = setStone(move)
-    neighbors(move.position).forall(
-      p => wouldBeBoardAfterMove.hasLiberties(Move(p, !move.color))
-    )
+    neighbors(move.position).forall(p => wouldBeBoardAfterMove.hasLiberties(Move(p, !move.color)))
 
   private def calculateAreas(): Set[Area] =
     @tailrec
@@ -165,7 +163,6 @@ class Goban private[go3d](val size: Int, val stones: Array[Array[Array[Color]]])
     val stones = for (p <- allPositions if at(p) == Black || at(p) == White) yield Move(p, at(p))
     areaFromMoves(stones.toSet, Set())
 
-
   @tailrec
   private def clearListOfPlaces(toClear: Set[Move], goban: Goban): Goban =
     if toClear.isEmpty then return goban
@@ -178,11 +175,11 @@ class Goban private[go3d](val size: Int, val stones: Array[Array[Array[Color]]])
     x < 0 || y < 0 || z < 0 || x > size + 1 || y > size + 1 || z > size + 1
 
 def initializeBoard(size: Int): Array[Array[Array[Color]]] =
-  val tempStones = Array.ofDim[Color](size+2, size+2, size+2)
+  val tempStones = Array.ofDim[Color](size + 2, size + 2, size + 2)
   for
-    x <- 0 to size+1
-    y <- 0 to size+1
-    z <- 0 to size+1
+    x <- 0 to size + 1
+    y <- 0 to size + 1
+    z <- 0 to size + 1
   do
     tempStones(x)(y)(z) = if onBoard(x, y, z, size) then Empty else Sentinel
   tempStones

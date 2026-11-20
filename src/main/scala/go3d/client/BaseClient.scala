@@ -14,12 +14,18 @@ import io.circe.parser._
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-case class BaseClient(serverURL: String, id: String, token: Option[String], playerColor: Option[Color]):
+case class BaseClient(
+    serverURL: String,
+    id: String,
+    token: Option[String],
+    playerColor: Option[Color]
+):
   def status: Try[StatusResponse] = getSR(s"$serverURL/status/$id", headers)
 
   def statusAtMove(n: Int): Try[StatusResponse] = getSR(s"$serverURL/status/$id/$n", headers)
 
-  def set(x: Int, y: Int, z: Int): Try[StatusResponse] = getSR(s"$serverURL/set/$id/$x/$y/$z", headers)
+  def set(x: Int, y: Int, z: Int): Try[StatusResponse] =
+    getSR(s"$serverURL/set/$id/$x/$y/$z", headers)
   def set(move: Move): Try[StatusResponse] = set(move.x, move.y, move.z)
 
   def pass: Try[StatusResponse] = getSR(s"$serverURL/pass/$id", headers)
@@ -51,9 +57,10 @@ def getGCR(url: String): Try[GameCreatedResponse] =
     case Left(error) => Failure(ServerException(error.getMessage))
 
 def getSR(url: String, header: Map[String, String]): Try[StatusResponse] =
-  Try(requests.get(url, headers = header, readTimeout = 30000, connectTimeout = 30000)).flatMap { response =>
-    val json = response.text()
-    decode[StatusResponse](json) match
-      case Right(sr) => Success(sr)
-      case Left(error) => Failure(ServerException(error.getMessage))
+  Try(requests.get(url, headers = header, readTimeout = 30000, connectTimeout = 30000)).flatMap {
+    response =>
+      val json = response.text()
+      decode[StatusResponse](json) match
+        case Right(sr) => Success(sr)
+        case Left(error) => Failure(ServerException(error.getMessage))
   }

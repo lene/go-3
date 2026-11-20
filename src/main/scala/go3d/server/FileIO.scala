@@ -17,7 +17,7 @@ object FileIO:
     then Failure(IllegalArgumentException(s"$baseFolder not a directory"))
     else Success(new FileIO(baseFolder))
 
-class FileIO private(val baseFolder: String):
+class FileIO private (val baseFolder: String):
 
   private val basePath: Path = Paths.get(baseFolder)
 
@@ -25,7 +25,7 @@ class FileIO private(val baseFolder: String):
 
   def saveGame(gameId: String): Path =
     if !Files.exists(basePath) then Files.createDirectory(basePath)
-    val game = Games(gameId)  // Will throw NoSuchElementException if game doesn't exist
+    val game = Games(gameId) // Will throw NoSuchElementException if game doesn't exist
     val players = Players(gameId)
     if players.isEmpty then
       sys.error(s"Cannot save game $gameId with no players")

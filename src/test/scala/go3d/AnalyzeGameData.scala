@@ -5,16 +5,16 @@ import io.circe.parser.decode
 import scala.io.Source
 import org.scalatest.TryValues.*
 
-/**
- * Utility to replay saved game data and analyze specific moves.
- *
- * Usage:
- *   sbt Test/compile && sbt "Test/runMain go3d.AnalyzeGameData <json-file> [start-move] [end-move]"
- *
- * Examples:
- *   sbt "Test/runMain go3d.AnalyzeGameData src/test/resources/data/04hfPW.json"
- *   sbt "Test/runMain go3d.AnalyzeGameData src/test/resources/data/04hfPW.json 280 290"
- */
+/** Utility to replay saved game data and analyze specific moves.
+  *
+  * Usage:
+  *   sbt Test/compile
+  *   sbt "Test/runMain go3d.AnalyzeGameData <json-file> [start-move] [end-move]"
+  *
+  * Examples:
+  *   sbt "Test/runMain go3d.AnalyzeGameData src/test/resources/data/04hfPW.json"
+  *   sbt "Test/runMain go3d.AnalyzeGameData src/test/resources/data/04hfPW.json 280 290"
+  */
 object AnalyzeGameData:
 
   def main(args: Array[String]): Unit =
@@ -22,12 +22,15 @@ object AnalyzeGameData:
       System.err.println("Usage: AnalyzeGameData <json-file> [start-move] [end-move]")
       System.err.println("  json-file: Path to saved game JSON file")
       System.err.println("  start-move: Optional - first move to analyze in detail (default: 0)")
-      System.err.println("  end-move: Optional - last move to analyze in detail (default: last move)")
+      System.err.println(
+        "  end-move: Optional - last move to analyze in detail (default: last move)"
+      )
       sys.exit(1)
 
     val jsonFile = args(0)
     val source = Source.fromFile(jsonFile)
-    val jsonContent = try source.mkString finally source.close()
+    val jsonContent = try source.mkString
+    finally source.close()
     val saveGameResult = decode[go3d.server.SaveGame](jsonContent)
 
     val saveGame = saveGameResult.fold(

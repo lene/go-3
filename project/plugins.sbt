@@ -11,6 +11,10 @@ addSbtPlugin("com.github.sbt.junit" % "sbt-jupiter-interface" % "0.17.1")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "2.4.4")
 ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" % VersionScheme.Always
 
+// Formatting (sbt scalafmtAll, checked in CI by scalafmtCheckAll)
+// 2.6.x requires sbt 1.12.9+, so stay on 2.5.6 until sbt is upgraded
+addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.6")
+
 // Static analysis tools
 addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.5.6")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.6")

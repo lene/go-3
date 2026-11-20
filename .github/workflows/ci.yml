@@ -213,6 +213,21 @@ jobs:
           name: runtime-log
           path: runtime.log
 
+  format:
+    name: Check formatting
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: ./.github/actions/setup-jvm
+      - run: sbt scalafmtCheckAll
+      # scalafmt cannot wrap long string literals and comments, so check them directly
+      - name: Check line length
+        run: |
+          if grep -rnE '.{101,}' src --include='*.scala'; then
+            echo "::error::lines longer than 100 characters"
+            exit 1
+          fi
+
   version-consistent:
     name: Version is new and consistent
     runs-on: ubuntu-latest

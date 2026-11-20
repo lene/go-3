@@ -24,20 +24,22 @@ import go3d.server.StatusResponse
 import scala.util.{Failure, Success, Try}
 
 class InvalidToken(val gameId: String)
-  extends AuthorizationError("token is not registered in game " + gameId)
+    extends AuthorizationError("token is not registered in game " + gameId)
 
-/**
- * The game server's operations on top of a [[GameStore]], independent of HTTP and of how state
- * is stored. The rules come from [[Game]]; errors are the exception types the http4s server
- * already maps to HTTP statuses (see `http4s/BaseHandler.scala`).
- *
- * @param now   current time in Unix milliseconds
- * @param newId generates game ids
- * @param newToken generates bearer tokens; only their SHA-256 hash is stored
- */
+/** The game server's operations on top of a [[GameStore]], independent of HTTP and of how state
+  * is stored. The rules come from [[Game]]; errors are the exception types the http4s server
+  * already maps to HTTP statuses (see `http4s/BaseHandler.scala`).
+  *
+  * @param now   current time in Unix milliseconds
+  * @param newId generates game ids
+  * @param newToken generates bearer tokens; only their SHA-256 hash is stored
+  */
 class GameService(
-  store: GameStore, archive: GameArchive, now: () => Long, newId: () => String,
-  newToken: () => String
+    store: GameStore,
+    archive: GameArchive,
+    now: () => Long,
+    newId: () => String,
+    newToken: () => String
 ) extends LazyLogging:
 
   def newGame(size: Int): Try[GameCreatedResponse] =
@@ -59,17 +61,15 @@ class GameService(
       val ready = color == Black && stored.players.contains(White)
       PlayerRegisteredResponse(stored.game, color, token, ready, NullRequestInfo)
 
-  /**
-   * Without a token the status shows the board only. With a token it also shows the caller's
-   * possible moves and whether it is their turn with both players registered; a token not
-   * registered in the game fails with [[InvalidToken]].
-   */
+  /** Without a token the status shows the board only. With a token it also shows the caller's
+    * possible moves and whether it is their turn with both players registered; a token not
+    * registered in the game fails with [[InvalidToken]].
+    */
   def status(gameId: String, token: Option[String]): Try[StatusResponse] =
     for
       stored <- existing(gameId)
-      color <- token.fold[Try[Option[Color]]](Success(None))(
-        t => authenticate(gameId, t).map(Some(_))
-      )
+      color <-
+        token.fold[Try[Option[Color]]](Success(None))(t => authenticate(gameId, t).map(Some(_)))
     yield
       val game = stored.game
       color.fold(StatusResponse(game, List(), false, game.isOver, None, NullRequestInfo)) { c =>
@@ -77,10 +77,9 @@ class GameService(
         StatusResponse(game, game.possibleMoves(c), ready, game.isOver, Some(c), NullRequestInfo)
       }
 
-  /**
-   * The game after its first `moveCount` moves, for replaying it; the count is clamped to the
-   * moves played so far.
-   */
+  /** The game after its first `moveCount` moves, for replaying it; the count is clamped to the
+    * moves played so far.
+    */
   def statusAt(gameId: String, moveCount: Int): Try[StatusResponse] =
     for
       stored <- existing(gameId)
@@ -99,7 +98,9 @@ class GameService(
   def openGames(): Try[Array[String]] = store.openGames()
 
   private def play(
-    gameId: String, token: String, move: Color => Try[Move | Pass]
+      gameId: String,
+      token: String,
+      move: Color => Try[Move | Pass]
   ): Try[StatusResponse] =
     for
       stored <- existing(gameId)
@@ -111,14 +112,18 @@ class GameService(
     yield
       if newGame.isOver then complete(gameId, newGame, stored.players)
       StatusResponse(
-        newGame, newGame.possibleMoves(color), false, newGame.isOver, Some(color), NullRequestInfo
+        newGame,
+        newGame.possibleMoves(color),
+        false,
+        newGame.isOver,
+        Some(color),
+        NullRequestInfo
       )
 
-  /**
-   * Archives a finished game, then marks it completed so the store can expire it. The move that
-   * ended the game is already stored, so a failure here does not fail the request: the game
-   * stays in the store without an expiry and can be archived again later.
-   */
+  /** Archives a finished game, then marks it completed so the store can expire it. The move that
+    * ended the game is already stored, so a failure here does not fail the request: the game
+    * stays in the store without an expiry and can be archived again later.
+    */
   private def complete(gameId: String, game: Game, players: Set[Color]): Unit =
     val saveGame = SaveGame(game, players.map(c => c -> Player(c, gameId)).toMap)
     val expiresAt = now() / 1000L + GameService.RetentionSeconds
@@ -145,6 +150,9 @@ object GameService:
 
   def apply(store: GameStore, archive: GameArchive): GameService =
     new GameService(
-      store, archive, () => System.currentTimeMillis(), () => IdGenerator.getId,
+      store,
+      archive,
+      () => System.currentTimeMillis(),
+      () => IdGenerator.getId,
       () => IdGenerator.generateAuthToken
     )

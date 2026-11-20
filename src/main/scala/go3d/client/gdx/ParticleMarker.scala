@@ -11,8 +11,8 @@ import go3d.Position
 trait Marker:
   def render(modelBatch: ModelBatch, position: Option[Position], fadeAlpha: Float): Unit
 
-
-case class SphereMarker(cursorModel: ModelInstance, boardSize: Int, isGreen: Boolean) extends Marker:
+case class SphereMarker(cursorModel: ModelInstance, boardSize: Int, isGreen: Boolean)
+    extends Marker:
   def render(modelBatch: ModelBatch, targetPos: Option[Position], fadeAlpha: Float): Unit =
     for pos <- targetPos if fadeAlpha < 1.0f do
       val offset = -(boardSize + 1) / 2f
@@ -20,7 +20,9 @@ case class SphereMarker(cursorModel: ModelInstance, boardSize: Int, isGreen: Boo
         pos.x.toFloat + offset,
         pos.y.toFloat + offset,
         pos.z.toFloat + offset,
-        1.1f, 1.1f, 1.1f
+        1.1f,
+        1.1f,
+        1.1f
       )
       val tempMaterial = cursorModel.materials.get(0)
       tempMaterial.clear()

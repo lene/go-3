@@ -240,7 +240,11 @@ class TestTokens extends AnyFunSuite:
     val sizeBefore = Tokens.size
     // Register 100 tokens
     for i <- 1 to 100 do
-      Tokens.register(s"token_largetest_$i", s"game_largetest_$i", if i % 2 == 0 then Black else White)
+      Tokens.register(
+        s"token_largetest_$i",
+        s"game_largetest_$i",
+        if i % 2 == 0 then Black else White
+      )
 
     assert(Tokens.size == sizeBefore + 100)
 

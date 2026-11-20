@@ -22,10 +22,9 @@ import scala.io.Source
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
-/**
- * Runs [[S3GameArchive]] against S3Mock (`adobe/s3mock`) at the endpoint in `S3_TEST_ENDPOINT`,
- * which CI sets; skipped when the variable is not set. Every test gets its own bucket.
- */
+/** Runs [[S3GameArchive]] against S3Mock (`adobe/s3mock`) at the endpoint in `S3_TEST_ENDPOINT`,
+  * which CI sets; skipped when the variable is not set. Every test gets its own bucket.
+  */
 class TestS3GameArchive:
   private val endpoint = sys.env.get("S3_TEST_ENDPOINT")
   private val bucket = "go3d-test-" + java.util.UUID.randomUUID().toString
@@ -75,7 +74,8 @@ class TestS3GameArchive:
 
   @Test def testArchiveReturnsKeyOfGame(): Unit =
     Assertions.assertEquals(
-      "archives/GAME01.json", archive.archive("GAME01", saveGame("GAME01")).success.value
+      "archives/GAME01.json",
+      archive.archive("GAME01", saveGame("GAME01")).success.value
     )
 
   @Test def testArchivedGameCanBeReadBack(): Unit =

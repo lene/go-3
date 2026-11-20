@@ -31,18 +31,20 @@ class Go3DInputController(camera: PerspectiveCamera) extends InputAdapter:
       case Keys.LEFT | Keys.RIGHT | Keys.UP | Keys.DOWN => setRotatePressed(keycode, false)
       case _ => false
 
-  // algorithm pulled from
-  // https://github.com/libgdx/libgdx/blob/master/gdx/src/com/badlogic/gdx/graphics/g3d/utils/CameraInputController.java#L187
+  // algorithm pulled from libGDX (https://github.com/libgdx/libgdx), class
+  // com.badlogic.gdx.graphics.g3d.utils.CameraInputController, line 187
   private final val rotateAngle = 360f
   def update(): Unit =
     if rotatePressed.values.exists(_ == true) then
       val delta = Gdx.graphics.getDeltaTime
-      if (rotatePressed(Keys.RIGHT)) camera.rotateAround(new Vector3, Vector3.Y, -delta*rotateAngle)
-      if (rotatePressed(Keys.LEFT)) camera.rotateAround(new Vector3, Vector3.Y, delta*rotateAngle)
+      if (rotatePressed(Keys.RIGHT))
+        camera.rotateAround(new Vector3, Vector3.Y, -delta * rotateAngle)
+      if (rotatePressed(Keys.LEFT)) camera.rotateAround(new Vector3, Vector3.Y, delta * rotateAngle)
       val tmpXZ = new Vector3
       tmpXZ.set(camera.direction).crs(camera.up).y = 0f
-      if (rotatePressed(Keys.UP)) camera.rotateAround(new Vector3, tmpXZ.nor, delta*rotateAngle)
-      if (rotatePressed(Keys.DOWN)) camera.rotateAround(new Vector3, tmpXZ.nor, -delta*rotateAngle)
+      if (rotatePressed(Keys.UP)) camera.rotateAround(new Vector3, tmpXZ.nor, delta * rotateAngle)
+      if (rotatePressed(Keys.DOWN))
+        camera.rotateAround(new Vector3, tmpXZ.nor, -delta * rotateAngle)
       camera.update()
 
   private def setCtrl(mode: Boolean): Boolean =

@@ -17,19 +17,19 @@ class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val server = opt[String](required = false)
   val port = opt[Int](required = false)
   val cursorFadeSeconds = opt[Float](required = false, default = Some(10.0f))
-  val replay      = toggle(default = Some(false))
-  val from        = opt[Int](required = false, default = Some(0))
-  val to          = opt[Int](required = false, default = Some(Int.MaxValue))
+  val replay = toggle(default = Some(false))
+  val from = opt[Int](required = false, default = Some(0))
+  val to = opt[Int](required = false, default = Some(Int.MaxValue))
   val replaySpeed = opt[Float](name = "replay-speed", required = false, default = Some(1.0f))
   requireOne(size, gameId)
   mutuallyExclusive(url, server)
   mutuallyExclusive(url, port)
   dependsOnAll(size, List(color))
   dependsOnAll(token, List(gameId))
-  dependsOnAll(from,        List(replay))
-  dependsOnAll(to,          List(replay))
+  dependsOnAll(from, List(replay))
+  dependsOnAll(to, List(replay))
   dependsOnAll(replaySpeed, List(replay))
-  dependsOnAll(replay,      List(gameId))
+  dependsOnAll(replay, List(gameId))
   verify()
 
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
@@ -52,7 +52,9 @@ abstract case class InteractiveClient(pollInterval: Int = 500) extends Client wi
     else if conf.gameId.isSupplied then
       if conf.token.isSupplied then
         Success(BaseClient(
-          serverURL, conf.gameId(), conf.token.toOption,
+          serverURL,
+          conf.gameId(),
+          conf.token.toOption,
           getPlayerColor(serverURL, conf.gameId(), conf.token())
         ))
       else if conf.color.isSupplied then

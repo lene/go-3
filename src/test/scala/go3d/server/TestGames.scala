@@ -10,7 +10,8 @@ class TestGames:
   @Test def testRegisterEmptyColorFails(): Unit =
     val gameId = Games.register(3).success.value
     Assertions.assertInstanceOf(
-      classOf[BadColor], Games.registerPlayer(gameId, go3d.Empty).failure.exception
+      classOf[BadColor],
+      Games.registerPlayer(gameId, go3d.Empty).failure.exception
     )
     Assertions.assertFalse(Players.isDuplicate(gameId, go3d.Empty))
     Games.deleteGame(gameId)

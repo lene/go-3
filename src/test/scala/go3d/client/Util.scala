@@ -12,44 +12,49 @@ import org.scalatest.TryValues.*
 object Util {
   def gameWithCornerStones(size: Int): Game =
     val corners = (
-      for (x <- 1 to size by size-1; y <- 1 to size by size-1; z <- 1 to size by size-1)
-      yield (x, y, z)
+      for (x <- 1 to size by size - 1; y <- 1 to size by size - 1; z <- 1 to size by size - 1)
+        yield (x, y, z)
     ).map((x, y, z) => Position(x, y, z)) :++ (if size > 3 then StarPoints(size).all else Seq())
-    val moves = corners.zipWithIndex.map((pos, i) => Move(pos, if i%2 == 0 then Black else White))
+    val moves = corners.zipWithIndex.map((pos, i) => Move(pos, if i % 2 == 0 then Black else White))
     playListOfMoves(size, moves)
 
-  val presetGame: Game = Game(5, fromStrings(Map(
-    1 ->
-      """O   O|
+  val presetGame: Game = Game(
+    5,
+    fromStrings(Map(
+      1 ->
+        """O   O|
         | @   |
         |     |
         |     |
         |O   O|""",
-    2 ->
-      """ @   |
+      2 ->
+        """ @   |
         |@ @  |
         | @   |
         |     |
         |     |""",
-    3 ->
-      """ O   |
+      3 ->
+        """ O   |
         |O@O  |
         | O   |
         |     |
         |     |""",
-    4 ->
-      """     |
+      4 ->
+        """     |
         | O   |
         |     |
         |     |
         |     |""",
-    5 ->
-      """O   O|
+      5 ->
+        """O   O|
         |     |
         |     |
         |     |
-        |O   O|""",
-  )), Array(), Map())
+        |O   O|"""
+    )),
+    Array(),
+    Map()
+  )
 
   def fromStrings(levels: Map[Int, String]): Goban =
     if levels.isEmpty then sys.error("nothing to generate")

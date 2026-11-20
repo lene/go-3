@@ -15,8 +15,10 @@ import scala.util.{Failure, Success, Try}
 object AsciiClient extends InteractiveClient with LazyLogging:
 
   /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --size ## --color [b|w]"
-  /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
-  /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
+  /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX
+  ///   --color [b|w]"
+  /// sbt "runMain go3d.client.AsciiClient --server $SERVER --port #### --game-id XXXXXX
+  ///   --token XXXXX"
 
   @tailrec
   def mainLoop(client: BaseClient): Try[Unit] =
@@ -30,7 +32,7 @@ object AsciiClient extends InteractiveClient with LazyLogging:
         if status.game.moves.nonEmpty then logger.info(s"last move: ${status.game.moves.last}")
         Try {
           val input = readLine("your input: ")
-          val Array(command, args) = (input+" ").split("\\s+", 2)
+          val Array(command, args) = (input + " ").split("\\s+", 2)
           handleCommand(client, command, args)
         }.flatten.map(_.foreach(sr => if sr.over then exit(0))).recover {
           case _: InterruptedException => exit(1)
@@ -40,16 +42,19 @@ object AsciiClient extends InteractiveClient with LazyLogging:
         mainLoop(client)
 
   private def handleCommand(
-    client: BaseClient, command: String, args: String
+      client: BaseClient,
+      command: String,
+      args: String
   ): Try[Option[StatusResponse]] =
     command match
-      case "set"|"s" => set(client, args).map(Some(_))
-      case "pass"|"p" => pass(client).map(Some(_))
-      case "status"|"st" => getStatus(client).map(Some(_))
+      case "set" | "s" => set(client, args).map(Some(_))
+      case "pass" | "p" => pass(client).map(Some(_))
+      case "status" | "st" => getStatus(client).map(Some(_))
       case "exit" =>
         logger.info("Exiting. If you want to reconnect to the game, enter")
         logger.info(
-          s"$$ sbt \"runMain go3d.client.AsciiClient --server ${client.serverURL} --game-id ${client.id} --token ${client.token}\""
+          "$ sbt \"runMain go3d.client.AsciiClient " +
+            s"--server ${client.serverURL} --game-id ${client.id} --token ${client.token}\""
         )
         exit(0)
         Success(None)
@@ -70,6 +75,6 @@ object AsciiClient extends InteractiveClient with LazyLogging:
 
 def colorFromString(string: String): Try[Color] =
   string.toLowerCase match
-    case "@"|"black"|"b" => Success(Black)
-    case "o"|"white"|"w" => Success(White)
+    case "@" | "black" | "b" => Success(Black)
+    case "o" | "white" | "w" => Success(White)
     case _ => Failure(BadColor(string(0)))

@@ -34,6 +34,7 @@ abstract class BaseHandler extends HandleTrait:
       case Failure(_: AuthorizationError) => IO(Response[IO](status = Status.Unauthorized))
       case Failure(_: RateLimitExceeded) => IO(Response[IO](status = Status.TooManyRequests))
       case Failure(e: ServerException) => InternalServerError(e.getMessage)
-      case Failure(e: go3d.IllegalMove) => BadRequest(s"${e.getClass.getSimpleName}: ${e.getMessage}")
+      case Failure(e: go3d.IllegalMove) =>
+        BadRequest(s"${e.getClass.getSimpleName}: ${e.getMessage}")
       case Failure(e: go3d.GameOver) => Gone(s"${e.getClass.getSimpleName}: ${e.getMessage}")
       case Failure(e) => InternalServerError(s"${e.getClass.getSimpleName}: ${e.getMessage}")

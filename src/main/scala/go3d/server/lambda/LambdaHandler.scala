@@ -1,7 +1,9 @@
 package go3d.server.lambda
 
 import com.amazonaws.services.lambda.runtime.{Context, RequestHandler}
-import com.amazonaws.services.lambda.runtime.events.{APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent}
+import com.amazonaws.services.lambda.runtime.events.{
+  APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent
+}
 import com.typesafe.scalalogging.LazyLogging
 import go3d.{BadBoardSize, BadColor, Color, GameOver, GoException, IllegalMove}
 import go3d.server.{
@@ -23,37 +25,36 @@ import scala.util.{Failure, Success, Try}
 /** The server has no game store configured, so it cannot accept writes. */
 class ServiceUnavailable extends ServerException("game store is not configured")
 
-/**
- * AWS Lambda handler for the game API, on top of [[GameService]]. The routes and responses are
- * those of the http4s server (`http4s/GoHttpService.scala`):
- *
- *   GET /health                    → 200 1
- *   GET /openGames                 → OpenGamesResponse
- *   GET /new/{size}                → GameCreatedResponse
- *   GET /register/{gameId}/{color} → PlayerRegisteredResponse with the bearer token
- *   GET /status/{gameId}           → StatusResponse; with a bearer token also moves and `ready`
- *   GET /status/{gameId}/{n}       → StatusResponse of the game after its first n moves
- *   GET /archived/{gameId}         → 302 to a pre-signed S3 URL of the finished game's archive
- *   GET /set/{gameId}/{x}/{y}/{z}  → StatusResponse (bearer token required)
- *   GET /pass/{gameId}             → StatusResponse (bearer token required)
- *
- * The token is sent as `Authentication: Bearer <token>`. Errors map to the http4s statuses (see
- * [[LambdaHandler.statusOf]]); a move that lost a race with another request returns 409 and the
- * client should refetch the status.
- *
- * @param service None when DynamoDB is not configured: reads then find no games and writes
- *                return 503
- */
+/** AWS Lambda handler for the game API, on top of [[GameService]]. The routes and responses are
+  * those of the http4s server (`http4s/GoHttpService.scala`):
+  *
+  *   GET /health                    → 200 1
+  *   GET /openGames                 → OpenGamesResponse
+  *   GET /new/{size}                → GameCreatedResponse
+  *   GET /register/{gameId}/{color} → PlayerRegisteredResponse with the bearer token
+  *   GET /status/{gameId}           → StatusResponse; with a bearer token also moves and `ready`
+  *   GET /status/{gameId}/{n}       → StatusResponse of the game after its first n moves
+  *   GET /archived/{gameId}         → 302 to a pre-signed S3 URL of the finished game's archive
+  *   GET /set/{gameId}/{x}/{y}/{z}  → StatusResponse (bearer token required)
+  *   GET /pass/{gameId}             → StatusResponse (bearer token required)
+  *
+  * The token is sent as `Authentication: Bearer <token>`. Errors map to the http4s statuses (see
+  * [[LambdaHandler.statusOf]]); a move that lost a race with another request returns 409 and the
+  * client should refetch the status.
+  *
+  * @param service None when DynamoDB is not configured: reads then find no games and writes
+  *                return 503
+  */
 class LambdaHandler(service: Option[GameService])
-  extends RequestHandler[APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent]
-  with LazyLogging:
+    extends RequestHandler[APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent]
+    with LazyLogging:
 
   /** Used by the Lambda runtime: DynamoDB and S3 as configured in the environment. */
   def this() = this(LambdaHandler.serviceFromEnv())
 
   def handleRequest(
-    event: APIGatewayProxyRequestEvent,
-    context: Context
+      event: APIGatewayProxyRequestEvent,
+      context: Context
   ): APIGatewayProxyResponseEvent =
     val path = Option(event.getPath).getOrElse("/")
     logger.info("Lambda request: " + Option(event.getHttpMethod).getOrElse("") + " " + path)
@@ -89,10 +90,9 @@ class LambdaHandler(service: Option[GameService])
   private def readService(gameId: String): Try[GameService] =
     service.fold[Try[GameService]](Failure(NonexistentGame(gameId, List())))(Success(_))
 
-  /**
-   * The bearer token of the request: None without an `Authentication` header, a failure when the
-   * header is not `Bearer <token>`.
-   */
+  /** The bearer token of the request: None without an `Authentication` header, a failure when the
+    * header is not `Bearer <token>`.
+    */
   private def bearerToken(event: APIGatewayProxyRequestEvent): Try[Option[String]] =
     val headers = Option(event.getHeaders).fold(Map.empty[String, String])(_.asScala.toMap)
     headers.collectFirst { case (name, value) if name.equalsIgnoreCase("Authentication") => value }

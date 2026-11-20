@@ -14,16 +14,18 @@ extension (game: Game)
     game.goban.neighbors(pos).exists(game.at(_) == color)
 
   def getStones(col: Color): Seq[Position] =
-    game.moves.filter(m => m.color == col).collect { case m: Move => m }.map(m => m.position).toIndexedSeq
+    game.moves.filter(m => m.color == col).collect { case m: Move => m }.map(m =>
+      m.position
+    ).toIndexedSeq
 
   def getFreeNeighbors(col: Color): Set[Position] =
-    game.getStones(col).foldLeft(Set[Position]())(
-      (neighbors, position) => neighbors ++ game.goban.neighborsOfColor(position, Empty)
+    game.getStones(col).foldLeft(Set[Position]())((neighbors, position) =>
+      neighbors ++ game.goban.neighborsOfColor(position, Empty)
     )
 
   def getAreas(col: Color): Set[Set[Position]] =
-    game.getStones(col).foldLeft(Set[Set[Position]]())(
-      (areas, position) => areas + game.connectedStones(Move(position, col)).map(m => m.position)
+    game.getStones(col).foldLeft(Set[Set[Position]]())((areas, position) =>
+      areas + game.connectedStones(Move(position, col)).map(m => m.position)
     )
 
   def liberties(col: Color, area: Set[Position]): Int =

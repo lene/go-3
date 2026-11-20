@@ -25,7 +25,9 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
   override def toString: String =
     def areaToString(): String =
       if stones.isEmpty then ""
-      else stones.head.color.toString + stones.foldLeft("")((acc, stone) => acc + "/" + stone.position.toString)
+      else
+        stones.head.color.toString +
+          stones.foldLeft("")((acc, stone) => acc + "/" + stone.position.toString)
     s"[${areaToString()}]"
 
   private def validateColor(stones: Set[Move]): Color =
@@ -43,21 +45,19 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
         new Position(
           if currentStone.x < subHullMin.x then currentStone.x else subHullMin.x,
           if currentStone.y < subHullMin.y then currentStone.y else subHullMin.y,
-          if currentStone.z < subHullMin.z then currentStone.z else subHullMin.z),
+          if currentStone.z < subHullMin.z then currentStone.z else subHullMin.z
+        ),
         new Position(
           if currentStone.x > subHullMax.x then currentStone.x else subHullMax.x,
           if currentStone.y > subHullMax.y then currentStone.y else subHullMax.y,
-          if currentStone.z > subHullMax.z then currentStone.z else subHullMax.z)
+          if currentStone.z > subHullMax.z then currentStone.z else subHullMax.z
+        )
       )
 
   def allInsideAreas: Set[Position] =
-    withinOuterHull.filter(
-      p => goban.at(p) != color
-    ).map(
+    withinOuterHull.filter(p => goban.at(p) != color).map(
       insideArea(_)
-    ).foldLeft(Set.empty)(
-      (acc, area) => acc ++ area
-    )
+    ).foldLeft(Set.empty)((acc, area) => acc ++ area)
 
   def insideArea(position: Position, alreadyFoundPaths: Set[Position] = Set.empty): Set[Position] =
     if goban.at(position) == color then return Set.empty
@@ -71,12 +71,15 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
   def onBorderOfAreaButNotBoard(position: Position): Boolean =
     if outerHull(0).x == 1 && outerHull(1).x == goban.size ||
       outerHull(0).y == 1 && outerHull(1).y == goban.size ||
-      outerHull(0).z == 1 && outerHull(1).z == goban.size then false // outer hull equals board
+      outerHull(0).z == 1 && outerHull(1).z == goban.size
+    then false // outer hull equals board
     else if position.x == 1 || position.x == goban.size ||
       position.y == 1 || position.y == goban.size ||
-      position.z == 1 || position.z == goban.size then false // on border of board
-    else position.x == outerHull(0).x || position.x == outerHull(1).x ||
+      position.z == 1 || position.z == goban.size
+    then false // on border of board
+    else
+      position.x == outerHull(0).x || position.x == outerHull(1).x ||
       position.y == outerHull(0).y || position.y == outerHull(1).y ||
-      position.z == outerHull(0).z || position.z == outerHull(1).z  // on border of outer hull
+      position.z == outerHull(0).z || position.z == outerHull(1).z // on border of outer hull
 
-def areNeighbors(pos1: Position, pos2: Position): Boolean = (pos1-pos2).abs == 1
+def areNeighbors(pos1: Position, pos2: Position): Boolean = (pos1 - pos2).abs == 1

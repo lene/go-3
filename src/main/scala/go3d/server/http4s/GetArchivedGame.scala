@@ -4,7 +4,7 @@ import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
 import go3d.server.Games
 import go3d.server.aws.S3Client
-import go3d.server.given  // Circe encoders from Jsonify.scala
+import go3d.server.given // Circe encoders from Jsonify.scala
 import io.circe.syntax._
 import org.http4s.Response
 import org.http4s.Status
@@ -12,14 +12,13 @@ import org.http4s.Uri
 import org.http4s.dsl.io._
 import org.http4s.headers.Location
 
-/**
- * Serves archived game state.
- *
- * Priority:
- *  1. Local file archive  → returns SaveGame JSON directly (200)
- *  2. S3 archive          → redirects to 5-minute pre-signed URL (302)
- *  3. Neither             → 404
- */
+/** Serves archived game state.
+  *
+  * Priority:
+  *  1. Local file archive  → returns SaveGame JSON directly (200)
+  *  2. S3 archive          → redirects to 5-minute pre-signed URL (302)
+  *  3. Neither             → 404
+  */
 case class GetArchivedGame(gameId: String) extends LazyLogging:
 
   def response: IO[Response[IO]] =

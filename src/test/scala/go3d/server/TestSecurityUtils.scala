@@ -11,7 +11,10 @@ class TestSecurityUtils extends AnyFunSuite:
     val hash = SecurityUtils.sha256(input)
 
     assert(hash.length == 64, s"SHA-256 hash should be 64 characters, got ${hash.length}")
-    assert(hash.matches("[0-9a-f]{64}"), "SHA-256 hash should only contain lowercase hex characters")
+    assert(
+      hash.matches("[0-9a-f]{64}"),
+      "SHA-256 hash should only contain lowercase hex characters"
+    )
 
   test("sha256 is deterministic"):
     val input = "same_token"
@@ -80,8 +83,10 @@ class TestSecurityUtils extends AnyFunSuite:
     val expectedMin = before + 3600 // 1 hour in seconds
     val expectedMax = after + 3600
 
-    assert(expiresAt >= expectedMin && expiresAt <= expectedMax,
-      s"Expiration should be ~1 hour from now")
+    assert(
+      expiresAt >= expectedMin && expiresAt <= expectedMax,
+      s"Expiration should be ~1 hour from now"
+    )
 
   test("expirationTimestamp defaults to 24 hours"):
     val before = Instant.now().getEpochSecond
@@ -91,8 +96,10 @@ class TestSecurityUtils extends AnyFunSuite:
     val expectedMin = before + (24 * 3600)
     val expectedMax = after + (24 * 3600)
 
-    assert(expiresAt >= expectedMin && expiresAt <= expectedMax,
-      s"Default expiration should be ~24 hours from now")
+    assert(
+      expiresAt >= expectedMin && expiresAt <= expectedMax,
+      s"Default expiration should be ~24 hours from now"
+    )
 
   test("isExpired returns true for past timestamp"):
     val pastTimestamp = Instant.now().minusSeconds(3600).getEpochSecond // 1 hour ago

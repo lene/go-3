@@ -5,30 +5,32 @@ import io.circe.parser.decode
 import scala.io.Source
 import org.scalatest.TryValues.*
 
-/**
- * Measure the time taken for each move in a saved game to identify slow moves.
- *
- * Usage:
- *   sbt "Test/runMain go3d.MeasureMoveTimes <json-file> [threshold-ms]"
- *
- * Examples:
- *   sbt "Test/runMain go3d.MeasureMoveTimes src/test/resources/data/gNoDpK.json"
- *   sbt "Test/runMain go3d.MeasureMoveTimes src/test/resources/data/gNoDpK.json 100"
- */
+/** Measure the time taken for each move in a saved game to identify slow moves.
+  *
+  * Usage:
+  *   sbt "Test/runMain go3d.MeasureMoveTimes <json-file> [threshold-ms]"
+  *
+  * Examples:
+  *   sbt "Test/runMain go3d.MeasureMoveTimes src/test/resources/data/gNoDpK.json"
+  *   sbt "Test/runMain go3d.MeasureMoveTimes src/test/resources/data/gNoDpK.json 100"
+  */
 object MeasureMoveTimes:
 
   def main(args: Array[String]): Unit =
     if args.length < 1 then
       System.err.println("Usage: MeasureMoveTimes <json-file> [threshold-ms]")
       System.err.println("  json-file: Path to saved game JSON file")
-      System.err.println("  threshold-ms: Optional - only show moves slower than this (default: 50ms)")
+      System.err.println(
+        "  threshold-ms: Optional - only show moves slower than this (default: 50ms)"
+      )
       sys.exit(1)
 
     val jsonFile = args(0)
     val thresholdMs = if args.length >= 2 then args(1).toInt else 50
 
     val source = Source.fromFile(jsonFile)
-    val jsonContent = try source.mkString finally source.close()
+    val jsonContent = try source.mkString
+    finally source.close()
     val saveGameResult = decode[go3d.server.SaveGame](jsonContent)
 
     val saveGame = saveGameResult.fold(
@@ -74,6 +76,6 @@ object MeasureMoveTimes:
           sys.exit(1)
 
     println(s"\n" + "=" * 80)
-    println(f"Total time: ${totalTime}ms (avg ${totalTime.toDouble/totalMoves}%.2fms per move)")
+    println(f"Total time: ${totalTime}ms (avg ${totalTime.toDouble / totalMoves}%.2fms per move)")
     println(s"Slow moves (>= ${thresholdMs}ms): $slowMoves")
     println(s"Final score: ${game.score}")

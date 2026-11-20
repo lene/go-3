@@ -44,7 +44,8 @@ abstract class GameStoreContract:
   @Test def testCreatingExistingGameFails(): Unit =
     store.createGame(gameId, emptyGame).success.value
     Assertions.assertInstanceOf(
-      classOf[GameExists], store.createGame(gameId, emptyGame).failure.exception
+      classOf[GameExists],
+      store.createGame(gameId, emptyGame).failure.exception
     )
 
   @Test def testUpdateWithCurrentVersionStoresGame(): Unit =
@@ -58,13 +59,15 @@ abstract class GameStoreContract:
     store.createGame(gameId, emptyGame).success.value
     store.updateGame(gameId, 0L, gameWithMove).success.value
     Assertions.assertInstanceOf(
-      classOf[ConcurrentModification], store.updateGame(gameId, 0L, emptyGame).failure.exception
+      classOf[ConcurrentModification],
+      store.updateGame(gameId, 0L, emptyGame).failure.exception
     )
     Assertions.assertEquals(Some(gameWithMove), store.getGame(gameId).success.value.map(_.game))
 
   @Test def testUpdateOfMissingGameFails(): Unit =
     Assertions.assertInstanceOf(
-      classOf[NonexistentGame], store.updateGame(gameId, 0L, emptyGame).failure.exception
+      classOf[NonexistentGame],
+      store.updateGame(gameId, 0L, emptyGame).failure.exception
     )
 
   @Test def testOnlyOneOfConcurrentUpdatesSucceeds(): Unit =
@@ -74,10 +77,13 @@ abstract class GameStoreContract:
       60.seconds
     )
     Assertions.assertEquals(1, results.count(_.isSuccess))
-    Assertions.assertEquals(7, results.count {
-      case Failure(_: ConcurrentModification) => true
-      case _ => false
-    })
+    Assertions.assertEquals(
+      7,
+      results.count {
+        case Failure(_: ConcurrentModification) => true
+        case _ => false
+      }
+    )
     Assertions.assertEquals(Some(1L), store.getGame(gameId).success.value.map(_.version))
 
   @Test def testRegisteredPlayersAreFoundByTokenHash(): Unit =
@@ -88,7 +94,8 @@ abstract class GameStoreContract:
     Assertions.assertEquals(Some(White), store.playerColor(gameId, "hashW").success.value)
     Assertions.assertEquals(None, store.playerColor(gameId, "other").success.value)
     Assertions.assertEquals(
-      Some(Set(Black, White)), store.getGame(gameId).success.value.map(_.players)
+      Some(Set(Black, White)),
+      store.getGame(gameId).success.value.map(_.players)
     )
 
   @Test def testTokenHashOfOtherGameIsNotFound(): Unit =
@@ -100,7 +107,8 @@ abstract class GameStoreContract:
     store.createGame(gameId, emptyGame).success.value
     store.registerPlayer(gameId, Black, "hash1").success.value
     Assertions.assertInstanceOf(
-      classOf[DuplicateColor], store.registerPlayer(gameId, Black, "hash2").failure.exception
+      classOf[DuplicateColor],
+      store.registerPlayer(gameId, Black, "hash2").failure.exception
     )
     Assertions.assertEquals(Some(Black), store.playerColor(gameId, "hash1").success.value)
 
@@ -126,11 +134,10 @@ abstract class GameStoreContract:
 class TestInMemoryGameStore extends GameStoreContract:
   protected val store: InMemoryGameStore = InMemoryGameStore()
 
-/**
- * Runs the contract against DynamoDB Local (`amazon/dynamodb-local`) at the endpoint in
- * `DYNAMODB_TEST_ENDPOINT`, which CI sets; skipped when the variable is not set. Every test gets
- * its own pair of tables.
- */
+/** Runs the contract against DynamoDB Local (`amazon/dynamodb-local`) at the endpoint in
+  * `DYNAMODB_TEST_ENDPOINT`, which CI sets; skipped when the variable is not set. Every test gets
+  * its own pair of tables.
+  */
 class TestDynamoDBGameStore extends GameStoreContract:
   private val endpoint = sys.env.get("DYNAMODB_TEST_ENDPOINT")
   private val suffix = java.util.UUID.randomUUID().toString

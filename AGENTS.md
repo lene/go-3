@@ -36,7 +36,7 @@
 - Auth header is `Authentication: Bearer <token>`, not `Authorization`.
 - `Wart.Throw` is a build error; the few library-interop throws carry `@SuppressWarnings(Array("org.wartremover.warts.Throw"))`.
 - Keep logic out of the rendering-only classes in `go3d.client.gdx` (`GobanDisplay`, `GeometryBuilder`, `Go3DInputController`, `GDXResources`, `ParticleMarker`): they are excluded from coverage. Put it in testable classes such as `ReplayState`.
-- Functional style, `@tailrec` for iteration; mutable collections only in performance-critical paths (`Goban.connectedStones`). Lines are at most 100 characters.
+- Functional style, `@tailrec` for iteration; mutable collections only in performance-critical paths (`Goban.connectedStones`). Formatting is scalafmt (`.scalafmt.conf`, lines at most 100 characters): run `sbt scalafmtAll` before committing; the CI `format` job fails on unformatted code and on any longer line, which you must split yourself in strings and comments.
 - Code quality must only improve, never degrade.
 
 ## Known pitfalls

@@ -12,5 +12,3 @@ class TestIdGenerator:
     val id1 = IdGenerator.getId
     val id2 = IdGenerator.getId
     Assertions.assertNotEquals(id1, id2)
-
-

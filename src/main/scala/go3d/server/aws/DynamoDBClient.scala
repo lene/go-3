@@ -7,10 +7,9 @@ import software.amazon.awssdk.http.urlconnection.UrlConnectionHttpClient
 
 import scala.util.{Failure, Success, Try}
 
-/**
- * Manages the lifecycle of the AWS DynamoDB client.
- * Initialised lazily on first use; no-op when DynamoDB is not configured.
- */
+/** Manages the lifecycle of the AWS DynamoDB client.
+  * Initialised lazily on first use; no-op when DynamoDB is not configured.
+  */
 object DynamoDBClient extends LazyLogging:
 
   // Lazily built from DynamoDBConfig.fromEnv() on first access
@@ -21,7 +20,7 @@ object DynamoDBClient extends LazyLogging:
   /** Returns (client, config) when DynamoDB is configured, None otherwise. */
   def get(): Option[(DynamoDbClient, DynamoDBConfig)] =
     if !_initialised then init()
-    for c <- _client ; cfg <- _config yield (c, cfg)
+    for c <- _client; cfg <- _config yield (c, cfg)
 
   /** Initialise from environment. Called automatically on first use. */
   def init(): Unit =
@@ -36,7 +35,7 @@ object DynamoDBClient extends LazyLogging:
             _config = Some(config)
             logger.info(
               s"DynamoDB client initialised: region=${config.region}, " +
-              s"games=${config.gamesTable}, players=${config.playersTable}"
+                s"games=${config.gamesTable}, players=${config.playersTable}"
             )
           case Failure(e) =>
             logger.warn(s"Failed to initialise DynamoDB client: ${e.getMessage}")

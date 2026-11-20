@@ -28,23 +28,23 @@ case class GoHttpService(port: Int) extends LazyLogging:
   implicit def intEncoder: EntityEncoder[IO, Int] = jsonEncoderOf[Int]
 
   private val goService = HttpRoutes.of[IO] {
-    case request@GET -> Root / "new" / IntVar(boardSize) =>
+    case request @ GET -> Root / "new" / IntVar(boardSize) =>
       StartNewGame(boardSize, request).response
-    case request@GET -> Root / "register" / GameId(gameId) / ColorVar(color) =>
+    case request @ GET -> Root / "register" / GameId(gameId) / ColorVar(color) =>
       logger.info("received request"); RegisterPlayer(gameId, color, request).response
-    case request@GET -> Root / "status" / GameId(gameId) =>
+    case request @ GET -> Root / "status" / GameId(gameId) =>
       GetStatus(gameId, request).response
-    case request@GET -> Root / "status" / GameId(gameId) / "d" =>
+    case request @ GET -> Root / "status" / GameId(gameId) / "d" =>
       GetStatus(gameId, request).response
-    case request@GET -> Root / "status" / GameId(gameId) / IntVar(moveCount) =>
+    case request @ GET -> Root / "status" / GameId(gameId) / IntVar(moveCount) =>
       GetStatusAtMove(gameId, moveCount, request).response
-    case request@GET -> Root / "set" / GameId(gameId) / IntVar(x) / IntVar(y) / IntVar(z) =>
+    case request @ GET -> Root / "set" / GameId(gameId) / IntVar(x) / IntVar(y) / IntVar(z) =>
       DoSet(gameId, request, x, y, z).response
-    case request@GET -> Root / "set" / GameId(gameId) / IntVar(x) / IntVar(y) / IntVar(z) / "d" =>
+    case request @ GET -> Root / "set" / GameId(gameId) / IntVar(x) / IntVar(y) / IntVar(z) / "d" =>
       DoSet(gameId, request, x, y, z).response
-    case request@GET -> Root / "pass" / GameId(gameId) =>
+    case request @ GET -> Root / "pass" / GameId(gameId) =>
       DoPass(gameId, request).response
-    case request@GET -> Root / "pass" / GameId(gameId) / "d" =>
+    case request @ GET -> Root / "pass" / GameId(gameId) / "d" =>
       DoPass(gameId, request).response
     case GET -> Root / "openGames" => ListOpenGames().response
     case GET -> Root / "archived" / GameId(gameId) =>
@@ -64,4 +64,3 @@ case class GoHttpService(port: Int) extends LazyLogging:
           .withPort(p)
           .withHttpApp(httpApp)
           .build
-

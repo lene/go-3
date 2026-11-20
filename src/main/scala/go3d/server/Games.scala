@@ -4,7 +4,7 @@ import com.typesafe.scalalogging.Logger
 import go3d.Color
 import go3d.Game
 import go3d.server.aws.S3Client
-import go3d.server.given  // Circe encoders for SaveGame serialisation
+import go3d.server.given // Circe encoders for SaveGame serialisation
 import io.circe.parser._
 import io.circe.syntax._
 
@@ -28,10 +28,9 @@ object Games:
     if fileIO.isEmpty then Failure(new IllegalStateException("Games not initialized"))
     else Success(())
 
-  /**
-   * Get current game state (thread-safe read).
-   * Active games are served from memory; archived games are lazy-loaded from disk.
-   */
+  /** Get current game state (thread-safe read).
+    * Active games are served from memory; archived games are lazy-loaded from disk.
+    */
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def apply(gameId: String): Game =
     activeGames.get(gameId).map(_.get()).orElse(
@@ -52,9 +51,8 @@ object Games:
         case Failure(e) => logger.warn(s"${saveFile.getName}: ${e.getMessage}")
     logger.info(s"${Games.numActiveGames} active games loaded, ${Games.numArchivedGames} archived")
 
-  /**
-   * Register a new game with lock-free thread safety.
-   */
+  /** Register a new game with lock-free thread safety.
+    */
   def register(boardSize: Int): Try[String] =
     go3d.Game.start(boardSize).map { game =>
       val gameId = IdGenerator.getId
@@ -66,28 +64,26 @@ object Games:
   def registerPlayer(gameId: String, color: Color): Try[Unit] =
     Players.register(gameId, color)
 
-  /**
-   * Add or update a game (thread-safe).
-   * Use this for restoring games from disk or updating after moves.
-   */
+  /** Add or update a game (thread-safe).
+    * Use this for restoring games from disk or updating after moves.
+    */
   def add(gameId: String, game: Game): Unit =
     activeGames.get(gameId) match
-      case Some(state) => state.set(game)  // Update existing
-      case None => activeGames.put(gameId, new ConcurrentState(game))  // Create new
+      case Some(state) => state.set(game) // Update existing
+      case None => activeGames.put(gameId, new ConcurrentState(game)) // Create new
     lastActivity(gameId) = System.currentTimeMillis()
     fileIO.foreach(_.saveGame(gameId))
     if game.isOver then archive(gameId)
 
-  /**
-   * Thread-safe atomic game update using a Try-returning function.
-   *
-   * Automatically retries if concurrent update occurs.
-   * If f returns Failure, propagates immediately without modifying state.
-   *
-   * @param gameId The game to update
-   * @param f Function to transform old game state to Try of new state
-   * @return The new game state after successful update, or Failure
-   */
+  /** Thread-safe atomic game update using a Try-returning function.
+    *
+    * Automatically retries if concurrent update occurs.
+    * If f returns Failure, propagates immediately without modifying state.
+    *
+    * @param gameId The game to update
+    * @param f Function to transform old game state to Try of new state
+    * @return The new game state after successful update, or Failure
+    */
   def update(gameId: String)(f: Game => Try[Game]): Try[Game] =
     activeGames(gameId).update(f).map { newGame =>
       lastActivity(gameId) = System.currentTimeMillis()
@@ -104,10 +100,9 @@ object Games:
   def archivedGameIds: Iterable[String] = fileIO.fold(Iterable.empty[String])(_.getArchivedGames)
   def isReady(gameId: String): Boolean = activeGames.contains(gameId) && Players.isReady(gameId)
 
-  /**
-   * Remove an active game entirely (no archive). Used for games with too few moves to be worth
-   * keeping. Cleans up all in-memory and on-disk state.
-   */
+  /** Remove an active game entirely (no archive). Used for games with too few moves to be worth
+    * keeping. Cleans up all in-memory and on-disk state.
+    */
   def deleteGame(gameId: String): Unit =
     activeGames.remove(gameId)
     lastActivity.remove(gameId)
@@ -115,12 +110,11 @@ object Games:
     Players.unregister(gameId)
     Tokens.unregisterGame(gameId)
 
-  /**
-   * Expire games that have had no activity for longer than the given thresholds.
-   *
-   * Games with 0 moves are deleted after shortInactiveMs (they were never played).
-   * Games with moves are archived after inactiveMs.
-   */
+  /** Expire games that have had no activity for longer than the given thresholds.
+    *
+    * Games with 0 moves are deleted after shortInactiveMs (they were never played).
+    * Games with moves are archived after inactiveMs.
+    */
   def expireStaleGames(inactiveMs: Long, shortInactiveMs: Long = -1): Unit =
     val zeroMoveMs = if shortInactiveMs >= 0 then shortInactiveMs else inactiveMs / 12
     val now = System.currentTimeMillis()
@@ -143,9 +137,11 @@ object Games:
       val game = state.get()
       activeGames.remove(gameId)
       lastActivity.remove(gameId)
-      fileIO.foreach(io => Try(io.archiveGame(gameId)).failed.foreach(e =>
-        Logger(Games.getClass).warn(s"Failed to archive $gameId on disk: ${e.getMessage}")
-      ))
+      fileIO.foreach(io =>
+        Try(io.archiveGame(gameId)).failed.foreach(e =>
+          Logger(Games.getClass).warn(s"Failed to archive $gameId on disk: ${e.getMessage}")
+        )
+      )
       S3Client.archiveGame(gameId, SaveGame(game, Players(gameId)).asJson.noSpaces).failed.foreach(
         e => Logger(Games.getClass).warn("Failed to archive " + gameId + " to S3: " + e.getMessage)
       )

@@ -38,8 +38,9 @@ class InMemoryGameStore extends GameStore:
     else Failure(DuplicateColor(gameId, color))
 
   def playerColor(gameId: String, tokenHash: String): Try[Option[Color]] =
-    Success(players.collectFirst { case ((g, color), hash) if g == gameId && hash == tokenHash =>
-      color
+    Success(players.collectFirst {
+      case ((g, color), hash) if g == gameId && hash == tokenHash =>
+        color
     })
 
   def openGames(): Try[Array[String]] =

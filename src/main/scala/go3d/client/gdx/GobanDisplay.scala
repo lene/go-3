@@ -16,10 +16,10 @@ import go3d.server.StatusResponse
 
 @SuppressWarnings(Array("org.wartremover.warts.DefaultArguments"))
 class GobanDisplay(
-  client: BaseClient,
-  boardSize: Int,
-  val cursorFadeSeconds: Float = 10.0f,
-  replayState: Option[ReplayState] = None
+    client: BaseClient,
+    boardSize: Int,
+    val cursorFadeSeconds: Float = 10.0f,
+    replayState: Option[ReplayState] = None
 ) extends ApplicationListener with LazyLogging:
   private final val BOARD_SIZE: Int = boardSize
   final val UPDATE_DELAY_SECONDS = 2f
@@ -41,20 +41,23 @@ class GobanDisplay(
     logger.info(s"GobanDisplay.create() - client.playerColor = ${client.playerColor}")
     client.status.foreach(updateGame)
     if replayState.isEmpty then
-      Timer.schedule(new Timer.Task {
-        @Override def run(): Unit = client.status.foreach(updateGame)
-      }, UPDATE_DELAY_SECONDS, UPDATE_INTERVAL_SECONDS)
+      Timer.schedule(
+        new Timer.Task {
+          @Override def run(): Unit = client.status.foreach(updateGame)
+        },
+        UPDATE_DELAY_SECONDS,
+        UPDATE_INTERVAL_SECONDS
+      )
     if replayState.isDefined then
       hudBatch = Some(new SpriteBatch())
-      hudFont  = Some(new BitmapFont())
+      hudFont = Some(new BitmapFont())
       Gdx.input.setInputProcessor(new com.badlogic.gdx.InputAdapter {
         override def keyDown(keycode: Int): Boolean =
           keycode match
-            case com.badlogic.gdx.Input.Keys.SPACE     => replayState.foreach(_.advance()); true
-            case com.badlogic.gdx.Input.Keys.BACKSPACE => replayState.foreach(_.rewind());  true
-            case _              => false
+            case com.badlogic.gdx.Input.Keys.SPACE => replayState.foreach(_.advance()); true
+            case com.badlogic.gdx.Input.Keys.BACKSPACE => replayState.foreach(_.rewind()); true
+            case _ => false
       })
-
 
   private def updateGame(status: StatusResponse): Unit =
     def doUpdate(): Unit =
@@ -66,15 +69,14 @@ class GobanDisplay(
       case Some(g) => if status.game.moves.length != g.moves.length then doUpdate()
 
   private def lastMove: String =
-    game.fold("")(
-      g => if g.moves.length == 0 then "waiting for game to start" else g.moves.last.toString
+    game.fold("")(g =>
+      if g.moves.length == 0 then "waiting for game to start" else g.moves.last.toString
     )
 
   private def captures: String =
-    game.fold("")(
-      g => "Captures: " + Seq(Black, White).foldLeft("")(
-        (caps, col) => caps + s"$col: ${g.captures(col)} "
-      )
+    game.fold("")(g =>
+      "Captures: " +
+        Seq(Black, White).foldLeft("")((caps, col) => caps + s"$col: ${g.captures(col)} ")
     )
 
   private def ownLastMove: Option[Position] =
@@ -101,15 +103,19 @@ class GobanDisplay(
               game = Some(sr.game)
               stonesModel = builder.createStones(sr.game)
           case None =>
-            // init() not yet complete: leave game/stonesModel as-is (empty on first frame)
+          // init() not yet complete: leave game/stonesModel as-is (empty on first frame)
       case None =>
         () // existing live-polling path continues below
     val currentTime = com.badlogic.gdx.utils.TimeUtils.millis() / 1000f
     val ownFadeAlpha = calculateFadeAlpha(currentTime - ownMoveTimestamp)
     val opponentFadeAlpha = calculateFadeAlpha(currentTime - opponentMoveTimestamp)
     gdxResources.render(
-      ownLastMove, opponentLastMove, ownFadeAlpha, opponentFadeAlpha,
-      builder.gridModel, stonesModel
+      ownLastMove,
+      opponentLastMove,
+      ownFadeAlpha,
+      opponentFadeAlpha,
+      builder.gridModel,
+      stonesModel
     )
     if replayState.isDefined then drawHud()
 

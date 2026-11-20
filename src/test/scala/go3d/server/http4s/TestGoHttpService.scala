@@ -22,16 +22,17 @@ class TestGoHttpService extends LazyLogging:
   @BeforeEach def resetRateLimiter(): Unit = RateLimiter.reset()
 
   def check[A](
-    actual: IO[Response[IO]], expectedStatus: Status, expectedBody: Option[A]
+      actual: IO[Response[IO]],
+      expectedStatus: Status,
+      expectedBody: Option[A]
   )(
-    implicit ev: EntityDecoder[IO, A]
+      implicit ev: EntityDecoder[IO, A]
   ): Boolean =
     val actualResp = actual.unsafeRunSync()
     val statusCheck = actualResp.status == expectedStatus
     val bodyCheck = expectedBody.fold[Boolean](
-      actualResp.body.compile.toVector.unsafeRunSync().isEmpty)(
-      expected => actualResp.as[A].unsafeRunSync() == expected
-    )
+      actualResp.body.compile.toVector.unsafeRunSync().isEmpty
+    )(expected => actualResp.as[A].unsafeRunSync() == expected)
     if !bodyCheck then logger.error(s"${actualResp.as[A]} != $expectedBody")
     statusCheck && bodyCheck
 
@@ -112,7 +113,8 @@ class TestGoHttpService extends LazyLogging:
     val blackToken = checkedRegisterPlayer(gameId, Black)
     checkedRegisterPlayer(gameId, White)
     val request = httpRequest(
-      s"/status/$gameId", authHeader(blackToken)
+      s"/status/$gameId",
+      authHeader(blackToken)
     )
     val json = getJson(request)
     val result = decode[StatusResponse](json)
@@ -128,7 +130,12 @@ class TestGoHttpService extends LazyLogging:
     val json = getJson(request)
     val result = decode[StatusResponse](json)
     Assertions.assertTrue(result.isRight)
-    Assertions.assertTrue(result.map(_.game.moves.contains(Move(1, 1, 1, Black))).getOrElse(Assertions.fail()))
+    Assertions.assertTrue(result.map(_.game.moves.contains(Move(
+      1,
+      1,
+      1,
+      Black
+    ))).getOrElse(Assertions.fail()))
 
   @Test def testPassTurn(): Unit =
     val gameId = createGameWithId()
@@ -170,7 +177,10 @@ class TestGoHttpService extends LazyLogging:
     val gameId = createGameWithId()
     val blackToken = checkedRegisterPlayer(gameId, Black)
     checkedRegisterPlayer(gameId, White)
-    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    goHttpService.httpApp.run(httpRequest(
+      s"/set/$gameId/1/1/1",
+      authHeader(blackToken)
+    )).unsafeRunSync()
     val request = httpRequest(s"/status/$gameId/0")
     val json = getJson(request)
     val result = decode[StatusResponse](json)
@@ -181,7 +191,10 @@ class TestGoHttpService extends LazyLogging:
     val gameId = createGameWithId()
     val blackToken = checkedRegisterPlayer(gameId, Black)
     checkedRegisterPlayer(gameId, White)
-    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    goHttpService.httpApp.run(httpRequest(
+      s"/set/$gameId/1/1/1",
+      authHeader(blackToken)
+    )).unsafeRunSync()
     val request = httpRequest(s"/status/$gameId/1")
     val json = getJson(request)
     val result = decode[StatusResponse](json)
@@ -192,7 +205,10 @@ class TestGoHttpService extends LazyLogging:
     val gameId = createGameWithId()
     val blackToken = checkedRegisterPlayer(gameId, Black)
     checkedRegisterPlayer(gameId, White)
-    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    goHttpService.httpApp.run(httpRequest(
+      s"/set/$gameId/1/1/1",
+      authHeader(blackToken)
+    )).unsafeRunSync()
     val request = httpRequest(s"/status/$gameId/999")
     val json = getJson(request)
     val result = decode[StatusResponse](json)
@@ -203,7 +219,10 @@ class TestGoHttpService extends LazyLogging:
     val gameId = createGameWithId()
     val blackToken = checkedRegisterPlayer(gameId, Black)
     checkedRegisterPlayer(gameId, White)
-    goHttpService.httpApp.run(httpRequest(s"/set/$gameId/1/1/1", authHeader(blackToken))).unsafeRunSync()
+    goHttpService.httpApp.run(httpRequest(
+      s"/set/$gameId/1/1/1",
+      authHeader(blackToken)
+    )).unsafeRunSync()
     val request = httpRequest(s"/status/$gameId/-1")
     val json = getJson(request)
     val result = decode[StatusResponse](json)
@@ -214,5 +233,3 @@ class TestGoHttpService extends LazyLogging:
     val actual = runRequest(uri"/status/NONEXISTENT/0")
     val response = actual.unsafeRunSync()
     Assertions.assertEquals(Status.NotFound, response.status)
-
-

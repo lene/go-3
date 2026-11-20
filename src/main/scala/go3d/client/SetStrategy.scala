@@ -11,7 +11,10 @@ import scala.util.{Failure, Success, Try}
 
 object SetStrategy:
   def create(
-    gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0, parallel: Boolean = false
+      gameSize: Int,
+      strategies: Array[String],
+      maxThinkingTimeMs: Int = 0,
+      parallel: Boolean = false
   ): SetStrategy =
     if parallel then ParallelSetStrategy(gameSize, strategies, maxThinkingTimeMs)
     else SetStrategy(gameSize, strategies, maxThinkingTimeMs)
@@ -23,34 +26,45 @@ case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTime
   def narrowDown(possible: Seq[Position], game: Game): Try[Seq[Position]] =
     @tailrec
     def iterateThroughStrategies(
-        possible: Seq[Position], game: Game, strategies: Array[String]
+        possible: Seq[Position],
+        game: Game,
+        strategies: Array[String]
     ): Try[Seq[Position]] =
       if strategies.isEmpty || possible.isEmpty then Success(possible)
       else
         strategies.head match
           case "random" => iterateThroughStrategies(possible, game, strategies.tail)
-          case "closestToCenter" => iterateThroughStrategies(closestToCenter(possible), game, strategies.tail)
-          case "onStarPoints" => iterateThroughStrategies(onStarPoints(possible), game, strategies.tail)
-          case "closestToStarPoints" => iterateThroughStrategies(closestToStarPoints(possible), game, strategies.tail)
-          case "maximizeOwnLiberties" => iterateThroughStrategies(maximizeOwnLiberties(possible, game), game, strategies.tail)
-          case "minimizeOpponentLiberties" => iterateThroughStrategies(minimizeOpponentLiberties(possible, game), game, strategies.tail)
-          case "maximizeDistance" => iterateThroughStrategies(maximizeDistance(possible, game), game, strategies.tail)
-          case "prioritiseCapture" => iterateThroughStrategies(prioritiseCapture(possible, game), game, strategies.tail)
+          case "closestToCenter" =>
+            iterateThroughStrategies(closestToCenter(possible), game, strategies.tail)
+          case "onStarPoints" =>
+            iterateThroughStrategies(onStarPoints(possible), game, strategies.tail)
+          case "closestToStarPoints" =>
+            iterateThroughStrategies(closestToStarPoints(possible), game, strategies.tail)
+          case "maximizeOwnLiberties" =>
+            iterateThroughStrategies(maximizeOwnLiberties(possible, game), game, strategies.tail)
+          case "minimizeOpponentLiberties" => iterateThroughStrategies(
+              minimizeOpponentLiberties(possible, game),
+              game,
+              strategies.tail
+            )
+          case "maximizeDistance" =>
+            iterateThroughStrategies(maximizeDistance(possible, game), game, strategies.tail)
+          case "prioritiseCapture" =>
+            iterateThroughStrategies(prioritiseCapture(possible, game), game, strategies.tail)
           case s => Failure(IllegalArgumentException(s"narrowDown(): $s not implemented"))
 
     val subset = thinkingTimeLimiter.subsetToSatisfyMaxThinkingTime(possible)
     thinkingTimeLimiter.recordThinkingTime(iterateThroughStrategies(subset, game, strategies))
 
-
   def closestToCenter(possible: Seq[Position]): Seq[Position] =
-    val center = Position(gameSize/2+1, gameSize/2+1, gameSize/2+1)
+    val center = Position(gameSize / 2 + 1, gameSize / 2 + 1, gameSize / 2 + 1)
     bestBy(possible, p => (center - p).abs)
 
   def onStarPoints(possible: Seq[Position]): Seq[Position] =
     val possibleSet = possible.toSet
     val firstMatchingSetOfStarpoints: Set[Position] = StarPoints(gameSize).asSetsByPriority.find(
-      _.intersect(possibleSet).nonEmpty  // find first set of star points intersecting with possible
-    ).getOrElse(possibleSet)             // if no set of star points found, leave possible unchanged
+      _.intersect(possibleSet).nonEmpty // find first set of star points intersecting with possible
+    ).getOrElse(possibleSet) // if no set of star points found, leave possible unchanged
     firstMatchingSetOfStarpoints.intersect(possibleSet).toSeq
 
   def closestToStarPoints(possible: Seq[Position]): Seq[Position] =
@@ -90,7 +104,7 @@ case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTime
     values.groupBy(metric).minBy(_._1)._2
 
 class ParallelSetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTimeMs: Int = 0)
-  extends SetStrategy(gameSize, strategies, maxThinkingTimeMs):
+    extends SetStrategy(gameSize, strategies, maxThinkingTimeMs):
   override def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
     values.par.groupBy(metric).minBy(_._1)._2.seq
 
@@ -103,5 +117,3 @@ def minLiberties(game: Game, color: Color): Int =
   val areas = game.getAreas(color)
   if areas.isEmpty then Int.MaxValue
   else minBy(areas.toList, game.liberties(color, _))
-
-

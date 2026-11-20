@@ -51,17 +51,18 @@ object BotClient extends Client with LazyLogging:
   private var parallel: Boolean = false
 
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
-  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --color [b|w]"
-  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX --token XXXXX"
+  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX
+  ///   --color [b|w]"
+  /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX
+  ///   --token XXXXX"
   /// --url https://... replaces --server and --port, e.g. for the API Gateway of the Lambda server;
   /// --poll-interval-ms sets how often to poll while waiting for the opponent (default 10)
   /// --strategy is a comma-separated list of:
   ///   closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
 
   def mainLoop(client: BaseClient): Try[Unit] =
-    logger.info(
-      s"server: ${client.serverURL} game: ${client.id} token: ${client.token.fold("")((str) => str)}"
-    )
+    val token = client.token.fold("")((str) => str)
+    logger.info(s"server: ${client.serverURL} game: ${client.id} token: $token")
     waitUntilReady(client).flatMap { status =>
       val game = status.game
       val strategy =
@@ -74,8 +75,10 @@ object BotClient extends Client with LazyLogging:
   /// first move does not have to poll the server again.
   @tailrec
   private def playMoves(
-    client: BaseClient, readyStatus: Option[StatusResponse], game: Game,
-    strategy: Option[SetStrategy]
+      client: BaseClient,
+      readyStatus: Option[StatusResponse],
+      game: Game,
+      strategy: Option[SetStrategy]
   ): Try[Unit] =
     logger.info(s"Move: ${game.moves.length} ${executionTimeString}")
     val startTime = System.currentTimeMillis()
@@ -98,7 +101,10 @@ object BotClient extends Client with LazyLogging:
     mainLoop(client)
 
   private[client] def makeOneMove(
-    client: BaseClient, status: StatusResponse, game: Game, strategy: Option[SetStrategy]
+      client: BaseClient,
+      status: StatusResponse,
+      game: Game,
+      strategy: Option[SetStrategy]
   ): Try[(Boolean, Game)] =
     strategy.fold[Try[Seq[Position]]](Success(status.moves))(_.narrowDown(status.moves, game))
       .flatMap { possible =>
