@@ -12,6 +12,25 @@ val CaptureMoves =
     Move(2, 3, 1, Black) :: Move(2, 1, 2, White) :: Move(3, 2, 1, Black) :: Move(2, 3, 2, White) ::
     Move(1, 2, 1, Black) :: Nil
 
+/** White stones around two disjoint black stones on a size 5 board: one white move at (3, 1, 1)
+  * captures both.
+  */
+val TwoDisjointStonesCaptureSetup: List[Move | Pass] = List(
+  Move(2, 1, 1, Black),
+  Move(1, 1, 1, White),
+  Move(4, 1, 1, Black),
+  Move(5, 1, 1, White),
+  Pass(Black),
+  Move(2, 2, 1, White),
+  Pass(Black),
+  Move(4, 2, 1, White),
+  Pass(Black),
+  Move(2, 1, 2, White),
+  Pass(Black),
+  Move(4, 1, 2, White),
+  Pass(Black)
+)
+
 val eyeSituation = Map(
   1 ->
     """     |

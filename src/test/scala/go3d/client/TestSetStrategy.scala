@@ -41,18 +41,7 @@ class TestSetStrategy:
     check(allCornerPoints)(allCornerPoints)
 
   @Test def testOnStarPointsStrategyCornerStarPointsSmallBoard(): Unit =
-    val strategy = defaultStrategy(3)
-    val check = checkStrategyResults.curried(strategy.onStarPoints)
-    check(
-      List((1, 1, 1), (2, 2, 2), (3, 3, 3))
-    )(
-      List((1, 1, 1), (3, 3, 3))
-    )
-    check(
-      List((1, 1, 1), (1, 1, 3), (2, 2, 2), (3, 3, 1), (3, 3, 3))
-    )(
-      List((1, 1, 1), (1, 1, 3), (3, 3, 1), (3, 3, 3))
-    )
+    checkSmallBoardCornerStarPoints(defaultStrategy(3).onStarPoints)
 
   @Test def testOnStarPointsStrategyCornerStarPoints(): Unit =
     val strategy = defaultStrategy(7)
@@ -85,18 +74,7 @@ class TestSetStrategy:
     check(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))(List((1, 1, 1), (2, 2, 1), (3, 3, 3)))
 
   @Test def testClosestToStarPointsStrategyCornerStarPointsSmallBoard(): Unit =
-    val strategy = defaultStrategy(3)
-    val check = checkStrategyResults.curried(strategy.closestToStarPoints)
-    check(
-      List((1, 1, 1), (2, 2, 2), (3, 3, 3))
-    )(
-      List((1, 1, 1), (3, 3, 3))
-    )
-    check(
-      List((1, 1, 1), (1, 1, 3), (2, 2, 2), (3, 3, 1), (3, 3, 3))
-    )(
-      List((1, 1, 1), (1, 1, 3), (3, 3, 1), (3, 3, 3))
-    )
+    checkSmallBoardCornerStarPoints(defaultStrategy(3).closestToStarPoints)
 
   @Test def testClosestToStarPointsStrategyCornerStarPoints(): Unit =
     val strategy = defaultStrategy(7)
@@ -459,6 +437,14 @@ def checkStrategyResults(
     expected: Seq[(Int, Int, Int)]
 ): Unit =
   assertPositionsEqual(expected, strategy(toCheck.map(e => Position(e._1, e._2, e._3))))
+
+/** On a size 3 board only the corner points are star points, the center is not. */
+def checkSmallBoardCornerStarPoints(strategy: Seq[Position] => Seq[Position]): Unit =
+  val check = checkStrategyResults.curried(strategy)
+  check(List((1, 1, 1), (2, 2, 2), (3, 3, 3)))(List((1, 1, 1), (3, 3, 3)))
+  check(List((1, 1, 1), (1, 1, 3), (2, 2, 2), (3, 3, 1), (3, 3, 3)))(
+    List((1, 1, 1), (1, 1, 3), (3, 3, 1), (3, 3, 3))
+  )
 
 def check3BoardForPossibleMoves(
     moves: List[Move | Pass],
