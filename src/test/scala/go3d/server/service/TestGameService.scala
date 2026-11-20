@@ -239,13 +239,7 @@ class TestGameService:
 
   @Test def testSuicideFails(): Unit =
     val (gameId, black, white) = startedGame(3)
-    // white occupies all three neighbors of the corner 1,1,1 while black plays elsewhere
-    service.set(gameId, black, 3, 3, 3).success.value
-    service.set(gameId, white, 2, 1, 1).success.value
-    service.set(gameId, black, 3, 3, 2).success.value
-    service.set(gameId, white, 1, 2, 1).success.value
-    service.set(gameId, black, 3, 2, 3).success.value
-    service.set(gameId, white, 1, 1, 2).success.value
+    playPositions(gameId, black, white, GamePositions.BeforeSuicide)
     Assertions.assertInstanceOf(
       classOf[Suicide],
       service.set(gameId, black, 1, 1, 1).failure.exception
@@ -253,26 +247,21 @@ class TestGameService:
 
   @Test def testKoFails(): Unit =
     val (gameId, black, white) = startedGame(5)
-    // the position of TestGame.testPossibleMovesWithKo: white's last move captures 2,2,3
-    val moves = List(
-      (black, (2, 2, 3)),
-      (white, (2, 2, 4)),
-      (black, (2, 3, 2)),
-      (white, (2, 3, 3)),
-      (black, (2, 1, 2)),
-      (white, (2, 1, 3)),
-      (black, (3, 2, 2)),
-      (white, (3, 2, 3)),
-      (black, (1, 2, 2)),
-      (white, (1, 2, 3)),
-      (black, (2, 2, 1)),
-      (white, (2, 2, 2))
-    )
-    for (token, (x, y, z)) <- moves do service.set(gameId, token, x, y, z).success.value
+    playPositions(gameId, black, white, GamePositions.BeforeKo)
     Assertions.assertInstanceOf(
       classOf[Ko],
       service.set(gameId, black, 2, 2, 3).failure.exception
     )
+
+  /** Plays the positions in order, black first, alternating. */
+  private def playPositions(
+      gameId: String,
+      black: String,
+      white: String,
+      positions: List[GamePositions.Position]
+  ): Unit =
+    for (token, (x, y, z)) <- GamePositions.withTokens(black, white, positions) do
+      service.set(gameId, token, x, y, z).success.value
 
   /** A started game with black at 1,1,1 and white at 3,3,3: its id. */
   private def gameWithTwoMoves(): String =

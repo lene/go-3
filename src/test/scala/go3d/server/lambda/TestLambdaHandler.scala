@@ -9,7 +9,8 @@ import go3d.server.{
   decodePlayerRegisteredResponse, decodeStatusResponse
 }
 import go3d.server.service.{
-  FailingGameStore, GameService, InMemoryGameArchive, InMemoryGameStore, InterleavingStore
+  FailingGameStore, GamePositions, GameService, InMemoryGameArchive, InMemoryGameStore,
+  InterleavingStore
 }
 import io.circe.parser.decode
 import org.junit.jupiter.api.{Assertions, Test}
@@ -72,9 +73,14 @@ class TestLambdaHandler:
     val (x, y, z) = position
     "/set/" + gameId + "/" + x.toString + "/" + y.toString + "/" + z.toString
 
-  /** Plays the moves in order, each with the token of the player who makes it. */
-  private def playMoves(gameId: String, moves: List[(String, (Int, Int, Int))]): Unit =
-    for (token, position) <- moves do
+  /** Plays the positions in order, black first, alternating. */
+  private def playPositions(
+      gameId: String,
+      black: String,
+      white: String,
+      positions: List[GamePositions.Position]
+  ): Unit =
+    for (token, position) <- GamePositions.withTokens(black, white, positions) do
       Assertions.assertEquals(200, callWithToken(setPath(gameId, position), token).getStatusCode)
 
   @Test def testHealthReturns200(): Unit =
@@ -220,42 +226,14 @@ class TestLambdaHandler:
 
   @Test def testSuicideReturns400(): Unit =
     val (gameId, black, white) = startedGame()
-    // white occupies all three neighbors of the corner 1,1,1 while black plays elsewhere
-    playMoves(
-      gameId,
-      List(
-        (black, (3, 3, 3)),
-        (white, (2, 1, 1)),
-        (black, (3, 3, 2)),
-        (white, (1, 2, 1)),
-        (black, (3, 2, 3)),
-        (white, (1, 1, 2))
-      )
-    )
+    playPositions(gameId, black, white, GamePositions.BeforeSuicide)
     val resp = callWithToken(setPath(gameId, (1, 1, 1)), black)
     Assertions.assertEquals(400, resp.getStatusCode)
     Assertions.assertTrue(resp.getBody.contains("Suicide"))
 
   @Test def testKoReturns400(): Unit =
     val (gameId, black, white) = startedGameOfSize(5)
-    // the position of TestGame.testPossibleMovesWithKo: white's last move captures 2,2,3
-    playMoves(
-      gameId,
-      List(
-        (black, (2, 2, 3)),
-        (white, (2, 2, 4)),
-        (black, (2, 3, 2)),
-        (white, (2, 3, 3)),
-        (black, (2, 1, 2)),
-        (white, (2, 1, 3)),
-        (black, (3, 2, 2)),
-        (white, (3, 2, 3)),
-        (black, (1, 2, 2)),
-        (white, (1, 2, 3)),
-        (black, (2, 2, 1)),
-        (white, (2, 2, 2))
-      )
-    )
+    playPositions(gameId, black, white, GamePositions.BeforeKo)
     val resp = callWithToken(setPath(gameId, (2, 2, 3)), black)
     Assertions.assertEquals(400, resp.getStatusCode)
     Assertions.assertTrue(resp.getBody.contains("Ko"))
