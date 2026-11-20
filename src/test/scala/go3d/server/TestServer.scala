@@ -313,23 +313,8 @@ class TestServer:
     Assertions.assertEquals(Empty, game.at(Position(2, 2, 1)), "\n" + game.toString)
 
   @Test def testCaptureTwoDisjointStonesWithOneMove(): Unit =
-    val moves = List[Move | Pass](
-      Move(2, 1, 1, Black),
-      Move(1, 1, 1, White),
-      Move(4, 1, 1, Black),
-      Move(5, 1, 1, White),
-      Pass(Black),
-      Move(2, 2, 1, White),
-      Pass(Black),
-      Move(4, 2, 1, White),
-      Pass(Black),
-      Move(2, 1, 2, White),
-      Pass(Black),
-      Move(4, 1, 2, White),
-      Pass(Black)
-    )
     val gameData = setUpGame(5)
-    val statusResponse = playListOfMoves(gameData, moves)
+    val statusResponse = playListOfMoves(gameData, TwoDisjointStonesCaptureSetup)
     Assertions.assertTrue(statusResponse.game.captures.isEmpty)
     val statusResponseAgain = playListOfMoves(gameData, List(Move(3, 1, 1, White)))
     Assertions.assertEquals(2, statusResponseAgain.game.captures(White))
