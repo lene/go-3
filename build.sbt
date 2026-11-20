@@ -1,13 +1,13 @@
 import sbt.Keys.libraryDependencies
 
-val scala3Version = "3.8.2"
-val circeVersion = "0.14.15"
-val libgdxVersion = "1.14.0"
-val http4sVersion = "1.0.0-M46"
+val scala3Version = "3.10.0"
+val circeVersion = "0.14.17"
+val libgdxVersion = "1.14.2"
+val http4sVersion = "1.0.0-M49"
 
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
-ThisBuild / scapegoatVersion := "3.3.3"
+ThisBuild / scapegoatVersion := "3.4.1"
 // OptionGet is already covered by WartRemover's OptionPartial (0 violations in our code).
 // Disabled here because sbt-scapegoat's own source (Literals.scala) triggers a false positive.
 ThisBuild / scapegoatDisabledInspections := Seq("OptionGet")
@@ -17,7 +17,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.39",
+    version := "0.7.40",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
@@ -34,16 +34,16 @@ lazy val root = project
     wartremoverErrors += Wart.Throw,
 
     // Parallel collections
-    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.2.0",
+    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.3.0",
     // Logging
-    libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
-    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.5.32",
+    libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.6.8",
     // JUnit
     libraryDependencies ++= Seq(
           "com.github.sbt.junit" % "jupiter-interface" % JupiterKeys.jupiterVersion.value % Test
     ),
     // ScalaTest
-    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.19" % "test",
+    libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % "test",
     Test / logBuffered := false,
     // Rendering-only classes need an OpenGL context and cannot run in unit tests; keep testable
     // logic out of them (e.g. in ReplayState) so that it is measured.
@@ -52,9 +52,9 @@ lazy val root = project
       "GobanDisplay", "GeometryBuilder", "Go3DInputController", "GDXResources", "ParticleMarker"
     ).map(name => s".*/go3d/client/gdx/$name").mkString(";"),
     // Scallop command line parser
-    libraryDependencies += "org.rogach" %% "scallop" % "5.2.0",
+    libraryDependencies += "org.rogach" %% "scallop" % "6.0.1",
     // requests
-    libraryDependencies += "com.lihaoyi" %% "requests" % "0.9.2",
+    libraryDependencies += "com.lihaoyi" %% "requests" % "0.9.3",
     libraryDependencies ++= Seq(
         "org.http4s" %% "http4s-ember-client" % http4sVersion,
         "org.http4s" %% "http4s-ember-server" % http4sVersion,
@@ -63,8 +63,8 @@ lazy val root = project
     ),
     // log4cats for http4s logging
     libraryDependencies ++= Seq(
-        "org.typelevel" %% "log4cats-core"  % "2.7.1",
-        "org.typelevel" %% "log4cats-slf4j" % "2.7.1",
+        "org.typelevel" %% "log4cats-core"  % "2.8.0",
+        "org.typelevel" %% "log4cats-slf4j" % "2.8.0",
     ),
     // circe
     libraryDependencies ++= Seq(
@@ -74,14 +74,14 @@ lazy val root = project
     ).map(_ % circeVersion),
     // AWS SDK v2 (DynamoDB + S3, used for Lambda migration phases 3+)
     libraryDependencies ++= Seq(
-        "software.amazon.awssdk" % "dynamodb"             % "2.26.31",
-        "software.amazon.awssdk" % "s3"                   % "2.26.31",
-        "software.amazon.awssdk" % "url-connection-client" % "2.26.31",
+        "software.amazon.awssdk" % "dynamodb"             % "2.59.5",
+        "software.amazon.awssdk" % "s3"                   % "2.59.5",
+        "software.amazon.awssdk" % "url-connection-client" % "2.59.5",
     ),
     // AWS Lambda Java SDK (for LambdaHandler)
     libraryDependencies ++= Seq(
-        "com.amazonaws" % "aws-lambda-java-core"   % "1.2.3",
-        "com.amazonaws" % "aws-lambda-java-events" % "3.14.0",
+        "com.amazonaws" % "aws-lambda-java-core"   % "1.4.1",
+        "com.amazonaws" % "aws-lambda-java-events" % "3.16.1",
     ),
     // Fat JAR for Lambda deployment
     assembly / assemblyJarName := s"go-3d-lambda-${version.value}.jar",
@@ -95,7 +95,7 @@ lazy val root = project
     // libGDX
     libraryDependencies ++= Seq(
         "com.badlogicgames.gdx" % "gdx" % libgdxVersion,
-        "com.guardsquare" % "proguard-base" % "7.8.2" % "provided",
+        "com.guardsquare" % "proguard-base" % "7.10.0" % "provided",
         "com.badlogicgames.gdx" % "gdx-backend-lwjgl3" % libgdxVersion,
         "com.badlogicgames.gdx" % "gdx-platform" % libgdxVersion classifier "natives-desktop",
     )

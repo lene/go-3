@@ -6,8 +6,10 @@ Updated: March 21, 2026; current counts November 20, 2026 (WartRemover 3.6.3 and
 ## Tools Configured
 
 - **WartRemover 3.6.3** - Scala linter detecting unsafe code patterns (upgraded)
-- **Scalafix 0.14.6** - Scala code rewriting and linting tool (upgraded)
-- **Scapegoat 3.3.3** - Additional Scala static analysis (added in issue #51)
+- **Scalafix 0.14.10** - Scala code rewriting and linting tool (upgraded)
+- **Scapegoat 3.4.1** - Additional Scala static analysis (added in issue #51). It publishes one
+  compiler plugin per Scala release, which is why the project is on Scala 3.10.0 and not 3.10.1,
+  and it has no sbt 2 build yet, which keeps the build on sbt 1.x.
 
 ## Configuration
 
@@ -15,7 +17,7 @@ Updated: March 21, 2026; current counts November 20, 2026 (WartRemover 3.6.3 and
 ```scala
 ThisBuild / semanticdbEnabled := true
 ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
-ThisBuild / scapegoatVersion := "3.3.3"
+ThisBuild / scapegoatVersion := "3.4.1"
 
 scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all")
 
@@ -119,7 +121,7 @@ Previous versions of this report only covered main sources.
 - **Import organization**: Several files could benefit from splitting grouped imports
 - **Unused imports**: Detected with `-Wunused:all` compiler flag
 
-### Scapegoat (Scala 3.8.2, version 3.3.3)
+### Scapegoat (Scala 3.10.0, version 3.4.1)
 
 Running with 4 active inspections (5 minus OptionGet which is disabled — see below).
 

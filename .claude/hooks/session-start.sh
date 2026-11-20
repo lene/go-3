@@ -19,7 +19,7 @@ mkdir -p "$(dirname "$LAUNCHER")" "$(dirname "$WRAPPER")"
 # SHA-256 of the launcher, pinned here because Maven Central only publishes SHA-1 and MD5;
 # update it together with project/build.properties
 declare -A LAUNCHER_SHA256=(
-  [1.11.7]=f92a2095ac75008764fe3b2b793ffe624c4fbef5bfd9b0022e4bc2daf668c651
+  [1.13.1]=b73aabc037a4b6e06b5d07d36edd026a97c3ac11c2f7e0d6f581d8efa47472e8
 )
 HTTPS_ONLY="=https"
 CURL=(curl -sSfL --proto "$HTTPS_ONLY" --proto-redir "$HTTPS_ONLY" --retry 3)
