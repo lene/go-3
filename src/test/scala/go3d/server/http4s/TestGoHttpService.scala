@@ -173,6 +173,14 @@ class TestGoHttpService extends LazyLogging:
     val response = goHttpService.httpApp.run(request).unsafeRunSync()
     Assertions.assertEquals(Status.NotFound, response.status)
 
+  @Test def testGetArchivedGameWithUnknownValidIdIsNotFound(): Unit =
+    // unlike "NONEXISTENT" above, a well-formed id gets past the route to GetArchivedGame, which
+    // checks the local archive and S3 before answering
+    val request = httpRequest(s"/archived/${IdGenerator.getId}")
+    val response = goHttpService.httpApp.run(request).unsafeRunSync()
+    Assertions.assertEquals(Status.NotFound, response.status)
+    Assertions.assertTrue(response.as[String].unsafeRunSync().contains("not found in archive"))
+
   @Test def testStatusAtMoveZeroReturnsEmptyBoard(): Unit =
     val gameId = createGameWithId()
     val blackToken = checkedRegisterPlayer(gameId, Black)
