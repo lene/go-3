@@ -50,7 +50,7 @@ jobs:
       THINK_SECONDS: ${{ inputs.think_seconds }}
       RAMP_SECONDS: ${{ inputs.ramp_seconds }}
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Check the API URL
         run: test -n "$API_URL" || { echo "::error::the repository variable for ${{ inputs.target }} is not set"; exit 1; }
       - name: Run the load test
