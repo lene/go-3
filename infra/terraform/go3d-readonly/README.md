@@ -35,6 +35,10 @@ All resources receive `Project=go3d`, `Environment=prod`, and `Phase=lambda-migr
 2. **GitHub settings**:
    - Repository variables: `TF_STATE_BUCKET`, `AWS_TF_PLAN_ROLE_ARN`, `AWS_TF_APPLY_ROLE_ARN`
      (from `terraform output`).
+   - Repository variable `ALARM_EMAIL`: address that receives the CloudWatch alarm
+     notifications (production only; `staging.tfvars` opts out). The Terraform apply creates SNS
+     topics and sends a confirmation mail per topic (one in `eu-central-1`, one in `us-east-1`
+     for the billing alarm); alarms notify nobody until you confirm the subscriptions.
    - Environment `production` with required reviewers (and deployment branch `master`).
 3. **Existing resources**: run `./check-existing.sh` with admin credentials (and `GITLAB_TOKEN`
    to check the old GitLab-managed state). Earlier runs of the former `infra/setup-*.sh` scripts
@@ -98,6 +102,17 @@ sbt "Universal / packageBin" && unzip -q target/universal/go-3d-*.zip
 API_URL="$API" INSTALL_DIR="$(ls -d "$PWD"/go-3d-*/)" BOARD_SIZE=5 POLL_INTERVAL_MS=500 \
   ci/test-gameplay.sh
 ```
+
+## Load test
+
+Run the `Load test` workflow by hand (`.github/workflows/load-test.yml`), or `ci/load-test.sh`
+with `API_URL`. Against staging it plays `games` concurrent games to the end through the write
+routes while `status_per_min` status requests per minute hit `/status` (defaults: 100 games, 1000
+per minute, 60 s). Against production, which has no write routes before the cutover, it only
+loads `/status`. The summary lists count, 429s, 5xx and p50/p95/max per route; any 5xx, unexpected
+answer, unfinished game or missing archive fails the run. 429s are expected above the throttling
+limit and are counted, not failures. The client-side times include the network, so read the
+server-side p95 (API Gateway `IntegrationLatency`, Lambda `Duration`) in CloudWatch.
 
 ## Teardown
 
