@@ -3,6 +3,7 @@ package go3d.server
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.time.Instant
+import java.util.HexFormat
 
 object SecurityUtils:
 
@@ -15,7 +16,7 @@ object SecurityUtils:
   def sha256(input: String): String =
     val digest = MessageDigest.getInstance("SHA-256")
     val hashBytes = digest.digest(input.getBytes(StandardCharsets.UTF_8))
-    hashBytes.map("%02x".format(_)).mkString
+    HexFormat.of().formatHex(hashBytes)
 
   /** Returns the first N characters of a SHA-256 hash for logging/debugging.
     * Safe to log as it doesn't reveal the original token.

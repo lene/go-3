@@ -202,7 +202,7 @@ class TestArea:
             | @ |
             |   |"""
     ))
-    Assertions.assertEquals(Set(), goban.areas.head.inside)
+    Assertions.assertEquals(Set.empty[Position], goban.areas.head.inside)
 
   @Test def testToString(): Unit =
     val goban = gobanWithAreasFromStrings(Map(
@@ -288,7 +288,9 @@ class TestArea:
 
     val blackArea = getOnlyAreaOfColor(goban, Black)
     val blackPositions = goban.allPositions.filter(p => goban.at(p) == Black)
-    blackPositions.foreach(p => Assertions.assertEquals(Set.empty, blackArea.insideArea(p)))
+    blackPositions.foreach(p =>
+      Assertions.assertEquals(Set.empty[Position], blackArea.insideArea(p))
+    )
 
   @Test def testInsideAreaOneEmpty(): Unit =
     val goban = gobanWithAreasFromStrings(Map(

@@ -1,11 +1,11 @@
 # Static Analysis Report
 
 Generated: October 19, 2025
-Updated: March 21, 2026; current counts September 27, 2026 (after issue #143)
+Updated: March 21, 2026; current counts November 20, 2026 (WartRemover 3.6.3 and Return/Any cleanup)
 
 ## Tools Configured
 
-- **WartRemover 3.5.6** - Scala linter detecting unsafe code patterns (upgraded)
+- **WartRemover 3.6.3** - Scala linter detecting unsafe code patterns (upgraded)
 - **Scalafix 0.14.6** - Scala code rewriting and linting tool (upgraded)
 - **Scapegoat 3.3.3** - Additional Scala static analysis (added in issue #51)
 
@@ -49,14 +49,24 @@ DisableSyntax.noIsInstanceOf = true
 
 Measured by the `Check warnings` job in `.github/workflows/ci.yml`, which compiles main and test
 sources and fails when the total goes up (see `ci/warning_summary.sh`).
-Total: **434** compiler warnings (196 main, 238 test), down from 699 before issue #143.
+Total: **81** compiler warnings (43 main, 38 test), down from 699 before issue #143 and from 418
+before the November 2026 cleanup.
 
 | Warning | main | test | Note |
 |---------|------|------|------|
-| wartremover:Any | 133 | 206 | mostly `s"..."` interpolation |
-| wartremover:Var | 28 | 26 | |
-| wartremover:Return | 22 | 0 | |
-| wartremover:DefaultArguments | 13 | 6 | |
+| wartremover:Var | 28 | 26 | GUI/libGDX state, lazily initialised AWS clients, CLI option state, JUnit lifecycle |
+| wartremover:DefaultArguments | 13 | 6 | idiomatic Scala, replacing them with overloads adds code for no gain |
+| wartremover:Any | 2 | 6 | macro literals (`uri"..."`, `ipv4"..."`) and `f"..."` with format specifiers: not fixable |
+
+Fixed in November 2026 (0 left of these):
+- `Any` in string interpolation (about 310): a false positive of WartRemover before 3.6.x, gone with
+  the upgrade from 3.5.6 to 3.6.3.
+- `Return` (23): early returns in `Game`, `Goban`, `Area` and `Jsonify` are now `if`/`else`
+  expressions (the `@tailrec` helpers keep their tail calls).
+- `Any` from untyped empty sets in assertions (`Set()` is now `Set.empty[Position]`), from
+  `readLine(prompt)` (the prompt is printed separately) and from `"%02x".format` (`HexFormat`).
+- WartRemover also counts every `+` of two interpolated strings as `Any`: build log messages with
+  one interpolation (local `val`s) and shorten the text if the line gets too long.
 
 Fixed in issue #143 (0 left):
 - `TryPartial` (221): main code composes `Try` (`flatMap`, `match`) instead of calling `.get`;
@@ -186,8 +196,10 @@ Main source fixes:
 
 ### Low Priority Issues
 
-#### 6. Any Type Inference (98 main + 173 test)
-Most are in string interpolations which is acceptable.
+#### 6. Any Type Inference (2 main + 6 test, was 98 + 173)
+The string interpolation warnings disappeared with WartRemover 3.6.3 (see Current Counts). What
+remains are macro literals and `f"..."` interpolators with format specifiers, which cannot be
+fixed without suppressing.
 
 #### 7. Throw (4 main + 2 test)
 The 4 remaining throws in main are Scallop library-interop (required by Scallop's `onError`
@@ -195,8 +207,8 @@ API contract) in `InteractiveClient.scala` and `BotClient.scala`. Each is annota
 `@SuppressWarnings(Array("org.wartremover.warts.Throw"))`. The 2 in test are acceptable
 as test failure signals.
 
-#### 8. Return Statements (22 occurrences in main)
-Early returns are acceptable and often improve readability.
+#### 8. ✅ Return Statements (FIXED - was 23 in main, now 0)
+Replaced by `if`/`else` expressions; do not reintroduce `return`.
 
 #### 9. Default Arguments (11 main + 4 test)
 Idiomatic Scala - no action needed.
@@ -231,9 +243,8 @@ Idiomatic Scala - no action needed.
 None - all high and medium priority issues are resolved.
 
 ### Future Improvements (low priority)
-1. Create custom WartRemover configuration excluding acceptable patterns:
-   - Allow `Any` in string interpolations
-   - Allow `return` statements
+1. ✅ Done: no custom WartRemover configuration needed, the `Any` interpolation false positive is
+   fixed in WartRemover 3.6.3 and `return` was removed.
 2. Intentional mutable state (var) — not worth refactoring:
    - `GoServer.scala` (3 vars): in benchmark mode's while loop — classic imperative iteration
    - `Games.scala` (1 var): `fileIO: Option[FileIO]` startup state — would need significant refactor
@@ -254,11 +265,10 @@ The codebase is in excellent shape. All high and medium priority WartRemover war
 have been eliminated from **both main and test sources**.
 
 The only remaining warnings are low-priority categories that are acceptable by design:
-- **Any** (98+173): Unavoidable in string interpolations
+- **Any** (2+6): Macro literals and `f"..."` interpolators with format specifiers
 - **Throw** (41+2): Appropriate for domain error handling
-- **Var** (29+24): Necessary for performance-critical code and JUnit lifecycle
-- **Return** (22): Improves readability in some cases
-- **DefaultArguments** (11+4): Idiomatic Scala
+- **Var** (28+26): Necessary for performance-critical code, GUI state and JUnit lifecycle
+- **DefaultArguments** (13+6): Idiomatic Scala
 
 ## Summary of Improvements
 

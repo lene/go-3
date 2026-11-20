@@ -44,13 +44,13 @@ class TestGameExtension:
 
   @Test def testGetAreasEmpty(): Unit =
     val game = playListOfMoves(3, List())
-    Assertions.assertEquals(Set(), game.getAreas(Black))
-    Assertions.assertEquals(Set(), game.getAreas(White))
+    Assertions.assertEquals(Set.empty[Set[Position]], game.getAreas(Black))
+    Assertions.assertEquals(Set.empty[Set[Position]], game.getAreas(White))
 
   @Test def testGetAreasOneStone(): Unit =
     val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))
     Assertions.assertEquals(Set(Set(Position(2, 2, 2))), game.getAreas(Black))
-    Assertions.assertEquals(Set(), game.getAreas(White))
+    Assertions.assertEquals(Set.empty[Set[Position]], game.getAreas(White))
 
   @Test def testGetAreasTwoDifferentStones(): Unit =
     val game = playListOfMoves(3, List(Move(2, 2, 2, Black), Move(2, 2, 1, White)))
@@ -63,12 +63,12 @@ class TestGameExtension:
       Set(Set(Position(3, 3, 3)), Set(Position(1, 1, 1))),
       game.getAreas(Black)
     )
-    Assertions.assertEquals(Set(), game.getAreas(White))
+    Assertions.assertEquals(Set.empty[Set[Position]], game.getAreas(White))
 
   @Test def testGetAreasTwoSameStonesConnected(): Unit =
     val game = playListOfMoves(3, List(Move(3, 3, 3, Black), Pass(White), Move(3, 3, 2, Black)))
     Assertions.assertEquals(Set(Set(Position(3, 3, 3), Position(3, 3, 2))), game.getAreas(Black))
-    Assertions.assertEquals(Set(), game.getAreas(White))
+    Assertions.assertEquals(Set.empty[Set[Position]], game.getAreas(White))
 
   @Test def testGetAreasTwoSameStonesAlmostConnected(): Unit =
     val game = playListOfMoves(3, List(Move(3, 3, 3, Black), Pass(White), Move(3, 2, 2, Black)))
@@ -76,7 +76,7 @@ class TestGameExtension:
       Set(Set(Position(3, 3, 3)), Set(Position(3, 2, 2))),
       game.getAreas(Black)
     )
-    Assertions.assertEquals(Set(), game.getAreas(White))
+    Assertions.assertEquals(Set.empty[Set[Position]], game.getAreas(White))
 
   @Test def testLibertiesSingleStone6Liberties(): Unit =
     val game = playListOfMoves(3, List(Move(2, 2, 2, Black)))

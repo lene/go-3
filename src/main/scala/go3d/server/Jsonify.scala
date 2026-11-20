@@ -81,22 +81,24 @@ implicit val encodeHasColor: Encoder[HasColor] =
     )
 
 def gobanFromStrings(levels: Array[String]): Try[Goban] =
-  if levels.isEmpty then return scala.util.Failure(IllegalArgumentException("nothing to generate"))
-  val size = levels(0).stripMargin.replace("|", "").split("\n").length
-  if levels.length != size then
-    return scala.util.Failure(JsonDecodeError(s"${levels.length} != $size"))
-  Goban.start(size).flatMap { goban =>
-    Try {
-      for (level, z) <- levels.zipWithIndex do
-        val lines = level.stripMargin.replace("|", "").split("\n")
-        if lines.length != size then sys.error(s"${lines.toString}: ${lines.length} != $size")
-        for (line, y) <- lines.zipWithIndex do
-          if line.length != size then sys.error(s"\"$line\": ${line.length} != $size")
-          for (stone, x) <- line.zipWithIndex do
-            goban.stones(x + 1)(y + 1)(z + 1) = Color(stone).getOrElse(go3d.Empty)
-      goban
-    }.recoverWith { case e => scala.util.Failure(JsonDecodeError(e.getMessage)) }
-  }
+  if levels.isEmpty then scala.util.Failure(IllegalArgumentException("nothing to generate"))
+  else
+    val size = levels(0).stripMargin.replace("|", "").split("\n").length
+    if levels.length != size then
+      scala.util.Failure(JsonDecodeError(s"${levels.length} != $size"))
+    else
+      Goban.start(size).flatMap { goban =>
+        Try {
+          for (level, z) <- levels.zipWithIndex do
+            val lines = level.stripMargin.replace("|", "").split("\n")
+            if lines.length != size then sys.error(s"${lines.toString}: ${lines.length} != $size")
+            for (line, y) <- lines.zipWithIndex do
+              if line.length != size then sys.error(s"\"$line\": ${line.length} != $size")
+              for (stone, x) <- line.zipWithIndex do
+                goban.stones(x + 1)(y + 1)(z + 1) = Color(stone).getOrElse(go3d.Empty)
+          goban
+        }.recoverWith { case e => scala.util.Failure(JsonDecodeError(e.getMessage)) }
+      }
 
 def gobanToStrings(goban: Goban): Array[String] =
   val strings = Array.fill(goban.size) { "" }

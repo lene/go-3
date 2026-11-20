@@ -16,6 +16,6 @@ ThisBuild / libraryDependencySchemes += "org.scala-lang.modules" %% "scala-xml" 
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.5.6")
 
 // Static analysis tools
-addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.5.6")
+addSbtPlugin("org.wartremover" % "sbt-wartremover" % "3.6.3")
 addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.14.6")
 addSbtPlugin("com.sksamuel.scapegoat" %% "sbt-scapegoat" % "1.2.9")
