@@ -60,7 +60,7 @@ variable "lambda_role_name" {
 variable "lambda_runtime" {
   description = "Lambda runtime for the assembled Scala/JVM artifact."
   type        = string
-  default     = "java21"
+  default     = "java25"
 }
 
 variable "lambda_handler" {
