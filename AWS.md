@@ -801,7 +801,8 @@ The phases above are the original plan. What differs in the code and in
 | Players expire 24 hours after creation | Games and their players expire 30 days after the last write and 7 days after completion |
 | 10 req/s per IP at API Gateway | Whole-API throttle (default 50 req/s, burst 100); the per-IP `RateLimiter` stays in the http4s server |
 | REST API | HTTP API with Lambda proxy integration |
-| Archive, then expire | The S3 object is verified with HeadObject before the game is marked completed; a failed archive is only logged (an alarm and a manual re-archive job are planned, #124) |
+| Archive, then expire | The S3 object is verified with HeadObject before the game is marked completed; a failed archive is logged with `ARCHIVE_FAILED`, which raises the `archive-failures` alarm; a manually invoked Lambda (`ArchiveRecoveryHandler`, only where write routes are on) archives the games it left behind (0.7.42, #183) |
+| CloudWatch alarms and dashboards | Alarms for Lambda errors, API 4xx/5xx, DynamoDB throttles and system errors per operation (write operations only where write routes are on), failed archives and the account bill (production); one `go3d` dashboard; one saved Logs Insights query. No S3 or per-route alarms |
 | Write routes for production | Implemented; production keeps them off (`enable_write_routes = false`) until the cutover (#125); a staging stack has them on |
 | Migrate saves to DynamoDB | Dropped, see Phase 7 |
 | S3 Object Lock, MFA delete, WAF, CloudTrail, VPC endpoints | Deferred; not in the Terraform stack (versioning, SSE-S3, public access block, TLS-only policy and lifecycle rules are) |
