@@ -39,4 +39,8 @@
 - Functional style, `@tailrec` for iteration; mutable collections only in performance-critical paths (`Goban.connectedStones`). Lines are at most 100 characters.
 - Code quality must only improve, never degrade.
 
+## Known pitfalls
+
+- `origin` is the GitLab mirror and `github` is the primary remote: push with `git push -u github <branch>`, never `origin`, which creates stray branches on the read-only mirror.
+
 <!-- /bmad:context -->
