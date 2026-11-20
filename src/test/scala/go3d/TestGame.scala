@@ -190,22 +190,7 @@ class TestGame:
     Assertions.assertEquals(Empty, game.at(Position(2, 1, 2)), "\n" + game.toString)
 
   @Test def testCaptureTwoDisjointStonesWithOneMove(): Unit =
-    val moves = List[Move | Pass](
-      Move(2, 1, 1, Black),
-      Move(1, 1, 1, White),
-      Move(4, 1, 1, Black),
-      Move(5, 1, 1, White),
-      Pass(Black),
-      Move(2, 2, 1, White),
-      Pass(Black),
-      Move(4, 2, 1, White),
-      Pass(Black),
-      Move(2, 1, 2, White),
-      Pass(Black),
-      Move(4, 1, 2, White),
-      Pass(Black)
-    )
-    var game = playListOfMoves(5, moves)
+    var game = playListOfMoves(5, TwoDisjointStonesCaptureSetup)
     Assertions.assertTrue(game.captures.isEmpty)
     game = game.makeMove(Move(3, 1, 1, White)).success.value
     Assertions.assertEquals(2, game.captures(White))
@@ -235,26 +220,19 @@ class TestGame:
   final val BLACK_AREA_SIZE = 5
 
   def encircleEye(game: Game): Game =
-    val moves = List[Move | Pass](
+    val whiteStones = List(
       Move(1, 3, 1, White),
-      Pass(Black),
       Move(2, 2, 1, White),
-      Pass(Black),
       Move(3, 1, 1, White),
-      Pass(Black),
       Move(1, 3, 2, White),
-      Pass(Black),
       Move(2, 2, 2, White),
-      Pass(Black),
       Move(3, 1, 2, White),
-      Pass(Black),
       Move(1, 1, 3, White),
-      Pass(Black),
       Move(2, 1, 3, White),
-      Pass(Black),
-      Move(1, 2, 3, White),
-      Pass(Black)
+      Move(1, 2, 3, White)
     )
+    // Black passes after every white stone
+    val moves = whiteStones.flatMap(stone => List[Move | Pass](stone, Pass(Black)))
     var nextGame = game
     for move <- moves do
       nextGame = nextGame.makeMove(move).success.value
