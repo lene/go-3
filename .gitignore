@@ -47,3 +47,11 @@ terraform.tfstate.*
 **/backend.hcl
 crash.log
 crash.*.log
+
+# BMad install (per-project, regenerate with: npx bmad-method install)
+_bmad/
+.claude/skills/bmad-*/
+_bmad-output/
+
+# graphify knowledge graph (local, regenerate with: /graphify)
+graphify-out/
