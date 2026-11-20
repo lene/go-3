@@ -1,7 +1,9 @@
 version: 2
 updates:
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "/"
+      - "/.github/actions/setup-jvm"
     schedule:
       interval: "weekly"
     # Action updates are CI-only changes: the "CI Fix" prefix lets the version-consistent job

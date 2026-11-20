@@ -28,7 +28,7 @@
 - CI runs coverage with `sbt "set Test / parallelExecution := false" clean coverage test`: the suites share global state, so never enable parallel test execution.
 - The DynamoDB Local and S3Mock suites skip without `DYNAMODB_TEST_ENDPOINT`/`S3_TEST_ENDPOINT` and only run in CI.
 - `.git/hooks/pre-push` is a manual symlink to `.git_hooks/pre-push` (not set up by a fresh clone): it runs `actionlint`, `sbt test` and `docker build`. A latest commit subject starting with `WIP:` bypasses its failures; never use that to push failing code.
-- CI builds with Java 17 (`JAVA_VERSION`), the Docker runtime image is `eclipse-temurin:21-jre`.
+- CI and the Docker builder use Java 17, set in one place (`.github/actions/setup-jvm`); the Docker runtime image is `eclipse-temurin:21-jre`.
 - Claude Code on the web: `.claude/hooks/session-start.sh` installs an `sbt` wrapper using Google's Maven mirror; compile and run the affected tests there before pushing.
 
 ## Conventions that differ from defaults

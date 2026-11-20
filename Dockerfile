@@ -1,12 +1,13 @@
 # docker build -t ghcr.io/lene/go-3/server .
 # docker run [--net=host] -t ghcr.io/lene/go-3/server:latest
 
-FROM hseeberger/scala-sbt:17.0.2_1.6.2_3.1.1 AS builder
+FROM sbtscala/scala-sbt:eclipse-temurin-17.0.21_9_1.13.1_3.10.1 AS builder
 ARG version=0.7.37
 
 WORKDIR /go-3
 COPY . /go-3
 RUN sbt "Universal / packageBin"
+RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf /var/lib/apt/lists/*
 RUN unzip -oq /go-3/target/universal/go-3d-${version}.zip
 RUN mv go-3d-${version}/??? . && rm -r go-3d-*.*.* target
 
