@@ -58,7 +58,7 @@ class TestFileIo:
     val path = TestFileIo.fileIO.saveGame(gameId)
 
     val source = Source.fromFile(path.toFile)
-    val fileContents = source.getLines.mkString
+    val fileContents = source.getLines().mkString
     source.close()
 
     val restored = decode[SaveGame](fileContents)

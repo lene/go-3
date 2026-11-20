@@ -151,7 +151,7 @@ object Games:
 
   private[server] def readGame(saveFile: java.io.File): Try[SaveGame] =
     val source = Source.fromFile(saveFile)
-    val fileContents = source.getLines.mkString
+    val fileContents = source.getLines().mkString
     source.close()
     decode[SaveGame](fileContents) match
       case Right(saveGame) => Success(saveGame)
