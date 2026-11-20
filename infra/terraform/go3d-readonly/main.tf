@@ -54,6 +54,7 @@ locals {
     }
   }
 
+  # Every status request and every write reads the players of the game with a Query.
   dynamodb_read_operations = {
     active_games_get_item = {
       table_name = aws_dynamodb_table.active_games.name
@@ -63,7 +64,49 @@ locals {
       table_name = aws_dynamodb_table.players.name
       operation  = "Scan"
     }
+    players_query = {
+      table_name = aws_dynamodb_table.players.name
+      operation  = "Query"
+    }
   }
+
+  # Moves, registrations and the completion of a game are conditional puts and transactions.
+  dynamodb_write_operations = {
+    active_games_put_item = {
+      table_name = aws_dynamodb_table.active_games.name
+      operation  = "PutItem"
+    }
+    active_games_update_item = {
+      table_name = aws_dynamodb_table.active_games.name
+      operation  = "UpdateItem"
+    }
+    active_games_transact_write_items = {
+      table_name = aws_dynamodb_table.active_games.name
+      operation  = "TransactWriteItems"
+    }
+    players_put_item = {
+      table_name = aws_dynamodb_table.players.name
+      operation  = "PutItem"
+    }
+    players_update_item = {
+      table_name = aws_dynamodb_table.players.name
+      operation  = "UpdateItem"
+    }
+    players_transact_write_items = {
+      table_name = aws_dynamodb_table.players.name
+      operation  = "TransactWriteItems"
+    }
+  }
+
+  dynamodb_alarm_operations = merge(
+    local.dynamodb_read_operations,
+    var.enable_write_routes ? local.dynamodb_write_operations : {}
+  )
+
+  archive_recovery_function_name = "${var.lambda_function_name}-archive-recovery"
+
+  # custom namespace of the metric that counts failed archives; the staging stack has its own
+  archive_metric_namespace = "go3d${local.name_suffix}"
 }
 
 data "aws_caller_identity" "current" {}
@@ -417,6 +460,54 @@ resource "aws_lambda_function" "read" {
   }
 }
 
+# Manual job (aws lambda invoke) that archives finished games whose archive failed at the end of
+# the game. Same JAR, role and environment as the API function; it exists only where the API can
+# write, because without write routes no game finishes.
+resource "aws_cloudwatch_log_group" "archive_recovery" {
+  count = var.enable_write_routes ? 1 : 0
+
+  name              = "/aws/lambda/${local.archive_recovery_function_name}"
+  retention_in_days = var.log_retention_days
+
+  tags = {
+    Name = "/aws/lambda/${local.archive_recovery_function_name}"
+  }
+}
+
+resource "aws_lambda_function" "archive_recovery" {
+  count = var.enable_write_routes ? 1 : 0
+
+  function_name     = local.archive_recovery_function_name
+  role              = aws_iam_role.lambda_readonly.arn
+  runtime           = var.lambda_runtime
+  handler           = var.lambda_archive_recovery_handler
+  s3_bucket         = aws_s3_object.lambda_jar.bucket
+  s3_key            = aws_s3_object.lambda_jar.key
+  s3_object_version = aws_s3_object.lambda_jar.version_id
+  source_code_hash  = filebase64sha256(var.lambda_jar_path)
+  memory_size       = var.lambda_memory_mb
+  timeout           = var.archive_recovery_timeout_seconds
+
+  environment {
+    variables = {
+      DYNAMODB_GAMES_TABLE   = aws_dynamodb_table.active_games.name
+      DYNAMODB_PLAYERS_TABLE = aws_dynamodb_table.players.name
+      S3_ARCHIVE_BUCKET      = aws_s3_bucket.archive.bucket
+    }
+  }
+
+  depends_on = [
+    aws_cloudwatch_log_group.archive_recovery,
+    aws_iam_role_policy.lambda_read,
+    aws_iam_role_policy.lambda_write,
+    aws_iam_role_policy_attachment.lambda_basic_execution,
+  ]
+
+  tags = {
+    Name = local.archive_recovery_function_name
+  }
+}
+
 resource "aws_cloudwatch_log_group" "api" {
   name              = "/aws/apigateway/${var.api_name}"
   retention_in_days = var.log_retention_days
@@ -544,6 +635,42 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   }
 }
 
+# A failed archive does not fail the request, so neither the Lambda nor the API alarms fire. The
+# game service logs a line with this marker (GameService.ArchiveFailedMarker) instead; the filter
+# counts it. A finished game without an archive expires after 30 days, so run the recovery job.
+resource "aws_cloudwatch_log_metric_filter" "archive_failures" {
+  name           = "${var.lambda_function_name}-archive-failures"
+  log_group_name = aws_cloudwatch_log_group.lambda.name
+  pattern        = "\"ARCHIVE_FAILED\""
+
+  metric_transformation {
+    name      = "ArchiveFailures"
+    namespace = local.archive_metric_namespace
+    value     = "1"
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "archive_failures" {
+  alarm_name          = "${var.lambda_function_name}-archive-failures"
+  alarm_description   = "Finished go3d games that could not be archived to S3; run the archive recovery job"
+  namespace           = local.archive_metric_namespace
+  metric_name         = aws_cloudwatch_log_metric_filter.archive_failures.metric_transformation[0].name
+  statistic           = "Sum"
+  period              = 300
+  evaluation_periods  = 1
+  datapoints_to_alarm = 1
+  threshold           = var.archive_failure_alarm_threshold
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching"
+
+  # no ok_actions: the alarm clears after a quiet period, not when the game is archived
+  alarm_actions = local.alarm_actions
+
+  tags = {
+    Name = "${var.lambda_function_name}-archive-failures"
+  }
+}
+
 resource "aws_cloudwatch_metric_alarm" "lambda_init_duration" {
   count = var.lambda_insights_init_duration_alarm_enabled ? 1 : 0
 
@@ -602,7 +729,7 @@ resource "aws_cloudwatch_metric_alarm" "api_errors" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "dynamodb_throttles" {
-  for_each = local.dynamodb_read_operations
+  for_each = local.dynamodb_alarm_operations
 
   alarm_name          = "go3d-dynamodb-${replace(each.key, "_", "-")}-throttles${local.name_suffix}"
   alarm_description   = "DynamoDB throttled requests for ${each.value.table_name} ${each.value.operation}"
@@ -630,7 +757,7 @@ resource "aws_cloudwatch_metric_alarm" "dynamodb_throttles" {
 }
 
 resource "aws_cloudwatch_metric_alarm" "dynamodb_system_errors" {
-  for_each = local.dynamodb_read_operations
+  for_each = local.dynamodb_alarm_operations
 
   alarm_name = (
     "go3d-dynamodb-${replace(each.key, "_", "-")}-system-errors${local.name_suffix}"
@@ -707,4 +834,180 @@ resource "aws_cloudwatch_query_definition" "lambda_baseline" {
         max(@initDuration) as init_max_ms,
         count(*) as invocation_reports
   EOT
+}
+
+# One page for the monitoring gates: API errors and latency, Lambda errors and duration,
+# DynamoDB throttles, system errors and latency, failed archives and (production) account spend.
+resource "aws_cloudwatch_dashboard" "go3d" {
+  dashboard_name = "go3d${local.name_suffix}"
+
+  dashboard_body = jsonencode({
+    widgets = concat(
+      [
+        {
+          type   = "metric"
+          x      = 0
+          y      = 0
+          width  = 12
+          height = 6
+          properties = {
+            title  = "API requests and errors"
+            region = var.aws_region
+            view   = "timeSeries"
+            stat   = "Sum"
+            period = 300
+            metrics = [
+              for metric in ["Count", "4xx", "5xx"] :
+              ["AWS/ApiGateway", metric, "ApiId", aws_apigatewayv2_api.read.id, "Stage", aws_apigatewayv2_stage.default.name]
+            ]
+          }
+        },
+        {
+          type   = "metric"
+          x      = 12
+          y      = 0
+          width  = 12
+          height = 6
+          properties = {
+            title  = "API latency (ms)"
+            region = var.aws_region
+            view   = "timeSeries"
+            period = 300
+            metrics = [
+              for metric, stat in { Latency = "p95", IntegrationLatency = "p95" } :
+              ["AWS/ApiGateway", metric, "ApiId", aws_apigatewayv2_api.read.id, "Stage", aws_apigatewayv2_stage.default.name, { stat = stat, label = "${metric} ${stat}" }]
+            ]
+          }
+        },
+        {
+          type   = "metric"
+          x      = 0
+          y      = 6
+          width  = 12
+          height = 6
+          properties = {
+            title  = "Lambda invocations, errors and throttles"
+            region = var.aws_region
+            view   = "timeSeries"
+            stat   = "Sum"
+            period = 300
+            metrics = concat(
+              [
+                for metric in ["Invocations", "Errors", "Throttles"] :
+                ["AWS/Lambda", metric, "FunctionName", aws_lambda_function.read.function_name]
+              ],
+              [
+                for name in aws_lambda_function.archive_recovery[*].function_name :
+                ["AWS/Lambda", "Errors", "FunctionName", name, { label = "archive recovery errors" }]
+              ]
+            )
+          }
+        },
+        {
+          type   = "metric"
+          x      = 12
+          y      = 6
+          width  = 12
+          height = 6
+          properties = {
+            title  = "Lambda duration (ms)"
+            region = var.aws_region
+            view   = "timeSeries"
+            period = 300
+            metrics = [
+              for stat in ["p50", "p95", "p99"] :
+              ["AWS/Lambda", "Duration", "FunctionName", aws_lambda_function.read.function_name, { stat = stat, label = stat }]
+            ]
+          }
+        },
+        {
+          type   = "metric"
+          x      = 0
+          y      = 12
+          width  = 8
+          height = 6
+          properties = {
+            title  = "DynamoDB throttled requests"
+            region = var.aws_region
+            view   = "timeSeries"
+            stat   = "Sum"
+            period = 300
+            metrics = [
+              for operation in values(local.dynamodb_alarm_operations) :
+              ["AWS/DynamoDB", "ThrottledRequests", "TableName", operation.table_name, "Operation", operation.operation]
+            ]
+          }
+        },
+        {
+          type   = "metric"
+          x      = 8
+          y      = 12
+          width  = 8
+          height = 6
+          properties = {
+            title  = "DynamoDB system errors"
+            region = var.aws_region
+            view   = "timeSeries"
+            stat   = "Sum"
+            period = 300
+            metrics = [
+              for operation in values(local.dynamodb_alarm_operations) :
+              ["AWS/DynamoDB", "SystemErrors", "TableName", operation.table_name, "Operation", operation.operation]
+            ]
+          }
+        },
+        {
+          type   = "metric"
+          x      = 16
+          y      = 12
+          width  = 8
+          height = 6
+          properties = {
+            title  = "DynamoDB request latency p95 (ms)"
+            region = var.aws_region
+            view   = "timeSeries"
+            stat   = "p95"
+            period = 300
+            metrics = [
+              for operation in values(local.dynamodb_alarm_operations) :
+              ["AWS/DynamoDB", "SuccessfulRequestLatency", "TableName", operation.table_name, "Operation", operation.operation]
+            ]
+          }
+        },
+        {
+          type   = "metric"
+          x      = 0
+          y      = 18
+          width  = 12
+          height = 6
+          properties = {
+            title   = "Failed archives of finished games"
+            region  = var.aws_region
+            view    = "timeSeries"
+            stat    = "Sum"
+            period  = 300
+            metrics = [[local.archive_metric_namespace, aws_cloudwatch_log_metric_filter.archive_failures.metric_transformation[0].name]]
+          }
+        },
+      ],
+      # billing metrics exist only in us-east-1 and only for the account, so staging leaves them out
+      var.billing_alarm_enabled ? [
+        {
+          type   = "metric"
+          x      = 12
+          y      = 18
+          width  = 12
+          height = 6
+          properties = {
+            title   = "Account estimated charges (${var.billing_currency})"
+            region  = "us-east-1"
+            view    = "timeSeries"
+            stat    = "Maximum"
+            period  = 21600
+            metrics = [["AWS/Billing", "EstimatedCharges", "Currency", var.billing_currency]]
+          }
+        },
+      ] : []
+    )
+  })
 }

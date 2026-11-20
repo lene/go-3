@@ -12,7 +12,9 @@ Managed resources:
   `GET /archived/{gameId}` and `GET /openGames`, throttled to
   `api_throttling_rate_limit` requests per second (burst `api_throttling_burst_limit`); clients
   over the limit get HTTP 429
-- CloudWatch log groups, alarms, and a Logs Insights baseline query
+- CloudWatch log groups, alarms, the `go3d` dashboard and a Logs Insights baseline query
+- With `enable_write_routes`: the Lambda function `go3d-read-archive-recovery` (see Archive
+  recovery) and the alarms on DynamoDB write operations
 
 All resources receive `Project=go3d`, `Environment=prod`, and `Phase=lambda-migration` tags. Use those tags for Cost Explorer cost allocation after enabling the `Project`, `Environment`, and `Phase` cost allocation tags in the AWS Billing console. The optional `go3d-account-monthly-cost` alarm is account-level because CloudWatch billing metrics are not tag-scoped.
 
@@ -114,6 +116,53 @@ answer, unfinished game or missing archive fails the run. 429s are expected abov
 limit and are counted, not failures. The client-side times include the network, so read the
 server-side p95 (API Gateway `IntegrationLatency`, Lambda `Duration`) in CloudWatch.
 
+## Alarms and dashboard
+
+All alarms notify the SNS topic `go3d-alarms` (`alarm_email`; the billing alarm uses its own topic
+in `us-east-1`) and treat missing data as not breaching. `terraform output alarm_names` lists them.
+
+- Lambda errors, HTTP API 4xx and 5xx (and the optional Lambda Insights `init_duration` p95)
+- DynamoDB `ThrottledRequests` and `SystemErrors` per operation: `GetItem` on the games table,
+  `Scan` and `Query` on the players table, and with `enable_write_routes` also `PutItem`,
+  `UpdateItem` and `TransactWriteItems` on both tables
+- `go3d-read-archive-failures`: a finished game could not be archived to S3. The request still
+  succeeds, so no other alarm fires; the game service logs a line containing `ARCHIVE_FAILED`
+  (`GameService.ArchiveFailedMarker`), which a log metric filter counts as `ArchiveFailures`.
+  Change the marker and the filter pattern together (a unit test checks that they match). The
+  alarm clears after a quiet period and sends no all-clear: run the recovery job after every
+  notification, because the unarchived game expires 30 days after its last move. Failures inside a
+  recovery run are logged in the job's own log group and raise no alarm; read the `failed` list.
+- `go3d-account-monthly-cost` (production only; account level, `billing_alarm_threshold_usd`)
+
+The `go3d` dashboard (`go3d-<environment>` outside production; `terraform output dashboard_name`)
+shows API requests, errors and latency, Lambda invocations, errors and duration, DynamoDB
+throttles, system errors and latency, failed archives and (production) the estimated account
+charges.
+
+## Archive recovery
+
+A game that ends while the S3 archive fails stays in DynamoDB without an `archiveKey` and keeps
+its 30-day inactivity expiry, so it can vanish unarchived. After the `archive-failures` alarm
+fires, run the recovery job by hand (only on stacks with `enable_write_routes`):
+
+```bash
+aws lambda invoke --function-name "$(terraform output -raw archive_recovery_function_name)" \
+  --cli-binary-format raw-in-base64-out --cli-read-timeout 0 --payload '{}' out.json && cat out.json
+```
+
+`--cli-read-timeout 0` keeps the CLI from giving up after 60 s and re-sending the request while the
+job (timeout `archive_recovery_timeout_seconds`) is still running. The command exits 0 even when
+the function failed: check that the output has no `FunctionError` and that `failed` is empty.
+
+The job scans the games table, archives every finished game without an archive key to S3 and
+sets the archive key and the 7-day expiry. It returns `{"archived": [...], "failed": [...]}`
+with game ids; failures are logged with the `ARCHIVE_FAILED` marker and the others carry on.
+When every game was archived, running it again changes nothing and returns two empty lists; games
+in `failed` are tried again. It never deletes data. An unreadable item in the games table is
+logged and skipped. If the games
+cannot be listed the invocation fails and shows as a Lambda error. Running it against production
+changes data in AWS: ask for approval first.
+
 ## Teardown
 
 Run the `Terraform destroy` workflow (`.github/workflows/terraform-destroy.yml`) by hand on
@@ -179,6 +228,7 @@ Use CloudWatch metrics and alarms for:
 
 - Lambda errors
 - HTTP API `4xx` and `5xx`
-- DynamoDB `ThrottledRequests` and `SystemErrors`
+- DynamoDB `ThrottledRequests` and `SystemErrors` (all operations above)
+- Failed archives of finished games (`ArchiveFailures`)
 - S3 bucket object/storage baseline
 - Account-level estimated monthly spend

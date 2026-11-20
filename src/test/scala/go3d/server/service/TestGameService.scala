@@ -17,8 +17,9 @@ import go3d.server.NotReadyToSet
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
+import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import scala.util.Try
+import scala.util.{Failure, Try}
 
 private val NowMillis = 1_000_000L
 
@@ -39,6 +40,14 @@ class InterleavingStore(inner: InMemoryGameStore, interleave: () => Unit) extend
   def openGames(): Try[Array[String]] = inner.openGames()
   def markCompleted(gameId: String, archiveKey: String, expiresAt: Long): Try[Unit] =
     inner.markCompleted(gameId, archiveKey, expiresAt)
+  def unarchivedFinishedGames(): Try[List[String]] = inner.unarchivedFinishedGames()
+
+/** An archive that fails for one game and delegates to `inner` for all others. */
+class FailingForGameArchive(inner: GameArchive, failingGameId: String) extends GameArchive:
+  def archive(gameId: String, saveGame: go3d.server.SaveGame): Try[String] =
+    if gameId == failingGameId then Failure(IllegalStateException("archive unavailable"))
+    else inner.archive(gameId, saveGame)
+  def url(gameId: String): Try[Option[String]] = inner.url(gameId)
 
 class TestGameService:
   private val store = InMemoryGameStore()
@@ -328,6 +337,83 @@ class TestGameService:
     failingService.pass(gameId, black).success.value
     Assertions.assertTrue(failingService.pass(gameId, white).success.value.over)
     Assertions.assertEquals(None, store.completion(gameId))
+
+  /** A game that ended while the archive was down: it has no archive key. Returns its id. */
+  private def gameWithFailedArchive(failingService: GameService): String =
+    val gameId = failingService.newGame(3).success.value.id
+    val black = failingService.register(gameId, Black).success.value.authToken
+    val white = failingService.register(gameId, White).success.value.authToken
+    failingService.pass(gameId, black).success.value
+    failingService.pass(gameId, white).success.value
+    gameId
+
+  private def failingArchiveService: GameService = serviceFor(store, InMemoryGameArchive(true))
+
+  @Test def testRecoveryArchivesFinishedGamesWithoutArchive(): Unit =
+    val ids = List.fill(2)(gameWithFailedArchive(failingArchiveService))
+    val result = service.recoverArchives().success.value
+    Assertions.assertEquals(ids.toSet, result.archived.toSet)
+    Assertions.assertEquals(List.empty[String], result.failed)
+    for id <- ids do
+      Assertions.assertTrue(archive.archived(id).exists(_.game.isOver))
+      Assertions.assertEquals(
+        Some(("archives/" + id + ".json", NowMillis / 1000 + GameService.RetentionSeconds)),
+        store.completion(id)
+      )
+
+  @Test def testRecoveryOfArchivedAndRunningGamesDoesNothing(): Unit =
+    finishedGame()
+    val (running, black, _) = startedGame(3)
+    service.pass(running, black).success.value
+    Assertions.assertEquals(
+      ArchiveRecovery(List(), List()),
+      service.recoverArchives().success.value
+    )
+    Assertions.assertEquals(None, store.completion(running))
+
+  @Test def testSecondRecoveryHasNothingToDo(): Unit =
+    val id = gameWithFailedArchive(failingArchiveService)
+    Assertions.assertEquals(List(id), service.recoverArchives().success.value.archived)
+    val completion = store.completion(id)
+    Assertions.assertEquals(
+      ArchiveRecovery(List(), List()),
+      service.recoverArchives().success.value
+    )
+    Assertions.assertEquals(completion, store.completion(id))
+
+  @Test def testRecoveryReportsFailedGamesAndContinues(): Unit =
+    val ids = List.fill(2)(gameWithFailedArchive(failingArchiveService))
+    val result = failingArchiveService.recoverArchives().success.value
+    Assertions.assertEquals(List.empty[String], result.archived)
+    Assertions.assertEquals(ids.toSet, result.failed.toSet)
+    Assertions.assertTrue(ids.forall(store.completion(_).isEmpty))
+
+  @Test def testRecoveryContinuesAfterOneGameFails(): Unit =
+    val ids = List.fill(2)(gameWithFailedArchive(failingArchiveService))
+    val flaky = serviceFor(store, FailingForGameArchive(archive, ids.head))
+    val result = flaky.recoverArchives().success.value
+    Assertions.assertEquals(List(ids.head), result.failed)
+    Assertions.assertEquals(ids.drop(1), result.archived)
+    Assertions.assertEquals(None, store.completion(ids.head))
+    Assertions.assertTrue(store.completion(ids(1)).isDefined)
+
+  @Test def testRecoveryFailsWhenStoreCannotBeScanned(): Unit =
+    Assertions.assertTrue(serviceFor(FailingGameStore(), archive).recoverArchives().isFailure)
+
+  @Test def testArchiveFailureMessageStartsWithAlarmMarker(): Unit =
+    Assertions.assertEquals(
+      s"${GameService.ArchiveFailedMarker} game G1",
+      GameService.archiveFailureMessage("G1")
+    )
+
+  @Test def testMetricFilterOfArchiveAlarmMatchesMarker(): Unit =
+    val terraform = Files.readString(Path.of("infra/terraform/go3d-readonly/main.tf"))
+    val pattern = s"\\\"${GameService.ArchiveFailedMarker}\\\""
+    Assertions.assertTrue(terraform.contains(pattern), "metric filter pattern differs from marker")
+
+  @Test def testRetentionPeriods(): Unit =
+    Assertions.assertEquals(7L * 24 * 3600, GameService.RetentionSeconds)
+    Assertions.assertEquals(30L * 24 * 3600, DynamoDBGameStore.InactiveRetentionSeconds)
 
   @Test def testMoveAfterGameOverFails(): Unit =
     val (gameId, black, _) = finishedGame()

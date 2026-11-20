@@ -48,10 +48,21 @@ output "lambda_baseline_query_name" {
   value       = aws_cloudwatch_query_definition.lambda_baseline.name
 }
 
+output "archive_recovery_function_name" {
+  description = "Lambda function of the manual archive recovery job; null unless write routes are enabled."
+  value       = one(aws_lambda_function.archive_recovery[*].function_name)
+}
+
+output "dashboard_name" {
+  description = "CloudWatch dashboard of the go3d stack."
+  value       = aws_cloudwatch_dashboard.go3d.dashboard_name
+}
+
 output "alarm_names" {
   description = "CloudWatch alarm names managed by this stack."
   value = concat(
     [aws_cloudwatch_metric_alarm.lambda_errors.alarm_name],
+    [aws_cloudwatch_metric_alarm.archive_failures.alarm_name],
     [for alarm in aws_cloudwatch_metric_alarm.api_errors : alarm.alarm_name],
     [for alarm in aws_cloudwatch_metric_alarm.dynamodb_throttles : alarm.alarm_name],
     [for alarm in aws_cloudwatch_metric_alarm.dynamodb_system_errors : alarm.alarm_name],

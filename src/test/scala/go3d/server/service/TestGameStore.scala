@@ -3,6 +3,7 @@ package go3d.server.service
 import go3d.Black
 import go3d.Game
 import go3d.Move
+import go3d.Pass
 import go3d.White
 import go3d.server.DuplicateColor
 import go3d.server.NonexistentGame
@@ -29,6 +30,8 @@ abstract class GameStoreContract:
 
   private val gameId = "GAME01"
   private def emptyGame: Game = Game.start(3).success.value
+  private def finishedGame: Game =
+    emptyGame.makeMove(Pass(Black)).flatMap(_.makeMove(Pass(White))).success.value
   private def gameWithMove: Game = emptyGame.makeMove(Move(2, 2, 2, Black)).success.value
 
   @Test def testCreatedGameIsReadBackAtVersion0(): Unit =
@@ -125,6 +128,20 @@ abstract class GameStoreContract:
     store.markCompleted(gameId, ArchiveKey, 1_000_000L).success.value
     Assertions.assertTrue(store.getGame(gameId).success.value.isDefined)
 
+  @Test def testUnarchivedFinishedGamesAreListedUntilMarkedCompleted(): Unit =
+    store.createGame("DONE01", finishedGame).success.value
+    store.createGame("DONE02", finishedGame).success.value
+    store.createGame("RUNNING", gameWithMove).success.value
+    Assertions.assertEquals(
+      Set("DONE01", "DONE02"),
+      store.unarchivedFinishedGames().success.value.toSet
+    )
+    store.markCompleted("DONE01", ArchiveKey, 1_000_000L).success.value
+    Assertions.assertEquals(List("DONE02"), store.unarchivedFinishedGames().success.value)
+
+  @Test def testNoUnarchivedFinishedGamesInEmptyStore(): Unit =
+    Assertions.assertEquals(List.empty[String], store.unarchivedFinishedGames().success.value)
+
   @Test def testMarkCompletedOfMissingGameFails(): Unit =
     Assertions.assertInstanceOf(
       classOf[NonexistentGame],
@@ -177,6 +194,20 @@ class TestDynamoDBGameStore extends GameStoreContract:
     Assertions.assertEquals(Some("1000000"), game.get("expiresAt").map(_.n()))
     val player = item(playersTable, Map("gameId" -> "GAME01", "color" -> Black.toString))
     Assertions.assertEquals(Some("1000000"), player.get("expiresAt").map(_.n()))
+
+  @Test def testUnreadableGameItemIsSkippedWhenListingUnarchivedGames(): Unit =
+    val finished = Game.start(3).success.value
+      .makeMove(Pass(Black)).flatMap(_.makeMove(Pass(White))).success.value
+    store.createGame("DONE01", finished).success.value
+    client.putItem(
+      PutItemRequest.builder().tableName(gamesTable)
+        .item(Map(
+          "gameId" -> AttributeValue.builder().s("CORRUPT").build(),
+          "game" -> AttributeValue.builder().s("not json").build()
+        ).asJava)
+        .build()
+    )
+    Assertions.assertEquals(List("DONE01"), store.unarchivedFinishedGames().success.value)
 
   @Test def testActiveGameExpiresAfterInactivity(): Unit =
     val before = System.currentTimeMillis() / 1000L + DynamoDBGameStore.InactiveRetentionSeconds

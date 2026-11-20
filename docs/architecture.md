@@ -49,7 +49,9 @@ The server uses **http4s with Cats Effect** for async HTTP handling:
   - `GET /archived/{gameId}` - Archived game (local file, or a redirect to a pre-signed S3 URL)
 
   The AWS Lambda handler (`lambda/LambdaHandler.scala`) serves the same routes on top of
-  `service/GameService`, with DynamoDB as the store and S3 as the archive.
+  `service/GameService`, with DynamoDB as the store and S3 as the archive. A finished game whose
+  archive failed stays without an archive key; the manually invoked
+  `lambda/ArchiveRecoveryHandler.scala` (`GameService.recoverArchives`) archives such games later.
 
 - **Request handlers** (`http4s/` subpackage): Each route has a handler class (e.g.,
   `StartNewGame`, `DoSet`, `DoPass`, `RegisterPlayer`) that extends `BaseHandler` and implements

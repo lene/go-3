@@ -57,13 +57,25 @@ class TestLambdaHandler:
     storeHandler.handleRequest(withAuth(path, "Bearer " + token), null)
 
   /** A new game on the in-memory store with both players: (game id, black token, white token). */
-  private def startedGame(): (String, String, String) =
-    val gameId = decode[GameCreatedResponse](call(NewGamePath).getBody).toTry.success.value.id
+  private def startedGame(): (String, String, String) = startedGameOfSize(3)
+
+  private def startedGameOfSize(size: Int): (String, String, String) =
+    val gameId = decode[GameCreatedResponse](call("/new/" + size.toString).getBody)
+      .toTry.success.value.id
     val black = decode[PlayerRegisteredResponse](call(registerPath(gameId, "@")).getBody)
       .toTry.success.value.authToken
     val white = decode[PlayerRegisteredResponse](call(registerPath(gameId, "O")).getBody)
       .toTry.success.value.authToken
     (gameId, black, white)
+
+  private def setPath(gameId: String, position: (Int, Int, Int)): String =
+    val (x, y, z) = position
+    "/set/" + gameId + "/" + x.toString + "/" + y.toString + "/" + z.toString
+
+  /** Plays the moves in order, each with the token of the player who makes it. */
+  private def playMoves(gameId: String, moves: List[(String, (Int, Int, Int))]): Unit =
+    for (token, position) <- moves do
+      Assertions.assertEquals(200, callWithToken(setPath(gameId, position), token).getStatusCode)
 
   @Test def testHealthReturns200(): Unit =
     val resp = handler.handleRequest(request("/health"), null)
@@ -193,6 +205,61 @@ class TestLambdaHandler:
     val (gameId, black, _) = startedGame()
     Assertions.assertEquals(400, callWithToken("/set/" + gameId + "/4/1/1", black).getStatusCode)
 
+  @Test def testSetWithWrongTokenReturns401(): Unit =
+    val (gameId, _, _) = startedGame()
+    val resp = callWithToken(setCenterPath(gameId), "WRONG")
+    Assertions.assertEquals(401, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("unauthorized"))
+
+  @Test def testSetOnOccupiedPositionReturns400(): Unit =
+    val (gameId, black, white) = startedGame()
+    Assertions.assertEquals(200, callWithToken(setCenterPath(gameId), black).getStatusCode)
+    val resp = callWithToken(setCenterPath(gameId), white)
+    Assertions.assertEquals(400, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("PositionOccupied"))
+
+  @Test def testSuicideReturns400(): Unit =
+    val (gameId, black, white) = startedGame()
+    // white occupies all three neighbors of the corner 1,1,1 while black plays elsewhere
+    playMoves(
+      gameId,
+      List(
+        (black, (3, 3, 3)),
+        (white, (2, 1, 1)),
+        (black, (3, 3, 2)),
+        (white, (1, 2, 1)),
+        (black, (3, 2, 3)),
+        (white, (1, 1, 2))
+      )
+    )
+    val resp = callWithToken(setPath(gameId, (1, 1, 1)), black)
+    Assertions.assertEquals(400, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("Suicide"))
+
+  @Test def testKoReturns400(): Unit =
+    val (gameId, black, white) = startedGameOfSize(5)
+    // the position of TestGame.testPossibleMovesWithKo: white's last move captures 2,2,3
+    playMoves(
+      gameId,
+      List(
+        (black, (2, 2, 3)),
+        (white, (2, 2, 4)),
+        (black, (2, 3, 2)),
+        (white, (2, 3, 3)),
+        (black, (2, 1, 2)),
+        (white, (2, 1, 3)),
+        (black, (3, 2, 2)),
+        (white, (3, 2, 3)),
+        (black, (1, 2, 2)),
+        (white, (1, 2, 3)),
+        (black, (2, 2, 1)),
+        (white, (2, 2, 2))
+      )
+    )
+    val resp = callWithToken(setPath(gameId, (2, 2, 3)), black)
+    Assertions.assertEquals(400, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("Ko"))
+
   @Test def testTwoPassesEndGameAndLaterMovesReturn410(): Unit =
     val (gameId, black, white) = startedGame()
     Assertions.assertEquals(200, callWithToken(passPath(gameId), black).getStatusCode)
@@ -261,4 +328,5 @@ class TestLambdaHandler:
 
   @Test def testStatusMapping(): Unit =
     Assertions.assertEquals(500, LambdaHandler.statusOf(IllegalStateException("x")))
+    Assertions.assertEquals(400, LambdaHandler.statusOf(go3d.IllegalMove("x")))
     Assertions.assertEquals(404, LambdaHandler.statusOf(new NoSuchElementException("x")))
