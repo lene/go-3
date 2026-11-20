@@ -68,21 +68,22 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
     hasLibertiesHelper(move, mutable.Set[Position]())
 
   private def hasLibertiesHelper(move: Move, visited: mutable.Set[Position]): Boolean =
-    if at(move.position) != move.color then return false
-    if visited.contains(move.position) then return false
-    visited += move.position
-    val neighboring = neighbors(move.position)
-    if neighboring.exists(at(_) == Empty) then return true
-    val toCheck = neighboring.filter(at(_) == move.color).map(Move(_, move.color)).toSet
-    // check if part of a connected area
-    hasLibertiesHelper(toCheck, visited)
+    if at(move.position) != move.color || visited.contains(move.position) then false
+    else
+      visited += move.position
+      val neighboring = neighbors(move.position)
+      if neighboring.exists(at(_) == Empty) then true
+      else
+        val toCheck = neighboring.filter(at(_) == move.color).map(Move(_, move.color)).toSet
+        // check if part of a connected area
+        hasLibertiesHelper(toCheck, visited)
 
   @tailrec
   private def hasLibertiesHelper(moves: Set[Move], visited: mutable.Set[Position]): Boolean =
-    if moves.isEmpty then return false
-    if moves.size == 1 then return hasLibertiesHelper(moves.head, visited)
-    if hasLibertiesHelper(moves.head, visited) then return true
-    hasLibertiesHelper(moves - moves.head, visited)
+    if moves.isEmpty then false
+    else if moves.size == 1 then hasLibertiesHelper(moves.head, visited)
+    else if hasLibertiesHelper(moves.head, visited) then true
+    else hasLibertiesHelper(moves - moves.head, visited)
 
   def numLiberties(col: Color): Int =
     emptyPositions.toSet.intersect(neighbors(col)).size
@@ -102,17 +103,17 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
     area.flatMap(pos => allNeighbors(pos)).map(_.position).intersect(emptyPositions.toSet)
 
   def connectedStones(move: Move): Set[Move] =
-    if at(move.position) != move.color then return Set()
-    connectedStonesHelper(move, mutable.Set[Position]())
+    if at(move.position) != move.color then Set()
+    else connectedStonesHelper(move, mutable.Set[Position]())
 
   private def connectedStonesHelper(move: Move, visited: mutable.Set[Position]): Set[Move] =
-    if at(move.position) != move.color then return Set()
-    if visited.contains(move.position) then return Set()
-    visited += move.position
-    var connected = Set(move)
-    for position <- neighborsOfColor(move.position, move.color) if !visited.contains(position) do
-      connected = connected ++ connectedStonesHelper(Move(position, move.color), visited)
-    connected
+    if at(move.position) != move.color || visited.contains(move.position) then Set()
+    else
+      visited += move.position
+      var connected = Set(move)
+      for position <- neighborsOfColor(move.position, move.color) if !visited.contains(position)
+      do connected = connected ++ connectedStonesHelper(Move(position, move.color), visited)
+      connected
 
   private def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
 
@@ -139,15 +140,19 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
     allPositions.map(pos => pos -> neighbors(pos).map(p => Move(p, at(p))).toSet).toMap
 
   def checkAndClear(move: Move): Goban =
-    if Set(Empty, Sentinel, move.color).contains(at(move.position)) then return this
-    val opponent = !move.color
-    if hasLiberties(Move(move.x, move.y, move.z, opponent)) then this
-    else clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, opponent)), this)
+    if Set(Empty, Sentinel, move.color).contains(at(move.position)) then this
+    else
+      val opponent = !move.color
+      if hasLiberties(Move(move.x, move.y, move.z, opponent)) then this
+      else clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, opponent)), this)
 
   private def isSuicide(move: Move): Boolean =
-    if hasLiberties(move) then return false
-    val wouldBeBoardAfterMove = setStone(move)
-    neighbors(move.position).forall(p => wouldBeBoardAfterMove.hasLiberties(Move(p, !move.color)))
+    if hasLiberties(move) then false
+    else
+      val wouldBeBoardAfterMove = setStone(move)
+      neighbors(move.position).forall(p =>
+        wouldBeBoardAfterMove.hasLiberties(Move(p, !move.color))
+      )
 
   private def calculateAreas(): Set[Area] =
     @tailrec
@@ -165,8 +170,8 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
 
   @tailrec
   private def clearListOfPlaces(toClear: Set[Move], goban: Goban): Goban =
-    if toClear.isEmpty then return goban
-    clearListOfPlaces(toClear.dropRight(1), goban.setStone(Move(toClear.last.position, Empty)))
+    if toClear.isEmpty then goban
+    else clearListOfPlaces(toClear.dropRight(1), goban.setStone(Move(toClear.last.position, Empty)))
 
   private def isNeighbor(position: Position, x: Int, y: Int, z: Int): Boolean =
     isOnBoard(x, y, z) && (position - new Position(x, y, z)).abs == 1

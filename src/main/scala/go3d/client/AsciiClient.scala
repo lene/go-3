@@ -31,7 +31,9 @@ object AsciiClient extends InteractiveClient with LazyLogging:
         logger.info(s"\n${status.game.goban}")
         if status.game.moves.nonEmpty then logger.info(s"last move: ${status.game.moves.last}")
         Try {
-          val input = readLine("your input: ")
+          print("your input: ")
+          Console.flush()
+          val input = readLine()
           val Array(command, args) = (input + " ").split("\\s+", 2)
           handleCommand(client, command, args)
         }.flatten.map(_.foreach(sr => if sr.over then exit(0))).recover {

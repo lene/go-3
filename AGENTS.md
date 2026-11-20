@@ -41,6 +41,8 @@
 
 ## Known pitfalls
 
+- Never join two interpolated strings with `+` (and never add `return`): WartRemover counts each as a warning and the CI ratchet fails on any increase. Use one interpolation with local `val`s and shorten the text to fit 100 characters.
+
 - `origin` is the GitLab mirror and `github` is the primary remote: push with `git push -u github <branch>`, never `origin`, which creates stray branches on the read-only mirror.
 
 <!-- /bmad:context -->

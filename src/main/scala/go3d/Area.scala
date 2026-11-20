@@ -60,13 +60,15 @@ case class Area(stones: Set[Move], liberties: Int, goban: Goban):
     ).foldLeft(Set.empty)((acc, area) => acc ++ area)
 
   def insideArea(position: Position, alreadyFoundPaths: Set[Position] = Set.empty): Set[Position] =
-    if goban.at(position) == color then return Set.empty
-    val neighborsToConsider = goban.neighbors(position).
-      filter(pos => goban.at(pos) != color).
-      filter(!alreadyFoundPaths.contains(_))
-    if neighborsToConsider.exists(p => onBorderOfAreaButNotBoard(p)) then Set.empty
-    else if neighborsToConsider.isEmpty then alreadyFoundPaths + position
-    else insideArea(neighborsToConsider.head, alreadyFoundPaths + position ++ neighborsToConsider)
+    if goban.at(position) == color then Set.empty
+    else
+      val neighborsToConsider = goban.neighbors(position).
+        filter(pos => goban.at(pos) != color).
+        filter(!alreadyFoundPaths.contains(_))
+      if neighborsToConsider.exists(p => onBorderOfAreaButNotBoard(p)) then Set.empty
+      else if neighborsToConsider.isEmpty then alreadyFoundPaths + position
+      else
+        insideArea(neighborsToConsider.head, alreadyFoundPaths + position ++ neighborsToConsider)
 
   def onBorderOfAreaButNotBoard(position: Position): Boolean =
     if outerHull(0).x == 1 && outerHull(1).x == goban.size ||
