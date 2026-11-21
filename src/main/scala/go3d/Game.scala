@@ -102,11 +102,21 @@ class Game(
 
   def moveColor: Color = if moves.isEmpty then Black else !moves.last.color
 
+  /** The score of each player: the stones on the board plus the empty areas that only that
+    * player's stones border (Tromp-Taylor area scoring).
+    *
+    * Captures are not added. Under area scoring the points freed by a capture count as territory
+    * when only the capturer's stones border them, so adding the captures would count them twice.
+    * That reasoning comes from 2D Go and may not hold in 3D, where adding captures back may be
+    * needed for more balanced and interesting games.
+    *
+    * Dead stones are never removed from the board, so a game has to be played until dead groups
+    * are captured, or they count for their owner.
+    */
   def score: Map[Color, Int] =
-    val scores = mutable.Map[Color, Int]().withDefaultValue(0)
+    val scores = mutable.Map[Color, Int](Black -> 0, White -> 0)
     for color <- Seq(Black, White) do
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
-      scores(color) = scores(color) + captures(color)
     val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
     for area <- emptyAreas do
       boundaryColor(area) match

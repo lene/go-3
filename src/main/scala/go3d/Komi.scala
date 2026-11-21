@@ -6,8 +6,8 @@ import scala.util.{Failure, Success, Try}
 /** The komi of a game: the points added to White's score, to make up for Black's first move.
   *
   * A valid komi is a half-integer, so that a game with integer scores never ends in a tie, and has
-  * a magnitude of at most size³, the number of points on the board. That is a sanity bound, not a
-  * limit on scores: captures count in [[Game.score]], which can exceed the number of points.
+  * a magnitude of at most size³, the number of points on the board. That is the most a player can
+  * score, as [[Game.score]] counts only stones and territory.
   * Validation is exact: a [[java.math.BigDecimal]] has no rounding and does not overflow, whatever
   * the size, whereas double arithmetic would turn a text like 6.5000000000000001 into 6.5.
   */
