@@ -28,6 +28,8 @@ The game logic is split between two key classes:
   - Komi: points added to White's score, set when the game is created (default 0.5) and stored
     in the game JSON; `Game.winner` compares White's score plus komi with Black's once the game is
     over. Only half-integers up to size³ are valid (`Komi.scala`), so a game never ties
+  - The status response carries the winner: `StatusResponse` derives `over` and `winner` from its
+    game, so they cannot disagree with it
 
 Key domain types:
 - `Position(x, y, z)`: Coordinates on the board (1-indexed)
@@ -45,7 +47,8 @@ The server uses **http4s with Cats Effect** for async HTTP handling:
   - `GET /new/{size}[?komi=k]` - Create new game; `k` is a half-integer such as `6.5` or `-0.5`,
     default `0.5`; anything else, or `komi` more than once, is a 400
   - `GET /register/{gameId}/{color}` - Register player
-  - `GET /status/{gameId}` - Get current game state
+  - `GET /status/{gameId}` - Get current game state; `over` says whether the game is over, and
+    `winner` (a colour, like `playerColor`) is there if and only if it is
   - `GET /status/{gameId}/{moveCount}` - Game state after the first `moveCount` moves (replay)
   - `GET /set/{gameId}/{x}/{y}/{z}` - Place stone
   - `GET /pass/{gameId}` - Pass turn
@@ -110,3 +113,10 @@ This simplifies neighbor checking by avoiding bounds checks.
 Uses Circe for encoding game state, moves, and API responses. See `server/Jsonify.scala` for
 encoders/decoders. A game's `komi` is a number field of the game JSON, so every store keeps it
 (files, DynamoDB, the S3 archive); a stored game without it decodes with komi 0.5.
+
+A status response has `over` always and `winner` (in the format of `playerColor`, from
+`Game.winner`) if and only if the game is over, also for a replay at move `n`. The decoder rejects a
+document whose `over`, or whose `winner`, differs from its game's, and accepts `over: true` without
+`winner`, which is how responses from before the winner existed look. The winner is not stored: the
+game JSON stays the single source, and the winner follows from the game and its komi. No scores are
+in the response.

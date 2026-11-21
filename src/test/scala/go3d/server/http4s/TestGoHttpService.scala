@@ -9,7 +9,7 @@ import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import go3d.{BadKomiTexts, Black, Color, Move, Pass, White}
-import go3d.server.service.GamePositions
+import go3d.server.service.{GamePositions, StatusAssertions}
 import io.circe.parser.decode
 import org.http4s.implicits.uri
 import org.http4s.{EntityDecoder, Headers, Method, Request, Response, Status, Uri}
@@ -316,31 +316,45 @@ class TestGoHttpService extends LazyLogging:
       val replayed = decode[StatusResponse](getJson(httpRequest(s"/status/$gameId/$count")))
       Assertions.assertEquals(Right(6.5), replayed.map(_.game.komi))
 
-  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it. */
-  private def finishedGameWith(query: String): go3d.Game =
+  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it,
+    * and returns the response to each move.
+    */
+  private def playToTheEnd(query: String): List[String] =
     val gameId = createdGameId(3, query)
     val tokens = Map(
       Black -> checkedRegisterPlayer(gameId, Black),
       White -> checkedRegisterPlayer(gameId, White)
     )
-    val colors = List(Black, White, Black)
-    for (color, (x, y, z)) <- colors.zip(GamePositions.BlackLeadsByOne) do
-      authorizedGet(s"/set/$gameId/$x/$y/$z", tokens(color))
-    authorizedGet(s"/pass/$gameId", tokens(White))
-    decode[StatusResponse](authorizedGet(s"/pass/$gameId", tokens(Black)))
-      .map(_.game).getOrElse(Assertions.fail())
+    val setResponses = List(Black, White, Black).zip(GamePositions.BlackLeadsByOne).map {
+      case (color, (x, y, z)) => authorizedGet(s"/set/$gameId/$x/$y/$z", tokens(color))
+    }
+    val passes = List(White, Black).map(color => authorizedGet(s"/pass/$gameId", tokens(color)))
+    setResponses ++ passes
+
+  /** Only the end of the game names the winner. The server archives a finished game and reads it
+    * back from the file store of the shared `Games`, which only `TestServer` sets up for its
+    * tests, so the status fetched after the end is checked there.
+    */
+  private def assertWinnerOnlyWhenOver(query: String, winner: Color): Unit =
+    val responses = playToTheEnd(query)
+    responses.init.foreach(StatusAssertions.assertNotOver)
+    StatusAssertions.assertWonBy(responses.last, winner)
 
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
-    val game = finishedGameWith("")
-    Assertions.assertTrue(game.isOver)
-    Assertions.assertEquals(0.5, game.komi)
-    Assertions.assertEquals(Some(Black), game.winner)
+    assertWinnerOnlyWhenOver("", Black)
 
   @Test def testWinnerWithKomiHalfIsBlack(): Unit =
-    Assertions.assertEquals(Some(Black), finishedGameWith("?komi=0.5").winner)
+    assertWinnerOnlyWhenOver("?komi=0.5", Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    val game = finishedGameWith("?komi=6.5")
-    Assertions.assertTrue(game.isOver)
-    Assertions.assertEquals(6.5, game.komi)
-    Assertions.assertEquals(Some(White), game.winner)
+    assertWinnerOnlyWhenOver("?komi=6.5", White)
+
+  @Test def testWinnerWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("?komi=-0.5", Black)
+
+  @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
+    val gameId = createdGameId(3, "?komi=6.5")
+    StatusAssertions.assertNotOver(getJson(httpRequest(s"/status/$gameId")))
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    StatusAssertions.assertNotOver(authorizedGet(s"/status/$gameId", blackToken))

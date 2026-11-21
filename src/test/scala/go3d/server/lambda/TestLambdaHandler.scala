@@ -3,14 +3,14 @@ package go3d.server.lambda
 import com.amazonaws.services.lambda.runtime.events.{
   APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent
 }
-import go3d.{BadKomiTexts, Black, White}
+import go3d.{BadKomiTexts, Black, Color, White}
 import go3d.server.{
   GameCreatedResponse, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
   decodePlayerRegisteredResponse, decodeStatusResponse
 }
 import go3d.server.service.{
   FailingGameStore, GamePositions, GameService, InMemoryGameArchive, InMemoryGameStore,
-  InterleavingStore
+  InterleavingStore, StatusAssertions
 }
 import io.circe.parser.decode
 import org.junit.jupiter.api.{Assertions, Test}
@@ -252,28 +252,39 @@ class TestLambdaHandler:
       val replayed = decode[StatusResponse](call(replayPath(gameId, count)).getBody)
       Assertions.assertEquals(6.5, replayed.toTry.success.value.game.komi)
 
-  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it. */
-  private def finishedGameWith(komiValues: Option[List[String]]): go3d.Game =
+  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it,
+    * and checks that only the end of the game names the winner.
+    */
+  private def assertWinnerOnlyWhenOver(komiValues: Option[List[String]], winner: Color): Unit =
     val (gameId, black, white) = startedGameWithKomiValues(3, komiValues)
-    playPositions(gameId, black, white, GamePositions.BlackLeadsByOne)
-    Assertions.assertEquals(200, callWithToken(passPath(gameId), white).getStatusCode)
-    val last = callWithToken(passPath(gameId), black)
-    decode[StatusResponse](last.getBody).toTry.success.value.game
+    val setResponses = GamePositions.withTokens(black, white, GamePositions.BlackLeadsByOne)
+      .map((token, position) => callWithToken(setPath(gameId, position), token))
+    val passes = List(white, black).map(token => callWithToken(passPath(gameId), token))
+    val responses = setResponses ++ passes
+    Assertions.assertTrue(responses.forall(_.getStatusCode == 200))
+    StatusAssertions.assertWinnerOnlyWhenOver(
+      responses.map(_.getBody),
+      List(call(statusPath(gameId)).getBody, callWithToken(statusPath(gameId), black).getBody),
+      count => call(replayPath(gameId, count)).getBody,
+      winner
+    )
 
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
-    val game = finishedGameWith(None)
-    Assertions.assertTrue(game.isOver)
-    Assertions.assertEquals(0.5, game.komi)
-    Assertions.assertEquals(Some(Black), game.winner)
+    assertWinnerOnlyWhenOver(None, Black)
 
   @Test def testWinnerWithKomiHalfIsBlack(): Unit =
-    Assertions.assertEquals(Some(Black), finishedGameWith(Some(List("0.5"))).winner)
+    assertWinnerOnlyWhenOver(Some(List("0.5")), Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    val game = finishedGameWith(Some(List("6.5")))
-    Assertions.assertTrue(game.isOver)
-    Assertions.assertEquals(6.5, game.komi)
-    Assertions.assertEquals(Some(White), game.winner)
+    assertWinnerOnlyWhenOver(Some(List("6.5")), White)
+
+  @Test def testWinnerWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver(Some(List("-0.5")), Black)
+
+  @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
+    val (gameId, black, _) = startedGameWithKomi("6.5")
+    StatusAssertions.assertNotOver(call(statusPath(gameId)).getBody)
+    StatusAssertions.assertNotOver(callWithToken(statusPath(gameId), black).getBody)
 
   @Test def testNewGameWithBadSizeReturns400(): Unit =
     Assertions.assertEquals(400, call("/new/4").getStatusCode)

@@ -16,6 +16,7 @@ import go3d.White
 import go3d.server.DuplicateColor
 import go3d.server.NonexistentGame
 import go3d.server.NotReadyToSet
+import go3d.server.StatusResponse
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
@@ -127,22 +128,46 @@ class TestGameService:
     Assertions.assertTrue(game.captures.nonEmpty)
     Assertions.assertEquals(6.5, game.komi)
 
-  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it. */
-  private def finishedGameWithKomi(komi: Double): Game =
+  private def assertOverAndWinner(
+      status: StatusResponse,
+      over: Boolean,
+      winner: Option[Color]
+  ): Unit =
+    Assertions.assertEquals(over, status.over)
+    Assertions.assertEquals(winner, status.winner)
+    Assertions.assertEquals(winner, status.game.winner)
+
+  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it,
+    * and checks that only the end of the game names the winner.
+    */
+  private def assertWinnerOnlyWhenOver(komi: Double, winner: Color): Unit =
     val (gameId, black, white) = startedGame(3, komi)
-    playPositions(gameId, black, white, GamePositions.BlackLeadsByOne)
-    service.pass(gameId, white).success.value
-    service.pass(gameId, black).success.value.game
+    val sets = GamePositions.withTokens(black, white, GamePositions.BlackLeadsByOne)
+      .map { case (token, (x, y, z)) => service.set(gameId, token, x, y, z).success.value }
+    val passed = service.pass(gameId, white).success.value
+    val last = service.pass(gameId, black).success.value
+    (sets :+ passed).foreach(assertOverAndWinner(_, false, None))
+    assertOverAndWinner(last, true, Some(winner))
+    assertOverAndWinner(service.status(gameId, None).success.value, true, Some(winner))
+    assertOverAndWinner(service.status(gameId, Some(white)).success.value, true, Some(winner))
+    assertOverAndWinner(service.statusAt(gameId, 5).success.value, true, Some(winner))
+    assertOverAndWinner(service.statusAt(gameId, 4).success.value, false, None)
+    assertOverAndWinner(service.statusAt(gameId, 0).success.value, false, None)
 
   @Test def testWinnerWithDefaultKomiIsBlack(): Unit =
-    val game = finishedGameWithKomi(Komi.Default)
-    Assertions.assertTrue(game.isOver)
-    Assertions.assertEquals(Some(Black), game.winner)
+    assertWinnerOnlyWhenOver(Komi.Default, Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    val game = finishedGameWithKomi(6.5)
-    Assertions.assertTrue(game.isOver)
-    Assertions.assertEquals(Some(White), game.winner)
+    assertWinnerOnlyWhenOver(6.5, White)
+
+  @Test def testWinnerWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver(-0.5, Black)
+
+  @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
+    val (gameId, black, _) = startedGame(3, 6.5)
+    service.set(gameId, black, 2, 2, 2).success.value
+    assertOverAndWinner(service.status(gameId, None).success.value, false, None)
+    assertOverAndWinner(service.status(gameId, Some(black)).success.value, false, None)
 
   @Test def testFinishedGameIsArchivedWithKomi(): Unit =
     val (gameId, black, white) = startedGame(3, 6.5)

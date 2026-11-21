@@ -14,14 +14,19 @@ case class PlayerRegisteredResponse(
     ready: Boolean,
     debug: RequestInfo
 ) extends GoResponse
+
+/** `over` and `winner` come from the game, so a response cannot say that a game is over, or who
+  * won it, differently from the game it carries.
+  */
 case class StatusResponse(
     game: Game,
     moves: List[Position],
     ready: Boolean,
-    over: Boolean,
     playerColor: Option[Color],
     debug: RequestInfo
-) extends GoResponse
+) extends GoResponse:
+  def over: Boolean = game.isOver
+  def winner: Option[Color] = game.winner
 
 case class GameOverResponse(game: Game, debug: RequestInfo) extends GoResponse
 

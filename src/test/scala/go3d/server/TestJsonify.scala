@@ -215,7 +215,7 @@ class TestJsonify:
 
   @Test def testStatusAndRegisteredResponsesCarryKomiInGame(): Unit =
     val game = Game.start(TestSize, 6.5).success.value
-    val status = StatusResponse(game, List(), false, false, None, NullRequestInfo)
+    val status = StatusResponse(game, List(), false, None, NullRequestInfo)
     Assertions.assertEquals(
       6.5,
       decode[StatusResponse](status.asJson.noSpaces).toTry.success.value.game.komi
@@ -283,9 +283,96 @@ class TestJsonify:
       Game.start(TestSize).success.value,
       List(Position(1, 1, 1)),
       true,
-      false,
       None,
       RequestInfo(Map("header name" -> "header value"), "query", "path", false)
     )
     val json = response.asJson.noSpaces
     Assertions.assertEquals(Right(response), decode[StatusResponse](json), json)
+
+  private def statusOf(game: Game): StatusResponse =
+    StatusResponse(game, List(), false, None, NullRequestInfo)
+
+  private def finishedGame(komi: Double): Game =
+    playListOfMovesWithKomi(TestSize, komi, BlackLeadsByOneMoves)
+
+  private def decodeStatus(json: Json): Either[io.circe.Error, StatusResponse] =
+    decode[StatusResponse](json.noSpaces)
+
+  @Test def testStatusResponseDerivesOverAndWinnerFromItsGame(): Unit =
+    val running = statusOf(Game.start(TestSize).success.value)
+    Assertions.assertFalse(running.over)
+    Assertions.assertEquals(None, running.winner)
+    val finished = statusOf(finishedGame(6.5))
+    Assertions.assertTrue(finished.over)
+    Assertions.assertEquals(Some(White), finished.winner)
+
+  @Test def testStatusResponseJsonHasWinnerIfAndOnlyIfOver(): Unit =
+    val games = List(
+      Game.start(TestSize).success.value,
+      playListOfMovesWithKomi(TestSize, 6.5, BlackLeadsByOneMoves.take(3)),
+      playListOfMovesWithKomi(TestSize, 6.5, BlackLeadsByOneMoves.take(4)),
+      finishedGame(0.5),
+      finishedGame(6.5),
+      finishedGame(-0.5)
+    )
+    for game <- games do
+      val response = statusOf(game)
+      val json = response.asJson
+      val fields = json.hcursor
+      Assertions.assertEquals(Right(game.isOver), fields.downField("over").as[Boolean])
+      Assertions.assertEquals(game.isOver, fields.downField("winner").succeeded, json.noSpaces)
+      Assertions.assertEquals(Right(response.winner), fields.downField("winner").as[Option[Color]])
+      Assertions.assertEquals(Right(response), decodeStatus(json), json.noSpaces)
+
+  @Test def testStatusResponseJsonWritesWinnerInColorFormat(): Unit =
+    for (komi, winner) <- List[(Double, Color)]((0.5, Black), (6.5, White)) do
+      val json = statusOf(finishedGame(komi)).asJson
+      Assertions.assertEquals(Right(winner), json.hcursor.downField("winner").as[Color])
+      Assertions.assertEquals(
+        Some(winner.asJson),
+        json.hcursor.downField("winner").focus,
+        json.noSpaces
+      )
+
+  @Test def testStatusResponseWithOverAndWithoutWinnerDecodes(): Unit =
+    val response = statusOf(finishedGame(6.5))
+    val legacy = response.asJson.mapObject(_.remove("winner"))
+    Assertions.assertEquals(Right(response), decodeStatus(legacy), legacy.noSpaces)
+    Assertions.assertEquals(Right(Some(White)), decodeStatus(legacy).map(_.winner))
+
+  @Test def testStatusResponseWithNullWinnerDecodesLikeWithoutWinner(): Unit =
+    val response = statusOf(finishedGame(0.5))
+    val json = response.asJson.mapObject(_.add("winner", Json.Null))
+    Assertions.assertEquals(Right(response), decodeStatus(json), json.noSpaces)
+
+  @Test def testStatusResponseWithWinnerWhileNotOverFailsToDecode(): Unit =
+    val running = statusOf(Game.start(TestSize).success.value).asJson
+    for winner <- List[Color](Black, White) do
+      val json = running.mapObject(_.add("winner", winner.asJson))
+      Assertions.assertTrue(decodeStatus(json).isLeft, json.noSpaces)
+
+  @Test def testStatusResponseWithWrongOverFailsToDecode(): Unit =
+    val running = statusOf(Game.start(TestSize).success.value).asJson
+    val trueWhileRunning = running.mapObject(_.add("over", Json.True))
+    Assertions.assertTrue(decodeStatus(trueWhileRunning).isLeft, trueWhileRunning.noSpaces)
+    val finished = statusOf(finishedGame(6.5)).asJson
+    val falseWhileFinished = finished.mapObject(_.add("over", Json.False))
+    Assertions.assertTrue(decodeStatus(falseWhileFinished).isLeft, falseWhileFinished.noSpaces)
+    val falseWithoutWinner = falseWhileFinished.mapObject(_.remove("winner"))
+    Assertions.assertTrue(decodeStatus(falseWithoutWinner).isLeft, falseWithoutWinner.noSpaces)
+
+  @Test def testStatusResponseWithOtherWinnerThanItsGamesFailsToDecode(): Unit =
+    for (komi, wrongWinner) <- List[(Double, Color)]((0.5, White), (6.5, Black)) do
+      val json = statusOf(finishedGame(komi)).asJson.mapObject(_.add("winner", wrongWinner.asJson))
+      Assertions.assertTrue(decodeStatus(json).isLeft, json.noSpaces)
+
+  @Test def testStatusResponseWithMalformedWinnerFailsToDecode(): Unit =
+    val finished = statusOf(finishedGame(6.5)).asJson
+    val malformed = List(Json.fromString("O"), Json.True, Json.obj(("color", Json.fromString("x"))))
+    for winner <- malformed do
+      val json = finished.mapObject(_.add("winner", winner))
+      Assertions.assertTrue(decodeStatus(json).isLeft, json.noSpaces)
+
+  @Test def testStatusResponseWithoutOverFailsToDecode(): Unit =
+    val json = statusOf(finishedGame(6.5)).asJson.mapObject(_.remove("over"))
+    Assertions.assertTrue(decodeStatus(json).isLeft, json.noSpaces)

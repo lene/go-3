@@ -51,6 +51,15 @@ curl -s -H "Authentication: Bearer $BLACK_TOKEN" "http://localhost:6030/set/$GAM
 curl -s -H "Authentication: Bearer $WHITE_TOKEN" "http://localhost:6030/set/$GAME_ID/4/3/3"
 ```
 
+### 5. See Who Won
+
+Every move and `/status/$GAME_ID` answer with `"over"`. Once it is `true`, the response also has a
+`"winner"` (`{"color":"@"}` for Black, `{"color":"O"}` for White): the player with the higher
+score after the komi is added to White's. There is no `"winner"` while the game is running.
+```bash
+curl -s "http://localhost:6030/status/$GAME_ID" | jq '{over, winner}'
+```
+
 ## Color Symbols
 - Black: `@` (or `b` in some contexts)
 - White: `O` (capital O, or `w` in some contexts)

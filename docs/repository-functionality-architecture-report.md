@@ -53,7 +53,7 @@ Implemented rule behavior:
 - Generate possible legal moves for the active player.
 - Score by stones on board plus captures plus enclosed empty territory.
 
-Komi is a field of `Game`: the points added to White's score, 0.5 unless chosen with `/new/{size}?komi=k`. `Game.winner` compares White's score plus komi with Black's once the game is over. Only half-integers up to size³ are valid, so a game never ties.
+Komi is a field of `Game`: the points added to White's score, 0.5 unless chosen with `/new/{size}?komi=k`. `Game.winner` compares White's score plus komi with Black's once the game is over, and `StatusResponse` carries it as `winner` if and only if `over` is true. Only half-integers up to size³ are valid, so a game never ties.
 
 Not currently represented as first-class game features:
 
@@ -83,7 +83,7 @@ The HTTP API is JSON-based, except for plain error strings in many failure cases
 | --- | --- | --- |
 | `GET /new/{size}[?komi=k]` | No | Creates a new active game with komi `k` (default 0.5; a half-integer, else 400) and returns `GameCreatedResponse`. |
 | `GET /register/{gameId}/{color}` | No | Registers a player color and returns a bearer token in `PlayerRegisteredResponse`. |
-| `GET /status/{gameId}` | Optional | Returns board state, legal moves if authenticated as active player, readiness, and game-over status. |
+| `GET /status/{gameId}` | Optional | Returns board state, legal moves if authenticated as active player, readiness, and game-over status (`over`, with `winner` if and only if the game is over). |
 | `GET /status/{gameId}/d` | Optional | Same as status, with debug request info only when authorized. |
 | `GET /set/{gameId}/{x}/{y}/{z}` | Required | Applies the authenticated player's move. |
 | `GET /set/{gameId}/{x}/{y}/{z}/d` | Required | Applies a move and includes debug request info. |

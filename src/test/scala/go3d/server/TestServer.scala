@@ -12,6 +12,7 @@ import scala.util.{Failure, Random, Success, Try}
 
 import go3d._
 import go3d.server.http4s.GoHttpService
+import go3d.server.service.{GamePositions, StatusAssertions}
 import org.scalatest.TryValues.*
 import org.scalatest.OptionValues.*
 
@@ -549,6 +550,41 @@ class TestServer:
     gameData.pass(White)
     val statusResponse = gameData.status()
     Assertions.assertTrue(statusResponse.over, statusResponse.toString)
+
+  private def bodyOf(path: String, header: Map[String, String]): String =
+    requests.get(s"${GameData.ServerURL}$path", headers = header).text()
+
+  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it,
+    * and checks that only the end of the game names the winner, also when the status of the
+    * finished game is fetched later and when it is replayed.
+    */
+  private def assertWinnerOnlyWhenOver(query: String, winner: Color): Unit =
+    val gameId = getGCR(s"${GameData.ServerURL}/new/3$query").id
+    val tokens = List(Black, White).map(c => c -> GameData.register(gameId, c).authToken).toMap
+    def authorized(path: String, color: Color): String =
+      bodyOf(path, Map("Authentication" -> s"Bearer ${tokens(color)}"))
+    val setResponses = List(Black, White, Black).zip(GamePositions.BlackLeadsByOne).map {
+      case (color, (x, y, z)) => authorized(s"/set/$gameId/$x/$y/$z", color)
+    }
+    val passes = List(White, Black).map(color => authorized(s"/pass/$gameId", color))
+    StatusAssertions.assertWinnerOnlyWhenOver(
+      setResponses ++ passes,
+      List(bodyOf(s"/status/$gameId", Map())),
+      count => bodyOf(s"/status/$gameId/$count", Map()),
+      winner
+    )
+
+  @Test def testWinnerWithoutKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("", Black)
+
+  @Test def testWinnerWithKomiHalfIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("?komi=0.5", Black)
+
+  @Test def testWinnerWithLargeKomiIsWhite(): Unit =
+    assertWinnerOnlyWhenOver("?komi=6.5", White)
+
+  @Test def testWinnerWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("?komi=-0.5", Black)
 
   @Test def testGameOverAfterFullNumberOfMoves(): Unit =
     val gameData: GameData = setUpGame(3)

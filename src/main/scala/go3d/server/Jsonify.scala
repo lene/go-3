@@ -246,16 +246,36 @@ implicit val decodePlayerRegisteredResponse: Decoder[PlayerRegisteredResponse] =
       debug <- c.downField("debug").as[RequestInfo]
     yield PlayerRegisteredResponse(game, color, authToken, ready, debug)
 
+/** `over` is always written, `winner` if and only if the game is over. */
 implicit val encodeStatusResponse: Encoder[StatusResponse] =
   (response: StatusResponse) =>
+    val winner = response.winner.map(color => ("winner", color.asJson)).toList
     Json.obj(
-      ("game", response.game.asJson),
-      ("moves", response.moves.asJson),
-      ("ready", Json.fromBoolean(response.ready)),
-      ("over", Json.fromBoolean(response.over)),
-      ("playerColor", response.playerColor.asJson),
-      ("debug", response.debug.asJson)
+      List(
+        ("game", response.game.asJson),
+        ("moves", response.moves.asJson),
+        ("ready", Json.fromBoolean(response.ready)),
+        ("over", Json.fromBoolean(response.over))
+      ) ++ winner ++ List(
+        ("playerColor", response.playerColor.asJson),
+        ("debug", response.debug.asJson)
+      )*
     )
+
+/** The `over` and `winner` of a status document must be those of its game. A missing `winner` is
+  * accepted, which is how the responses of servers from before the winner existed look.
+  */
+private def checkOverAndWinner(
+    c: HCursor,
+    response: StatusResponse,
+    over: Boolean,
+    winner: Option[Color]
+): Decoder.Result[Unit] =
+  if over != response.over then
+    Left(DecodingFailure("over differs from the game", c.downField("over").history))
+  else if winner.exists(color => !response.winner.contains(color)) then
+    Left(DecodingFailure("winner is not the winner of the game", c.downField("winner").history))
+  else Right(())
 
 implicit val decodeStatusResponse: Decoder[StatusResponse] =
   (c: HCursor) =>
@@ -264,9 +284,12 @@ implicit val decodeStatusResponse: Decoder[StatusResponse] =
       moves <- c.downField("moves").as[List[Position]]
       ready <- c.downField("ready").as[Boolean]
       over <- c.downField("over").as[Boolean]
+      winner <- c.downField("winner").as[Option[Color]]
       playerColor <- c.downField("playerColor").as[Option[Color]]
       debug <- c.downField("debug").as[RequestInfo]
-    yield StatusResponse(game, moves, ready, over, playerColor, debug)
+      response = StatusResponse(game, moves, ready, playerColor, debug)
+      _ <- checkOverAndWinner(c, response, over, winner)
+    yield response
 
 implicit val encodeOpenGamesResponse: Encoder[OpenGamesResponse] =
   (response: OpenGamesResponse) => Json.obj(("ids", response.ids.asJson))

@@ -75,9 +75,9 @@ class GameService(
         token.fold[Try[Option[Color]]](Success(None))(t => authenticate(gameId, t).map(Some(_)))
     yield
       val game = stored.game
-      color.fold(StatusResponse(game, List(), false, game.isOver, None, NullRequestInfo)) { c =>
+      color.fold(StatusResponse(game, List(), false, None, NullRequestInfo)) { c =>
         val ready = game.isTurn(c) && stored.players.size == 2
-        StatusResponse(game, game.possibleMoves(c), ready, game.isOver, Some(c), NullRequestInfo)
+        StatusResponse(game, game.possibleMoves(c), ready, Some(c), NullRequestInfo)
       }
 
   /** The game after its first `moveCount` moves, for replaying it; the count is clamped to the
@@ -87,7 +87,7 @@ class GameService(
     for
       stored <- existing(gameId)
       game <- stored.game.atMove(moveCount.max(0).min(stored.game.moves.length))
-    yield StatusResponse(game, List(), false, game.isOver, None, NullRequestInfo)
+    yield StatusResponse(game, List(), false, None, NullRequestInfo)
 
   /** A short-lived download URL for the archive of a finished game; None when it has none. */
   def archivedUrl(gameId: String): Try[Option[String]] = archive.url(gameId)
@@ -114,14 +114,7 @@ class GameService(
       _ <- store.updateGame(gameId, stored.version, newGame)
     yield
       if newGame.isOver then archiveLogged(gameId, newGame, stored.players)
-      StatusResponse(
-        newGame,
-        newGame.possibleMoves(color),
-        false,
-        newGame.isOver,
-        Some(color),
-        NullRequestInfo
-      )
+      StatusResponse(newGame, newGame.possibleMoves(color), false, Some(color), NullRequestInfo)
 
   /** Archives every finished game that has no archive key, which a failed archive at the end of
     * the game leaves behind. Safe to run repeatedly: a game is archived once, and the next run
