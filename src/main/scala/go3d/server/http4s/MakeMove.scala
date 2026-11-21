@@ -29,7 +29,6 @@ abstract case class MakeMove(gameId: String, request: Request[IO])
         newGame,
         newGame.possibleMoves(player.color),
         false,
-        newGame.isOver,
         Some(player.color),
         requestInfo.debugInfo
       )

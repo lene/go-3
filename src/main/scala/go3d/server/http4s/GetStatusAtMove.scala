@@ -24,7 +24,6 @@ case class GetStatusAtMove(gameId: String, moveCount: Int, request: Request[IO])
       game = replayedGame,
       moves = List(),
       ready = false,
-      over = replayedGame.isOver,
       playerColor = None,
       debug = requestInfo.debugInfo
     )

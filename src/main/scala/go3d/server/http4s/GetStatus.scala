@@ -21,10 +21,9 @@ case class GetStatus(gameId: String, request: Request[IO]) extends BaseHandler w
             game,
             game.possibleMoves(p.color),
             ready,
-            game.isOver,
             Some(p.color),
             requestInfo.debugInfo
           )
         case None =>
-          StatusResponse(game, List(), false, game.isOver, None, requestInfo.debugInfo)
+          StatusResponse(game, List(), false, None, requestInfo.debugInfo)
     }

@@ -68,7 +68,7 @@ Issue #101 requires CI to produce the reviewed plan before #128 is applied.
 
 `staging.tfvars` describes a second copy of the stack with `-staging` names, its own state key
 (`go3d-staging/terraform.tfstate`) and `enable_write_routes = true`: the Lambda then also serves
-`GET /new/{size}`, `/register/{gameId}/{color}`, `/set/{gameId}/{x}/{y}/{z}` and
+`GET /new/{size}[?komi=k]`, `/register/{gameId}/{color}`, `/set/{gameId}/{x}/{y}/{z}` and
 `/pass/{gameId}`, with write access to its own tables and to `archives/*` in its own bucket.
 Production keeps `enable_write_routes = false` until the cutover (#125).
 
@@ -84,7 +84,7 @@ Smoke test (tokens from the register responses):
 
 ```bash
 API="$(terraform output -raw api_base_url)"   # after init with the staging state key
-ID=$(curl -s "$API/new/3" | jq -r .id)
+ID=$(curl -s "$API/new/3" | jq -r .id)   # add ?komi=6.5 for another komi
 BLACK=$(curl -s "$API/register/$ID/%40" | jq -r .authToken)
 WHITE=$(curl -s "$API/register/$ID/O" | jq -r .authToken)
 curl -s -H "Authentication: Bearer $BLACK" "$API/set/$ID/2/2/2"

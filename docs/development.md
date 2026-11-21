@@ -162,7 +162,7 @@ Implementation details:
 #### Testing cursor positioning
 ```bash
 # Create game and register both players
-GAME_ID=$(curl -s http://localhost:6030/new/5 | jq -r '.id')
+GAME_ID=$(curl -s http://localhost:6030/new/5 | jq -r '.id')   # add ?komi=6.5 for another komi
 BLACK_TOKEN=$(curl -s "http://localhost:6030/register/$GAME_ID/@" | jq -r '.authToken')
 WHITE_TOKEN=$(curl -s "http://localhost:6030/register/$GAME_ID/O" | jq -r '.authToken')
 

@@ -41,6 +41,16 @@ abstract class GameStoreContract:
     Assertions.assertEquals(Some(0L), stored.map(_.version))
     Assertions.assertEquals(Some(Set.empty[go3d.Color]), stored.map(_.players))
 
+  @Test def testKomiOfCreatedAndUpdatedGameIsReadBack(): Unit =
+    val created = Game.start(3, 6.5).success.value
+    store.createGame(gameId, created).success.value
+    Assertions.assertEquals(Some(6.5), store.getGame(gameId).success.value.map(_.game.komi))
+    val moved = created.makeMove(Move(2, 2, 2, Black)).success.value
+    store.updateGame(gameId, 0L, moved).success.value
+    val stored = store.getGame(gameId).success.value.map(_.game)
+    Assertions.assertEquals(Some(6.5), stored.map(_.komi))
+    Assertions.assertEquals(Some(moved), stored)
+
   @Test def testMissingGameIsNone(): Unit =
     Assertions.assertEquals(None, store.getGame(gameId).success.value)
 

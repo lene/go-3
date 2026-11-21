@@ -4,6 +4,8 @@ import go3d.Color
 import go3d.Game
 import go3d.Goban
 import go3d.HasColor
+import go3d.Komi
+import go3d.MaxBoardSize
 import go3d.Move
 import go3d.Pass
 import go3d.Position
@@ -131,8 +133,24 @@ implicit val encodeGame: Encoder[Game] =
       ("size", Json.fromInt(game.size)),
       ("goban", game.goban.asJson),
       ("moves", game.moves.asJson),
-      ("captures", game.captures.asJson)
+      ("captures", game.captures.asJson),
+      ("komi", Json.fromDoubleOrNull(game.komi))
     )
+
+/** The komi of a stored game: records from before komi existed have none, or a null one, and get
+  * the default komi. A stored komi must be valid for the size of the game.
+  */
+private def decodeKomi(c: HCursor, size: Int): Decoder.Result[Double] =
+  c.downField("komi").as[Option[Double]].flatMap {
+    case None => Right(Komi.Default)
+    case Some(komi) => checkKomi(c, komi, size)
+  }
+
+/** The `komi` field of the object at `c`, if it is valid for a game of `size`. */
+private def checkKomi(c: HCursor, komi: Double, size: Int): Decoder.Result[Double] =
+  Komi.validate(komi, size).toEither.left.map(e =>
+    DecodingFailure(e.getMessage, c.downField("komi").history)
+  )
 
 implicit val decodeGame: Decoder[Game] =
   (c: HCursor) =>
@@ -141,7 +159,8 @@ implicit val decodeGame: Decoder[Game] =
       goban <- c.downField("goban").as[Goban]
       moves <- c.downField("moves").as[Array[Move | Pass]]
       captures <- c.downField("captures").as[Map[Int, Array[Move]]]
-    yield new Game(size, goban, moves, captures)
+      komi <- decodeKomi(c, size)
+    yield new Game(size, goban, moves, captures, komi)
 
 implicit val encodePlayer: Encoder[Player] =
   (player: Player) =>
@@ -231,17 +250,23 @@ implicit val decodePlayerRegisteredResponse: Decoder[PlayerRegisteredResponse] =
       debug <- c.downField("debug").as[RequestInfo]
     yield PlayerRegisteredResponse(game, color, authToken, ready, debug)
 
+/** `over` is always written, `winner` if and only if the game is over. */
 implicit val encodeStatusResponse: Encoder[StatusResponse] =
   (response: StatusResponse) =>
+    val winner = response.winner.map(color => ("winner", color.asJson)).toList
     Json.obj(
-      ("game", response.game.asJson),
-      ("moves", response.moves.asJson),
-      ("ready", Json.fromBoolean(response.ready)),
-      ("over", Json.fromBoolean(response.over)),
-      ("playerColor", response.playerColor.asJson),
-      ("debug", response.debug.asJson)
+      List(
+        ("game", response.game.asJson),
+        ("moves", response.moves.asJson),
+        ("ready", Json.fromBoolean(response.ready)),
+        ("over", Json.fromBoolean(response.over))
+      ) ++ winner ++ List(
+        ("playerColor", response.playerColor.asJson),
+        ("debug", response.debug.asJson)
+      )*
     )
 
+/** Checked by [[StatusResponse.fromDocument]]: the winner is the document's, never recomputed. */
 implicit val decodeStatusResponse: Decoder[StatusResponse] =
   (c: HCursor) =>
     for
@@ -249,18 +274,48 @@ implicit val decodeStatusResponse: Decoder[StatusResponse] =
       moves <- c.downField("moves").as[List[Position]]
       ready <- c.downField("ready").as[Boolean]
       over <- c.downField("over").as[Boolean]
+      winner <- c.downField("winner").as[Option[Color]]
       playerColor <- c.downField("playerColor").as[Option[Color]]
       debug <- c.downField("debug").as[RequestInfo]
-    yield StatusResponse(game, moves, ready, over, playerColor, debug)
+      response <-
+        StatusResponse.fromDocument(game, moves, ready, playerColor, debug, over, winner).left.map(
+          conflict => DecodingFailure(conflict.message, c.downField(conflict.field).history)
+        )
+    yield response
 
+implicit val encodeOpenGame: Encoder[OpenGame] =
+  (game: OpenGame) =>
+    Json.obj(("id", Json.fromString(game.id)), ("komi", Json.fromDoubleOrNull(game.komi)))
+
+/** The listing has no board size, so a komi is checked against the largest board. */
+implicit val decodeOpenGame: Decoder[OpenGame] =
+  (c: HCursor) =>
+    for
+      id <- c.downField("id").as[String]
+      komi <- c.downField("komi").as[Double]
+      validKomi <- checkKomi(c, komi, MaxBoardSize)
+    yield OpenGame(id, validKomi)
+
+/** `ids` stays next to `games` for clients that read only the ids. */
 implicit val encodeOpenGamesResponse: Encoder[OpenGamesResponse] =
-  (response: OpenGamesResponse) => Json.obj(("ids", response.ids.asJson))
+  (response: OpenGamesResponse) =>
+    Json.obj(("ids", response.ids.asJson), ("games", response.games.asJson))
 
+/** A document without `games` (or with a null one) is a listing of a server from before komi
+  * existed: its games get the default komi. The `ids` must be the ids of the games, in order.
+  */
 implicit val decodeOpenGamesResponse: Decoder[OpenGamesResponse] =
   (c: HCursor) =>
     for
-      ids <- c.downField("ids").as[Array[String]]
-    yield OpenGamesResponse(ids)
+      ids <- c.downField("ids").as[List[String]]
+      games <- c.downField("games").as[Option[List[OpenGame]]]
+      response = OpenGamesResponse(games.getOrElse(ids.map(OpenGame(_, Komi.Default))))
+      _ <- Either.cond(
+        response.ids == ids,
+        (),
+        DecodingFailure("ids differ from the ids of games", c.downField("ids").history)
+      )
+    yield response
 
 implicit val encodeGoResponse: Encoder[GoResponse] =
   case r: StatusResponse => encodeStatusResponse(r)

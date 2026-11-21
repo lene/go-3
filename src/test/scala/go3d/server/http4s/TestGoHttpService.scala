@@ -1,15 +1,17 @@
 package go3d.server.http4s
 
 import go3d.server.{
-  GameCreatedResponse, OpenGamesResponse, RateLimiter, decodeOpenGamesResponse, IdGenerator,
-  PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
+  GameCreatedResponse, OpenGame, OpenGamesResponse, Players, RateLimiter, decodeOpenGamesResponse,
+  IdGenerator, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
   decodePlayerRegisteredResponse, decodeStatusResponse
 }
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import go3d.{Black, Color, Move, Pass, White}
-import io.circe.parser.decode
+import go3d.{BadKomiTexts, Black, Color, Move, Pass, White}
+import go3d.server.service.{GamePositions, StatusAssertions}
+import io.circe.Json
+import io.circe.parser.{decode, parse}
 import org.http4s.implicits.uri
 import org.http4s.{EntityDecoder, Headers, Method, Request, Response, Status, Uri}
 import org.junit.jupiter.api.{Assertions, BeforeEach, Test}
@@ -168,6 +170,57 @@ class TestGoHttpService extends LazyLogging:
     Assertions.assertTrue(result.isRight)
     Assertions.assertTrue(result.map(_.ids.contains(gameId)).getOrElse(Assertions.fail()))
 
+  private def openGames(): OpenGamesResponse =
+    decode[OpenGamesResponse](getJson(httpRequest("/openGames"))).getOrElse(Assertions.fail())
+
+  /** A new game of size 3 with only Black registered; returns its id. */
+  private def openGame(query: String): String =
+    val gameId = createdGameId(3, query)
+    checkedRegisterPlayer(gameId, Black)
+    gameId
+
+  @Test def testOpenGamesCarryTheKomiOfEachGame(): Unit =
+    val withoutKomi = openGame("")
+    val large = openGame("?komi=6.5")
+    val negative = openGame("?komi=-0.5")
+    val games = openGames().games.toSet
+    Assertions.assertTrue(games.contains(OpenGame(withoutKomi, 0.5)), games.toString)
+    Assertions.assertTrue(games.contains(OpenGame(large, 6.5)), games.toString)
+    Assertions.assertTrue(games.contains(OpenGame(negative, -0.5)), games.toString)
+
+  @Test def testOpenGamesListIdsAndGamesInTheSameOrder(): Unit =
+    for query <- List("", "?komi=6.5", "?komi=-0.5", "?komi=1.5") do openGame(query)
+    val json = parse(getJson(httpRequest("/openGames"))).getOrElse(Assertions.fail()).hcursor
+    val ids = json.downField("ids").as[List[String]].getOrElse(Assertions.fail())
+    val gameIds = json.downField("games").as[List[Json]].getOrElse(Assertions.fail())
+      .map(_.hcursor.downField("id").as[String].getOrElse(Assertions.fail()))
+    Assertions.assertTrue(ids.length >= 4, ids.toString)
+    Assertions.assertEquals(ids, gameIds)
+
+  @Test def testOpenGamesLeaveOutGamesWithBothOrNoPlayers(): Unit =
+    val open = openGame("?komi=6.5")
+    val full = openGame("?komi=6.5")
+    checkedRegisterPlayer(full, White)
+    val noPlayers = createdGameId(3, "?komi=6.5")
+    val response = openGames()
+    Assertions.assertTrue(response.games.contains(OpenGame(open, 6.5)))
+    for gameId <- List(full, noPlayers) do
+      Assertions.assertFalse(response.ids.contains(gameId))
+      Assertions.assertFalse(response.games.map(_.id).contains(gameId))
+
+  @Test def testOpenGamesLeaveOutAPlayerWithoutAGame(): Unit =
+    val open = openGame("?komi=6.5")
+    val goneId = IdGenerator.getId
+    Assertions.assertTrue(Players.register(goneId, Black).isSuccess)
+    // the phantom player must not stay in the global Players for other tests
+    try
+      Assertions.assertTrue(Players.openGames().contains(goneId))
+      val response = openGames()
+      Assertions.assertTrue(response.games.contains(OpenGame(open, 6.5)))
+      Assertions.assertFalse(response.ids.contains(goneId))
+      Assertions.assertFalse(response.games.map(_.id).contains(goneId))
+    finally Players.unregister(goneId)
+
   @Test def testGetArchivedGameNotFound(): Unit =
     val request = httpRequest(s"/archived/NONEXISTENT")
     val response = goHttpService.httpApp.run(request).unsafeRunSync()
@@ -241,3 +294,125 @@ class TestGoHttpService extends LazyLogging:
     val actual = runRequest(uri"/status/NONEXISTENT/0")
     val response = actual.unsafeRunSync()
     Assertions.assertEquals(Status.NotFound, response.status)
+
+  /** Komi queries that make `/new/3` fail: every plain bad text, a bare parameter and repeated
+    * parameters.
+    */
+  private val BadKomiQueries: List[String] =
+    BadKomiTexts.map(text => s"?komi=$text") ++
+      List("?komi", "?komi=6.5&komi=6.5", "?komi=6.5&komi=7.5")
+
+  private def newGame(size: Int, query: String): Response[IO] =
+    RateLimiter.reset()
+    goHttpService.httpApp.run(httpRequest(s"/new/$size$query")).unsafeRunSync()
+
+  private def createdGameId(size: Int, query: String): String =
+    val response = newGame(size, query)
+    Assertions.assertEquals(Status.Ok, response.status)
+    decode[GameCreatedResponse](response.as[String].unsafeRunSync())
+      .map(_.id).getOrElse(Assertions.fail())
+
+  private def statusOfGame(gameId: String): StatusResponse =
+    decode[StatusResponse](getJson(httpRequest(s"/status/$gameId"))).getOrElse(Assertions.fail())
+
+  private def authorizedGet(path: String, token: String): String =
+    getJson(httpRequest(path, authHeader(token)))
+
+  @Test def testNewGameWithoutKomiHasDefaultKomi(): Unit =
+    Assertions.assertEquals(0.5, statusOfGame(createdGameId(3, "")).game.komi)
+
+  @Test def testNewGameWithKomiHasThatKomi(): Unit =
+    for komi <- List("6.5", "-0.5", "26.5", "6.50") do
+      val gameId = createdGameId(3, s"?komi=$komi")
+      Assertions.assertEquals(komi.toDouble, statusOfGame(gameId).game.komi)
+
+  @Test def testKomiIsInRegisterResponseAndStatusJson(): Unit =
+    val gameId = createdGameId(3, "?komi=6.5")
+    val registered = decode[PlayerRegisteredResponse](getJson(httpRequest(s"/register/$gameId/@")))
+    Assertions.assertEquals(Right(6.5), registered.map(_.game.komi))
+    Assertions.assertTrue(getJson(httpRequest(s"/status/$gameId")).contains("\"komi\":6.5"))
+
+  @Test def testUnrelatedQueryParametersAreIgnored(): Unit =
+    Assertions.assertEquals(0.5, statusOfGame(createdGameId(3, "?other=1")).game.komi)
+    Assertions.assertEquals(6.5, statusOfGame(createdGameId(3, "?other=1&komi=6.5")).game.komi)
+
+  @Test def testNewGameWithBadKomiReturns400(): Unit =
+    for query <- BadKomiQueries do
+      val response = newGame(3, query)
+      Assertions.assertEquals(Status.BadRequest, response.status, query)
+      Assertions.assertTrue(response.as[String].unsafeRunSync().contains("BadKomi"), query)
+
+  @Test def testBadKomiErrorDoesNotEchoInput(): Unit =
+    val response = newGame(3, "?komi=secret-input-123")
+    Assertions.assertEquals(Status.BadRequest, response.status)
+    Assertions.assertFalse(response.as[String].unsafeRunSync().contains("secret-input-123"))
+
+  @Test def testNewGameWithKomiBeyondBoardPointsReturns400(): Unit =
+    Assertions.assertEquals(Status.Ok, newGame(3, "?komi=26.5").status)
+    Assertions.assertEquals(Status.BadRequest, newGame(3, "?komi=27.5").status)
+    Assertions.assertEquals(Status.Ok, newGame(5, "?komi=27.5").status)
+
+  @Test def testNewGameWithBadSizeAndKomiReturns400(): Unit =
+    Assertions.assertEquals(Status.BadRequest, newGame(4, "?komi=7").status)
+    Assertions.assertEquals(Status.BadRequest, newGame(27, "?komi=6.5").status)
+
+  @Test def testKomiSurvivesMovesAndReplay(): Unit =
+    val gameId = createdGameId(3, "?komi=6.5")
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    val whiteToken = checkedRegisterPlayer(gameId, White)
+    val set = decode[StatusResponse](authorizedGet(s"/set/$gameId/2/2/2", blackToken))
+    Assertions.assertEquals(Right(6.5), set.map(_.game.komi))
+    val passed = decode[StatusResponse](authorizedGet(s"/pass/$gameId", whiteToken))
+    Assertions.assertEquals(Right(6.5), passed.map(_.game.komi))
+    for count <- 0 to 2 do
+      val replayed = decode[StatusResponse](getJson(httpRequest(s"/status/$gameId/$count")))
+      Assertions.assertEquals(Right(6.5), replayed.map(_.game.komi))
+
+  /** Plays the capture-free `positions` on a board of size 3 and ends the game with two passes,
+    * and returns the response to each move.
+    */
+  private def playToTheEnd(query: String, positions: List[GamePositions.Position]): List[String] =
+    val gameId = createdGameId(3, query)
+    val black = checkedRegisterPlayer(gameId, Black)
+    val white = checkedRegisterPlayer(gameId, White)
+    val setResponses = GamePositions.withTokens(black, white, positions).map {
+      case (token, (x, y, z)) => authorizedGet(s"/set/$gameId/$x/$y/$z", token)
+    }
+    val passes = GamePositions.passingTokens(black, white, positions)
+      .map(token => authorizedGet(s"/pass/$gameId", token))
+    setResponses ++ passes
+
+  /** Only the end of the game names the winner. The server archives a finished game and reads it
+    * back from the file store of the shared `Games`, which only `TestServer` sets up for its
+    * tests, so the status fetched after the end is checked there.
+    */
+  private def assertWinnerOnlyWhenOver(
+      query: String,
+      positions: List[GamePositions.Position],
+      winner: Color
+  ): Unit =
+    val responses = playToTheEnd(query, positions)
+    responses.init.foreach(StatusAssertions.assertNotOver)
+    StatusAssertions.assertWonBy(responses.last, winner)
+
+  @Test def testWinnerWithoutKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("", GamePositions.BlackLeadsByOne, Black)
+
+  @Test def testWinnerWithKomiHalfIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.BlackLeadsByOne, Black)
+
+  @Test def testWinnerWithLargeKomiIsWhite(): Unit =
+    assertWinnerOnlyWhenOver("?komi=6.5", GamePositions.BlackLeadsByOne, White)
+
+  @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("?komi=-0.5", GamePositions.EmptyBoard, Black)
+
+  @Test def testWinnerOfEmptyBoardWithKomiHalfIsWhite(): Unit =
+    assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.EmptyBoard, White)
+
+  @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
+    val gameId = createdGameId(3, "?komi=6.5")
+    StatusAssertions.assertNotOver(getJson(httpRequest(s"/status/$gameId")))
+    val blackToken = checkedRegisterPlayer(gameId, Black)
+    checkedRegisterPlayer(gameId, White)
+    StatusAssertions.assertNotOver(authorizedGet(s"/status/$gameId", blackToken))

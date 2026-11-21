@@ -14,7 +14,6 @@ def mockStatus(ready: Boolean, moves: List[Position]): StatusResponse =
     Game.start(3).success.value,
     moves,
     ready,
-    false,
     None,
     RequestInfo(Map(), "", "", false)
   )

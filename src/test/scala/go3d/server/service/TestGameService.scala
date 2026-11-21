@@ -6,7 +6,9 @@ import go3d.Black
 import go3d.Color
 import go3d.Game
 import go3d.GameOver
+import go3d.BadKomi
 import go3d.Ko
+import go3d.Komi
 import go3d.OutsideBoard
 import go3d.PositionOccupied
 import go3d.Suicide
@@ -14,12 +16,15 @@ import go3d.White
 import go3d.server.DuplicateColor
 import go3d.server.NonexistentGame
 import go3d.server.NotReadyToSet
+import go3d.server.OpenGame
+import go3d.server.StatusResponse
+import io.circe.DecodingFailure
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 private val NowMillis = 1_000_000L
 
@@ -65,8 +70,10 @@ class TestGameService:
     )
 
   /** A game of `size` with both players registered: (game id, black token, white token). */
-  private def startedGame(size: Int): (String, String, String) =
-    val gameId = service.newGame(size).success.value.id
+  private def startedGame(size: Int): (String, String, String) = startedGame(size, Komi.Default)
+
+  private def startedGame(size: Int, komi: Double): (String, String, String) =
+    val gameId = service.newGame(size, komi).success.value.id
     val black = service.register(gameId, Black).success.value.authToken
     val white = service.register(gameId, White).success.value.authToken
     (gameId, black, white)
@@ -83,6 +90,102 @@ class TestGameService:
     val game = service.status(created.id, None).success.value.game
     Assertions.assertEquals(5, game.size)
     Assertions.assertTrue(game.moves.isEmpty)
+
+  @Test def testNewGameHasDefaultKomi(): Unit =
+    val created = service.newGame(5).success.value
+    Assertions.assertEquals(0.5, service.status(created.id, None).success.value.game.komi)
+
+  @Test def testNewGameWithKomiStoresKomi(): Unit =
+    val created = service.newGame(5, 6.5).success.value
+    Assertions.assertEquals(5, created.size)
+    Assertions.assertEquals(6.5, service.status(created.id, None).success.value.game.komi)
+    Assertions.assertEquals(Some(6.5), store.getGame(created.id).success.value.map(_.game.komi))
+
+  @Test def testNewGameWithInvalidKomiFailsAndStoresNothing(): Unit =
+    for komi <- List(0.0, 7.0, -7.0, Double.NaN, 27.5, 6.500000000000001) do
+      Assertions.assertInstanceOf(classOf[BadKomi], service.newGame(3, komi).failure.exception)
+    Assertions.assertEquals(0, store.gameCount)
+
+  @Test def testNewGameChecksSizeBeforeKomi(): Unit =
+    Assertions.assertInstanceOf(classOf[BadBoardSize], service.newGame(4, 7.0).failure.exception)
+
+  @Test def testRegisterResponseCarriesKomi(): Unit =
+    val gameId = service.newGame(3, 6.5).success.value.id
+    Assertions.assertEquals(6.5, service.register(gameId, Black).success.value.game.komi)
+    Assertions.assertEquals(6.5, service.register(gameId, White).success.value.game.komi)
+
+  @Test def testKomiSurvivesMovesPassesAndReplay(): Unit =
+    val (gameId, black, white) = startedGame(3, 6.5)
+    service.set(gameId, black, 2, 2, 2).success.value
+    Assertions.assertEquals(6.5, service.set(gameId, white, 1, 1, 1).success.value.game.komi)
+    Assertions.assertEquals(6.5, service.pass(gameId, black).success.value.game.komi)
+    Assertions.assertEquals(6.5, service.status(gameId, Some(white)).success.value.game.komi)
+    for count <- 0 to 3 do
+      Assertions.assertEquals(6.5, service.statusAt(gameId, count).success.value.game.komi)
+
+  @Test def testKomiSurvivesCapture(): Unit =
+    val (gameId, black, white) = startedGame(5, 6.5)
+    playPositions(gameId, black, white, GamePositions.BeforeKo)
+    val game = service.status(gameId, None).success.value.game
+    Assertions.assertTrue(game.captures.nonEmpty)
+    Assertions.assertEquals(6.5, game.komi)
+
+  private def assertOverAndWinner(
+      status: StatusResponse,
+      over: Boolean,
+      winner: Option[Color]
+  ): Unit =
+    Assertions.assertEquals(over, status.over)
+    Assertions.assertEquals(winner, status.winner)
+    Assertions.assertEquals(winner, status.game.winner)
+
+  /** Plays the capture-free `positions` on a board of size 3 and ends the game with two passes,
+    * and checks that only the end of the game names the winner, also in a replay, whose count is
+    * clamped to the moves played.
+    */
+  private def assertWinnerOnlyWhenOver(
+      komi: Double,
+      positions: List[GamePositions.Position],
+      winner: Color
+  ): Unit =
+    val (gameId, black, white) = startedGame(3, komi)
+    val sets = GamePositions.withTokens(black, white, positions)
+      .map { case (token, (x, y, z)) => service.set(gameId, token, x, y, z).success.value }
+    val passes = GamePositions.passingTokens(black, white, positions)
+      .map(token => service.pass(gameId, token).success.value)
+    val end = positions.length + passes.length
+    (sets ++ passes.init).foreach(assertOverAndWinner(_, false, None))
+    assertOverAndWinner(passes.last, true, Some(winner))
+    assertOverAndWinner(service.status(gameId, None).success.value, true, Some(winner))
+    assertOverAndWinner(service.status(gameId, Some(white)).success.value, true, Some(winner))
+    for count <- List(end, end + 1) do
+      assertOverAndWinner(service.statusAt(gameId, count).success.value, true, Some(winner))
+    for count <- List(-1, 0, end - 1) do
+      assertOverAndWinner(service.statusAt(gameId, count).success.value, false, None)
+
+  @Test def testWinnerWithDefaultKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver(Komi.Default, GamePositions.BlackLeadsByOne, Black)
+
+  @Test def testWinnerWithLargeKomiIsWhite(): Unit =
+    assertWinnerOnlyWhenOver(6.5, GamePositions.BlackLeadsByOne, White)
+
+  @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver(-0.5, GamePositions.EmptyBoard, Black)
+
+  @Test def testWinnerOfEmptyBoardWithDefaultKomiIsWhite(): Unit =
+    assertWinnerOnlyWhenOver(Komi.Default, GamePositions.EmptyBoard, White)
+
+  @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
+    val (gameId, black, _) = startedGame(3, 6.5)
+    service.set(gameId, black, 2, 2, 2).success.value
+    assertOverAndWinner(service.status(gameId, None).success.value, false, None)
+    assertOverAndWinner(service.status(gameId, Some(black)).success.value, false, None)
+
+  @Test def testFinishedGameIsArchivedWithKomi(): Unit =
+    val (gameId, black, white) = startedGame(3, 6.5)
+    service.pass(gameId, black).success.value
+    service.pass(gameId, white).success.value
+    Assertions.assertEquals(Some(6.5), archive.archived(gameId).map(_.game.komi))
 
   @Test def testDefaultServiceGeneratesValidIds(): Unit =
     val gameId = GameService(store, archive).newGame(3).success.value.id
@@ -432,12 +535,100 @@ class TestGameService:
       service.status(gameId, None).success.value.game.at(1, 1, 1)
     )
 
+  private def openGames(): List[OpenGame] = service.openGames().success.value
+
+  /** A game of size 3 with komi `komi` and only Black registered; returns its id. */
+  private def openGame(komi: Double): String =
+    val gameId = service.newGame(3, komi).success.value.id
+    service.register(gameId, Black).success.value
+    gameId
+
   @Test def testOpenGamesListsGamesWaitingForWhite(): Unit =
     val gameId = service.newGame(3).success.value.id
     service.register(gameId, Black).success.value
-    Assertions.assertTrue(service.openGames().success.value.contains(gameId))
+    Assertions.assertTrue(openGames().map(_.id).contains(gameId))
     service.register(gameId, White).success.value
-    Assertions.assertFalse(service.openGames().success.value.contains(gameId))
+    Assertions.assertFalse(openGames().map(_.id).contains(gameId))
+
+  @Test def testOpenGamesCarryTheKomiOfEachGame(): Unit =
+    val withoutKomi = service.newGame(3).success.value.id
+    service.register(withoutKomi, Black).success.value
+    val large = openGame(6.5)
+    val negative = openGame(-0.5)
+    Assertions.assertEquals(
+      Set(OpenGame(withoutKomi, 0.5), OpenGame(large, 6.5), OpenGame(negative, -0.5)),
+      openGames().toSet
+    )
+    Assertions.assertEquals(3, openGames().length)
+
+  @Test def testOpenGamesKeepTheOrderOfTheStore(): Unit =
+    for komi <- List(0.5, 6.5, -0.5, 1.5, 2.5) do openGame(komi)
+    Assertions.assertEquals(
+      store.openGames().success.value.toList,
+      openGames().map(_.id)
+    )
+
+  @Test def testOpenGamesLeaveOutGamesWithBothOrNoPlayers(): Unit =
+    val open = openGame(6.5)
+    val full = openGame(6.5)
+    service.register(full, White).success.value
+    service.newGame(3, 6.5).success.value
+    Assertions.assertEquals(List(OpenGame(open, 6.5)), openGames())
+
+  @Test def testNoOpenGamesAreAnEmptyList(): Unit =
+    service.newGame(3, 6.5).success.value
+    Assertions.assertEquals(List(), openGames())
+
+  @Test def testOpenGamesLeaveOutAGameThatIsGoneBeforeTheRead(): Unit =
+    val gone = openGame(6.5)
+    val kept = openGame(1.5)
+    store.removeGame(gone)
+    Assertions.assertTrue(store.openGames().success.value.contains(gone))
+    Assertions.assertEquals(List(OpenGame(kept, 1.5)), openGames())
+
+  /** The service on `gameStore` after adding a game of komi 6.5 with only Black registered for
+    * each of `gameIds`.
+    */
+  private def withOpenGames(gameStore: InMemoryGameStore, gameIds: List[String]): GameService =
+    for gameId <- gameIds do
+      gameStore.addOpenGame(gameId, Game.start(3, 6.5).success.value).success.value
+    serviceFor(gameStore, archive)
+
+  private val GameIdsAroundBad = List("GOOD01", "BAD001", "GOOD02")
+
+  @Test def testOpenGamesFailIfAnOpenGameCannotBeRead(): Unit =
+    val unreadable = FailingReadStore("BAD001", IllegalStateException("store unavailable"))
+    val unreadableService = withOpenGames(unreadable, GameIdsAroundBad)
+    Assertions.assertEquals(3, unreadable.openGames().success.value.length)
+    Assertions.assertInstanceOf(
+      classOf[IllegalStateException],
+      unreadableService.openGames().failure.exception
+    )
+
+  @Test def testOpenGamesLeaveOutAndLogAGameThatDoesNotDecode(): Unit =
+    val undecodable = FailingReadStore("BAD001", DecodingFailure("bad komi", List()))
+    val undecodableService = withOpenGames(undecodable, GameIdsAroundBad)
+    val (listed, errors) = LogCapture.errorsDuring(classOf[GameService])(
+      undecodableService.openGames()
+    )
+    val readable = undecodable.openGames().success.value.toList.filter(_ != "BAD001")
+    Assertions.assertEquals(2, readable.length)
+    Assertions.assertEquals(readable.map(OpenGame(_, 6.5)), listed.success.value)
+    Assertions.assertTrue(errors.exists(_.contains("BAD001")), errors.toString)
+
+  @Test def testOpenGamesLeaveOutAGameWhoseWhiteRegisteredAfterTheListing(): Unit =
+    val staleListing = new InMemoryGameStore:
+      // the players Scan listed JOINED before its White registered
+      override def openGames(): Try[Array[String]] = Success(Array("JOINED", "OPEN01"))
+    val staleService = withOpenGames(staleListing, List("JOINED", "OPEN01"))
+    staleListing.registerPlayer("JOINED", White, "whiteJOINED").success.value
+    Assertions.assertEquals(List(OpenGame("OPEN01", 6.5)), staleService.openGames().success.value)
+
+  @Test def testOpenGamesFailIfTheStoreCannotListThem(): Unit =
+    Assertions.assertInstanceOf(
+      classOf[IllegalStateException],
+      serviceFor(FailingGameStore(), archive).openGames().failure.exception
+    )
 
 class TestUnconfiguredArchive:
   @Test def testArchiveFails(): Unit =

@@ -23,7 +23,7 @@ Unauthenticated move attempts return HTTP 401 Unauthorized.
 The game-creation and player-registration endpoints are rate-limited per client IP
 to prevent automated abuse:
 
-- Endpoint: `GET /new/{size}` — create a new game
+- Endpoint: `GET /new/{size}[?komi=k]` — create a new game
 - Endpoint: `GET /register/{gameId}/{color}` — register a player
 
 Limit: **10 requests per 60-second sliding window per IP address**.

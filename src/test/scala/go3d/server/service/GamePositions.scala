@@ -8,6 +8,17 @@ object GamePositions:
   val BeforeSuicide: List[Position] =
     List((3, 3, 3), (2, 1, 1), (3, 3, 2), (1, 2, 1), (3, 2, 3), (1, 1, 2))
 
+  /** Black, white, black on a board of size 3, none of them capturing. White then passes and black
+    * passes: black has 2 points and white 1, so the winner is black with a komi below 1 and white
+    * with a larger one.
+    */
+  val BlackLeadsByOne: List[Position] = List((2, 2, 2), (1, 1, 1), (3, 3, 3))
+
+  /** No stones: black passes and white passes, 0 points to 0, so the sign of the komi decides
+    * the winner, black with -0.5 and white with 0.5.
+    */
+  val EmptyBoard: List[Position] = List()
+
   /** The position of `TestGame.testPossibleMovesWithKo` on a board of size 5: white's last move
     * captures 2,2,3, so black playing there again is a ko.
     */
@@ -33,3 +44,7 @@ object GamePositions:
       positions: List[Position]
   ): List[(String, Position)] =
     positions.zipWithIndex.map((position, i) => (if i % 2 == 0 then black else white, position))
+
+  /** The tokens of the two players who end the game by passing after `positions`, in order. */
+  def passingTokens(black: String, white: String, positions: List[Position]): List[String] =
+    if positions.length % 2 == 0 then List(black, white) else List(white, black)

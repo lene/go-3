@@ -4,7 +4,7 @@ STRATEGY_BLACK=random
 STRATEGY_WHITE=prioritiseCapture
 BOARD_SIZE=7
 UP_TO=10
-VERSION=0.7.42
+VERSION=0.7.43
 
 SAVE_DIR=results
 SERVER=localhost

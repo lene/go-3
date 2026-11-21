@@ -12,6 +12,7 @@ import scala.util.{Failure, Random, Success, Try}
 
 import go3d._
 import go3d.server.http4s.GoHttpService
+import go3d.server.service.{GamePositions, StatusAssertions}
 import org.scalatest.TryValues.*
 import org.scalatest.OptionValues.*
 
@@ -79,6 +80,26 @@ class TestServer:
       s"http://localhost:$TestPort/new/27",
       Status.BadRequest.code
     )
+
+  private def komiOfNewGame(query: String): Double =
+    val created = getGCR(s"${GameData.ServerURL}/new/$TestSize$query")
+    getSR(s"${GameData.ServerURL}/status/${created.id}", Map()).game.komi
+
+  @Test def testNewGameHasDefaultKomi(): Unit =
+    Assertions.assertEquals(0.5, komiOfNewGame(""))
+
+  @Test def testNewGameWithKomiHasThatKomi(): Unit =
+    Assertions.assertEquals(6.5, komiOfNewGame("?komi=6.5"))
+    Assertions.assertEquals(-0.5, komiOfNewGame("?komi=-0.5"))
+
+  @Test def testNewGameWithBadKomiSetsStatus400(): Unit =
+    val queries = BadKomiTexts.map(text => s"?komi=$text") ++ List("?komi", "?komi=6.5&komi=6.5")
+    for query <- queries do
+      RateLimiter.reset()
+      assertFailsWithStatus(
+        s"${GameData.ServerURL}/new/$TestSize$query",
+        Status.BadRequest.code
+      )
 
   @Test def testRegisterOnePlayer(): Unit =
     val newGameResponse = GameData.create(TestSize)
@@ -501,6 +522,19 @@ class TestServer:
     val response = getOGR(s"${GameData.ServerURL}/openGames")
     Assertions.assertFalse(response.ids.isEmpty)
     Assertions.assertTrue(response.ids.contains(newGameResponse.id))
+    Assertions.assertTrue(response.games.contains(OpenGame(newGameResponse.id, 0.5)))
+
+  @Test def testGetOpenGamesReturnsTheKomiOfEachGame(): Unit =
+    val komis = List("", "?komi=6.5", "?komi=-0.5")
+    val expected = komis.map { query =>
+      val created = getGCR(s"${GameData.ServerURL}/new/3$query")
+      GameData.register(created.id, Black)
+      created.id
+    }.zip(List(0.5, 6.5, -0.5)).map { case (id, komi) => OpenGame(id, komi) }
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    for game <- expected do
+      Assertions.assertTrue(response.games.contains(game), game.toString)
+      Assertions.assertTrue(response.ids.contains(game.id), game.toString)
 
   @Test def testGetOpenGamesDoesNotReturnGameWithNoBlackPlayer(): Unit =
     val newGameResponse = GameData.create(3)
@@ -529,6 +563,50 @@ class TestServer:
     gameData.pass(White)
     val statusResponse = gameData.status()
     Assertions.assertTrue(statusResponse.over, statusResponse.toString)
+
+  private def bodyOf(path: String, header: Map[String, String]): String =
+    requests.get(s"${GameData.ServerURL}$path", headers = header).text()
+
+  /** Plays the capture-free `positions` on a board of size 3 and ends the game with two passes,
+    * and checks that only the end of the game names the winner, also when the status of the
+    * finished game is fetched later and when it is replayed.
+    */
+  private def assertWinnerOnlyWhenOver(
+      query: String,
+      positions: List[GamePositions.Position],
+      winner: Color
+  ): Unit =
+    val gameId = getGCR(s"${GameData.ServerURL}/new/3$query").id
+    val black = GameData.register(gameId, Black).authToken
+    val white = GameData.register(gameId, White).authToken
+    def authorized(path: String, token: String): String =
+      bodyOf(path, Map("Authentication" -> s"Bearer $token"))
+    val setResponses = GamePositions.withTokens(black, white, positions).map {
+      case (token, (x, y, z)) => authorized(s"/set/$gameId/$x/$y/$z", token)
+    }
+    val passes = GamePositions.passingTokens(black, white, positions)
+      .map(token => authorized(s"/pass/$gameId", token))
+    StatusAssertions.assertWinnerOnlyWhenOver(
+      setResponses ++ passes,
+      List(bodyOf(s"/status/$gameId", Map())),
+      count => bodyOf(s"/status/$gameId/$count", Map()),
+      winner
+    )
+
+  @Test def testWinnerWithoutKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("", GamePositions.BlackLeadsByOne, Black)
+
+  @Test def testWinnerWithKomiHalfIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.BlackLeadsByOne, Black)
+
+  @Test def testWinnerWithLargeKomiIsWhite(): Unit =
+    assertWinnerOnlyWhenOver("?komi=6.5", GamePositions.BlackLeadsByOne, White)
+
+  @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("?komi=-0.5", GamePositions.EmptyBoard, Black)
+
+  @Test def testWinnerOfEmptyBoardWithKomiHalfIsWhite(): Unit =
+    assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.EmptyBoard, White)
 
   @Test def testGameOverAfterFullNumberOfMoves(): Unit =
     val gameData: GameData = setUpGame(3)

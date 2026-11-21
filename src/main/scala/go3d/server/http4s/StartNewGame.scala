@@ -2,6 +2,7 @@ package go3d.server.http4s
 
 import cats.effect.IO
 import com.typesafe.scalalogging.LazyLogging
+import go3d.Komi
 import go3d.server.GameCreatedResponse
 import go3d.server.Games
 import go3d.server.GoResponse
@@ -14,7 +15,8 @@ case class StartNewGame(boardSize: Int, request: Request[IO]) extends BaseHandle
   def handle: Try[GoResponse] =
     for
       _ <- RateLimiter.check(clientIp(request))
-      gameId <- Games.register(boardSize)
+      komi <- Komi.fromQuery(request.multiParams.get(Komi.QueryParameter), boardSize)
+      gameId <- Games.register(boardSize, komi)
     yield
-      logger.info(s"New game $gameId, size $boardSize".replaceAll("[\r\n]", " "))
+      logger.info(s"New game $gameId, size $boardSize, komi $komi".replaceAll("[\r\n]", " "))
       GameCreatedResponse(gameId, boardSize)

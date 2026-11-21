@@ -20,7 +20,6 @@ class TestReplayState:
       game = game,
       moves = List(),
       ready = false,
-      over = false,
       playerColor = None,
       debug = NullRequestInfo
     )
@@ -134,7 +133,6 @@ class TestReplayState:
       game = over,
       moves = List(),
       ready = false,
-      over = true,
       playerColor = None,
       debug = NullRequestInfo
     ))
@@ -160,7 +158,6 @@ class TestReplayState:
       game = passed,
       moves = List(),
       ready = false,
-      over = false,
       playerColor = None,
       debug = NullRequestInfo
     ))

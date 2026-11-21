@@ -2,7 +2,8 @@ package go3d.server.service
 
 import go3d.Black
 import go3d.Game
-import go3d.server.{Player, SaveGame, encodeSaveGame}
+import go3d.server.{Player, SaveGame, decodeSaveGame, encodeSaveGame}
+import io.circe.parser.decode
 import io.circe.syntax._
 import org.junit.jupiter.api.{AfterEach, Assertions, Assumptions, BeforeEach, Test}
 import org.scalatest.TryValues.*
@@ -84,6 +85,15 @@ class TestS3GameArchive:
       GetObjectRequest.builder().bucket(bucket).key(key).build()
     ).asString(StandardCharsets.UTF_8)
     Assertions.assertEquals(saveGame("GAME01").asJson.noSpaces, stored)
+
+  @Test def testArchivedJsonHasKomiAndDecodesWithIt(): Unit =
+    val withKomi = SaveGame(Game.start(3, 6.5).success.value, Map(Black -> Player(Black, "GAME01")))
+    val key = archive.archive("GAME01", withKomi).success.value
+    val stored = client.getObjectAsBytes(
+      GetObjectRequest.builder().bucket(bucket).key(key).build()
+    ).asString(StandardCharsets.UTF_8)
+    Assertions.assertTrue(stored.contains("\"komi\":6.5"), stored)
+    Assertions.assertEquals(6.5, decode[SaveGame](stored).toTry.success.value.game.komi)
 
   @Test def testArchiveToMissingBucketFails(): Unit =
     val missing = new S3GameArchive(client, presigner, bucket + "-missing")

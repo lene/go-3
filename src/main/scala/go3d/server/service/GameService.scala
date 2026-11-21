@@ -6,6 +6,7 @@ import go3d.Black
 import go3d.Color
 import go3d.Game
 import go3d.GameOver
+import go3d.Komi
 import go3d.Move
 import go3d.Pass
 import go3d.White
@@ -15,6 +16,7 @@ import go3d.server.IdGenerator
 import go3d.server.NonexistentGame
 import go3d.server.NotReadyToSet
 import go3d.server.NullRequestInfo
+import go3d.server.OpenGame
 import go3d.server.Player
 import go3d.server.PlayerRegisteredResponse
 import go3d.server.SaveGame
@@ -42,9 +44,11 @@ class GameService(
     newToken: () => String
 ) extends LazyLogging:
 
-  def newGame(size: Int): Try[GameCreatedResponse] =
+  def newGame(size: Int): Try[GameCreatedResponse] = newGame(size, Komi.Default)
+
+  def newGame(size: Int, komi: Double): Try[GameCreatedResponse] =
     for
-      game <- Game.start(size)
+      game <- Game.start(size, komi)
       gameId = newId()
       _ <- store.createGame(gameId, game)
     yield GameCreatedResponse(gameId, size)
@@ -72,9 +76,9 @@ class GameService(
         token.fold[Try[Option[Color]]](Success(None))(t => authenticate(gameId, t).map(Some(_)))
     yield
       val game = stored.game
-      color.fold(StatusResponse(game, List(), false, game.isOver, None, NullRequestInfo)) { c =>
+      color.fold(StatusResponse(game, List(), false, None, NullRequestInfo)) { c =>
         val ready = game.isTurn(c) && stored.players.size == 2
-        StatusResponse(game, game.possibleMoves(c), ready, game.isOver, Some(c), NullRequestInfo)
+        StatusResponse(game, game.possibleMoves(c), ready, Some(c), NullRequestInfo)
       }
 
   /** The game after its first `moveCount` moves, for replaying it; the count is clamped to the
@@ -84,7 +88,7 @@ class GameService(
     for
       stored <- existing(gameId)
       game <- stored.game.atMove(moveCount.max(0).min(stored.game.moves.length))
-    yield StatusResponse(game, List(), false, game.isOver, None, NullRequestInfo)
+    yield StatusResponse(game, List(), false, None, NullRequestInfo)
 
   /** A short-lived download URL for the archive of a finished game; None when it has none. */
   def archivedUrl(gameId: String): Try[Option[String]] = archive.url(gameId)
@@ -95,7 +99,33 @@ class GameService(
   def pass(gameId: String, token: String): Try[StatusResponse] =
     play(gameId, token, color => Success(Pass(color)))
 
-  def openGames(): Try[Array[String]] = store.openGames()
+  /** The games waiting for a white player, with their komi, in the order of the store's listing.
+    * Ceiling: besides the listing, each open game costs two requests to DynamoDB, the `GetItem`
+    * of the game and the `Query` of its players (`DynamoDBGameStore.getGame`); a `BatchGetItem`
+    * of the games would save only the first. A game gone since the listing, or whose White
+    * registered meanwhile, is left out, and so is one whose stored JSON does not decode, which is
+    * logged; any other failure of the store fails the request.
+    */
+  def openGames(): Try[List[OpenGame]] =
+    store.openGames().flatMap { gameIds =>
+      gameIds.foldLeft[Try[List[OpenGame]]](Success(List())) { (listedReversed, gameId) =>
+        for
+          games <- listedReversed
+          game <- openGame(gameId)
+        yield game.fold(games)(_ :: games)
+      }.map(_.reverse)
+    }
+
+  /** The listed game `gameId` while it is still open, else None. An undecodable game is logged
+    * and left out, so that one corrupt record does not take the listing down for everyone.
+    */
+  private def openGame(gameId: String): Try[Option[OpenGame]] =
+    store.getGame(gameId).map(_.collect {
+      case stored if stored.players == Set[Color](Black) => OpenGame(gameId, stored.game.komi)
+    }).recover { case e: io.circe.Error =>
+      logger.error(s"unreadable open game $gameId left out: ${e.getMessage}")
+      None
+    }
 
   private def play(
       gameId: String,
@@ -111,14 +141,7 @@ class GameService(
       _ <- store.updateGame(gameId, stored.version, newGame)
     yield
       if newGame.isOver then archiveLogged(gameId, newGame, stored.players)
-      StatusResponse(
-        newGame,
-        newGame.possibleMoves(color),
-        false,
-        newGame.isOver,
-        Some(color),
-        NullRequestInfo
-      )
+      StatusResponse(newGame, newGame.possibleMoves(color), false, Some(color), NullRequestInfo)
 
   /** Archives every finished game that has no archive key, which a failed archive at the end of
     * the game leaves behind. Safe to run repeatedly: a game is archived once, and the next run
