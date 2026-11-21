@@ -609,7 +609,7 @@ class TestServer:
   @Test def testWinnerOfEmptyBoardWithKomiHalfIsWhite(): Unit =
     assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.EmptyBoard, White)
 
-  @Test def testCaptureDoesNotMakeWhiteWin(): Unit =
+  @Test def testArchivedGameWithCaptureKeepsItsAreaScoreWinner(): Unit =
     assertWinnerOnlyWhenOver("?komi=-2.5", GamePositions.BeforeKo, Black)
 
   @Test def testGameOverAfterFullNumberOfMoves(): Unit =

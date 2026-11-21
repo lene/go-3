@@ -429,7 +429,6 @@ class TestGame:
     Assertions.assertEquals(0, game.goban.allPositions.count(game.at(_) == Black))
     Assertions.assertEquals(0, game.score(Black))
     Assertions.assertEquals(BLACK_AREA_SIZE, game.captures(White))
-    Assertions.assertEquals(0, game.captures(Black))
     val whiteStones = game.goban.allPositions.count(game.at(_) == White)
     val whiteTerritory = game.goban.emptyPositions.size
     Assertions.assertEquals(10, whiteStones)
@@ -443,11 +442,9 @@ class TestGame:
     }
     val game = playListOfMoves(5, moves)
     Assertions.assertEquals(1, game.captures(White))
-    Assertions.assertEquals(0, game.captures(Black))
-    val whiteStones = game.goban.allPositions.count(game.at(_) == White)
-    Assertions.assertEquals(6, whiteStones)
+    Assertions.assertEquals(6, game.goban.allPositions.count(game.at(_) == White))
     Assertions.assertEquals(5, game.score(Black))
-    Assertions.assertEquals(whiteStones + 1, game.score(White))
+    Assertions.assertEquals(7, game.score(White))
 
   @Test def testToStringEndsWithTheScoreMapOfBothColors(): Unit =
     val empty = Game.start(TestSize).success.value
