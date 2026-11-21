@@ -77,6 +77,12 @@ score after the komi is added to White's. There is no `"winner"` while the game 
 curl -s "http://localhost:6030/status/$GAME_ID" | jq '{over, winner}'
 ```
 
+The score is area scoring (Tromp-Taylor): a player's stones on the board plus the empty areas that
+only that player's stones border. Captures are not added: the points freed by a capture count as
+territory when only the capturer's stones border them. Dead stones are not removed, so capture dead
+groups before the game ends, or they count for their owner. The winner always follows the current
+scoring rule: it is worked out from the moves when you ask, not stored.
+
 ## Color Symbols
 - Black: `@` (or `b` in some contexts)
 - White: `O` (capital O, or `w` in some contexts)

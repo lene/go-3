@@ -1,5 +1,6 @@
 package go3d
 
+import go3d.server.service.GamePositions
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
@@ -423,14 +424,33 @@ class TestGame:
     Assertions.assertEquals(1, game.score(Black))
     Assertions.assertEquals(1, game.score(White))
 
-  @Test def testScoringCountsCaptures(): Unit =
+  @Test def testScoringDoesNotCountCaptures(): Unit =
     val game = buildAndCaptureEye()
     Assertions.assertEquals(0, game.goban.allPositions.count(game.at(_) == Black))
     Assertions.assertEquals(0, game.score(Black))
-    Assertions.assertTrue(game.goban.allPositions.count(game.at(_) == White) > 0)
     Assertions.assertEquals(BLACK_AREA_SIZE, game.captures(White))
-    val expectedScore = game.size * game.size * game.size + BLACK_AREA_SIZE
-    Assertions.assertEquals(expectedScore, game.score(White))
+    val whiteStones = game.goban.allPositions.count(game.at(_) == White)
+    val whiteTerritory = game.goban.emptyPositions.size
+    Assertions.assertEquals(10, whiteStones)
+    Assertions.assertEquals(17, whiteTerritory)
+    Assertions.assertEquals(whiteStones + whiteTerritory, game.score(White))
+    Assertions.assertEquals(game.size * game.size * game.size, game.score(White))
+
+  @Test def testScoringPositionReachedThroughACapture(): Unit =
+    val moves = GamePositions.BeforeKo.zipWithIndex.map { case ((x, y, z), i) =>
+      Move(x, y, z, if i % 2 == 0 then Black else White)
+    }
+    val game = playListOfMoves(5, moves)
+    Assertions.assertEquals(1, game.captures(White))
+    Assertions.assertEquals(6, game.goban.allPositions.count(game.at(_) == White))
+    Assertions.assertEquals(5, game.score(Black))
+    Assertions.assertEquals(7, game.score(White))
+
+  @Test def testToStringEndsWithTheScoreMapOfBothColors(): Unit =
+    val empty = Game.start(TestSize).success.value
+    Assertions.assertEquals("Map(@ -> 0, O -> 0)", empty.toString.linesIterator.toList.last)
+    val captured = buildAndCaptureEye()
+    Assertions.assertEquals("Map(@ -> 0, O -> 27)", captured.toString.linesIterator.toList.last)
 
   @Test def testToStringContainsCaptures(): Unit =
     val game = buildAndCaptureEye()
