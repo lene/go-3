@@ -364,20 +364,26 @@ class TestLambdaHandler:
       winner
     )
 
+  private def assertWinnerOnlyWhenOver(
+      komiValues: Option[List[String]],
+      positions: List[GamePositions.Position],
+      winner: Color
+  ): Unit = assertWinnerOnlyWhenOver(3, komiValues, positions, winner)
+
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(3, None, GamePositions.BlackLeadsByOne, Black)
+    assertWinnerOnlyWhenOver(None, GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithKomiHalfIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(3, Some(List("0.5")), GamePositions.BlackLeadsByOne, Black)
+    assertWinnerOnlyWhenOver(Some(List("0.5")), GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    assertWinnerOnlyWhenOver(3, Some(List("6.5")), GamePositions.BlackLeadsByOne, White)
+    assertWinnerOnlyWhenOver(Some(List("6.5")), GamePositions.BlackLeadsByOne, White)
 
   @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(3, Some(List("-0.5")), GamePositions.EmptyBoard, Black)
+    assertWinnerOnlyWhenOver(Some(List("-0.5")), GamePositions.EmptyBoard, Black)
 
   @Test def testWinnerOfEmptyBoardWithKomiHalfIsWhite(): Unit =
-    assertWinnerOnlyWhenOver(3, Some(List("0.5")), GamePositions.EmptyBoard, White)
+    assertWinnerOnlyWhenOver(Some(List("0.5")), GamePositions.EmptyBoard, White)
 
   @Test def testCaptureDoesNotMakeWhiteWin(): Unit =
     assertWinnerOnlyWhenOver(5, Some(List("-2.5")), GamePositions.BeforeKo, Black)

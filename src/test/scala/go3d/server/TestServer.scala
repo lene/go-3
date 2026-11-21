@@ -594,20 +594,26 @@ class TestServer:
       winner
     )
 
+  private def assertWinnerOnlyWhenOver(
+      query: String,
+      positions: List[GamePositions.Position],
+      winner: Color
+  ): Unit = assertWinnerOnlyWhenOver(3, query, positions, winner)
+
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(3, "", GamePositions.BlackLeadsByOne, Black)
+    assertWinnerOnlyWhenOver("", GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithKomiHalfIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(3, "?komi=0.5", GamePositions.BlackLeadsByOne, Black)
+    assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    assertWinnerOnlyWhenOver(3, "?komi=6.5", GamePositions.BlackLeadsByOne, White)
+    assertWinnerOnlyWhenOver("?komi=6.5", GamePositions.BlackLeadsByOne, White)
 
   @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(3, "?komi=-0.5", GamePositions.EmptyBoard, Black)
+    assertWinnerOnlyWhenOver("?komi=-0.5", GamePositions.EmptyBoard, Black)
 
   @Test def testWinnerOfEmptyBoardWithKomiHalfIsWhite(): Unit =
-    assertWinnerOnlyWhenOver(3, "?komi=0.5", GamePositions.EmptyBoard, White)
+    assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.EmptyBoard, White)
 
   @Test def testCaptureDoesNotMakeWhiteWin(): Unit =
     assertWinnerOnlyWhenOver(5, "?komi=-2.5", GamePositions.BeforeKo, Black)
