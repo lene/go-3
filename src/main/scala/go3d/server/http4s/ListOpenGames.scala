@@ -26,5 +26,7 @@ class ListOpenGames extends BaseHandler:
   /** The open games with their komi; a game that was archived or deleted since the players were
     * listed is left out.
     */
-  private def openGames: Array[OpenGame] =
-    Players.openGames().flatMap(id => Games.activeGame(id).map(game => OpenGame(id, game.komi)))
+  private def openGames: List[OpenGame] =
+    Players.openGames().toList.flatMap(id =>
+      Games.activeGame(id).map(game => OpenGame(id, game.komi))
+    )

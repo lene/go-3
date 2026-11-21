@@ -24,11 +24,21 @@ WHITE_TOKEN=$(curl -s "http://localhost:6030/register/$GAME_ID/O" | jq -r '.auth
 echo "White token: $WHITE_TOKEN"
 ```
 
-To join a game someone else created, list the games waiting for a white player. `ids` has their
-IDs, and `games` has an `{id, komi}` for each, so you see the komi before you register:
+Instead of creating a game, you can join one that someone else created and that waits for a white
+player. `/openGames` lists those games: `ids` has their IDs, and `games` has an `{id, komi}` for
+each, so you see the komi before you register. To list them, and then join the first one with the
+komi you want (here 6.5) as White:
 ```bash
 curl -s http://localhost:6030/openGames | jq '.games'
-GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r '.ids[0]')
+
+GAME_ID=$(curl -s http://localhost:6030/openGames |
+  jq -r --argjson komi 6.5 'first(.games[]? | select(.komi == $komi) | .id) // empty')
+if [ -n "$GAME_ID" ]; then
+  WHITE_TOKEN=$(curl -s "http://localhost:6030/register/$GAME_ID/O" | jq -r '.authToken')
+  echo "Game ID: $GAME_ID, White token: $WHITE_TOKEN"
+else
+  echo "No open game with that komi: create one as above"
+fi
 ```
 
 ### 3. Start Clients

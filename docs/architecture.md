@@ -28,8 +28,8 @@ The game logic is split between two key classes:
   - Komi: points added to White's score, set when the game is created (default 0.5) and stored
     in the game JSON; `Game.winner` compares White's score plus komi with Black's once the game is
     over. Only half-integers up to size³ are valid (`Komi.scala`), so a game never ties
-  - The status response carries the winner: `StatusResponse` derives `over` and `winner` from its
-    game, so they cannot disagree with it
+  - The status response carries the winner: `StatusResponse` derives `over` from its game, and has
+    a `winner` if and only if the game is over, the server's `Game.winner`
 
 Key domain types:
 - `Position(x, y, z)`: Coordinates on the board (1-indexed)
@@ -117,7 +117,9 @@ encoders/decoders. A game's `komi` is a number field of the game JSON, so every 
 
 A status response has `over` always and `winner` (in the format of `playerColor`, from
 `Game.winner`) if and only if the game is over, also for a replay at move `n`. The decoder rejects a
-document whose `over`, or whose `winner`, differs from its game's, and accepts `over: true` without
-`winner`, which is how responses from before the winner existed look. The winner is not stored: the
+document whose `over` differs from its game's, or that has a `winner` while not over. It keeps the
+server's `winner` without comparing it with the client's own scoring, so a client keeps working when
+the server's scoring changes, and gives `over: true` without `winner`, which is how responses from
+before the winner existed look, the winner of the game. The winner is not stored: the
 game JSON stays the single source, and the winner follows from the game and its komi. No scores are
 in the response.

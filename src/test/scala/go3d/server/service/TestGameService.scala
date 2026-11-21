@@ -18,12 +18,13 @@ import go3d.server.NonexistentGame
 import go3d.server.NotReadyToSet
 import go3d.server.OpenGame
 import go3d.server.StatusResponse
+import io.circe.DecodingFailure
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
 import java.nio.file.{Files, Path}
 import java.util.concurrent.atomic.{AtomicBoolean, AtomicInteger}
-import scala.util.{Failure, Try}
+import scala.util.{Failure, Success, Try}
 
 private val NowMillis = 1_000_000L
 
@@ -138,31 +139,41 @@ class TestGameService:
     Assertions.assertEquals(winner, status.winner)
     Assertions.assertEquals(winner, status.game.winner)
 
-  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it,
-    * and checks that only the end of the game names the winner.
+  /** Plays the capture-free `positions` on a board of size 3 and ends the game with two passes,
+    * and checks that only the end of the game names the winner, also in a replay, whose count is
+    * clamped to the moves played.
     */
-  private def assertWinnerOnlyWhenOver(komi: Double, winner: Color): Unit =
+  private def assertWinnerOnlyWhenOver(
+      komi: Double,
+      positions: List[GamePositions.Position],
+      winner: Color
+  ): Unit =
     val (gameId, black, white) = startedGame(3, komi)
-    val sets = GamePositions.withTokens(black, white, GamePositions.BlackLeadsByOne)
+    val sets = GamePositions.withTokens(black, white, positions)
       .map { case (token, (x, y, z)) => service.set(gameId, token, x, y, z).success.value }
-    val passed = service.pass(gameId, white).success.value
-    val last = service.pass(gameId, black).success.value
-    (sets :+ passed).foreach(assertOverAndWinner(_, false, None))
-    assertOverAndWinner(last, true, Some(winner))
+    val passes = GamePositions.passingTokens(black, white, positions)
+      .map(token => service.pass(gameId, token).success.value)
+    val end = positions.length + passes.length
+    (sets ++ passes.init).foreach(assertOverAndWinner(_, false, None))
+    assertOverAndWinner(passes.last, true, Some(winner))
     assertOverAndWinner(service.status(gameId, None).success.value, true, Some(winner))
     assertOverAndWinner(service.status(gameId, Some(white)).success.value, true, Some(winner))
-    assertOverAndWinner(service.statusAt(gameId, 5).success.value, true, Some(winner))
-    assertOverAndWinner(service.statusAt(gameId, 4).success.value, false, None)
-    assertOverAndWinner(service.statusAt(gameId, 0).success.value, false, None)
+    for count <- List(end, end + 1) do
+      assertOverAndWinner(service.statusAt(gameId, count).success.value, true, Some(winner))
+    for count <- List(-1, 0, end - 1) do
+      assertOverAndWinner(service.statusAt(gameId, count).success.value, false, None)
 
   @Test def testWinnerWithDefaultKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(Komi.Default, Black)
+    assertWinnerOnlyWhenOver(Komi.Default, GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    assertWinnerOnlyWhenOver(6.5, White)
+    assertWinnerOnlyWhenOver(6.5, GamePositions.BlackLeadsByOne, White)
 
-  @Test def testWinnerWithNegativeKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(-0.5, Black)
+  @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver(-0.5, GamePositions.EmptyBoard, Black)
+
+  @Test def testWinnerOfEmptyBoardWithDefaultKomiIsWhite(): Unit =
+    assertWinnerOnlyWhenOver(Komi.Default, GamePositions.EmptyBoard, White)
 
   @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
     val (gameId, black, _) = startedGame(3, 6.5)
@@ -524,7 +535,7 @@ class TestGameService:
       service.status(gameId, None).success.value.game.at(1, 1, 1)
     )
 
-  private def openGames(): List[OpenGame] = service.openGames().success.value.toList
+  private def openGames(): List[OpenGame] = service.openGames().success.value
 
   /** A game of size 3 with komi `komi` and only Black registered; returns its id. */
   private def openGame(komi: Double): String =
@@ -575,19 +586,43 @@ class TestGameService:
     Assertions.assertTrue(store.openGames().success.value.contains(gone))
     Assertions.assertEquals(List(OpenGame(kept, 1.5)), openGames())
 
+  /** The service on `gameStore` after adding a game of komi 6.5 with only Black registered for
+    * each of `gameIds`.
+    */
+  private def withOpenGames(gameStore: InMemoryGameStore, gameIds: List[String]): GameService =
+    for gameId <- gameIds do
+      gameStore.addOpenGame(gameId, Game.start(3, 6.5).success.value).success.value
+    serviceFor(gameStore, archive)
+
+  private val GameIdsAroundBad = List("GOOD01", "BAD001", "GOOD02")
+
   @Test def testOpenGamesFailIfAnOpenGameCannotBeRead(): Unit =
-    val unreadable = new InMemoryGameStore:
-      override def getGame(gameId: String): Try[Option[StoredGame]] =
-        if gameId == "BAD001" then Failure(IllegalStateException("store unavailable"))
-        else super.getGame(gameId)
-    for gameId <- List("GOOD01", "BAD001", "GOOD02") do
-      unreadable.createGame(gameId, Game.start(3, 6.5).success.value).success.value
-      unreadable.registerPlayer(gameId, Black, "hash" + gameId).success.value
+    val unreadable = FailingReadStore("BAD001", IllegalStateException("store unavailable"))
+    val unreadableService = withOpenGames(unreadable, GameIdsAroundBad)
     Assertions.assertEquals(3, unreadable.openGames().success.value.length)
     Assertions.assertInstanceOf(
       classOf[IllegalStateException],
-      serviceFor(unreadable, archive).openGames().failure.exception
+      unreadableService.openGames().failure.exception
     )
+
+  @Test def testOpenGamesLeaveOutAndLogAGameThatDoesNotDecode(): Unit =
+    val undecodable = FailingReadStore("BAD001", DecodingFailure("bad komi", List()))
+    val undecodableService = withOpenGames(undecodable, GameIdsAroundBad)
+    val (listed, errors) = LogCapture.errorsDuring(classOf[GameService])(
+      undecodableService.openGames()
+    )
+    val readable = undecodable.openGames().success.value.toList.filter(_ != "BAD001")
+    Assertions.assertEquals(2, readable.length)
+    Assertions.assertEquals(readable.map(OpenGame(_, 6.5)), listed.success.value)
+    Assertions.assertTrue(errors.exists(_.contains("BAD001")), errors.toString)
+
+  @Test def testOpenGamesLeaveOutAGameWhoseWhiteRegisteredAfterTheListing(): Unit =
+    val staleListing = new InMemoryGameStore:
+      // the players Scan listed JOINED before its White registered
+      override def openGames(): Try[Array[String]] = Success(Array("JOINED", "OPEN01"))
+    val staleService = withOpenGames(staleListing, List("JOINED", "OPEN01"))
+    staleListing.registerPlayer("JOINED", White, "whiteJOINED").success.value
+    Assertions.assertEquals(List(OpenGame("OPEN01", 6.5)), staleService.openGames().success.value)
 
   @Test def testOpenGamesFailIfTheStoreCannotListThem(): Unit =
     Assertions.assertInstanceOf(

@@ -49,6 +49,10 @@ class InMemoryGameStore extends GameStore:
   def openGames(): Try[Array[String]] =
     Success(players.keys.map(_._1).toSet.filter(gameId => colors(gameId) == Set(Black)).toArray)
 
+  /** Stores `game` with only Black registered, as a game waiting for a white player. */
+  def addOpenGame(gameId: String, game: Game): Try[Unit] =
+    createGame(gameId, game).flatMap(_ => registerPlayer(gameId, Black, "black" + gameId))
+
   /** Removes the game but not its players, as when the two expire separately. */
   def removeGame(gameId: String): Unit = games -= gameId
 
@@ -87,6 +91,14 @@ class InMemoryGameArchive(failing: Boolean) extends GameArchive:
     else Success(archives.get(gameId).map(_ => "memory://archives/" + gameId + ".json"))
 
   def archived(gameId: String): Option[SaveGame] = archives.get(gameId)
+
+/** A store in memory on which reading the game `failingGameId` fails with `failure`, as
+  * `DynamoDBGameStore.getGame` does when DynamoDB fails, or with an `io.circe.Error` when the
+  * stored game JSON does not decode.
+  */
+class FailingReadStore(failingGameId: String, failure: Throwable) extends InMemoryGameStore:
+  override def getGame(gameId: String): Try[Option[StoredGame]] =
+    if gameId == failingGameId then Failure(failure) else super.getGame(gameId)
 
 /** A [[GameStore]] whose every operation fails, as when DynamoDB is unreachable. */
 class FailingGameStore extends GameStore:

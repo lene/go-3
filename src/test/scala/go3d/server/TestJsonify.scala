@@ -1,7 +1,7 @@
 package go3d.server
 
 import go3d._
-import io.circe.{DecodingFailure, Json}
+import io.circe.{CursorOp, DecodingFailure, Json}
 import io.circe.parser._
 import io.circe.syntax._
 import org.junit.jupiter.api.{Assertions, Test}
@@ -361,10 +361,35 @@ class TestJsonify:
     val falseWithoutWinner = falseWhileFinished.mapObject(_.remove("winner"))
     Assertions.assertTrue(decodeStatus(falseWithoutWinner).isLeft, falseWithoutWinner.noSpaces)
 
-  @Test def testStatusResponseWithOtherWinnerThanItsGamesFailsToDecode(): Unit =
-    for (komi, wrongWinner) <- List[(Double, Color)]((0.5, White), (6.5, Black)) do
-      val json = statusOf(finishedGame(komi)).asJson.mapObject(_.add("winner", wrongWinner.asJson))
-      Assertions.assertTrue(decodeStatus(json).isLeft, json.noSpaces)
+  @Test def testStatusResponseConflictsPointAtTheFieldAtFault(): Unit =
+    val running = statusOf(Game.start(TestSize).success.value).asJson
+    val conflicts = List(
+      (running.mapObject(_.add("over", Json.True)), "over"),
+      (running.mapObject(_.add("winner", Black.asJson)), "winner")
+    )
+    for (json, field) <- conflicts do
+      decodeStatus(json) match
+        case Left(failure: DecodingFailure) =>
+          Assertions.assertEquals(List(CursorOp.DownField(field)), failure.history, json.noSpaces)
+        case other => Assertions.fail(s"${json.noSpaces} decoded to $other")
+
+  @Test def testStatusResponseKeepsTheServersWinnerOverTheClientsScoring(): Unit =
+    for (komi, serverWinner) <- List[(Double, Color)]((0.5, White), (6.5, Black)) do
+      val game = finishedGame(komi)
+      Assertions.assertNotEquals(Some(serverWinner), game.winner)
+      val json = statusOf(game).asJson.mapObject(_.add("winner", serverWinner.asJson))
+      val decoded = decodeStatus(json).toTry.success.value
+      Assertions.assertEquals(Some(serverWinner), decoded.winner, json.noSpaces)
+      Assertions.assertTrue(decoded.over)
+      Assertions.assertEquals(json, decoded.asJson)
+
+  @Test def testFinishedStatusWithEmptyCaptureArrayDecodes(): Unit =
+    val json = statusOf(finishedGame(6.5)).asJson.mapObject(_.remove("winner"))
+      .hcursor.downField("game").downField("captures").set(Json.obj(("0", Json.arr())))
+      .top.getOrElse(Assertions.fail())
+    val decoded = decodeStatus(json).toTry.success.value
+    Assertions.assertEquals(Some(White), decoded.winner, json.noSpaces)
+    Assertions.assertEquals(0, decoded.game.captures(Black) + decoded.game.captures(White))
 
   @Test def testStatusResponseWithMalformedWinnerFailsToDecode(): Unit =
     val finished = statusOf(finishedGame(6.5)).asJson
@@ -377,31 +402,36 @@ class TestJsonify:
     val json = statusOf(finishedGame(6.5)).asJson.mapObject(_.remove("over"))
     Assertions.assertTrue(decodeStatus(json).isLeft, json.noSpaces)
 
-  private val TwoOpenGames = Array(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 6.5))
+  private val TwoOpenGames = List(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 6.5))
 
   private def decodeOpenGames(text: String): Either[io.circe.Error, OpenGamesResponse] =
     decode[OpenGamesResponse](text)
 
   @Test def testOpenGamesResponseDerivesIdsFromItsGames(): Unit =
     val response = OpenGamesResponse(TwoOpenGames)
-    Assertions.assertEquals(List("AAAAAA", "BBBBBB"), response.ids.toList)
-    Assertions.assertTrue(OpenGamesResponse(Array.empty).ids.isEmpty)
+    Assertions.assertEquals(List("AAAAAA", "BBBBBB"), response.ids)
+    Assertions.assertTrue(OpenGamesResponse(List()).ids.isEmpty)
 
   @Test def testOpenGamesResponsesAreEqualIfTheirGamesAre(): Unit =
     val response = OpenGamesResponse(TwoOpenGames)
-    val copy = OpenGamesResponse(TwoOpenGames.clone())
+    val copy = OpenGamesResponse(List(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 6.5)))
     Assertions.assertEquals(response, copy)
     Assertions.assertEquals(response.hashCode, copy.hashCode)
-    Assertions.assertNotEquals(response, "AAAAAA")
     Assertions.assertNotEquals(response, OpenGamesResponse(TwoOpenGames.reverse))
     Assertions.assertNotEquals(response, OpenGamesResponse(TwoOpenGames.init))
     Assertions.assertNotEquals(
       response,
-      OpenGamesResponse(Array(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 7.5)))
+      OpenGamesResponse(List(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 7.5)))
+    )
+
+  @Test def testOpenGamesResponseShowsItsGames(): Unit =
+    Assertions.assertEquals(
+      "OpenGamesResponse(List(OpenGame(AAAAAA,0.5), OpenGame(BBBBBB,6.5)))",
+      OpenGamesResponse(TwoOpenGames).toString
     )
 
   @Test def testUseCirceForOpenGamesResponseJson(): Unit =
-    for games <- List(Array.empty[OpenGame], TwoOpenGames, Array(OpenGame("CCCCCC", -0.5))) do
+    for games <- List(List(), TwoOpenGames, List(OpenGame("CCCCCC", -0.5))) do
       val response = OpenGamesResponse(games)
       val json = response.asJson.noSpaces
       Assertions.assertEquals(Right(response), decodeOpenGames(json), json)
@@ -415,14 +445,14 @@ class TestJsonify:
 
   @Test def testEmptyOpenGamesResponseJsonHasEmptyArrays(): Unit =
     val expected = parse("""{"ids": [], "games": []}""")
-    Assertions.assertEquals(expected, Right(OpenGamesResponse(Array.empty).asJson))
+    Assertions.assertEquals(expected, Right(OpenGamesResponse(List()).asJson))
 
   @Test def testGenericGoResponseEncoderWritesOpenGames(): Unit =
     val response: GoResponse = OpenGamesResponse(TwoOpenGames)
     Assertions.assertEquals(OpenGamesResponse(TwoOpenGames).asJson, response.asJson)
 
   @Test def testOpenGamesListingWithoutGamesDecodesWithDefaultKomi(): Unit =
-    val expected = OpenGamesResponse(Array(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 0.5)))
+    val expected = OpenGamesResponse(List(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 0.5)))
     Assertions.assertEquals(
       Right(expected),
       decodeOpenGames("""{"ids": ["AAAAAA", "BBBBBB"]}""")
@@ -432,7 +462,7 @@ class TestJsonify:
       decodeOpenGames("""{"ids": ["AAAAAA", "BBBBBB"], "games": null}""")
     )
     Assertions.assertEquals(
-      Right(OpenGamesResponse(Array.empty)),
+      Right(OpenGamesResponse(List())),
       decodeOpenGames("""{"ids": []}""")
     )
 
@@ -463,3 +493,19 @@ class TestJsonify:
       """{"ids": "AAAAAA"}"""
     )
     for text <- malformed do Assertions.assertTrue(decodeOpenGames(text).isLeft, text)
+
+  /** A listing has no board size, so a komi is valid if it is valid on the largest board. */
+  @Test def testOpenGamesListingWithInvalidKomiFailsToDecode(): Unit =
+    val largest = MaxBoardSize * MaxBoardSize * MaxBoardSize
+    def listing(komi: String): String = s"""{"ids": ["A"], "games": [{"id": "A", "komi": $komi}]}"""
+    for komi <- List("0", "7", "0.3", "6.50001", s"$largest.5", s"-$largest.5") do
+      decodeOpenGames(listing(komi)) match
+        case Left(failure: DecodingFailure) =>
+          Assertions.assertEquals(
+            List(CursorOp.DownField("komi"), CursorOp.DownArray, CursorOp.DownField("games")),
+            failure.history,
+            komi
+          )
+        case other => Assertions.fail(s"komi $komi decoded to $other")
+    for komi <- List("-0.5", "6.5", s"${largest - 1}.5", s"-${largest - 1}.5") do
+      Assertions.assertTrue(decodeOpenGames(listing(komi)).isRight, komi)

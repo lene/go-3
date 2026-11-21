@@ -598,3 +598,11 @@ class TestGame:
     val game = playListOfMovesWithKomi(TestSize, -0.5, List(Pass(Black), Pass(White)))
     Assertions.assertEquals(game.score(Black), game.score(White))
     Assertions.assertEquals(Some(Black), game.winner)
+
+  @Test def testEmptyCaptureArrayCountsNoCaptures(): Unit =
+    val over = playListOfMovesWithKomi(TestSize, 6.5, List(Pass(Black), Pass(White)))
+    val game = Game(TestSize, over.goban, over.moves, Map(0 -> Array[Move]()), 6.5)
+    Assertions.assertEquals(0, game.captures(Black))
+    Assertions.assertEquals(0, game.captures(White))
+    Assertions.assertEquals((0, 0), (game.score(Black), game.score(White)))
+    Assertions.assertEquals(Some(White), game.winner)

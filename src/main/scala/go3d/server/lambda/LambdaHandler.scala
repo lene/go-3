@@ -38,6 +38,9 @@ class ServiceUnavailable extends ServerException("game store is not configured")
   *   GET /set/{gameId}/{x}/{y}/{z}  → StatusResponse (bearer token required)
   *   GET /pass/{gameId}             → StatusResponse (bearer token required)
   *
+  * The StatusResponse of `/status`, `/status/{n}`, `/set` and `/pass` has `over`, and the `winner`
+  * if and only if `over` is true: after the move that ends the game, and in a replay to its end.
+  *
   * The token is sent as `Authentication: Bearer <token>`. Errors map to the http4s statuses (see
   * [[LambdaHandler.statusOf]]); a move that lost a race with another request returns 409 and the
   * client should refetch the status.
@@ -62,7 +65,7 @@ class LambdaHandler(service: Option[GameService])
     segments(path) match
       case List("health") => jsonResponse(200, "1")
       case List("openGames") =>
-        respond(service.fold[Try[GoResponse]](Success(OpenGamesResponse(Array.empty)))(
+        respond(service.fold[Try[GoResponse]](Success(OpenGamesResponse(List())))(
           _.openGames().map(OpenGamesResponse(_))
         ))
       case List("new", IntSegment(size)) =>

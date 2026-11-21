@@ -567,19 +567,25 @@ class TestServer:
   private def bodyOf(path: String, header: Map[String, String]): String =
     requests.get(s"${GameData.ServerURL}$path", headers = header).text()
 
-  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it,
+  /** Plays the capture-free `positions` on a board of size 3 and ends the game with two passes,
     * and checks that only the end of the game names the winner, also when the status of the
     * finished game is fetched later and when it is replayed.
     */
-  private def assertWinnerOnlyWhenOver(query: String, winner: Color): Unit =
+  private def assertWinnerOnlyWhenOver(
+      query: String,
+      positions: List[GamePositions.Position],
+      winner: Color
+  ): Unit =
     val gameId = getGCR(s"${GameData.ServerURL}/new/3$query").id
-    val tokens = List(Black, White).map(c => c -> GameData.register(gameId, c).authToken).toMap
-    def authorized(path: String, color: Color): String =
-      bodyOf(path, Map("Authentication" -> s"Bearer ${tokens(color)}"))
-    val setResponses = List(Black, White, Black).zip(GamePositions.BlackLeadsByOne).map {
-      case (color, (x, y, z)) => authorized(s"/set/$gameId/$x/$y/$z", color)
+    val black = GameData.register(gameId, Black).authToken
+    val white = GameData.register(gameId, White).authToken
+    def authorized(path: String, token: String): String =
+      bodyOf(path, Map("Authentication" -> s"Bearer $token"))
+    val setResponses = GamePositions.withTokens(black, white, positions).map {
+      case (token, (x, y, z)) => authorized(s"/set/$gameId/$x/$y/$z", token)
     }
-    val passes = List(White, Black).map(color => authorized(s"/pass/$gameId", color))
+    val passes = GamePositions.passingTokens(black, white, positions)
+      .map(token => authorized(s"/pass/$gameId", token))
     StatusAssertions.assertWinnerOnlyWhenOver(
       setResponses ++ passes,
       List(bodyOf(s"/status/$gameId", Map())),
@@ -588,16 +594,19 @@ class TestServer:
     )
 
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver("", Black)
+    assertWinnerOnlyWhenOver("", GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithKomiHalfIsBlack(): Unit =
-    assertWinnerOnlyWhenOver("?komi=0.5", Black)
+    assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    assertWinnerOnlyWhenOver("?komi=6.5", White)
+    assertWinnerOnlyWhenOver("?komi=6.5", GamePositions.BlackLeadsByOne, White)
 
-  @Test def testWinnerWithNegativeKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver("?komi=-0.5", Black)
+  @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver("?komi=-0.5", GamePositions.EmptyBoard, Black)
+
+  @Test def testWinnerOfEmptyBoardWithKomiHalfIsWhite(): Unit =
+    assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.EmptyBoard, White)
 
   @Test def testGameOverAfterFullNumberOfMoves(): Unit =
     val gameData: GameData = setUpGame(3)

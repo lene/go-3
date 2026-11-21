@@ -34,7 +34,7 @@ object Games:
     */
   @SuppressWarnings(Array("org.wartremover.warts.Throw"))
   def apply(gameId: String): Game =
-    activeGames.get(gameId).map(_.get()).orElse(
+    activeGame(gameId).orElse(
       fileIO.flatMap(io => io.loadArchivedGame(gameId).toOption).map(_.game)
     ).getOrElse(throw NoSuchElementException(gameId))
 

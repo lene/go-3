@@ -99,19 +99,32 @@ class GameService(
   def pass(gameId: String, token: String): Try[StatusResponse] =
     play(gameId, token, color => Success(Pass(color)))
 
-  /** The games waiting for a white player, with their komi. Ceiling: one `getGame` per open game,
-    * so a request costs as many reads as there are open games; if open games grow to hundreds,
-    * read them with one `BatchGetItem`. A game that is gone between the listing and its read is
-    * left out; a failure of the store fails the request.
+  /** The games waiting for a white player, with their komi, in the order of the store's listing.
+    * Ceiling: besides the listing, each open game costs two requests to DynamoDB, the `GetItem`
+    * of the game and the `Query` of its players (`DynamoDBGameStore.getGame`); a `BatchGetItem`
+    * of the games would save only the first. A game gone since the listing, or whose White
+    * registered meanwhile, is left out, and so is one whose stored JSON does not decode, which is
+    * logged; any other failure of the store fails the request.
     */
-  def openGames(): Try[Array[OpenGame]] =
+  def openGames(): Try[List[OpenGame]] =
     store.openGames().flatMap { gameIds =>
-      gameIds.foldLeft[Try[List[OpenGame]]](Success(List())) { (listed, gameId) =>
+      gameIds.foldLeft[Try[List[OpenGame]]](Success(List())) { (listedReversed, gameId) =>
         for
-          games <- listed
-          stored <- store.getGame(gameId)
-        yield games ++ stored.map(s => OpenGame(gameId, s.game.komi))
-      }.map(_.toArray)
+          games <- listedReversed
+          game <- openGame(gameId)
+        yield game.fold(games)(_ :: games)
+      }.map(_.reverse)
+    }
+
+  /** The listed game `gameId` while it is still open, else None. An undecodable game is logged
+    * and left out, so that one corrupt record does not take the listing down for everyone.
+    */
+  private def openGame(gameId: String): Try[Option[OpenGame]] =
+    store.getGame(gameId).map(_.collect {
+      case stored if stored.players == Set[Color](Black) => OpenGame(gameId, stored.game.komi)
+    }).recover { case e: io.circe.Error =>
+      logger.error(s"unreadable open game $gameId left out: ${e.getMessage}")
+      None
     }
 
   private def play(

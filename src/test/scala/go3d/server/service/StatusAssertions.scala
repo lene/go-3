@@ -31,7 +31,8 @@ object StatusAssertions:
 
   /** Checks a game played to its end, with the response to each move and the final pass last:
     * only the final response and the statuses fetched afterwards name the winner, and a replay
-    * names it only at the end.
+    * names it only at the end. A replay count is clamped to the moves played, so a negative one
+    * replays the start and one above the end replays the end.
     */
   def assertWinnerOnlyWhenOver(
       moveResponses: List[String],
@@ -39,9 +40,9 @@ object StatusAssertions:
       replayAt: Int => String,
       winner: Color
   ): Unit =
+    val end = moveResponses.length
     moveResponses.init.foreach(assertNotOver)
     assertWonBy(moveResponses.last, winner)
     laterStatuses.foreach(assertWonBy(_, winner))
-    assertNotOver(replayAt(0))
-    assertNotOver(replayAt(moveResponses.length - 1))
-    assertWonBy(replayAt(moveResponses.length), winner)
+    List(-1, 0, end - 1).foreach(count => assertNotOver(replayAt(count)))
+    List(end, end + 1).foreach(count => assertWonBy(replayAt(count), winner))

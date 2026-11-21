@@ -21,7 +21,11 @@ class Game(
     val komi: Double
 ) extends GoGame:
 
-  def captures(color: Color): Int = captures.values.filter(_(0).color != color).flatten.size
+  /** The stones that `color` captured; an empty capture array, as a decoded game can have, has
+    * none.
+    */
+  def captures(color: Color): Int =
+    captures.values.filter(_.headOption.exists(_.color != color)).flatten.size
   def lastCapture: Array[Move] = if captures.isEmpty then Array() else captures.last._2
 
   override def equals(obj: Any): Boolean =

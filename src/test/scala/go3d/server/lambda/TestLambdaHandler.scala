@@ -10,16 +10,15 @@ import go3d.server.{
   decodeStatusResponse
 }
 import go3d.server.service.{
-  FailingGameStore, GamePositions, GameService, InMemoryGameArchive, InMemoryGameStore,
-  InterleavingStore, StatusAssertions, StoredGame
+  FailingGameStore, FailingReadStore, GamePositions, GameService, InMemoryGameArchive,
+  InMemoryGameStore, InterleavingStore, LogCapture, StatusAssertions
 }
-import io.circe.Json
+import io.circe.{DecodingFailure, Json}
 import io.circe.parser.{decode, parse}
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
 import scala.jdk.CollectionConverters._
-import scala.util.{Failure, Try}
 
 private val GameId = "ABCDEF"
 private val NewGamePath = "/new/3"
@@ -225,17 +224,38 @@ class TestLambdaHandler:
     Assertions.assertEquals(List(OpenGame(kept, 0.5)), openGames().games.toList)
     Assertions.assertEquals(List(kept), openGames().ids.toList)
 
+  /** The `/openGames` response of a handler on `gameStore`, after adding a game with only Black
+    * registered for each of `gameIds`.
+    */
+  private def openGamesOn(
+      gameStore: InMemoryGameStore,
+      gameIds: List[String]
+  ): APIGatewayProxyResponseEvent =
+    for gameId <- gameIds do
+      gameStore.addOpenGame(gameId, go3d.Game.start(3).success.value).success.value
+    val gameStoreHandler =
+      new LambdaHandler(Some(GameService(gameStore, InMemoryGameArchive(false))))
+    gameStoreHandler.handleRequest(request(OpenGamesPath), null)
+
   @Test def testOpenGamesFailWith500IfAnOpenGameCannotBeRead(): Unit =
-    val unreadable = new InMemoryGameStore:
-      override def getGame(gameId: String): Try[Option[StoredGame]] =
-        Failure(IllegalStateException("store unavailable"))
-    unreadable.createGame(GameId, go3d.Game.start(3).success.value).success.value
-    unreadable.registerPlayer(GameId, Black, "hash").success.value
-    val unreadableHandler =
-      new LambdaHandler(Some(GameService(unreadable, InMemoryGameArchive(false))))
-    val resp = unreadableHandler.handleRequest(request(OpenGamesPath), null)
+    val unreadable = FailingReadStore(GameId, IllegalStateException("store unavailable"))
+    val resp = openGamesOn(unreadable, List(GameId))
     Assertions.assertEquals(500, resp.getStatusCode)
     Assertions.assertTrue(resp.getBody.contains("internal error"))
+
+  @Test def testOpenGamesLeaveOutAndLogAGameThatDoesNotDecode(): Unit =
+    val undecodable = FailingReadStore(GameId, DecodingFailure("bad komi", List()))
+    val (resp, errors) = LogCapture.errorsDuring(classOf[GameService])(
+      openGamesOn(undecodable, List("GOOD01", GameId, "GOOD02"))
+    )
+    Assertions.assertEquals(200, resp.getStatusCode, resp.getBody)
+    val listed = decode[OpenGamesResponse](resp.getBody).toTry.success.value
+    Assertions.assertEquals(
+      Set(OpenGame("GOOD01", 0.5), OpenGame("GOOD02", 0.5)),
+      listed.games.toSet
+    )
+    Assertions.assertEquals(List("GOOD01", "GOOD02"), listed.ids.sorted)
+    Assertions.assertTrue(errors.exists(_.contains(GameId)), errors.toString)
 
   @Test def testNewGameReturnsValidId(): Unit =
     val resp = call("/new/5")
@@ -321,14 +341,19 @@ class TestLambdaHandler:
       val replayed = decode[StatusResponse](call(replayPath(gameId, count)).getBody)
       Assertions.assertEquals(6.5, replayed.toTry.success.value.game.komi)
 
-  /** Plays the capture-free game that black leads by one point on a board of size 3 and ends it,
+  /** Plays the capture-free `positions` on a board of size 3 and ends the game with two passes,
     * and checks that only the end of the game names the winner.
     */
-  private def assertWinnerOnlyWhenOver(komiValues: Option[List[String]], winner: Color): Unit =
+  private def assertWinnerOnlyWhenOver(
+      komiValues: Option[List[String]],
+      positions: List[GamePositions.Position],
+      winner: Color
+  ): Unit =
     val (gameId, black, white) = startedGameWithKomiValues(3, komiValues)
-    val setResponses = GamePositions.withTokens(black, white, GamePositions.BlackLeadsByOne)
+    val setResponses = GamePositions.withTokens(black, white, positions)
       .map((token, position) => callWithToken(setPath(gameId, position), token))
-    val passes = List(white, black).map(token => callWithToken(passPath(gameId), token))
+    val passes = GamePositions.passingTokens(black, white, positions)
+      .map(token => callWithToken(passPath(gameId), token))
     val responses = setResponses ++ passes
     Assertions.assertTrue(responses.forall(_.getStatusCode == 200))
     StatusAssertions.assertWinnerOnlyWhenOver(
@@ -339,16 +364,19 @@ class TestLambdaHandler:
     )
 
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(None, Black)
+    assertWinnerOnlyWhenOver(None, GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithKomiHalfIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(Some(List("0.5")), Black)
+    assertWinnerOnlyWhenOver(Some(List("0.5")), GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    assertWinnerOnlyWhenOver(Some(List("6.5")), White)
+    assertWinnerOnlyWhenOver(Some(List("6.5")), GamePositions.BlackLeadsByOne, White)
 
-  @Test def testWinnerWithNegativeKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(Some(List("-0.5")), Black)
+  @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
+    assertWinnerOnlyWhenOver(Some(List("-0.5")), GamePositions.EmptyBoard, Black)
+
+  @Test def testWinnerOfEmptyBoardWithKomiHalfIsWhite(): Unit =
+    assertWinnerOnlyWhenOver(Some(List("0.5")), GamePositions.EmptyBoard, White)
 
   @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
     val (gameId, black, _) = startedGameWithKomi("6.5")
