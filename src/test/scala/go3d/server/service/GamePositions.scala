@@ -40,6 +40,12 @@ object GamePositions:
     (2, 2, 2)
   )
 
+  /** The smallest odd board size, at least 3, on which all of the positions exist. */
+  def boardSize(positions: List[Position]): Int =
+    val largest = positions.flatMap { case (x, y, z) => List(x, y, z) }.maxOption.getOrElse(0)
+    val atLeastMinimum = largest.max(3)
+    if atLeastMinimum % 2 == 0 then atLeastMinimum + 1 else atLeastMinimum
+
   /** The positions with the token of the player who makes each move. */
   def withTokens(
       black: String,

@@ -567,16 +567,16 @@ class TestServer:
   private def bodyOf(path: String, header: Map[String, String]): String =
     requests.get(s"${GameData.ServerURL}$path", headers = header).text()
 
-  /** Plays the `positions` on a board of `size` and ends the game with two passes, and checks that
-    * only the end of the game names the winner, also when the status of the finished game is
-    * fetched later from the archive and when it is replayed.
+  /** Plays the `positions` on the smallest board that holds them and ends the game with two
+    * passes, and checks that only the end of the game names the winner, also when the status of the
+    * finished game is fetched later from the archive and when it is replayed.
     */
   private def assertWinnerOnlyWhenOver(
-      size: Int,
       query: String,
       positions: List[GamePositions.Position],
       winner: Color
   ): Unit =
+    val size = GamePositions.boardSize(positions)
     val gameId = getGCR(s"${GameData.ServerURL}/new/$size$query").id
     val black = GameData.register(gameId, Black).authToken
     val white = GameData.register(gameId, White).authToken
@@ -594,12 +594,6 @@ class TestServer:
       winner
     )
 
-  private def assertWinnerOnlyWhenOver(
-      query: String,
-      positions: List[GamePositions.Position],
-      winner: Color
-  ): Unit = assertWinnerOnlyWhenOver(3, query, positions, winner)
-
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
     assertWinnerOnlyWhenOver("", GamePositions.BlackLeadsByOne, Black)
 
@@ -616,7 +610,7 @@ class TestServer:
     assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.EmptyBoard, White)
 
   @Test def testCaptureDoesNotMakeWhiteWin(): Unit =
-    assertWinnerOnlyWhenOver(5, "?komi=-2.5", GamePositions.BeforeKo, Black)
+    assertWinnerOnlyWhenOver("?komi=-2.5", GamePositions.BeforeKo, Black)
 
   @Test def testGameOverAfterFullNumberOfMoves(): Unit =
     val gameData: GameData = setUpGame(3)

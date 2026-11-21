@@ -368,15 +368,11 @@ class TestGoHttpService extends LazyLogging:
       val replayed = decode[StatusResponse](getJson(httpRequest(s"/status/$gameId/$count")))
       Assertions.assertEquals(Right(6.5), replayed.map(_.game.komi))
 
-  /** Plays the `positions` on a board of `size` and ends the game with two passes, and returns the
-    * response to each move.
+  /** Plays the `positions` on the smallest board that holds them and ends the game with two
+    * passes, and returns the response to each move.
     */
-  private def playToTheEnd(
-      size: Int,
-      query: String,
-      positions: List[GamePositions.Position]
-  ): List[String] =
-    val gameId = createdGameId(size, query)
+  private def playToTheEnd(query: String, positions: List[GamePositions.Position]): List[String] =
+    val gameId = createdGameId(GamePositions.boardSize(positions), query)
     val black = checkedRegisterPlayer(gameId, Black)
     val white = checkedRegisterPlayer(gameId, White)
     val setResponses = GamePositions.withTokens(black, white, positions).map {
@@ -391,20 +387,13 @@ class TestGoHttpService extends LazyLogging:
     * tests, so the status fetched after the end is checked there.
     */
   private def assertWinnerOnlyWhenOver(
-      size: Int,
       query: String,
       positions: List[GamePositions.Position],
       winner: Color
   ): Unit =
-    val responses = playToTheEnd(size, query, positions)
+    val responses = playToTheEnd(query, positions)
     responses.init.foreach(StatusAssertions.assertNotOver)
     StatusAssertions.assertWonBy(responses.last, winner)
-
-  private def assertWinnerOnlyWhenOver(
-      query: String,
-      positions: List[GamePositions.Position],
-      winner: Color
-  ): Unit = assertWinnerOnlyWhenOver(3, query, positions, winner)
 
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
     assertWinnerOnlyWhenOver("", GamePositions.BlackLeadsByOne, Black)
@@ -422,7 +411,7 @@ class TestGoHttpService extends LazyLogging:
     assertWinnerOnlyWhenOver("?komi=0.5", GamePositions.EmptyBoard, White)
 
   @Test def testCaptureDoesNotMakeWhiteWin(): Unit =
-    assertWinnerOnlyWhenOver(5, "?komi=-2.5", GamePositions.BeforeKo, Black)
+    assertWinnerOnlyWhenOver("?komi=-2.5", GamePositions.BeforeKo, Black)
 
   @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
     val gameId = createdGameId(3, "?komi=6.5")

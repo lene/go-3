@@ -341,16 +341,16 @@ class TestLambdaHandler:
       val replayed = decode[StatusResponse](call(replayPath(gameId, count)).getBody)
       Assertions.assertEquals(6.5, replayed.toTry.success.value.game.komi)
 
-  /** Plays the `positions` on a board of `size` and ends the game with two passes, and checks that
-    * only the end of the game names the winner.
+  /** Plays the `positions` on the smallest board that holds them and ends the game with two
+    * passes, and checks that only the end of the game names the winner.
     */
   private def assertWinnerOnlyWhenOver(
-      size: Int,
       komiValues: Option[List[String]],
       positions: List[GamePositions.Position],
       winner: Color
   ): Unit =
-    val (gameId, black, white) = startedGameWithKomiValues(size, komiValues)
+    val boardSize = GamePositions.boardSize(positions)
+    val (gameId, black, white) = startedGameWithKomiValues(boardSize, komiValues)
     val setResponses = GamePositions.withTokens(black, white, positions)
       .map((token, position) => callWithToken(setPath(gameId, position), token))
     val passes = GamePositions.passingTokens(black, white, positions)
@@ -363,12 +363,6 @@ class TestLambdaHandler:
       count => call(replayPath(gameId, count)).getBody,
       winner
     )
-
-  private def assertWinnerOnlyWhenOver(
-      komiValues: Option[List[String]],
-      positions: List[GamePositions.Position],
-      winner: Color
-  ): Unit = assertWinnerOnlyWhenOver(3, komiValues, positions, winner)
 
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
     assertWinnerOnlyWhenOver(None, GamePositions.BlackLeadsByOne, Black)
@@ -386,7 +380,7 @@ class TestLambdaHandler:
     assertWinnerOnlyWhenOver(Some(List("0.5")), GamePositions.EmptyBoard, White)
 
   @Test def testCaptureDoesNotMakeWhiteWin(): Unit =
-    assertWinnerOnlyWhenOver(5, Some(List("-2.5")), GamePositions.BeforeKo, Black)
+    assertWinnerOnlyWhenOver(Some(List("-2.5")), GamePositions.BeforeKo, Black)
 
   @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
     val (gameId, black, _) = startedGameWithKomi("6.5")
