@@ -20,7 +20,10 @@ object GamePositions:
   val EmptyBoard: List[Position] = List()
 
   /** The position of `TestGame.testPossibleMovesWithKo` on a board of size 5: white's last move
-    * captures 2,2,3, so black playing there again is a ko.
+    * captures 2,2,3, so black playing there again is a ko. Black has 5 stones and no territory.
+    * White has 6 stones, one capture and the captured point 2,2,3 as territory, so the score is 5
+    * to 7. With the capture counted it would be 5 to 8, so a komi of -2.5 gives the winner black,
+    * and white if captures were counted; a komi of -1.5 gives white either way.
     */
   val BeforeKo: List[Position] = List(
     (2, 2, 3),

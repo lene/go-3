@@ -341,15 +341,16 @@ class TestLambdaHandler:
       val replayed = decode[StatusResponse](call(replayPath(gameId, count)).getBody)
       Assertions.assertEquals(6.5, replayed.toTry.success.value.game.komi)
 
-  /** Plays the capture-free `positions` on a board of size 3 and ends the game with two passes,
-    * and checks that only the end of the game names the winner.
+  /** Plays the `positions` on a board of `size` and ends the game with two passes, and checks that
+    * only the end of the game names the winner.
     */
   private def assertWinnerOnlyWhenOver(
+      size: Int,
       komiValues: Option[List[String]],
       positions: List[GamePositions.Position],
       winner: Color
   ): Unit =
-    val (gameId, black, white) = startedGameWithKomiValues(3, komiValues)
+    val (gameId, black, white) = startedGameWithKomiValues(size, komiValues)
     val setResponses = GamePositions.withTokens(black, white, positions)
       .map((token, position) => callWithToken(setPath(gameId, position), token))
     val passes = GamePositions.passingTokens(black, white, positions)
@@ -364,19 +365,22 @@ class TestLambdaHandler:
     )
 
   @Test def testWinnerWithoutKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(None, GamePositions.BlackLeadsByOne, Black)
+    assertWinnerOnlyWhenOver(3, None, GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithKomiHalfIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(Some(List("0.5")), GamePositions.BlackLeadsByOne, Black)
+    assertWinnerOnlyWhenOver(3, Some(List("0.5")), GamePositions.BlackLeadsByOne, Black)
 
   @Test def testWinnerWithLargeKomiIsWhite(): Unit =
-    assertWinnerOnlyWhenOver(Some(List("6.5")), GamePositions.BlackLeadsByOne, White)
+    assertWinnerOnlyWhenOver(3, Some(List("6.5")), GamePositions.BlackLeadsByOne, White)
 
   @Test def testWinnerOfEmptyBoardWithNegativeKomiIsBlack(): Unit =
-    assertWinnerOnlyWhenOver(Some(List("-0.5")), GamePositions.EmptyBoard, Black)
+    assertWinnerOnlyWhenOver(3, Some(List("-0.5")), GamePositions.EmptyBoard, Black)
 
   @Test def testWinnerOfEmptyBoardWithKomiHalfIsWhite(): Unit =
-    assertWinnerOnlyWhenOver(Some(List("0.5")), GamePositions.EmptyBoard, White)
+    assertWinnerOnlyWhenOver(3, Some(List("0.5")), GamePositions.EmptyBoard, White)
+
+  @Test def testCaptureDoesNotMakeWhiteWin(): Unit =
+    assertWinnerOnlyWhenOver(5, Some(List("-2.5")), GamePositions.BeforeKo, Black)
 
   @Test def testStatusOfGameInProgressHasNoWinner(): Unit =
     val (gameId, black, _) = startedGameWithKomi("6.5")

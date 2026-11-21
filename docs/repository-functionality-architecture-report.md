@@ -12,7 +12,7 @@ Current working tree note: `Dockerfile` and `src/test/scala/go3d/server/TestServ
 
 ## Executive Summary
 
-The application lets two players play a 3D extension of Go. Stones are placed at `(x, y, z)` coordinates on an odd-sized cubic board. The rule engine supports alternating turns, passes, captures, suicide prevention, a simple ko check, game-over detection, legal move generation, and scoring by stones, captures, and surrounded territory.
+The application lets two players play a 3D extension of Go. Stones are placed at `(x, y, z)` coordinates on an odd-sized cubic board. The rule engine supports alternating turns, passes, captures, suicide prevention, a simple ko check, game-over detection, legal move generation, and area scoring by stones and surrounded territory.
 
 The main architecture is split into:
 
@@ -51,7 +51,7 @@ Implemented rule behavior:
 - Track captured stones by move index.
 - Prevent immediate ko when the previous capture was a single stone and the next move tries to play that captured point.
 - Generate possible legal moves for the active player.
-- Score by stones on board plus captures plus enclosed empty territory.
+- Score by stones on board plus enclosed empty territory (area scoring; captures are tracked but not scored).
 
 Komi is a field of `Game`: the points added to White's score, 0.5 unless chosen with `/new/{size}?komi=k`. `Game.winner` compares White's score plus komi with Black's once the game is over, and `StatusResponse` carries it as `winner` if and only if `over` is true. Only half-integers up to size³ are valid, so a game never ties.
 
@@ -276,9 +276,10 @@ Connected groups are found by recursively walking neighboring stones of the same
 `Game.score` computes:
 
 1. Stone count for black and white.
-2. Captures credited to the capturing color.
-3. Empty connected areas.
-4. If an empty area's boundary has exactly one color, that empty area is counted as territory for that color.
+2. Empty connected areas.
+3. If an empty area's boundary has exactly one color, that empty area is counted as territory for that color.
+
+Captures are not scored: under area scoring the points freed by a capture count as territory when only the capturer's stones border them, so adding the captures would count them twice. That reasoning comes from 2D Go and may not hold in 3D. Dead stones are never removed, so a game has to be played until dead groups are captured.
 
 This is a practical scoring implementation for the project, but it is not a full formal ruleset engine.
 
@@ -529,7 +530,7 @@ The test suite is broad for a small project. It covers:
 - Simple ko detection.
 - Game over by passes and full move count.
 - Legal move generation.
-- Territory scoring.
+- Area scoring (stones plus territory, no captures).
 - Area hulls, inside-area detection, and liveness heuristics.
 - JSON codecs for domain objects, saves, and responses.
 - File IO saves, path traversal checks, archive conflict checks.
@@ -605,7 +606,7 @@ IDs are six base62 characters. The collision probability is low for small deploy
 
 ### Rule Completeness
 
-The rule engine is sufficient for this game variant, but it is not a full configurable Go rules engine. In particular, ko is a simple immediate recapture check, scoring is custom territory logic, and features such as handicap setup and resignation are absent.
+The rule engine is sufficient for this game variant, but it is not a full configurable Go rules engine. In particular, ko is a simple immediate recapture check, scoring is custom area-scoring logic, and features such as handicap setup and resignation are absent.
 
 ### Performance Scaling
 
