@@ -38,6 +38,9 @@ object Games:
       fileIO.flatMap(io => io.loadArchivedGame(gameId).toOption).map(_.game)
     ).getOrElse(throw NoSuchElementException(gameId))
 
+  /** The game while it is active; None for an unknown game and once it is archived or deleted. */
+  def activeGame(gameId: String): Option[Game] = activeGames.get(gameId).map(_.get())
+
   def loadGames(baseDir: String): Unit =
     // logger declared locally to avoid conflict with slf4j.Logger.ROOT_LOGGER_NAME in TestServer
     val logger = Logger(Games.getClass)

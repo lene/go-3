@@ -89,7 +89,7 @@ The HTTP API is JSON-based, except for plain error strings in many failure cases
 | `GET /set/{gameId}/{x}/{y}/{z}/d` | Required | Applies a move and includes debug request info. |
 | `GET /pass/{gameId}` | Required | Applies a pass for the authenticated player. |
 | `GET /pass/{gameId}/d` | Required | Applies a pass and includes debug request info. |
-| `GET /openGames` | No | Returns games with black registered and white not yet registered. |
+| `GET /openGames` | No | Returns games with black registered and white not yet registered: `ids`, and `games` with the `{id, komi}` of each, in the same order. |
 | `GET /health` | No | Returns `1`. |
 
 Auth is a custom `Authentication: Bearer {token}` header. The token is generated when a player registers.

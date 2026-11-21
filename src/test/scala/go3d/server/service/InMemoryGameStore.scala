@@ -43,8 +43,14 @@ class InMemoryGameStore extends GameStore:
         color
     })
 
+  /** As in the DynamoDB store, the listing comes from the players: a game removed with
+    * [[removeGame]] is still listed while its black player is.
+    */
   def openGames(): Try[Array[String]] =
-    Success(games.keys.filter(gameId => colors(gameId) == Set(Black)).toArray)
+    Success(players.keys.map(_._1).toSet.filter(gameId => colors(gameId) == Set(Black)).toArray)
+
+  /** Removes the game but not its players, as when the two expire separately. */
+  def removeGame(gameId: String): Unit = games -= gameId
 
   def markCompleted(gameId: String, archiveKey: String, expiresAt: Long): Try[Unit] =
     games.get(gameId) match

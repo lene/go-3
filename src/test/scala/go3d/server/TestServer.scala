@@ -522,6 +522,19 @@ class TestServer:
     val response = getOGR(s"${GameData.ServerURL}/openGames")
     Assertions.assertFalse(response.ids.isEmpty)
     Assertions.assertTrue(response.ids.contains(newGameResponse.id))
+    Assertions.assertTrue(response.games.contains(OpenGame(newGameResponse.id, 0.5)))
+
+  @Test def testGetOpenGamesReturnsTheKomiOfEachGame(): Unit =
+    val komis = List("", "?komi=6.5", "?komi=-0.5")
+    val expected = komis.map { query =>
+      val created = getGCR(s"${GameData.ServerURL}/new/3$query")
+      GameData.register(created.id, Black)
+      created.id
+    }.zip(List(0.5, 6.5, -0.5)).map { case (id, komi) => OpenGame(id, komi) }
+    val response = getOGR(s"${GameData.ServerURL}/openGames")
+    for game <- expected do
+      Assertions.assertTrue(response.games.contains(game), game.toString)
+      Assertions.assertTrue(response.ids.contains(game.id), game.toString)
 
   @Test def testGetOpenGamesDoesNotReturnGameWithNoBlackPlayer(): Unit =
     val newGameResponse = GameData.create(3)

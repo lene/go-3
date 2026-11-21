@@ -16,6 +16,7 @@ import go3d.server.IdGenerator
 import go3d.server.NonexistentGame
 import go3d.server.NotReadyToSet
 import go3d.server.NullRequestInfo
+import go3d.server.OpenGame
 import go3d.server.Player
 import go3d.server.PlayerRegisteredResponse
 import go3d.server.SaveGame
@@ -98,7 +99,20 @@ class GameService(
   def pass(gameId: String, token: String): Try[StatusResponse] =
     play(gameId, token, color => Success(Pass(color)))
 
-  def openGames(): Try[Array[String]] = store.openGames()
+  /** The games waiting for a white player, with their komi. Ceiling: one `getGame` per open game,
+    * so a request costs as many reads as there are open games; if open games grow to hundreds,
+    * read them with one `BatchGetItem`. A game that is gone between the listing and its read is
+    * left out; a failure of the store fails the request.
+    */
+  def openGames(): Try[Array[OpenGame]] =
+    store.openGames().flatMap { gameIds =>
+      gameIds.foldLeft[Try[List[OpenGame]]](Success(List())) { (listed, gameId) =>
+        for
+          games <- listed
+          stored <- store.getGame(gameId)
+        yield games ++ stored.map(s => OpenGame(gameId, s.game.komi))
+      }.map(_.toArray)
+    }
 
   private def play(
       gameId: String,

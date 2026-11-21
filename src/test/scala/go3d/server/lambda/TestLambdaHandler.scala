@@ -5,18 +5,21 @@ import com.amazonaws.services.lambda.runtime.events.{
 }
 import go3d.{BadKomiTexts, Black, Color, White}
 import go3d.server.{
-  GameCreatedResponse, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
-  decodePlayerRegisteredResponse, decodeStatusResponse
+  GameCreatedResponse, OpenGame, OpenGamesResponse, PlayerRegisteredResponse, StatusResponse,
+  decodeGameCreatedResponse, decodeOpenGamesResponse, decodePlayerRegisteredResponse,
+  decodeStatusResponse
 }
 import go3d.server.service.{
   FailingGameStore, GamePositions, GameService, InMemoryGameArchive, InMemoryGameStore,
-  InterleavingStore, StatusAssertions
+  InterleavingStore, StatusAssertions, StoredGame
 }
-import io.circe.parser.decode
+import io.circe.Json
+import io.circe.parser.{decode, parse}
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
 import scala.jdk.CollectionConverters._
+import scala.util.{Failure, Try}
 
 private val GameId = "ABCDEF"
 private val NewGamePath = "/new/3"
@@ -32,6 +35,7 @@ private def archivedPath(gameId: String): String = "/archived/" + gameId
 
 private val StatusPath = statusPath(GameId)
 private val OpenGamesPath = "/openGames"
+private val NoOpenGamesJson = """{"ids": [], "games": []}"""
 
 // The AWS Lambda API allows a null Context and LambdaHandler does not use it;
 // testNullPathReturns404 passes a null path on purpose.
@@ -117,7 +121,7 @@ class TestLambdaHandler:
   @Test def testOpenGamesWithoutDynamoDB(): Unit =
     val resp = handler.handleRequest(request(OpenGamesPath), null)
     Assertions.assertEquals(200, resp.getStatusCode)
-    Assertions.assertTrue(resp.getBody.contains("ids"))
+    Assertions.assertEquals(parse(NoOpenGamesJson), parse(resp.getBody))
 
   @Test def testWritesWithoutDynamoDBReturn503(): Unit =
     Assertions.assertEquals(503, handler.handleRequest(request(NewGamePath), null).getStatusCode)
@@ -156,6 +160,7 @@ class TestLambdaHandler:
     val resp = call(OpenGamesPath)
     Assertions.assertEquals(200, resp.getStatusCode)
     Assertions.assertTrue(resp.getBody.contains(GameId))
+    Assertions.assertEquals(List(OpenGame(GameId, 0.5)), openGames().games.toList)
 
   @Test def testStatusStoreFailureReturns500(): Unit =
     val resp = failingHandler.handleRequest(request(StatusPath), null)
@@ -167,6 +172,70 @@ class TestLambdaHandler:
       500,
       failingHandler.handleRequest(request(OpenGamesPath), null).getStatusCode
     )
+
+  private def openGames(): OpenGamesResponse =
+    decode[OpenGamesResponse](call(OpenGamesPath).getBody).toTry.success.value
+
+  /** A new game with only Black registered; `komiValues` are the values of the `komi` query, if
+    * the request has one.
+    */
+  private def openGame(komiValues: Option[List[String]]): String =
+    val created = komiValues.fold(call(NewGamePath))(newGameWithKomiValues)
+    val gameId = decode[GameCreatedResponse](created.getBody).toTry.success.value.id
+    Assertions.assertEquals(200, call(registerPath(gameId, "@")).getStatusCode)
+    gameId
+
+  @Test def testOpenGamesCarryTheKomiOfEachGame(): Unit =
+    val withoutKomi = openGame(None)
+    val large = openGame(Some(List("6.5")))
+    val negative = openGame(Some(List("-0.5")))
+    Assertions.assertEquals(
+      Set(OpenGame(withoutKomi, 0.5), OpenGame(large, 6.5), OpenGame(negative, -0.5)),
+      openGames().games.toSet
+    )
+
+  @Test def testOpenGamesListIdsAndGamesInTheSameOrder(): Unit =
+    for komi <- List("0.5", "6.5", "-0.5", "1.5") do openGame(Some(List(komi)))
+    val body = call(OpenGamesPath).getBody
+    val json = parse(body).toTry.success.value.hcursor
+    val ids = json.downField("ids").as[List[String]].toTry.success.value
+    val gameIds = json.downField("games").as[List[Json]].toTry.success.value
+      .map(_.hcursor.downField("id").as[String].toTry.success.value)
+    Assertions.assertEquals(4, ids.length, body)
+    Assertions.assertEquals(ids, gameIds, body)
+
+  @Test def testOpenGamesLeaveOutGamesWithBothOrNoPlayers(): Unit =
+    val open = openGame(Some(List("6.5")))
+    val (full, _, _) = startedGameWithKomi("6.5")
+    val noPlayers = decode[GameCreatedResponse](call(NewGamePath).getBody).toTry.success.value.id
+    val response = openGames()
+    Assertions.assertEquals(List(OpenGame(open, 6.5)), response.games.toList)
+    Assertions.assertFalse(response.ids.contains(full))
+    Assertions.assertFalse(response.ids.contains(noPlayers))
+
+  @Test def testNoOpenGamesListEmptyArrays(): Unit =
+    call(NewGamePath)
+    Assertions.assertEquals(parse(NoOpenGamesJson), parse(call(OpenGamesPath).getBody))
+
+  @Test def testOpenGamesLeaveOutAGameThatIsGoneBeforeTheRead(): Unit =
+    val gone = openGame(Some(List("6.5")))
+    val kept = openGame(None)
+    store.removeGame(gone)
+    Assertions.assertTrue(store.openGames().success.value.contains(gone))
+    Assertions.assertEquals(List(OpenGame(kept, 0.5)), openGames().games.toList)
+    Assertions.assertEquals(List(kept), openGames().ids.toList)
+
+  @Test def testOpenGamesFailWith500IfAnOpenGameCannotBeRead(): Unit =
+    val unreadable = new InMemoryGameStore:
+      override def getGame(gameId: String): Try[Option[StoredGame]] =
+        Failure(IllegalStateException("store unavailable"))
+    unreadable.createGame(GameId, go3d.Game.start(3).success.value).success.value
+    unreadable.registerPlayer(GameId, Black, "hash").success.value
+    val unreadableHandler =
+      new LambdaHandler(Some(GameService(unreadable, InMemoryGameArchive(false))))
+    val resp = unreadableHandler.handleRequest(request(OpenGamesPath), null)
+    Assertions.assertEquals(500, resp.getStatusCode)
+    Assertions.assertTrue(resp.getBody.contains("internal error"))
 
   @Test def testNewGameReturnsValidId(): Unit =
     val resp = call("/new/5")

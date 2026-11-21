@@ -52,7 +52,8 @@ The server uses **http4s with Cats Effect** for async HTTP handling:
   - `GET /status/{gameId}/{moveCount}` - Game state after the first `moveCount` moves (replay)
   - `GET /set/{gameId}/{x}/{y}/{z}` - Place stone
   - `GET /pass/{gameId}` - Pass turn
-  - `GET /openGames` - List available games
+  - `GET /openGames` - List the games waiting for a white player: `ids`, and `games`, an
+    `{id, komi}` per id in the same order, so a player sees the komi before joining
   - `GET /archived/{gameId}` - Archived game (local file, or a redirect to a pre-signed S3 URL)
 
   The AWS Lambda handler (`lambda/LambdaHandler.scala`) serves the same routes on top of

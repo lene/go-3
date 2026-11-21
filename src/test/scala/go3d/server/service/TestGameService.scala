@@ -16,6 +16,7 @@ import go3d.White
 import go3d.server.DuplicateColor
 import go3d.server.NonexistentGame
 import go3d.server.NotReadyToSet
+import go3d.server.OpenGame
 import go3d.server.StatusResponse
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
@@ -523,12 +524,76 @@ class TestGameService:
       service.status(gameId, None).success.value.game.at(1, 1, 1)
     )
 
+  private def openGames(): List[OpenGame] = service.openGames().success.value.toList
+
+  /** A game of size 3 with komi `komi` and only Black registered; returns its id. */
+  private def openGame(komi: Double): String =
+    val gameId = service.newGame(3, komi).success.value.id
+    service.register(gameId, Black).success.value
+    gameId
+
   @Test def testOpenGamesListsGamesWaitingForWhite(): Unit =
     val gameId = service.newGame(3).success.value.id
     service.register(gameId, Black).success.value
-    Assertions.assertTrue(service.openGames().success.value.contains(gameId))
+    Assertions.assertTrue(openGames().map(_.id).contains(gameId))
     service.register(gameId, White).success.value
-    Assertions.assertFalse(service.openGames().success.value.contains(gameId))
+    Assertions.assertFalse(openGames().map(_.id).contains(gameId))
+
+  @Test def testOpenGamesCarryTheKomiOfEachGame(): Unit =
+    val withoutKomi = service.newGame(3).success.value.id
+    service.register(withoutKomi, Black).success.value
+    val large = openGame(6.5)
+    val negative = openGame(-0.5)
+    Assertions.assertEquals(
+      Set(OpenGame(withoutKomi, 0.5), OpenGame(large, 6.5), OpenGame(negative, -0.5)),
+      openGames().toSet
+    )
+    Assertions.assertEquals(3, openGames().length)
+
+  @Test def testOpenGamesKeepTheOrderOfTheStore(): Unit =
+    for komi <- List(0.5, 6.5, -0.5, 1.5, 2.5) do openGame(komi)
+    Assertions.assertEquals(
+      store.openGames().success.value.toList,
+      openGames().map(_.id)
+    )
+
+  @Test def testOpenGamesLeaveOutGamesWithBothOrNoPlayers(): Unit =
+    val open = openGame(6.5)
+    val full = openGame(6.5)
+    service.register(full, White).success.value
+    service.newGame(3, 6.5).success.value
+    Assertions.assertEquals(List(OpenGame(open, 6.5)), openGames())
+
+  @Test def testNoOpenGamesAreAnEmptyList(): Unit =
+    service.newGame(3, 6.5).success.value
+    Assertions.assertEquals(List(), openGames())
+
+  @Test def testOpenGamesLeaveOutAGameThatIsGoneBeforeTheRead(): Unit =
+    val gone = openGame(6.5)
+    val kept = openGame(1.5)
+    store.removeGame(gone)
+    Assertions.assertTrue(store.openGames().success.value.contains(gone))
+    Assertions.assertEquals(List(OpenGame(kept, 1.5)), openGames())
+
+  @Test def testOpenGamesFailIfAnOpenGameCannotBeRead(): Unit =
+    val unreadable = new InMemoryGameStore:
+      override def getGame(gameId: String): Try[Option[StoredGame]] =
+        if gameId == "BAD001" then Failure(IllegalStateException("store unavailable"))
+        else super.getGame(gameId)
+    for gameId <- List("GOOD01", "BAD001", "GOOD02") do
+      unreadable.createGame(gameId, Game.start(3, 6.5).success.value).success.value
+      unreadable.registerPlayer(gameId, Black, "hash" + gameId).success.value
+    Assertions.assertEquals(3, unreadable.openGames().success.value.length)
+    Assertions.assertInstanceOf(
+      classOf[IllegalStateException],
+      serviceFor(unreadable, archive).openGames().failure.exception
+    )
+
+  @Test def testOpenGamesFailIfTheStoreCannotListThem(): Unit =
+    Assertions.assertInstanceOf(
+      classOf[IllegalStateException],
+      serviceFor(FailingGameStore(), archive).openGames().failure.exception
+    )
 
 class TestUnconfiguredArchive:
   @Test def testArchiveFails(): Unit =

@@ -291,14 +291,37 @@ implicit val decodeStatusResponse: Decoder[StatusResponse] =
       _ <- checkOverAndWinner(c, response, over, winner)
     yield response
 
-implicit val encodeOpenGamesResponse: Encoder[OpenGamesResponse] =
-  (response: OpenGamesResponse) => Json.obj(("ids", response.ids.asJson))
+implicit val encodeOpenGame: Encoder[OpenGame] =
+  (game: OpenGame) =>
+    Json.obj(("id", Json.fromString(game.id)), ("komi", Json.fromDoubleOrNull(game.komi)))
 
+implicit val decodeOpenGame: Decoder[OpenGame] =
+  (c: HCursor) =>
+    for
+      id <- c.downField("id").as[String]
+      komi <- c.downField("komi").as[Double]
+    yield OpenGame(id, komi)
+
+/** `ids` stays next to `games` for clients that read only the ids. */
+implicit val encodeOpenGamesResponse: Encoder[OpenGamesResponse] =
+  (response: OpenGamesResponse) =>
+    Json.obj(("ids", response.ids.asJson), ("games", response.games.asJson))
+
+/** A document without `games` (or with a null one) is a listing of a server from before komi
+  * existed: its games get the default komi. The `ids` must be the ids of the games, in order.
+  */
 implicit val decodeOpenGamesResponse: Decoder[OpenGamesResponse] =
   (c: HCursor) =>
     for
       ids <- c.downField("ids").as[Array[String]]
-    yield OpenGamesResponse(ids)
+      games <- c.downField("games").as[Option[Array[OpenGame]]]
+      response = OpenGamesResponse(games.getOrElse(ids.map(OpenGame(_, Komi.Default))))
+      _ <- Either.cond(
+        response.ids.sameElements(ids),
+        (),
+        DecodingFailure("ids differ from the ids of games", c.downField("ids").history)
+      )
+    yield response
 
 implicit val encodeGoResponse: Encoder[GoResponse] =
   case r: StatusResponse => encodeStatusResponse(r)

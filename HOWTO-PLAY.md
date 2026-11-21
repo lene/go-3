@@ -24,6 +24,13 @@ WHITE_TOKEN=$(curl -s "http://localhost:6030/register/$GAME_ID/O" | jq -r '.auth
 echo "White token: $WHITE_TOKEN"
 ```
 
+To join a game someone else created, list the games waiting for a white player. `ids` has their
+IDs, and `games` has an `{id, komi}` for each, so you see the komi before you register:
+```bash
+curl -s http://localhost:6030/openGames | jq '.games'
+GAME_ID=$(curl -s http://localhost:6030/openGames | jq -r '.ids[0]')
+```
+
 ### 3. Start Clients
 
 **ASCII Client (for making moves):**

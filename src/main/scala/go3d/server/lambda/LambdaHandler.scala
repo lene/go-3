@@ -29,7 +29,7 @@ class ServiceUnavailable extends ServerException("game store is not configured")
   * those of the http4s server (`http4s/GoHttpService.scala`):
   *
   *   GET /health                    → 200 1
-  *   GET /openGames                 → OpenGamesResponse
+  *   GET /openGames                 → OpenGamesResponse: `ids` and `games`, an {id, komi} each
   *   GET /new/{size}[?komi=k]       → GameCreatedResponse; komi 0.5 unless given (see [[Komi]])
   *   GET /register/{gameId}/{color} → PlayerRegisteredResponse with the bearer token
   *   GET /status/{gameId}           → StatusResponse; with a bearer token also moves and `ready`

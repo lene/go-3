@@ -1,7 +1,7 @@
 package go3d.server
 
 import go3d._
-import io.circe.Json
+import io.circe.{DecodingFailure, Json}
 import io.circe.parser._
 import io.circe.syntax._
 import org.junit.jupiter.api.{Assertions, Test}
@@ -376,3 +376,90 @@ class TestJsonify:
   @Test def testStatusResponseWithoutOverFailsToDecode(): Unit =
     val json = statusOf(finishedGame(6.5)).asJson.mapObject(_.remove("over"))
     Assertions.assertTrue(decodeStatus(json).isLeft, json.noSpaces)
+
+  private val TwoOpenGames = Array(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 6.5))
+
+  private def decodeOpenGames(text: String): Either[io.circe.Error, OpenGamesResponse] =
+    decode[OpenGamesResponse](text)
+
+  @Test def testOpenGamesResponseDerivesIdsFromItsGames(): Unit =
+    val response = OpenGamesResponse(TwoOpenGames)
+    Assertions.assertEquals(List("AAAAAA", "BBBBBB"), response.ids.toList)
+    Assertions.assertTrue(OpenGamesResponse(Array.empty).ids.isEmpty)
+
+  @Test def testOpenGamesResponsesAreEqualIfTheirGamesAre(): Unit =
+    val response = OpenGamesResponse(TwoOpenGames)
+    val copy = OpenGamesResponse(TwoOpenGames.clone())
+    Assertions.assertEquals(response, copy)
+    Assertions.assertEquals(response.hashCode, copy.hashCode)
+    Assertions.assertNotEquals(response, "AAAAAA")
+    Assertions.assertNotEquals(response, OpenGamesResponse(TwoOpenGames.reverse))
+    Assertions.assertNotEquals(response, OpenGamesResponse(TwoOpenGames.init))
+    Assertions.assertNotEquals(
+      response,
+      OpenGamesResponse(Array(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 7.5)))
+    )
+
+  @Test def testUseCirceForOpenGamesResponseJson(): Unit =
+    for games <- List(Array.empty[OpenGame], TwoOpenGames, Array(OpenGame("CCCCCC", -0.5))) do
+      val response = OpenGamesResponse(games)
+      val json = response.asJson.noSpaces
+      Assertions.assertEquals(Right(response), decodeOpenGames(json), json)
+
+  @Test def testOpenGamesResponseJsonHasIdsAndGamesInTheSameOrder(): Unit =
+    val expected = parse(
+      """{"ids": ["AAAAAA", "BBBBBB"],
+        |"games": [{"id": "AAAAAA", "komi": 0.5}, {"id": "BBBBBB", "komi": 6.5}]}""".stripMargin
+    )
+    Assertions.assertEquals(expected, Right(OpenGamesResponse(TwoOpenGames).asJson))
+
+  @Test def testEmptyOpenGamesResponseJsonHasEmptyArrays(): Unit =
+    val expected = parse("""{"ids": [], "games": []}""")
+    Assertions.assertEquals(expected, Right(OpenGamesResponse(Array.empty).asJson))
+
+  @Test def testGenericGoResponseEncoderWritesOpenGames(): Unit =
+    val response: GoResponse = OpenGamesResponse(TwoOpenGames)
+    Assertions.assertEquals(OpenGamesResponse(TwoOpenGames).asJson, response.asJson)
+
+  @Test def testOpenGamesListingWithoutGamesDecodesWithDefaultKomi(): Unit =
+    val expected = OpenGamesResponse(Array(OpenGame("AAAAAA", 0.5), OpenGame("BBBBBB", 0.5)))
+    Assertions.assertEquals(
+      Right(expected),
+      decodeOpenGames("""{"ids": ["AAAAAA", "BBBBBB"]}""")
+    )
+    Assertions.assertEquals(
+      Right(expected),
+      decodeOpenGames("""{"ids": ["AAAAAA", "BBBBBB"], "games": null}""")
+    )
+    Assertions.assertEquals(
+      Right(OpenGamesResponse(Array.empty)),
+      decodeOpenGames("""{"ids": []}""")
+    )
+
+  @Test def testOpenGamesListingWithOtherIdsThanItsGamesFailsToDecode(): Unit =
+    val game = """{"id": "AAAAAA", "komi": 0.5}"""
+    val other = """{"id": "BBBBBB", "komi": 0.5}"""
+    val contradicting = List(
+      s"""{"ids": ["AAAAAA"], "games": [$other]}""",
+      s"""{"ids": ["AAAAAA", "BBBBBB"], "games": [$other, $game]}""",
+      s"""{"ids": ["AAAAAA", "BBBBBB"], "games": [$game]}""",
+      s"""{"ids": ["AAAAAA"], "games": [$game, $other]}""",
+      s"""{"ids": [], "games": [$game]}""",
+      s"""{"ids": ["AAAAAA"], "games": []}""",
+      s"""{"ids": ["AAAAAA", "AAAAAA"], "games": [$game]}"""
+    )
+    for text <- contradicting do
+      decodeOpenGames(text) match
+        case Left(failure) => Assertions.assertInstanceOf(classOf[DecodingFailure], failure, text)
+        case Right(response) => Assertions.fail(s"$text decoded to $response")
+
+  @Test def testOpenGamesListingWithoutIdsOrWithMalformedGamesFailsToDecode(): Unit =
+    val malformed = List(
+      """{"games": [{"id": "AAAAAA", "komi": 0.5}]}""",
+      """{"ids": ["AAAAAA"], "games": [{"id": "AAAAAA"}]}""",
+      """{"ids": ["AAAAAA"], "games": [{"komi": 0.5}]}""",
+      """{"ids": ["AAAAAA"], "games": [{"id": "AAAAAA", "komi": true}]}""",
+      """{"ids": ["AAAAAA"], "games": {"id": "AAAAAA", "komi": 0.5}}""",
+      """{"ids": "AAAAAA"}"""
+    )
+    for text <- malformed do Assertions.assertTrue(decodeOpenGames(text).isLeft, text)

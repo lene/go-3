@@ -1,8 +1,8 @@
 package go3d.server.http4s
 
 import go3d.server.{
-  GameCreatedResponse, OpenGamesResponse, RateLimiter, decodeOpenGamesResponse, IdGenerator,
-  PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
+  GameCreatedResponse, OpenGame, OpenGamesResponse, Players, RateLimiter, decodeOpenGamesResponse,
+  IdGenerator, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
   decodePlayerRegisteredResponse, decodeStatusResponse
 }
 import cats.effect.IO
@@ -10,7 +10,8 @@ import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
 import go3d.{BadKomiTexts, Black, Color, Move, Pass, White}
 import go3d.server.service.{GamePositions, StatusAssertions}
-import io.circe.parser.decode
+import io.circe.Json
+import io.circe.parser.{decode, parse}
 import org.http4s.implicits.uri
 import org.http4s.{EntityDecoder, Headers, Method, Request, Response, Status, Uri}
 import org.junit.jupiter.api.{Assertions, BeforeEach, Test}
@@ -168,6 +169,55 @@ class TestGoHttpService extends LazyLogging:
     val result = decode[OpenGamesResponse](json)
     Assertions.assertTrue(result.isRight)
     Assertions.assertTrue(result.map(_.ids.contains(gameId)).getOrElse(Assertions.fail()))
+
+  private def openGames(): OpenGamesResponse =
+    decode[OpenGamesResponse](getJson(httpRequest("/openGames"))).getOrElse(Assertions.fail())
+
+  /** A new game of size 3 with only Black registered; returns its id. */
+  private def openGame(query: String): String =
+    val gameId = createdGameId(3, query)
+    checkedRegisterPlayer(gameId, Black)
+    gameId
+
+  @Test def testOpenGamesCarryTheKomiOfEachGame(): Unit =
+    val withoutKomi = openGame("")
+    val large = openGame("?komi=6.5")
+    val negative = openGame("?komi=-0.5")
+    val games = openGames().games.toSet
+    Assertions.assertTrue(games.contains(OpenGame(withoutKomi, 0.5)), games.toString)
+    Assertions.assertTrue(games.contains(OpenGame(large, 6.5)), games.toString)
+    Assertions.assertTrue(games.contains(OpenGame(negative, -0.5)), games.toString)
+
+  @Test def testOpenGamesListIdsAndGamesInTheSameOrder(): Unit =
+    for query <- List("", "?komi=6.5", "?komi=-0.5", "?komi=1.5") do openGame(query)
+    val json = parse(getJson(httpRequest("/openGames"))).getOrElse(Assertions.fail()).hcursor
+    val ids = json.downField("ids").as[List[String]].getOrElse(Assertions.fail())
+    val gameIds = json.downField("games").as[List[Json]].getOrElse(Assertions.fail())
+      .map(_.hcursor.downField("id").as[String].getOrElse(Assertions.fail()))
+    Assertions.assertTrue(ids.length >= 4, ids.toString)
+    Assertions.assertEquals(ids, gameIds)
+
+  @Test def testOpenGamesLeaveOutGamesWithBothOrNoPlayers(): Unit =
+    val open = openGame("?komi=6.5")
+    val full = openGame("?komi=6.5")
+    checkedRegisterPlayer(full, White)
+    val noPlayers = createdGameId(3, "?komi=6.5")
+    val response = openGames()
+    Assertions.assertTrue(response.games.contains(OpenGame(open, 6.5)))
+    for gameId <- List(full, noPlayers) do
+      Assertions.assertFalse(response.ids.contains(gameId))
+      Assertions.assertFalse(response.games.map(_.id).contains(gameId))
+
+  @Test def testOpenGamesLeaveOutAPlayerWithoutAGame(): Unit =
+    val open = openGame("?komi=6.5")
+    val goneId = IdGenerator.getId
+    Assertions.assertTrue(Players.register(goneId, Black).isSuccess)
+    Assertions.assertTrue(Players.openGames().contains(goneId))
+    val response = openGames()
+    Players.unregister(goneId)
+    Assertions.assertTrue(response.games.contains(OpenGame(open, 6.5)))
+    Assertions.assertFalse(response.ids.contains(goneId))
+    Assertions.assertFalse(response.games.map(_.id).contains(goneId))
 
   @Test def testGetArchivedGameNotFound(): Unit =
     val request = httpRequest(s"/archived/NONEXISTENT")
