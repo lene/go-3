@@ -46,10 +46,13 @@ object Report:
       else "seed and parallelism of the runs that wrote the CSV files"
     val rebuilt =
       Option.when(options.reportFrom.nonEmpty)(s"- rebuilt from the CSV files in $folders")
+    val limited = options.timeLimit.map { limit =>
+      s"- each size played until its games per pairing or a time limit of $limit, if sooner"
+    }
     val common = List(
       s"- komi ${Komi.Default}, $run",
       s"- strategies: ${options.strategies.mkString(", ")}"
-    ) ++ rebuilt
+    ) ++ rebuilt ++ limited
     ("## Numbers used" :: common ++ sizes).mkString("\n")
 
   private def stopRule(metrics: List[SizeMetrics]): String =

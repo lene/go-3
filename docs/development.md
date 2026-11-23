@@ -97,6 +97,17 @@ Options: `--sizes 5,7,9`, `--games N` or `--games 5=N,7=N,9=N` (games per pairin
 `results/rules-probe`, git-ignored), `--strategies a,b,c` (default: all 8). Options that are not
 valid run nothing and exit with code 2.
 
+A size is played in rounds of one game per pairing. `--time-limit 5h` (or `90s`, `30m`) stops a
+size after the round in which its time is up, so `--games` becomes the most games per pairing:
+
+```bash
+sbt "Test/runMain go3d.probe.RulesProbe --sizes 7,9 --games 200 --time-limit 5h --out results/rules-probe/run-5"
+```
+
+Every pairing has the same number of games, and a size that stops after n rounds has exactly the
+games of `--games n`. The report gives the games per pairing that were played. The CSV and the
+sample records are written after every round, so a run that is stopped keeps the rounds it played.
+
 `--report-from DIR[,DIR...]` plays nothing. It writes `report.md` to `--out` from the
 `games-<size>.csv` files of earlier runs, taking each of the `--sizes` from the last listed folder
 that has its CSV. This combines runs, for example size 5 of one run with sizes 7 and 9 of another:
