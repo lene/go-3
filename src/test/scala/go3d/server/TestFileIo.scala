@@ -12,13 +12,11 @@ object TestFileIo:
   // assigned in @BeforeAll, which JUnit runs before any test reads it
   @SuppressWarnings(Array("org.wartremover.warts.Null", "org.wartremover.warts.Var"))
   var fileIO: FileIO = scala.compiletime.uninitialized
+  // A FileIO of its own, not Games.init: the folder of the shared Games belongs to TestServer,
+  // whose games would look in the wrong folder if this suite switched it in parallel.
   @BeforeAll def initIo(): Unit =
-    Games.init(Files.createTempDirectory("go3d").toString)
-    Games.fileIO.foreach(fileIO = _)
+    fileIO = FileIO(Files.createTempDirectory("go3d").toString).success.value
 
-  // Check this suite's own folder: other suites running in parallel may re-init the shared
-  // Games singleton with a different folder, so IOForTests (which uses Games.fileIO) can look
-  // in the wrong place.
   def exists(filename: String): Boolean = Files.exists(Paths.get(fileIO.baseFolder, filename))
 
 class TestFileIo:
@@ -49,7 +47,7 @@ class TestFileIo:
     TestFileIo.fileIO.saveGame(gameId)
     Assertions.assertTrue(
       Files.exists(Paths.get(TestFileIo.fileIO.baseFolder, s"$gameId.json")),
-      s"$gameId in ${IOForTests.files}?"
+      s"$gameId in ${java.io.File(TestFileIo.fileIO.baseFolder).list.toList}?"
     )
 
   @Test def testSaveGameContents(): Unit =
