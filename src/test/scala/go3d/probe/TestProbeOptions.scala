@@ -61,6 +61,11 @@ class TestProbeOptions:
     val options = parse("--games", "5=200,7=100,9=20").getOrElse(ProbeOptions.defaults(0))
     Assertions.assertEquals(Map(5 -> 200, 7 -> 100, 9 -> 20), options.gamesPerPairing)
 
+  @Test def testReportFromIsReadAndPlaysNothingByDefault(): Unit =
+    Assertions.assertEquals(Nil, ProbeOptions.defaults(1).reportFrom)
+    val options = parse("--report-from", "run-a,run-b").getOrElse(ProbeOptions.defaults(0))
+    Assertions.assertEquals(List("run-a", "run-b"), options.reportFrom)
+
   @Test def testGamesPerSizeNeedAnEntryForEachSize(): Unit =
     Assertions.assertTrue(failure("--games", "5=200,7=100").contains("--games"))
     Assertions.assertTrue(failure("--sizes", "5", "--games", "5=2,7=2").contains("--games"))

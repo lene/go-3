@@ -66,6 +66,17 @@ class TestReport:
       )
     do Assertions.assertTrue(report.contains(text), text)
 
+  @Test def testAReportRebuiltFromCsvFilesSaysSoAndHasNoTimes(): Unit =
+    val options = Options.copy(reportFrom = List("run-a", "run-b"))
+    val report = Report.render(options, metricsFor(Map.empty), Map.empty)
+    Assertions.assertTrue(report.contains("rebuilt from the CSV files in run-a, run-b"), report)
+    Assertions.assertFalse(report.contains("seed 42"), report)
+    Assertions.assertTrue(
+      report.contains("size 5: 2 games per pairing, 30 games, time not recorded"),
+      report
+    )
+    Assertions.assertFalse(render(Map.empty).contains("rebuilt from"))
+
   @Test def testItStatesThatTheStopRuleDidNotFire(): Unit =
     val report = render(Map(5 -> 2, 7 -> 1, 9 -> 0))
     Assertions.assertTrue(report.contains("The stop rule did not fire"), report)

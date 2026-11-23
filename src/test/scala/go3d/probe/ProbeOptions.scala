@@ -5,6 +5,9 @@ package go3d.probe
   *
   * `gamesPerPairing` has an entry for each of the `sizes`; there is one game per entry for each
   * ordered pair of `strategies`, and the pairs include each strategy against itself.
+  *
+  * With folders in `reportFrom`, nothing is played: the report is rebuilt from the CSV files that
+  * earlier runs wrote there.
   */
 final case class ProbeOptions(
     sizes: List[Int],
@@ -12,7 +15,8 @@ final case class ProbeOptions(
     seed: Long,
     parallelism: Int,
     outDir: String,
-    strategies: List[String]
+    strategies: List[String],
+    reportFrom: List[String]
 ):
   def pairings: List[(String, String)] =
     for black <- strategies; white <- strategies yield (black, white)
@@ -47,9 +51,12 @@ object ProbeOptions:
       |  --seed N             seed that reproduces a run (default 1)
       |  --parallelism N      games played at the same time (default: the number of processors)
       |  --out DIR            output directory (default results/rules-probe)
-      |  --strategies a,b,c   strategies to play (default: all 8)""".stripMargin
+      |  --strategies a,b,c   strategies to play (default: all 8)
+      |  --report-from A,B    play nothing; report on games-<size>.csv of the --sizes, each from
+      |                       the last of the folders that has it""".stripMargin
 
-  private val Known = Set("sizes", "games", "seed", "parallelism", "out", "strategies")
+  private val Known =
+    Set("sizes", "games", "seed", "parallelism", "out", "strategies", "report-from")
 
   /** The defaults for a machine with `processors` processors. */
   def defaults(processors: Int): ProbeOptions =
@@ -59,7 +66,8 @@ object ProbeOptions:
       DefaultSeed,
       processors,
       DefaultOutDir,
-      StrategyNames
+      StrategyNames,
+      Nil
     )
 
   private def gamesForEach(sizes: List[Int], count: Int): Map[Int, Int] =
@@ -85,7 +93,8 @@ object ProbeOptions:
       seed,
       parallelism,
       values.getOrElse("out", base.outDir),
-      strategies
+      strategies,
+      values.get("report-from").fold(Nil)(_.split(",").toList.map(_.trim).filter(_.nonEmpty))
     )
 
   private def optionValues(args: Seq[String]): Either[String, Map[String, String]] =

@@ -83,6 +83,47 @@ class TestRulesProbe:
       Assertions.assertEquals(row.moves, replayed.moves.length, id)
       Assertions.assertEquals(row.blackSide.captures, replayed.captures(go3d.Black), id)
 
+  /** The exit code of `--report-from` the folders `from`, and the new folder it wrote to. */
+  private def rebuildReport(from: List[Path]): (Int, Path) =
+    val out = Files.createTempDirectory("rules-probe-report")
+    val args = List(
+      "--report-from",
+      from.mkString(","),
+      "--sizes",
+      "5",
+      "--seed",
+      "3",
+      "--parallelism",
+      "4",
+      "--out",
+      out.toString
+    )
+    (Console.withOut(Quiet)(Console.withErr(Quiet)(RulesProbe.execute(args, 1))), out)
+
+  /** The report without the lines that differ between a run and a rebuilt report. */
+  private def metricsOf(folder: Path): List[String] =
+    val runOnly = List("- komi ", "- size ", "- rebuilt from")
+    Files.readString(folder.resolve("report.md")).linesIterator.toList
+      .filterNot(line => runOnly.exists(line.startsWith))
+
+  @Test def testAReportFromTheCsvFilesOfARunHasTheMetricsOfItsReport(): Unit =
+    val run = runProbe("3", "4")
+    val (exitCode, rebuilt) = rebuildReport(List(run))
+    Assertions.assertEquals(0, exitCode)
+    Assertions.assertEquals(metricsOf(run), metricsOf(rebuilt))
+    val report = Files.readString(rebuilt.resolve("report.md"))
+    Assertions.assertTrue(report.contains("size 5: 2 games per pairing, 8 games"), report)
+
+  @Test def testEachSizeOfAReportComesFromTheLastFolderWithItsCsv(): Unit =
+    val (first, last) = (runProbe("3", "4"), runProbe("4", "4"))
+    val (_, rebuilt) = rebuildReport(List(first, last, Files.createTempDirectory("empty")))
+    Assertions.assertEquals(metricsOf(last), metricsOf(rebuilt))
+
+  @Test def testAReportFromFoldersWithoutTheCsvFailsAndWritesNothing(): Unit =
+    val (exitCode, rebuilt) = rebuildReport(List(Files.createTempDirectory("empty")))
+    Assertions.assertEquals(RulesProbe.BadOptionsExitCode, exitCode)
+    Assertions.assertFalse(Files.exists(rebuilt.resolve("report.md")))
+
   @Test def testBadOptionsRunNothingAndFail(): Unit =
     val out = Files.createTempDirectory("rules-probe-bad").resolve("never")
     val badArgs = List(

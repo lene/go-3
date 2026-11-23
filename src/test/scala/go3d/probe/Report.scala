@@ -35,13 +35,21 @@ object Report:
   ): String =
     val sizes = metrics.map { m =>
       val perPairing = options.gamesPerPairing.get(m.size).fold("?")(_.toString)
-      val time = seconds.getOrElse(m.size, 0L)
-      s"- size ${m.size}: $perPairing games per pairing, ${m.games} games, $time s"
+      val time = seconds.get(m.size).fold("time not recorded")(s => s"$s s")
+      s"- size ${m.size}: $perPairing games per pairing, ${m.games} games, $time"
     }
+    val folders = options.reportFrom.mkString(", ")
+    // the CSV files do not record the seed and the parallelism of the runs that wrote them
+    val run =
+      if options.reportFrom.isEmpty then
+        s"seed ${options.seed}, parallelism ${options.parallelism}"
+      else "seed and parallelism of the runs that wrote the CSV files"
+    val rebuilt =
+      Option.when(options.reportFrom.nonEmpty)(s"- rebuilt from the CSV files in $folders")
     val common = List(
-      s"- komi ${Komi.Default}, seed ${options.seed}, parallelism ${options.parallelism}",
+      s"- komi ${Komi.Default}, $run",
       s"- strategies: ${options.strategies.mkString(", ")}"
-    )
+    ) ++ rebuilt
     ("## Numbers used" :: common ++ sizes).mkString("\n")
 
   private def stopRule(metrics: List[SizeMetrics]): String =

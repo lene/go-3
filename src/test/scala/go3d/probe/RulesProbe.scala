@@ -38,13 +38,20 @@ object RulesProbe:
     if exitCode != 0 then sys.exit(exitCode)
 
   /** Runs the probe with the options in `args` and returns the exit code: 0 after a run,
-    * [[BadOptionsExitCode]] with a message on stderr and nothing run if the options are not valid.
+    * [[BadOptionsExitCode]] with a message on stderr and nothing run if the options are not valid
+    * or, with `--report-from`, a CSV file is missing or cannot be read.
     */
   def execute(args: Seq[String], processors: Int): Int =
     ProbeOptions.parse(args, processors) match
       case Left(message) =>
         Console.err.println(s"$message\n${ProbeOptions.Usage}")
         BadOptionsExitCode
+      case Right(options) if options.reportFrom.nonEmpty =>
+        rebuildReport(options) match
+          case Left(message) =>
+            Console.err.println(message)
+            BadOptionsExitCode
+          case Right(()) => 0
       case Right(options) =>
         run(options)
         0
@@ -53,9 +60,37 @@ object RulesProbe:
     val out = Files.createDirectories(Paths.get(options.outDir))
     val runs = options.sizes.map(playSize(options, out, _))
     val seconds = runs.map(run => run.size -> run.seconds).toMap
-    val report = Report.render(options, runs.map(_.metrics), seconds)
+    writeReport(out, Report.render(options, runs.map(_.metrics), seconds))
+
+  private def writeReport(out: Path, report: String): Unit =
     Files.writeString(out.resolve("report.md"), report)
     println(report)
+
+  /** Writes the report on the CSV files of earlier runs, playing nothing: each of the sizes comes
+    * from the last folder of `reportFrom` that has its CSV file. The games per pairing and the
+    * strategies are those of the rows; the time of each size is not in the CSV.
+    */
+  private def rebuildReport(options: ProbeOptions): Either[String, Unit] =
+    val read = options.sizes.map(size => readResults(options.reportFrom, size).map(size -> _))
+    read.collectFirst { case Left(message) => message }.toLeft(read.collect { case Right(r) => r })
+      .map { results =>
+        val metrics = results.map((size, rows) => Statistics.forSize(size, rows))
+        val names = results.flatMap(_._2).map(_.black).toSet
+        val rebuilt = options.copy(
+          gamesPerPairing = metrics.map(m => m.size -> m.games / m.pairings.max(1)).toMap,
+          strategies = ProbeOptions.StrategyNames.filter(names)
+        )
+        writeReport(
+          Files.createDirectories(Paths.get(options.outDir)),
+          Report.render(rebuilt, metrics, Map.empty)
+        )
+      }
+
+  private def readResults(folders: List[String], size: Int): Either[String, List[GameResult]] =
+    val name = s"games-$size.csv"
+    folders.reverse.map(Paths.get(_).resolve(name)).find(Files.exists(_))
+      .toRight(s"no $name in ${folders.mkString(", ")}")
+      .flatMap(path => Csv.parse(Files.readString(path)).left.map(reason => s"$path: $reason"))
 
   private def playSize(options: ProbeOptions, out: Path, size: Int): SizeRun =
     val started = System.nanoTime

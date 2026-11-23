@@ -97,6 +97,17 @@ Options: `--sizes 5,7,9`, `--games N` or `--games 5=N,7=N,9=N` (games per pairin
 `results/rules-probe`, git-ignored), `--strategies a,b,c` (default: all 8). Options that are not
 valid run nothing and exit with code 2.
 
+`--report-from DIR[,DIR...]` plays nothing. It writes `report.md` to `--out` from the
+`games-<size>.csv` files of earlier runs, taking each of the `--sizes` from the last listed folder
+that has its CSV. This combines runs, for example size 5 of one run with sizes 7 and 9 of another:
+
+```bash
+sbt "Test/runMain go3d.probe.RulesProbe --report-from results/rules-probe/run-3,results/rules-probe/run-4 --out results/rules-probe/combined"
+```
+
+The CSV files do not record the seed, the parallelism or the time per size, so the rebuilt report
+leaves them out.
+
 The output directory gets:
 
 - `games-<size>.csv`: one row per game. The same options and seed give the same rows, whatever
