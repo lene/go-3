@@ -23,10 +23,20 @@ extension (game: Game)
       neighbors ++ game.goban.neighborsOfColor(position, Empty)
     )
 
-  def getAreas(col: Color): Set[Set[Position]] =
-    game.getStones(col).foldLeft(Set[Set[Position]]())((areas, position) =>
-      areas + game.connectedStones(Move(position, col)).map(m => m.position)
-    )
+  def getAreas(col: Color): Set[Set[Position]] = areasOf(col, game.getStones(col))
+
+  /** The groups of `col` at `stones`, each flood-filled once. A point whose stone of `col` is no
+    * longer there gives the empty group.
+    */
+  def areasOf(col: Color, stones: Seq[Position]): Set[Set[Position]] =
+    val (areas, _) = stones.foldLeft((Set[Set[Position]](), Set[Position]())) {
+      case ((areas, covered), position) =>
+        if covered.contains(position) then (areas, covered)
+        else
+          val area = game.connectedStones(Move(position, col)).map(_.position)
+          (areas + area, covered ++ area)
+    }
+    areas
 
   def liberties(col: Color, area: Set[Position]): Int =
     area.foreach(p => assert(col == game.at(p)))

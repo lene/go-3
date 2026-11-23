@@ -5,7 +5,8 @@ class Position private[go3d] (val x: Int, val y: Int, val z: Int):
   def this(x: (Int, Int, Int)) = this(x(0), x(1), x(2))
 
   override def toString: String = s"$x $y $z"
-  override def hashCode(): Int = toString.hashCode()
+  // coordinates are below 256 (the board is at most 25 plus its border), so this is unique
+  override def hashCode(): Int = (x << 16) | (y << 8) | z
 
   override def equals(that: Any): Boolean =
     that match
