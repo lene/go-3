@@ -146,8 +146,12 @@ class Game(
 
   private def isDifferentPlayer(color: Color): Boolean = moves.isEmpty || moves.last.color != color
 
-  /** Ko: the last move captured a single stone, and `move` puts it back. */
-  private def isKo(move: Move): Boolean = lastCapture.length == 1 && lastCapture(0) == move
+  /** Ko: the last move captured a single stone, and `move` puts it back by capturing only the
+    * stone that captured it, which would repeat the position. A retake that captures more is legal.
+    */
+  private def isKo(move: Move): Boolean =
+    lastCapture.length == 1 && lastCapture(0) == move &&
+      setStone(move).lastCapture.toList == moves.lastOption.toList
 
   private def doCaptures(move: Move, board: Goban): Game =
     val newBoard = captureNeighbors(board, board.neighbors(move.position), move.color)

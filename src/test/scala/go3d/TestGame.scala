@@ -314,16 +314,48 @@ class TestGame:
     game.checkValid(Move(3, 3, 3, Black)).success.value
     Assertions.assertTrue(game.possibleMoves(Black).contains(Move(3, 3, 3, Black).position))
 
+  private val KoPoint = Move(1, 1, 1, White)
+
+  /** Black's last move at 2 1 1 has just captured the White stone in the corner, `KoPoint`. The
+    * capturing stone has no other liberty. With `secondInAtari`, the Black stone at 1 2 1 has
+    * the corner as its only liberty too, so White retaking the corner captures two stones.
+    * `oldCaptures` adds single-stone captures of earlier moves, which make `captures` a HashMap.
+    */
+  private def cornerKo(secondInAtari: Boolean, oldCaptures: Boolean): Game =
+    val moves = List[Move | Pass](
+      Move(1, 1, 2, Black),
+      KoPoint,
+      Move(1, 2, 1, Black),
+      Move(3, 1, 1, White),
+      Pass(Black),
+      Move(2, 2, 1, White),
+      Pass(Black),
+      Move(2, 1, 2, White),
+      Pass(Black),
+      Move(1, 2, 2, White),
+      Pass(Black),
+      if secondInAtari then Move(1, 3, 1, White) else Move(5, 5, 5, White),
+      Move(2, 1, 1, Black)
+    )
+    val goban = setListOfStones(5, moves.filterNot(_ == KoPoint))
+    val old =
+      if oldCaptures then List(3, 5, 7, 9, 11).map(i => i -> Array(Move(4, 4, i % 5 + 1, Black)))
+      else Nil
+    Game(5, goban, moves.toArray, (old :+ (12 -> Array(KoPoint))).toMap, Komi.Default)
+
   @Test def testKoFollowsTheCaptureOfThePreviousMoveWhateverTheMapOrder(): Unit =
-    // five old captures on White's moves 1 to 9, the ko capture on White's last move, 11
-    val old = List(2, 3, 4).flatMap(y => List(2, 4).map(z => Move(3, y, z, Black))).take(5)
-    val ko = Move(2, 3, 3, Black)
-    val game = gameWithSingleCaptures(old :+ ko)
-    Assertions.assertInstanceOf(classOf[Ko], game.checkValid(ko).failure.exception)
-    Assertions.assertFalse(game.possibleMoves(Black).contains(ko.position))
-    for stone <- old do
-      game.checkValid(stone).success.value
-      Assertions.assertTrue(game.possibleMoves(Black).contains(stone.position), s"$stone")
+    for oldCaptures <- List(false, true) do
+      val game = cornerKo(secondInAtari = false, oldCaptures)
+      Assertions.assertInstanceOf(classOf[Ko], game.checkValid(KoPoint).failure.exception)
+      Assertions.assertFalse(game.possibleMoves(White).contains(KoPoint.position))
+
+  @Test def testARetakeThatCapturesMoreThanTheCapturingStoneIsNotKo(): Unit =
+    val game = cornerKo(secondInAtari = true, oldCaptures = true)
+    Assertions.assertTrue(game.possibleMoves(White).contains(KoPoint.position))
+    val retaken = game.makeMove(KoPoint).success.value
+    Assertions.assertEquals(Empty, retaken.at(2, 1, 1))
+    Assertions.assertEquals(Empty, retaken.at(1, 2, 1))
+    Assertions.assertEquals(2, retaken.lastCapture.length)
 
   @Test def testPossibleMovesForBlackEmptyBoard(): Unit =
     val empty = Game.start(TestSize).success.value
