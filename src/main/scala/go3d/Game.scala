@@ -26,7 +26,11 @@ class Game(
     */
   def captures(color: Color): Int =
     captures.values.filter(_.headOption.exists(_.color != color)).flatten.size
-  def lastCapture: Array[Move] = if captures.isEmpty then Array() else captures.last._2
+
+  /** The stones that the last move captured. `captures` is keyed by the index of the capturing
+    * move, and a map has no order to take the "last" entry from.
+    */
+  def lastCapture: Array[Move] = captures.getOrElse(moves.length - 1, Array[Move]())
 
   override def equals(obj: Any): Boolean =
     obj match
@@ -135,14 +139,15 @@ class Game(
       val connected = connectedStones(Move(emptyPositions.last, Empty))
       addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
 
+  /** A point with an empty neighbour is never suicide, but it can still be ko. */
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
     if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color)).isSuccess
-    else true
+    else !isKo(Move(emptyPos, color))
 
   private def isDifferentPlayer(color: Color): Boolean = moves.isEmpty || moves.last.color != color
 
-  private def isKo(move: Move): Boolean =
-    captures.nonEmpty && lastCapture.length == 1 && lastCapture(0) == move
+  /** Ko: the last move captured a single stone, and `move` puts it back. */
+  private def isKo(move: Move): Boolean = lastCapture.length == 1 && lastCapture(0) == move
 
   private def doCaptures(move: Move, board: Goban): Game =
     val newBoard = captureNeighbors(board, board.neighbors(move.position), move.color)

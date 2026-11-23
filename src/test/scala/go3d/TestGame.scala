@@ -287,6 +287,44 @@ class TestGame:
       game.checkValid(Move(2, 2, 3, Black)).failure.exception
     )
 
+  /** Twelve moves on the edges of a size 5 board, with White's moves capturing one Black stone
+    * each at `capturedAt`: more than four captures, so `captures` is a HashMap.
+    */
+  private def gameWithSingleCaptures(capturedAt: List[Move]): Game =
+    val moves = List[Move | Pass](
+      Move(1, 1, 1, Black),
+      Move(5, 5, 5, White),
+      Move(1, 1, 5, Black),
+      Move(5, 5, 1, White),
+      Move(1, 5, 1, Black),
+      Move(5, 1, 5, White),
+      Move(1, 5, 5, Black),
+      Move(5, 1, 1, White),
+      Move(1, 1, 3, Black),
+      Move(5, 5, 3, White),
+      Move(1, 3, 1, Black),
+      Move(5, 3, 5, White)
+    )
+    val played = playListOfMoves(5, moves)
+    val captures = capturedAt.zipWithIndex.map((stone, i) => (2 * i + 1) -> Array(stone)).toMap
+    Game(5, played.goban, played.moves, captures, played.komi)
+
+  @Test def testAnOldSingleStoneCaptureDoesNotForbidRetakingThePoint(): Unit =
+    val game = gameWithSingleCaptures(List(Move(3, 3, 3, Black)))
+    game.checkValid(Move(3, 3, 3, Black)).success.value
+    Assertions.assertTrue(game.possibleMoves(Black).contains(Move(3, 3, 3, Black).position))
+
+  @Test def testKoFollowsTheCaptureOfThePreviousMoveWhateverTheMapOrder(): Unit =
+    // five old captures on White's moves 1 to 9, the ko capture on White's last move, 11
+    val old = List(2, 3, 4).flatMap(y => List(2, 4).map(z => Move(3, y, z, Black))).take(5)
+    val ko = Move(2, 3, 3, Black)
+    val game = gameWithSingleCaptures(old :+ ko)
+    Assertions.assertInstanceOf(classOf[Ko], game.checkValid(ko).failure.exception)
+    Assertions.assertFalse(game.possibleMoves(Black).contains(ko.position))
+    for stone <- old do
+      game.checkValid(stone).success.value
+      Assertions.assertTrue(game.possibleMoves(Black).contains(stone.position), s"$stone")
+
   @Test def testPossibleMovesForBlackEmptyBoard(): Unit =
     val empty = Game.start(TestSize).success.value
     Assertions.assertEquals(TestSize * TestSize * TestSize, empty.possibleMoves(Black).length)
