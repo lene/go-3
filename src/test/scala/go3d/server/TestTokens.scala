@@ -237,7 +237,8 @@ class TestTokens extends AnyFunSuite:
     assert(Tokens.getColor(token, gameId2) == Some(White))
 
   test("large number of tokens"):
-    val sizeBefore = Tokens.size
+    // count only this test's tokens: other suites register tokens in parallel
+    def largeTestTokens = Tokens.allTokens.keys.count(_.startsWith("token_largetest_"))
     // Register 100 tokens
     for i <- 1 to 100 do
       Tokens.register(
@@ -246,7 +247,7 @@ class TestTokens extends AnyFunSuite:
         if i % 2 == 0 then Black else White
       )
 
-    assert(Tokens.size == sizeBefore + 100)
+    assert(largeTestTokens == 100)
 
     // Validate random tokens
     assert(Tokens.isValid("token_largetest_50", "game_largetest_50", Black))
@@ -254,7 +255,7 @@ class TestTokens extends AnyFunSuite:
 
     // Cleanup game
     Tokens.unregisterGame("game_largetest_50")
-    assert(Tokens.size == sizeBefore + 99)
+    assert(largeTestTokens == 99)
 
   test("token with special characters"):
     val token = "token_!@#$%^&*()_+-=[]{}|;:',.<>?/~`"
