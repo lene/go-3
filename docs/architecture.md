@@ -24,7 +24,7 @@ The game logic is split between two key classes:
   - Suicide rule (cannot place stone with no liberties unless it captures)
   - Capture tracking (maps move index to captured stones)
   - Game-over detection (two consecutive passes or board full)
-  - Scoring (territory + captures)
+  - Scoring (stones + territory, Tromp-Taylor area scoring: captures are tracked but not scored)
   - Komi: points added to White's score, set when the game is created (default 0.5) and stored
     in the game JSON; `Game.winner` compares White's score plus komi with Black's once the game is
     over. Only half-integers up to size³ are valid (`Komi.scala`), so a game never ties

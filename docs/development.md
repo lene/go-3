@@ -77,6 +77,51 @@ sbt "runMain go3d.client.BotClient --server localhost --port 6030 --size 7 --col
 sbt "runMain go3d.client.BotClient --url https://abc.execute-api.eu-central-1.amazonaws.com --game-id XXXXXX --color w --poll-interval-ms 500"
 ```
 
+#### Rules probe
+
+The rules probe (`src/test/scala/go3d/probe/`, story
+`_bmad-output/specs/spec-alphazero-engine/stories/3-rules-probe.md`) plays the 8 `SetStrategy`
+strategies against each other and themselves on sizes 5, 7 and 9 at komi 0.5. It scores every
+game with area scoring and with area scoring plus captures. It runs in process, with no server.
+
+```bash
+# Smoke run: two games per pairing on size 5 (128 games)
+sbt "Test/runMain go3d.probe.RulesProbe --sizes 5 --games 2 --seed 1 --out results/rules-probe/smoke"
+
+# Full run with a budget per size
+sbt "Test/runMain go3d.probe.RulesProbe --games 5=200,7=100,9=20 --out results/rules-probe"
+```
+
+Options: `--sizes 5,7,9`, `--games N` or `--games 5=N,7=N,9=N` (games per pairing), `--seed N`
+(default 1), `--parallelism N` (default: the number of processors), `--out DIR` (default
+`results/rules-probe`, git-ignored), `--strategies a,b,c` (default: all 8). Options that are not
+valid run nothing and exit with code 2.
+
+`--report-from DIR[,DIR...]` plays nothing. It writes `report.md` to `--out` from the
+`games-<size>.csv` files of earlier runs, taking each of the `--sizes` from the last listed folder
+that has its CSV. This combines runs, for example size 5 of one run with sizes 7 and 9 of another:
+
+```bash
+sbt "Test/runMain go3d.probe.RulesProbe --report-from results/rules-probe/run-3,results/rules-probe/run-4 --out results/rules-probe/combined"
+```
+
+The CSV files do not record the seed, the parallelism or the time per size, so the rebuilt report
+leaves them out.
+
+The output directory gets:
+
+- `games-<size>.csv`: one row per game. The same options and seed give the same rows, whatever
+  the parallelism.
+- `report.md`: the numbers used, the stop rule and the metrics for each size: Black win rates,
+  ratings with a first-move term, fitted komi, game length, territory, captures and flip rate.
+- `archive/`: about three sample games per pairing. `go-server --save-dir <out>` serves them to the
+  viewer.
+
+The stop rule fires when the flip rate, pooled over a size's pairings, is at least 10% at any size.
+The flip rate is the share of games whose winner changes when the captures are added. The report
+only says whether the rule fired: whether to keep area scoring or run the size-5 rules lab is the
+user's decision.
+
 ### Docker
 ```bash
 # Build Docker image
