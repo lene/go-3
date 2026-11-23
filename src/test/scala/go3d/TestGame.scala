@@ -287,24 +287,15 @@ class TestGame:
       game.checkValid(Move(2, 2, 3, Black)).failure.exception
     )
 
-  /** Twelve moves on the edges of a size 5 board, with White's moves capturing one Black stone
-    * each at `capturedAt`: more than four captures, so `captures` is a HashMap.
+  /** Twelve moves on opposite faces of a size 5 board, Black on x = 1 and White on x = 5, with
+    * White's moves capturing one Black stone each at `capturedAt`: more than four captures, so
+    * `captures` is a HashMap.
     */
   private def gameWithSingleCaptures(capturedAt: List[Move]): Game =
-    val moves = List[Move | Pass](
-      Move(1, 1, 1, Black),
-      Move(5, 5, 5, White),
-      Move(1, 1, 5, Black),
-      Move(5, 5, 1, White),
-      Move(1, 5, 1, Black),
-      Move(5, 1, 5, White),
-      Move(1, 5, 5, Black),
-      Move(5, 1, 1, White),
-      Move(1, 1, 3, Black),
-      Move(5, 5, 3, White),
-      Move(1, 3, 1, Black),
-      Move(5, 3, 5, White)
-    )
+    val moves = List.tabulate[Move | Pass](12) { i =>
+      val (y, z) = (i / 2 % 5 + 1, 1 + 2 * (i / 10))
+      if i % 2 == 0 then Move(1, y, z, Black) else Move(5, y, z, White)
+    }
     val played = playListOfMoves(5, moves)
     val captures = capturedAt.zipWithIndex.map((stone, i) => (2 * i + 1) -> Array(stone)).toMap
     Game(5, played.goban, played.moves, captures, played.komi)
