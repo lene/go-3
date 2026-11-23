@@ -15,12 +15,13 @@ class TestRulesProbe:
 
   /** Runs the probe on two cheap strategies on size 5 into a new folder, and returns the folder. */
   private def runProbe(seed: String, parallelism: String): Path =
+    runProbeWith(seed, parallelism, List("--games", "2"))
+
+  private def runProbeWith(seed: String, parallelism: String, extra: List[String]): Path =
     val out = Files.createTempDirectory("rules-probe-run")
     val args = List(
       "--sizes",
       "5",
-      "--games",
-      "2",
       "--seed",
       seed,
       "--parallelism",
@@ -29,12 +30,25 @@ class TestRulesProbe:
       "random,closestToCenter",
       "--out",
       out.toString
-    )
+    ) ++ extra
     val exitCode = Console.withOut(Quiet)(RulesProbe.execute(args, 1))
     Assertions.assertEquals(0, exitCode)
     out
 
   private def csvOf(out: Path): String = Files.readString(out.resolve("games-5.csv"))
+
+  private def reportOf(out: Path): String = Files.readString(out.resolve("report.md"))
+
+  @Test def testATimeLimitThatIsUpStopsAfterOneGamePerPairing(): Unit =
+    val limited = runProbeWith("3", "4", List("--games", "5", "--time-limit", "0s"))
+    Assertions.assertEquals(csvOf(runProbeWith("3", "4", List("--games", "1"))), csvOf(limited))
+    Assertions.assertTrue(reportOf(limited).contains("size 5: 1 games per pairing"))
+    Assertions.assertTrue(reportOf(limited).contains("time limit of 0 seconds"))
+
+  @Test def testWithTimeToSpareTheRunStopsAtTheGamesPerPairing(): Unit =
+    val limited = runProbeWith("3", "4", List("--games", "2", "--time-limit", "1h"))
+    Assertions.assertEquals(csvOf(runProbe("3", "4")), csvOf(limited))
+    Assertions.assertTrue(reportOf(limited).contains("size 5: 2 games per pairing"))
 
   @Test def testTheSameSeedGivesTheSameCsv(): Unit =
     Assertions.assertEquals(csvOf(runProbe("3", "4")), csvOf(runProbe("3", "4")))

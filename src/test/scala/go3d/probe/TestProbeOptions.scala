@@ -2,6 +2,8 @@ package go3d.probe
 
 import org.junit.jupiter.api.{Assertions, Test}
 
+import scala.concurrent.duration.*
+
 class TestProbeOptions:
 
   private def parse(args: String*): Either[String, ProbeOptions] =
@@ -9,6 +11,17 @@ class TestProbeOptions:
 
   private def failure(args: String*): String =
     parse(args*).swap.getOrElse("it parsed")
+
+  @Test def testTimeLimitIsReadInSecondsMinutesOrHours(): Unit =
+    Assertions.assertEquals(None, ProbeOptions.defaults(1).timeLimit)
+    val limits = List("90s" -> 90.seconds, "30m" -> 30.minutes, "5h" -> 5.hours, "0s" -> 0.seconds)
+    for (text, limit) <- limits do
+      val parsed = parse("--time-limit", text).map(_.timeLimit)
+      Assertions.assertEquals(Right(Some(limit)), parsed, text)
+
+  @Test def testTimeLimitWithoutAUnitOrNotAWholeNumberIsRejected(): Unit =
+    for text <- List("5", "5x", "-1h", "h", "1.5h", "") do
+      Assertions.assertTrue(failure("--time-limit", text).contains("time limit"), text)
 
   @Test def testDefaults(): Unit =
     val options = parse().getOrElse(ProbeOptions.defaults(0))

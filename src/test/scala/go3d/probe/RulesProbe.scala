@@ -4,7 +4,7 @@ import go3d.server.SaveGame
 
 import java.nio.file.{Files, Path, Paths}
 import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
+import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -28,7 +28,12 @@ object RulesProbe:
 
   private final case class Played(result: GameResult, record: Option[(String, SaveGame)])
 
-  private final case class SizeRun(size: Int, metrics: SizeMetrics, seconds: Long)
+  private final case class SizeRun(
+      size: Int,
+      gamesPerPairing: Int,
+      metrics: SizeMetrics,
+      seconds: Long
+  )
 
   /** The exit code for options that are not valid. */
   val BadOptionsExitCode: Int = 2
@@ -60,7 +65,10 @@ object RulesProbe:
     val out = Files.createDirectories(Paths.get(options.outDir))
     val runs = options.sizes.map(playSize(options, out, _))
     val seconds = runs.map(run => run.size -> run.seconds).toMap
-    writeReport(out, Report.render(options, runs.map(_.metrics), seconds))
+    // with a time limit, a size can stop before its games per pairing: report what was played
+    val played =
+      options.copy(gamesPerPairing = runs.map(run => run.size -> run.gamesPerPairing).toMap)
+    writeReport(out, Report.render(played, runs.map(_.metrics), seconds))
 
   private def writeReport(out: Path, report: String): Unit =
     Files.writeString(out.resolve("report.md"), report)
@@ -92,24 +100,49 @@ object RulesProbe:
       .toRight(s"no $name in ${folders.mkString(", ")}")
       .flatMap(path => Csv.parse(Files.readString(path)).left.map(reason => s"$path: $reason"))
 
+  /** Plays a size in rounds of one game per pairing, until the games per pairing are played or,
+    * with a time limit, the time is up after a round. Every pairing so has the same number of
+    * games, and a run that stops after n rounds has the games of `--games n`. The CSV and the
+    * sample records are written after each round, so a run that is stopped keeps what it played.
+    */
   private def playSize(options: ProbeOptions, out: Path, size: Int): SizeRun =
     val started = System.nanoTime
-    val games = options.gamesPerPairing(size)
-    val tasks =
-      for
-        (black, white) <- options.pairings
-        game <- 0 until games
-      yield Task(size, black, white, game)
-    val progress = Progress(size, tasks.length, started)
-    val played = parallelMap(tasks, options.parallelism) { task =>
-      val outcome = play(options.seed, task)
-      progress.finished()
-      outcome
-    }
-    val results = played.map(_.result)
-    Files.writeString(out.resolve(s"games-$size.csv"), Csv.render(results))
-    SampleRecords.write(out, played.flatMap(_.record))
-    SizeRun(size, Statistics.forSize(size, results), secondsSince(started))
+    val rounds = options.gamesPerPairing(size)
+    val deadline = options.timeLimit.map(limit => started + limit.toNanos)
+    val pairings = options.pairings
+    val printEvery = (rounds / 20).max(1)
+
+    @tailrec
+    def playRounds(round: Int, results: List[GameResult]): List[GameResult] =
+      if round == rounds then results
+      else if round > 0 && deadline.exists(System.nanoTime >= _) then
+        println(s"size $size: time limit reached after $round games per pairing")
+        results
+      else
+        val tasks = pairings.map((black, white) => Task(size, black, white, round))
+        val played = parallelMap(tasks, options.parallelism)(play(options.seed, _))
+        val all = results ++ played.map(_.result)
+        Files.writeString(
+          out.resolve(s"games-$size.csv"),
+          Csv.render(inPairingOrder(all, pairings))
+        )
+        SampleRecords.write(out, played.flatMap(_.record))
+        if (round + 1) % printEvery == 0 || round + 1 == rounds then
+          val time = secondsSince(started)
+          println(s"size $size: ${round + 1} of $rounds games per pairing, $time s")
+        playRounds(round + 1, all)
+
+    val results = inPairingOrder(playRounds(0, Nil), pairings)
+    val gamesPerPairing = results.length / pairings.length.max(1)
+    SizeRun(size, gamesPerPairing, Statistics.forSize(size, results), secondsSince(started))
+
+  /** The results by pairing, in the order of `pairings`, and by game number within a pairing. */
+  private def inPairingOrder(
+      results: List[GameResult],
+      pairings: List[(String, String)]
+  ): List[GameResult] =
+    val index = pairings.zipWithIndex.toMap
+    results.sortBy(result => (index.getOrElse((result.black, result.white), 0), result.game))
 
   private def play(seed: Long, task: Task): Played =
     val gameSeed = GamePlayer.gameSeed(seed, task.size, task.black, task.white, task.game)
@@ -134,13 +167,3 @@ object RulesProbe:
     finally pool.shutdownNow()
 
   private def secondsSince(started: Long): Long = (System.nanoTime - started) / 1_000_000_000L
-
-  /** Prints a line about every twentieth of the games of a size. */
-  private final class Progress(size: Int, total: Int, started: Long):
-    private val done = AtomicInteger(0)
-    private val interval = (total / 20).max(1)
-
-    def finished(): Unit =
-      val count = done.incrementAndGet()
-      if count % interval == 0 || count == total then
-        println(s"size $size: $count of $total games, ${secondsSince(started)} s")

@@ -1,10 +1,14 @@
 package go3d.probe
 
+import scala.concurrent.duration.*
+
 /** What a rules probe run does. [[ProbeOptions.parse]] reads it from the command line, and a run
   * whose options do not parse plays nothing.
   *
   * `gamesPerPairing` has an entry for each of the `sizes`; there is one game per entry for each
-  * ordered pair of `strategies`, and the pairs include each strategy against itself.
+  * ordered pair of `strategies`, and the pairs include each strategy against itself. With a
+  * `timeLimit`, a size stops earlier once that time is up, after a whole round of one game per
+  * pairing.
   *
   * With folders in `reportFrom`, nothing is played: the report is rebuilt from the CSV files that
   * earlier runs wrote there.
@@ -16,7 +20,8 @@ final case class ProbeOptions(
     parallelism: Int,
     outDir: String,
     strategies: List[String],
-    reportFrom: List[String]
+    reportFrom: List[String],
+    timeLimit: Option[FiniteDuration]
 ):
   def pairings: List[(String, String)] =
     for black <- strategies; white <- strategies yield (black, white)
@@ -52,11 +57,15 @@ object ProbeOptions:
       |  --parallelism N      games played at the same time (default: the number of processors)
       |  --out DIR            output directory (default results/rules-probe)
       |  --strategies a,b,c   strategies to play (default: all 8)
+      |  --time-limit 5h      stop a size once this time is up, after a whole round of one game
+      |                       per pairing (90s, 30m, 5h; default: play all --games)
       |  --report-from A,B    play nothing; report on games-<size>.csv of the --sizes, each from
       |                       the last of the folders that has it""".stripMargin
 
   private val Known =
-    Set("sizes", "games", "seed", "parallelism", "out", "strategies", "report-from")
+    Set("sizes", "games", "seed", "parallelism", "out", "strategies", "report-from", "time-limit")
+
+  private val TimeLimitPattern = """(\d+)([smh])""".r
 
   /** The defaults for a machine with `processors` processors. */
   def defaults(processors: Int): ProbeOptions =
@@ -67,7 +76,8 @@ object ProbeOptions:
       processors,
       DefaultOutDir,
       StrategyNames,
-      Nil
+      Nil,
+      None
     )
 
   private def gamesForEach(sizes: List[Int], count: Int): Map[Int, Int] =
@@ -87,6 +97,7 @@ object ProbeOptions:
       seed <- values.get("seed").fold(Right(base.seed))(parseSeed)
       parallelism <- values.get("parallelism").fold(Right(base.parallelism))(parseParallelism)
       strategies <- values.get("strategies").fold(Right(base.strategies))(parseStrategies)
+      timeLimit <- values.get("time-limit").fold(Right(None))(parseTimeLimit(_).map(Some(_)))
     yield ProbeOptions(
       sizes,
       games,
@@ -94,8 +105,16 @@ object ProbeOptions:
       parallelism,
       values.getOrElse("out", base.outDir),
       strategies,
-      values.get("report-from").fold(Nil)(_.split(",").toList.map(_.trim).filter(_.nonEmpty))
+      values.get("report-from").fold(Nil)(_.split(",").toList.map(_.trim).filter(_.nonEmpty)),
+      timeLimit
     )
+
+  private def parseTimeLimit(text: String): Either[String, FiniteDuration] =
+    text.trim match
+      case TimeLimitPattern(amount, "s") => Right(amount.toLong.seconds)
+      case TimeLimitPattern(amount, "m") => Right(amount.toLong.minutes)
+      case TimeLimitPattern(amount, "h") => Right(amount.toLong.hours)
+      case _ => Left(s"time limit '$text' is not a whole number of s, m or h, like 90s, 30m or 5h")
 
   private def optionValues(args: Seq[String]): Either[String, Map[String, String]] =
     args.grouped(2).toList.foldLeft[Either[String, Map[String, String]]](Right(Map.empty)) {
