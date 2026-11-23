@@ -4,7 +4,7 @@ import scala.util.{Failure, Success, Try}
 
 case class Color private (ascii: Char):
   override def toString: String = ascii.toString
-  override def hashCode(): Int = toString.hashCode()
+  override def hashCode(): Int = ascii.toInt
 
   def unary_! : Color =
     ascii match

@@ -13,7 +13,9 @@ class ThinkingTimeLimiter(val maxThinkingTimeMs: Int) extends LazyLogging:
   def subsetToSatisfyMaxThinkingTime(possible: Seq[Position]): Seq[Position] =
     val baseSize = if numPreviousElements == 0 then possible.size else numPreviousElements
     numPreviousElements = numElementsToSatisfyMaxThinkingTime(possible, baseSize)
-    Random.shuffle(possible).take(numPreviousElements)
+    // without a limit every candidate is kept, so there is no subset to draw at random
+    if maxThinkingTimeMs <= 0 then possible
+    else Random.shuffle(possible).take(numPreviousElements)
 
   private def numElementsToSatisfyMaxThinkingTime(possible: Seq[Position], baseSize: Int) =
     if maxThinkingTimeMs <= 0

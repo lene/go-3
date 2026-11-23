@@ -98,7 +98,8 @@ case class SetStrategy(gameSize: Int, strategies: Array[String], maxThinkingTime
       val opponentNeighbors = game.getFreeNeighbors(!color)
       val possibleMoves = possible.toSet.intersect(opponentNeighbors).toList
       val toUse = if possibleMoves.isEmpty then possible else possibleMoves
-      bestBy(toUse, p => minLiberties(game.setStone(Move(p, color)), !color))
+      // a candidate is a stone of `color`, so the opponent's stones stay those of `game`
+      bestBy(toUse, p => minLiberties(game.setStone(Move(p, color)), !color, opponentStones))
 
   def bestBy[A](values: Seq[A], metric: A => Int): Seq[A] =
     values.groupBy(metric).minBy(_._1)._2
@@ -113,7 +114,8 @@ def minBy[A](values: Seq[A], metric: A => Int): Int = values.map(metric).min
 def minDistanceToPointList(local: Position, remotes: Seq[Position]): Int =
   remotes.map(p => (p - local).abs).min
 
-def minLiberties(game: Game, color: Color): Int =
-  val areas = game.getAreas(color)
+/** The fewest liberties of the groups of `color` at `stones`, the points where `color` played. */
+def minLiberties(game: Game, color: Color, stones: Seq[Position]): Int =
+  val areas = game.areasOf(color, stones)
   if areas.isEmpty then Int.MaxValue
   else minBy(areas.toList, game.liberties(color, _))

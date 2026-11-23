@@ -43,7 +43,7 @@ class Game(
   def isOver: Boolean =
     moves.length >= size * size * size || (
       moves.length >= 2 &&
-        ((moves.last, moves.init.last) match
+        ((moves.last, moves(moves.length - 2)) match
           case (_: Pass, _: Pass) => true
           case _ => false)
     )
@@ -117,7 +117,6 @@ class Game(
     val scores = mutable.Map[Color, Int](Black -> 0, White -> 0)
     for color <- Seq(Black, White) do
       for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
-    val emptyAreas = addToConnectedAreas(goban.emptyPositions, Set())
     for area <- emptyAreas do
       boundaryColor(area) match
         case Some(color) => scores(color) = scores(color) + area.size
@@ -140,14 +139,16 @@ class Game(
         boundaryColors.add(at(neighbor))
     if boundaryColors.size == 1 then Some(boundaryColors.head) else None
 
-  private def addToConnectedAreas(
-      emptyPositions: Seq[Position],
-      areas: Set[Set[Move]]
-  ): Set[Set[Move]] =
-    if emptyPositions.isEmpty then areas
-    else
-      val connected = connectedStones(Move(emptyPositions.last, Empty))
-      addToConnectedAreas(emptyPositions.dropRight(1), areas + connected)
+  /** The connected empty regions of the board, each flood-filled once. */
+  private def emptyAreas: Set[Set[Move]] =
+    val (areas, _) = goban.emptyPositions.foldLeft((Set[Set[Move]](), Set[Position]())) {
+      case ((areas, covered), position) =>
+        if covered.contains(position) then (areas, covered)
+        else
+          val area = connectedStones(Move(position, Empty))
+          (areas + area, covered ++ area.map(_.position))
+    }
+    areas
 
   /** A point with an empty neighbour is never suicide, but it can still be ko. */
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =

@@ -267,8 +267,9 @@ class TestArea:
           |@@ |
           |   |"""
     ))
-    Assertions.assertEquals(1, goban.areas.head.inside.size)
-    Assertions.assertEquals(Set(Position(2, 2, 1)), goban.areas.head.inside)
+    // two groups: take the one around 2 2 1 by a stone of it, not by the order of the set
+    val insides = goban.areas.filter(_.contains(Position(3, 3, 1))).map(_.inside)
+    Assertions.assertEquals(Set(Set(Position(2, 2, 1))), insides)
 
   @Test def testInsideAreaReturnsEmptyIfRequestedForAreaColor(): Unit =
     val goban = gobanWithAreasFromStrings(Map(

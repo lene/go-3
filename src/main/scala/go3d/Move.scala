@@ -9,7 +9,7 @@ class Move(val position: Position, val color: Color) extends HasColor:
   override def optionalPosition: Option[Position] = Some(position)
 
   override def toString: String = s"$position $color"
-  override def hashCode(): Int = toString.hashCode()
+  override def hashCode(): Int = 31 * position.hashCode + color.hashCode
 
   override def equals(that: Any): Boolean =
     that match

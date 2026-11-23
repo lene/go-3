@@ -2,6 +2,7 @@ package go3d
 
 import scala.annotation.tailrec
 import scala.annotation.targetName
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
 import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
@@ -13,12 +14,34 @@ object Goban:
     else if size % 2 == 0 then Failure(BadBoardSize(size, "even"))
     else Success(new Goban(size, initializeBoard(size)))
 
+  // The points and the neighbours of each point depend only on the size of the board, so they
+  // are computed once per size instead of once per board, which every move copies.
+  private val positionsBySize = TrieMap[Int, IndexedSeq[Position]]()
+  private val neighborsBySize = TrieMap[Int, Map[Position, IndexedSeq[Position]]]()
+
+  private[go3d] def positions(size: Int): IndexedSeq[Position] =
+    positionsBySize.getOrElseUpdate(
+      size,
+      for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield new Position(x, y, z)
+    )
+
+  private[go3d] def neighbors(size: Int, position: Position): IndexedSeq[Position] =
+    neighborsBySize
+      .getOrElseUpdate(size, positions(size).map(p => p -> neighborsOf(size, p)).toMap)
+      .getOrElse(position, neighborsOf(size, position))
+
+  private def neighborsOf(size: Int, position: Position): IndexedSeq[Position] =
+    for (
+      x <- position.x - 1 to position.x + 1;
+      y <- position.y - 1 to position.y + 1;
+      z <- position.z - 1 to position.z + 1
+      if onBoard(x, y, z, size) && (position - new Position(x, y, z)).abs == 1
+    ) yield new Position(x, y, z)
+
 class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
 
   lazy val areas: Set[Area] = calculateAreas()
-  private lazy val allNeighbors: Map[Position, Set[Move]] = neighborsMap()
-  lazy val allPositions: Seq[Position] =
-    for (x <- 1 to size; y <- 1 to size; z <- 1 to size) yield new Position(x, y, z)
+  def allPositions: Seq[Position] = Goban.positions(size)
 
   def at(pos: Position): Color = at(pos.x, pos.y, pos.z)
   def at(x: Int, y: Int, z: Int): Color = stones(x)(y)(z)
@@ -85,11 +108,13 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
     else if hasLibertiesHelper(moves.head, visited) then true
     else hasLibertiesHelper(moves - moves.head, visited)
 
+  /** The empty points next to a stone of `col`, counted directly rather than group by group. */
   def numLiberties(col: Color): Int =
-    emptyPositions.toSet.intersect(neighbors(col)).size
+    if col != Black && col != White then 0
+    else emptyPositions.count(hasNeighborOfColor(_, col))
 
   def hasNeighborOfColor(pos: Position, col: Color): Boolean =
-    allNeighbors(pos).exists(_.color == col)
+    neighbors(pos).exists(at(_) == col)
 
   def hasEmptyNeighbor(position: Position): Boolean = hasNeighborOfColor(position, Empty)
 
@@ -100,7 +125,7 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
   def numLiberties(area: Set[Position]): Int = emptyNeighbors(area).size
 
   private def emptyNeighbors(area: Set[Position]): Set[Position] =
-    area.flatMap(pos => allNeighbors(pos)).map(_.position).intersect(emptyPositions.toSet)
+    area.flatMap(neighbors(_)).filter(at(_) == Empty)
 
   def connectedStones(move: Move): Set[Move] =
     if at(move.position) != move.color then Set()
@@ -115,29 +140,17 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
       do connected = connected ++ connectedStonesHelper(Move(position, move.color), visited)
       connected
 
-  private def isOnBoard(x: Int, y: Int, z: Int): Boolean = onBoard(x, y, z, size)
-
-  def neighbors(position: Position): Seq[Position] =
-    for (
-      x <- position.x - 1 to position.x + 1;
-      y <- position.y - 1 to position.y + 1;
-      z <- position.z - 1 to position.z + 1
-      if isNeighbor(position, x, y, z)
-    ) yield new Position(x, y, z)
+  def neighbors(position: Position): Seq[Position] = Goban.neighbors(size, position)
 
   def neighbors(col: Color): Set[Position] =
     val validAreas = areas.filter(_.color == col)
     val validStones = validAreas.foldLeft(Set[Move]())((stones, area) => stones ++ area.stones)
-    val neighborStones = validStones.map(_.position).flatMap(allNeighbors.apply)
-    neighborStones.map(_.position)
+    validStones.flatMap(stone => neighbors(stone.position))
 
   def neighborsOfColor(position: Position, color: Color): Seq[Position] =
     neighbors(position).filter(at(_) == color)
 
   def emptyPositions: Seq[Position] = allPositions.filter(at(_) == Empty)
-
-  private def neighborsMap(): Map[Position, Set[Move]] =
-    allPositions.map(pos => pos -> neighbors(pos).map(p => Move(p, at(p))).toSet).toMap
 
   def checkAndClear(move: Move): Goban =
     if Set(Empty, Sentinel, move.color).contains(at(move.position)) then this
@@ -148,6 +161,8 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
 
   private def isSuicide(move: Move): Boolean =
     if hasLiberties(move) then false
+    // only a point surrounded by opponent stones can be suicide: skip copying the board otherwise
+    else if !neighbors(move.position).forall(at(_) == !move.color) then false
     else
       val wouldBeBoardAfterMove = setStone(move)
       neighbors(move.position).forall(p =>
@@ -168,13 +183,13 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
     val stones = for (p <- allPositions if at(p) == Black || at(p) == White) yield Move(p, at(p))
     areaFromMoves(stones.toSet, Set())
 
-  @tailrec
+  /** `goban` with the points of `toClear` empty, in one copy of the board. */
   private def clearListOfPlaces(toClear: Set[Move], goban: Goban): Goban =
     if toClear.isEmpty then goban
-    else clearListOfPlaces(toClear.dropRight(1), goban.setStone(Move(toClear.last.position, Empty)))
-
-  private def isNeighbor(position: Position, x: Int, y: Int, z: Int): Boolean =
-    isOnBoard(x, y, z) && (position - new Position(x, y, z)).abs == 1
+    else
+      val cleared = deepCopy(goban.stones)
+      toClear.foreach(stone => cleared(stone.x)(stone.y)(stone.z) = Empty)
+      new Goban(size, cleared)
 
   private def isOnBoardPlusBorder(x: Int, y: Int, z: Int): Boolean =
     x < 0 || y < 0 || z < 0 || x > size + 1 || y > size + 1 || z > size + 1
