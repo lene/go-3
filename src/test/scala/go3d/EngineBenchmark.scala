@@ -8,7 +8,9 @@ import scala.util.Random
 /** Times what self-play calls on the rules engine: [[Game.possibleMoves]], [[Game.makeMove]],
   * [[Game.score]] and [[Game.isOver]] on mid-game and late-game positions, and a random playout
   * from the start, per move. Each measurement first runs as long as it is measured, to warm up the
-  * JIT. The positions and the playout come from random games with a fixed seed.
+  * JIT. The positions and the playout come from random games with a fixed seed. The calls on a
+  * position repeat on one board, so they profit from what a board computes once and keeps; the
+  * playout, a new board per move, is the cost per move of self-play.
   *
   * {{{
   * sbt "Test/runMain go3d.EngineBenchmark 5 7 9"
