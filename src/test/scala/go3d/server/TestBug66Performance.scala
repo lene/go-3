@@ -4,6 +4,7 @@ import go3d.server.*
 import go3d.Game
 import go3d.Move
 import go3d.Pass
+import go3d.Suicide
 import io.circe.parser.decode
 import org.scalatest.funsuite.AnyFunSuite
 
@@ -45,9 +46,16 @@ class TestBug66Performance extends AnyFunSuite:
             "This suggests performance regression in connectedStones() or hasLiberties()."
         )
 
+      // the games were recorded before a group was forbidden to fill its own last liberty:
+      // check every move, accept only that rejection, and replay each move as it was played
       moveOrPass match
-        case move: Move => game = game.makeMove(move).success.value
-        case pass: Pass => game = game.makeMove(pass).success.value
+        case move: Move =>
+          game.checkValid(move).failed.foreach {
+            case _: Suicide => ()
+            case e => fail(s"move $index, $move: $e")
+          }
+        case _: Pass => ()
+      game = game.replayed(moveOrPass)
 
     val endTime = System.nanoTime()
     val totalTimeMs = (endTime - startTime) / 1_000_000

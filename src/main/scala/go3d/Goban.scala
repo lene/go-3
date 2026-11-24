@@ -159,14 +159,14 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
       if hasLiberties(Move(move.x, move.y, move.z, opponent)) then this
       else clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, opponent)), this)
 
+  /** A move is suicide when it leaves its own group without liberties and captures nothing. */
   private def isSuicide(move: Move): Boolean =
-    if hasLiberties(move) then false
-    // only a point surrounded by opponent stones can be suicide: skip copying the board otherwise
-    else if !neighbors(move.position).forall(at(_) == !move.color) then false
+    // a stone next to an empty point has a liberty: skip copying the board
+    if hasEmptyNeighbor(move.position) then false
     else
-      val wouldBeBoardAfterMove = setStone(move)
-      neighbors(move.position).forall(p =>
-        wouldBeBoardAfterMove.hasLiberties(Move(p, !move.color))
+      val after = setStone(move)
+      !after.hasLiberties(move) && neighbors(move.position).forall(p =>
+        at(p) != !move.color || after.hasLiberties(Move(p, !move.color))
       )
 
   private def calculateAreas(): Set[Area] =
