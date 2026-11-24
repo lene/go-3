@@ -6,8 +6,7 @@ import scala.annotation.tailrec
   * distinct empty points next to its group. The legal moves of a position need this for each empty
   * point without an empty neighbour, so one pass replaces a board copy and a flood fill per point.
   *
-  * It is a snapshot: [[Goban.stones]] can be changed in place, so it is computed where it is used
-  * and not kept with the board. The points are numbered `(x * side + y) * side + z` on the board
+  * The points are numbered `(x * side + y) * side + z` on the board
   * plus its sentinel border, so the six neighbours of a point are at fixed offsets.
   */
 private[go3d] final class Groups private (side: Int, group: Array[Int], liberties: Array[Int]):
@@ -27,7 +26,7 @@ private[go3d] object Groups:
     new Groups(side, fill.group, fill.liberties)
 
   /** The flood fill of [[Groups.of]] over the `colors` of the points, numbered as in [[Groups]]. */
-  private final class Fill(colors: Array[Color], side: Int):
+  private final class Fill(colors: IArray[Color], side: Int):
     private val offsets = Array(1, -1, side, -side, side * side, -side * side)
     // a group is numbered by its first point, which also indexes its count of liberties
     val group: Array[Int] = Array.fill(colors.length)(-1)

@@ -4,7 +4,6 @@ import scala.annotation.tailrec
 import scala.annotation.targetName
 import scala.collection.concurrent.TrieMap
 import scala.collection.mutable
-import scala.reflect.ClassTag
 import scala.util.{Failure, Success, Try}
 
 object Goban:
@@ -12,7 +11,18 @@ object Goban:
     if size < MinBoardSize then Failure(BadBoardSize(size, "too small"))
     else if size > MaxBoardSize then Failure(BadBoardSize(size, "too big"))
     else if size % 2 == 0 then Failure(BadBoardSize(size, "even"))
-    else Success(new Goban(size, initializeBoard(size)))
+    else Success(new Goban(size, board(size, (_, _, _) => Empty)))
+
+  /** A board of `size` with the colour of `stoneAt` on each point from 1 to `size`; fails for an
+    * invalid size or if `stoneAt` throws.
+    */
+  def tabulate(size: Int)(stoneAt: (Int, Int, Int) => Color): Try[Goban] =
+    start(size).map(_ => new Goban(size, board(size, stoneAt)))
+
+  private def board(size: Int, stoneAt: (Int, Int, Int) => Color): IArray[IArray[IArray[Color]]] =
+    IArray.tabulate(size + 2, size + 2, size + 2)((x, y, z) =>
+      if onBoard(x, y, z, size) then stoneAt(x, y, z) else Sentinel
+    )
 
   // The points and the neighbours of each point depend only on the size of the board, so they
   // are computed once per size instead of once per board, which every move copies.
@@ -38,7 +48,11 @@ object Goban:
       if onBoard(x, y, z, size) && (position - new Position(x, y, z)).abs == 1
     ) yield new Position(x, y, z)
 
-class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]) extends GoGame:
+/** A board: the stones of each point, indexed by x, then y, then z, with a border of [[Sentinel]]
+  * at 0 and `size + 1`. It cannot be changed: [[setStone]] returns a new board, which shares the
+  * rows it does not change with this one.
+  */
+class Goban private (val size: Int, val stones: IArray[IArray[IArray[Color]]]) extends GoGame:
 
   lazy val areas: Set[Area] = calculateAreas()
   def allPositions: Seq[Position] = Goban.positions(size)
@@ -52,8 +66,6 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
         if size != g.size then false
         else allPositions.forall(pos => at(pos) == g.at(pos))
       case _ => false
-
-  override def clone(): Goban = new Goban(size, deepCopy(stones))
 
   @targetName("minus")
   def -(other: Goban): IndexedSeq[Move] =
@@ -81,9 +93,7 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
   def setStone(move: Move): Goban = setStone(move.x, move.y, move.z, move.color)
   def setStone(x: Int, y: Int, z: Int, color: Color): Goban =
     if isOnBoardPlusBorder(x, y, z) then sys.error(s"outside board: $x, $y, $z")
-    val newStones = deepCopy(stones)
-    newStones(x)(y)(z) = color
-    new Goban(size, newStones)
+    new Goban(size, stones.updated(x, stones(x).updated(y, stones(x)(y).updated(z, color))))
 
   def hasLiberties(move: Move): Boolean =
     if !Set(Black, White).contains(move.color) then
@@ -188,32 +198,12 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
     val stones = for (p <- allPositions if at(p) == Black || at(p) == White) yield Move(p, at(p))
     areaFromMoves(stones.toSet, Set())
 
-  /** `goban` with the points of `toClear` empty, in one copy of the board. */
+  /** `goban` with the points of `toClear` empty. */
   private def clearListOfPlaces(toClear: Set[Move], goban: Goban): Goban =
-    if toClear.isEmpty then goban
-    else
-      val cleared = deepCopy(goban.stones)
-      toClear.foreach(stone => cleared(stone.x)(stone.y)(stone.z) = Empty)
-      new Goban(size, cleared)
+    toClear.foldLeft(goban)((board, stone) => board.setStone(stone.x, stone.y, stone.z, Empty))
 
   private def isOnBoardPlusBorder(x: Int, y: Int, z: Int): Boolean =
     x < 0 || y < 0 || z < 0 || x > size + 1 || y > size + 1 || z > size + 1
 
-def initializeBoard(size: Int): Array[Array[Array[Color]]] =
-  val tempStones = Array.ofDim[Color](size + 2, size + 2, size + 2)
-  for
-    x <- 0 to size + 1
-    y <- 0 to size + 1
-    z <- 0 to size + 1
-  do
-    tempStones(x)(y)(z) = if onBoard(x, y, z, size) then Empty else Sentinel
-  tempStones
-
 def onBoard(x: Int, y: Int, z: Int, size: Int): Boolean =
   x > 0 && y > 0 && z > 0 && x <= size && y <= size && z <= size
-
-def deepCopy[T: ClassTag](elements: Array[Array[T]]): Array[Array[T]] =
-  elements.map(_.clone)
-
-def deepCopy[T: ClassTag](elements: Array[Array[Array[T]]]): Array[Array[Array[T]]] =
-  elements.map(deepCopy(_))
