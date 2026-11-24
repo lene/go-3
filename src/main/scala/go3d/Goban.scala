@@ -169,19 +169,19 @@ class Goban private (val size: Int, val stones: IArray[IArray[IArray[Color]]]) e
       if hasLiberties(Move(move.x, move.y, move.z, opponent)) then this
       else clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, opponent)), this)
 
-  /** A move is suicide when it leaves its own group without liberties and captures nothing. */
-  private[go3d] def isSuicide(move: Move): Boolean =
-    lazy val after = setStone(move)
-    isSuicide(move, p => after.hasLiberties(Move(p, at(p))))
-
-  /** [[isSuicide]] with `hasOtherLiberty`, whether the group of the stone at a point has a liberty
-    * besides the point of `move`; it is only asked for a point without an empty neighbour. Then
-    * every neighbour is a stone, and the move is suicide if no own group next to it has another
-    * liberty and every opponent group next to it has one.
+  /** The liberties of every group, found in one pass the first time a point without an empty
+    * neighbour is checked for suicide, and then shared by all checks on this board.
     */
-  private[go3d] def isSuicide(move: Move, hasOtherLiberty: Position => Boolean): Boolean =
+  private lazy val groups: Groups = Groups.of(this)
+
+  /** A move is suicide when it leaves its own group without liberties and captures nothing. A
+    * point with an empty neighbour never is. Otherwise every neighbour is a stone, and the move is
+    * suicide if no own group next to it has a liberty besides this point and every opponent group
+    * next to it has one; a group next to the point has another liberty if it has two.
+    */
+  private[go3d] def isSuicide(move: Move): Boolean =
     !hasEmptyNeighbor(move.position) && neighbors(move.position).forall(p =>
-      if at(p) == move.color then !hasOtherLiberty(p) else hasOtherLiberty(p)
+      if at(p) == move.color then groups.liberties(p) == 1 else groups.liberties(p) > 1
     )
 
   private def calculateAreas(): Set[Area] =
