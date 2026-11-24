@@ -21,20 +21,38 @@ private[go3d] object Groups:
 
   def of(goban: Goban): Groups =
     val side = goban.size + 2
-    val points = side * side * side
     // `stones` is indexed by x, then y, then z, so flattening it numbers the points as above
-    val colors = goban.stones.flatten.flatten
-    val offsets = Array(1, -1, side, -side, side * side, -side * side)
+    val fill = Fill(goban.stones.flatten.flatten, side)
+    fill.all()
+    new Groups(side, fill.group, fill.liberties)
+
+  /** The flood fill of [[Groups.of]] over the `colors` of the points, numbered as in [[Groups]]. */
+  private final class Fill(colors: Array[Color], side: Int):
+    private val offsets = Array(1, -1, side, -side, side * side, -side * side)
     // a group is numbered by its first point, which also indexes its count of liberties
-    val group = Array.fill(points)(-1)
-    val liberties = Array.fill(points)(0)
+    val group: Array[Int] = Array.fill(colors.length)(-1)
+    val liberties: Array[Int] = Array.fill(colors.length)(0)
     // the group whose liberties last counted an empty point, so that each counts once per group
-    val counted = Array.fill(points)(-1)
-    val stack = Array.fill(points)(0)
+    private val counted = Array.fill(colors.length)(-1)
+    private val stack = Array.fill(colors.length)(0)
+
+    /** Fills the group of each stone that is not in a group yet. */
+    def all(): Unit =
+      for start <- colors.indices do
+        if isStone(start) && group(start) < 0 then
+          group(start) = start
+          stack(0) = start
+          fill(1, start)
+
+    private def isStone(point: Int): Boolean = colors(point) == Black || colors(point) == White
+
+    @tailrec
+    private def fill(top: Int, id: Int): Unit =
+      if top > 0 then fill(visit(stack(top - 1), 0, top - 1, id), id)
 
     /** Visits the neighbours of `point` from the `k`th on, and returns the new top of `stack`. */
     @tailrec
-    def visit(point: Int, k: Int, top: Int, id: Int): Int =
+    private def visit(point: Int, k: Int, top: Int, id: Int): Int =
       if k == offsets.length then top
       else
         val neighbor = point + offsets(k)
@@ -47,14 +65,3 @@ private[go3d] object Groups:
           stack(top) = neighbor
           visit(point, k + 1, top + 1, id)
         else visit(point, k + 1, top, id)
-
-    @tailrec
-    def fill(top: Int, id: Int): Unit =
-      if top > 0 then fill(visit(stack(top - 1), 0, top - 1, id), id)
-
-    for start <- 0 until points do
-      if (colors(start) == Black || colors(start) == White) && group(start) < 0 then
-        group(start) = start
-        stack(0) = start
-        fill(1, start)
-    new Groups(side, group, liberties)
