@@ -48,22 +48,27 @@ class Game(
           case _ => false)
     )
 
+  /** The game after its first `count` moves, as they were played: the moves are not checked again,
+    * so a game recorded under earlier rules replays as it was played.
+    */
   def atMove(count: Int): Try[Game] =
-    moves.take(count).foldLeft(Game.start(size, komi)) { (acc, move) =>
-      acc.flatMap(_.makeMove(move))
-    }
+    Game.start(size, komi).map(start => moves.take(count).foldLeft(start)(_.replayed(_)))
 
   def isTurn(color: Color): Boolean =
     if moves.isEmpty then color == Black else color != moves.last.color
 
   def makeMove(move: Move | Pass): Try[Game] =
     move match
-      case _: Pass => Success(Game(size, goban, moves.appended(move), captures, komi))
+      case _: Pass => Success(replayed(move))
+      case m: Move => checkValid(m).map(_ => replayed(m))
+
+  /** The game after `move`, without checking that the move is legal. */
+  private[go3d] def replayed(move: Move | Pass): Game =
+    move match
+      case _: Pass => Game(size, goban, moves.appended(move), captures, komi)
       case m: Move =>
-        checkValid(m).map { _ =>
-          val newboard = setStone(m)
-          Game(size, newboard.goban, moves.appended(move), newboard.captures, komi)
-        }
+        val newboard = setStone(m)
+        Game(size, newboard.goban, moves.appended(move), newboard.captures, komi)
 
   def checkValid(move: Move): Try[Unit] =
     if !isDifferentPlayer(move.color) then Failure(WrongTurn(move))

@@ -270,6 +270,54 @@ class TestGame:
     val game = encircleEye(buildEye())
     game.checkValid(Move(1, 1, 1, White)).success.value
 
+  /** Black's corner stone at 1 1 1 with its last liberty at 2 1 1, every other neighbour of both
+    * points white, and no white stone in atari.
+    */
+  private val ownLastLibertyMoves = List[Move | Pass](
+    Move(1, 1, 1, Black),
+    Move(1, 2, 1, White),
+    Pass(Black),
+    Move(1, 1, 2, White),
+    Pass(Black),
+    Move(3, 1, 1, White),
+    Pass(Black),
+    Move(2, 2, 1, White),
+    Pass(Black),
+    Move(2, 1, 2, White)
+  )
+
+  @Test def testFillingTheLastLibertyOfAnOwnGroupIsSuicide(): Unit =
+    val game = playListOfMoves(5, ownLastLibertyMoves)
+    Assertions.assertInstanceOf(
+      classOf[Suicide],
+      game.makeMove(Move(2, 1, 1, Black)).failure.exception
+    )
+    Assertions.assertFalse(game.possibleMoves(Black).contains(Position(2, 1, 1)))
+
+  @Test def testAGameRecordedBeforeTheSuicideRuleReplaysAsItWasPlayed(): Unit =
+    val recorded = playListOfMoves(5, ownLastLibertyMoves).replayed(Move(2, 1, 1, Black))
+    val replayed = recorded.atMove(recorded.moves.length).success.value
+    Assertions.assertEquals(Black, replayed.at(2, 1, 1))
+    Assertions.assertEquals(recorded.goban.toString, replayed.goban.toString)
+
+  @Test def testFillingTheLastLibertyOfAnOwnGroupIsNoSuicideIfItCaptures(): Unit =
+    // as above, but the white stone at 3 1 1 has its last liberty at 2 1 1 too
+    val moves = List[Move | Pass](
+      Move(1, 1, 1, Black),
+      Move(1, 2, 1, White),
+      Move(4, 1, 1, Black),
+      Move(1, 1, 2, White),
+      Move(3, 2, 1, Black),
+      Move(2, 2, 1, White),
+      Move(3, 1, 2, Black),
+      Move(2, 1, 2, White),
+      Pass(Black),
+      Move(3, 1, 1, White)
+    )
+    val after = playListOfMoves(5, moves).makeMove(Move(2, 1, 1, Black)).success.value
+    Assertions.assertEquals(Empty, after.at(3, 1, 1))
+    Assertions.assertTrue(after.hasLiberties(Move(1, 1, 1, Black)))
+
   @Test def testSettingStoneIntoNotEncircledEyeIsSuicide(): Unit =
     val game = buildEye()
     Assertions.assertInstanceOf(

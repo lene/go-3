@@ -21,7 +21,7 @@ The game logic is split between two key classes:
 - **`Game`** (`src/main/scala/go3d/Game.scala`): Manages game flow built on top of Goban. Handles:
   - Move history and turn management
   - Ko rule enforcement (cannot immediately recapture single stone)
-  - Suicide rule (cannot place stone with no liberties unless it captures)
+  - Suicide rule: a move that leaves its own group without liberties is illegal unless it captures
   - Capture tracking (maps move index to captured stones)
   - Game-over detection (two consecutive passes or board full)
   - Scoring (stones + territory, Tromp-Taylor area scoring: captures are tracked but not scored)
