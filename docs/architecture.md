@@ -17,6 +17,12 @@ The game logic is split between two key classes:
   - Connected stone detection (areas)
   - Capture logic (removing stones without liberties)
   - Board uses sentinel values at boundaries (size+2 array for size board)
+  - `Groups` (`Groups.scala`): the liberties of every group, found in one pass over a board.
+    `Game.possibleMoves` computes it once per call for the suicide check, instead of copying the
+    board and flood-filling for each point. It is a snapshot, not kept with the board, because
+    `Goban.stones` can be changed in place (by `Jsonify` and by tests)
+  - Rules tests: `TestRulesAgainstReference` compares `Game` move by move with the plain
+    `ReferenceRules`; `EngineBenchmark` times the engine (see `docs/development.md`)
 
 - **`Game`** (`src/main/scala/go3d/Game.scala`): Manages game flow built on top of Goban. Handles:
   - Move history and turn management

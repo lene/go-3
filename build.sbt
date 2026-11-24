@@ -17,7 +17,7 @@ lazy val root = project
   .enablePlugins(JavaAppPackaging)
   .settings(
     name := "go-3d",
-    version := "0.7.49",
+    version := "0.7.50",
     maintainer := "lene.preuss@gmail.com",
     scalaVersion := scala3Version,
 
