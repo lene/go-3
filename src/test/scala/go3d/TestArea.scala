@@ -675,8 +675,6 @@ class TestArea:
     Assertions.assertEquals(1, areas.size)
     areas.head
 
-def gobanWithAreasFromStrings(levels: Map[Int, String]): Goban =
-  val from = fromStrings(levels)
-  new Goban(from.size, from.stones)
+def gobanWithAreasFromStrings(levels: Map[Int, String]): Goban = fromStrings(levels)
 
 def defaultGoban: Goban = Goban.start(3).success.value

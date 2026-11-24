@@ -19,133 +19,139 @@ class TestLiberties:
 
   @Test def testLibertiesOneStone(): Unit =
     val goban = Goban.start(TestSize).success.value
-    directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
+    val _ = setStonesCheckingLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
 
   @Test def testLibertiesTwoDifferentStones(): Unit =
     val goban = Goban.start(TestSize).success.value
-    directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
-    directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 1)), White, Move(2, 2, 2, Black))
+    val black = setStonesCheckingLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
+    val _ = setStonesCheckingLiberties(black, List((2, 2, 1)), White, Move(2, 2, 2, Black))
 
   @Test def testLibertiesInCenter(): Unit =
     val goban = Goban.start(TestSize).success.value
-    directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
-    directlySetListOfStonesAndCheckLiberties(
-      goban,
+    val black = setStonesCheckingLiberties(goban, List((2, 2, 2)), Black, Move(2, 2, 2, Black))
+    val surrounded = setStonesCheckingLiberties(
+      black,
       List((2, 2, 1), (2, 2, 3), (2, 1, 2), (2, 3, 2), (1, 2, 2)),
       White,
       Move(2, 2, 2, Black)
+    ).setStone(3, 2, 2, White)
+    Assertions.assertFalse(
+      surrounded.hasLiberties(Move(2, 2, 2, Black)),
+      "\n" + surrounded.toString
     )
-    goban.stones(3)(2)(2) = White
-    Assertions.assertFalse(goban.hasLiberties(Move(2, 2, 2, Black)), "\n" + goban.toString)
 
   @Test def testLibertiesOnFace(): Unit =
     val goban = Goban.start(TestSize).success.value
-    directlySetListOfStonesAndCheckLiberties(goban, List((2, 2, 1)), Black, Move(2, 2, 1, Black))
-    directlySetListOfStonesAndCheckLiberties(
-      goban,
+    val black = setStonesCheckingLiberties(goban, List((2, 2, 1)), Black, Move(2, 2, 1, Black))
+    val surrounded = setStonesCheckingLiberties(
+      black,
       List((2, 2, 2), (2, 1, 1), (2, 3, 1), (1, 2, 1)),
       White,
       Move(2, 2, 1, Black)
+    ).setStone(3, 2, 1, White)
+    Assertions.assertFalse(
+      surrounded.hasLiberties(Move(2, 2, 1, Black)),
+      "\n" + surrounded.toString
     )
-    goban.stones(3)(2)(1) = White
-    Assertions.assertFalse(goban.hasLiberties(Move(2, 2, 1, Black)), "\n" + goban.toString)
 
   @Test def testLibertiesOnEdge(): Unit =
     val goban = Goban.start(TestSize).success.value
-    directlySetListOfStonesAndCheckLiberties(goban, List((2, 1, 1)), Black, Move(2, 1, 1, Black))
-    directlySetListOfStonesAndCheckLiberties(
-      goban,
+    val black = setStonesCheckingLiberties(goban, List((2, 1, 1)), Black, Move(2, 1, 1, Black))
+    val surrounded = setStonesCheckingLiberties(
+      black,
       List((1, 1, 1), (3, 1, 1), (2, 2, 1)),
       White,
       Move(2, 1, 1, Black)
+    ).setStone(2, 1, 2, White)
+    Assertions.assertFalse(
+      surrounded.hasLiberties(Move(2, 1, 1, Black)),
+      "\n" + surrounded.toString
     )
-    goban.stones(2)(1)(2) = White
-    Assertions.assertFalse(goban.hasLiberties(Move(2, 1, 1, Black)), "\n" + goban.toString)
 
   @Test def testLibertiesInCorner(): Unit =
     val goban = Goban.start(TestSize).success.value
-    directlySetListOfStonesAndCheckLiberties(goban, List((1, 1, 1)), Black, Move(1, 1, 1, Black))
-    directlySetListOfStonesAndCheckLiberties(
-      goban,
+    val black = setStonesCheckingLiberties(goban, List((1, 1, 1)), Black, Move(1, 1, 1, Black))
+    val surrounded = setStonesCheckingLiberties(
+      black,
       List((2, 1, 1), (1, 2, 1)),
       White,
       Move(1, 1, 1, Black)
+    ).setStone(1, 1, 2, White)
+    Assertions.assertFalse(
+      surrounded.hasLiberties(Move(1, 1, 1, Black)),
+      "\n" + surrounded.toString
     )
-    goban.stones(1)(1)(2) = White
-    Assertions.assertFalse(goban.hasLiberties(Move(1, 1, 1, Black)), "\n" + goban.toString)
 
   @Test def testLibertiesWithNeighbor(): Unit =
-    val goban = Goban.start(TestSize).success.value
-    directlySetListOfStones(goban, (2, 1, 1) :: (2, 1, 2) :: Nil, Black)
-    directlySetListOfStones(goban, (1, 1, 1) :: (3, 1, 1) :: (2, 2, 1) :: Nil, White)
+    val goban = setStones(
+      setStones(Goban.start(TestSize).success.value, (2, 1, 1) :: (2, 1, 2) :: Nil, Black),
+      (1, 1, 1) :: (3, 1, 1) :: (2, 2, 1) :: Nil,
+      White
+    )
     checkHasLiberties(goban, Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Nil)
 
   @Test def testLibertiesWithNeighborCaptured(): Unit =
-    val goban = Goban.start(TestSize).success.value
-    directlySetListOfStones(goban, (2, 1, 1) :: (2, 1, 2) :: Nil, Black)
-    directlySetListOfStones(
-      goban,
+    val goban = setStones(
+      setStones(Goban.start(TestSize).success.value, (2, 1, 1) :: (2, 1, 2) :: Nil, Black),
       (1, 1, 1) :: (3, 1, 1) :: (2, 2, 1) :: (1, 1, 2) :: (3, 1, 2) :: (2, 2, 2) :: Nil,
       White
     )
     checkHasLiberties(goban, Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Nil)
-    directlySetListOfStones(goban, (2, 1, 3) :: Nil, White)
-    checkNoLiberties(goban, Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Nil)
+    val captured = goban.setStone(2, 1, 3, White)
+    checkNoLiberties(captured, Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Nil)
 
   @Test def testLargerAreaCaptured(): Unit =
-    val goban = Goban.start(TestSize).success.value
-    directlySetListOfStones(goban, (2, 1, 1) :: (2, 1, 2) :: (2, 1, 3) :: Nil, Black)
-    directlySetListOfStones(
-      goban,
+    val goban = setStones(
+      setStones(
+        Goban.start(TestSize).success.value,
+        (2, 1, 1) :: (2, 1, 2) :: (2, 1, 3) :: Nil,
+        Black
+      ),
       (1, 1, 1) :: (3, 1, 1) :: (2, 2, 1) :: (1, 1, 2) :: (3, 1, 2) :: (2, 2, 2) :: (1, 1, 3) ::
         (3, 1, 3) :: Nil,
       White
     )
-    checkHasLiberties(
-      goban,
-      Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Move(2, 1, 3, Black) :: Nil
-    )
-    directlySetListOfStones(goban, (2, 2, 3) :: Nil, White)
-    checkNoLiberties(
-      goban,
-      Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Move(2, 1, 3, Black) :: Nil
-    )
+    val group = Move(2, 1, 1, Black) :: Move(2, 1, 2, Black) :: Move(2, 1, 3, Black) :: Nil
+    checkHasLiberties(goban, group)
+    checkNoLiberties(goban.setStone(2, 2, 3, White), group)
 
   @Test def testOneEye(): Unit =
-    val goban = Goban.start(TestSize).success.value
     // eye in the (1, 1, 1) corner
-    directlySetListOfStones(
-      goban,
+    val eye = setStones(
+      Goban.start(TestSize).success.value,
       (2, 1, 1) :: (1, 2, 1) :: (1, 1, 2) :: (2, 1, 2) :: (1, 2, 2) :: Nil,
       Black
     )
     // encircle it from outside only
-    directlySetListOfStones(
-      goban,
+    val goban = setStones(
+      eye,
       (1, 3, 1) :: (2, 2, 1) :: (3, 1, 1) :: (1, 3, 2) :: (2, 2, 2) :: (3, 1, 2) :: (1, 1, 3) ::
         (2, 1, 3) :: (1, 2, 3) :: Nil,
       White
     )
     Assertions.assertTrue(goban.hasLiberties(Move(2, 1, 1, Black)))
-    goban.stones(1)(1)(1) = White
     checkNoLiberties(
-      goban,
+      goban.setStone(1, 1, 1, White),
       Move(2, 1, 1, Black) :: Move(1, 2, 1, Black) :: Move(1, 1, 2, Black) ::
         Move(2, 1, 2, Black) :: Move(1, 2, 2, Black) :: Nil
     )
 
-def directlySetListOfStones(goban: Goban, positions: List[(Int, Int, Int)], color: Color): Unit =
-  for pos <- positions do goban.stones(pos(0))(pos(1))(pos(2)) = color
+/** `goban` with stones of `color` on `positions`, set without checking the rules. */
+def setStones(goban: Goban, positions: List[(Int, Int, Int)], color: Color): Goban =
+  positions.foldLeft(goban)((board, pos) => board.setStone(pos(0), pos(1), pos(2), color))
 
-def directlySetListOfStonesAndCheckLiberties(
+/** [[setStones]], checking after each stone that `toCheck` still has liberties. */
+def setStonesCheckingLiberties(
     goban: Goban,
     positions: List[(Int, Int, Int)],
     color: Color,
     toCheck: Move
-): Unit =
-  for pos <- positions do
-    goban.stones(pos(0))(pos(1))(pos(2)) = color
-    Assertions.assertTrue(goban.hasLiberties(toCheck))
+): Goban =
+  positions.foldLeft(goban) { (board, pos) =>
+    val next = board.setStone(pos(0), pos(1), pos(2), color)
+    Assertions.assertTrue(next.hasLiberties(toCheck), next.toString)
+    next
+  }
 
 def checkHasLiberties(goban: Goban, stones: List[Move], message: String = ""): Unit =
   for stone <- stones do Assertions.assertTrue(goban.hasLiberties(stone), message)

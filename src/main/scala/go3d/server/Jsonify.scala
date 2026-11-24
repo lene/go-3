@@ -89,18 +89,13 @@ def gobanFromStrings(levels: Array[String]): Try[Goban] =
     if levels.length != size then
       scala.util.Failure(JsonDecodeError(s"${levels.length} != $size"))
     else
-      Goban.start(size).flatMap { goban =>
-        Try {
-          for (level, z) <- levels.zipWithIndex do
-            val lines = level.stripMargin.replace("|", "").split("\n")
-            if lines.length != size then sys.error(s"${lines.toString}: ${lines.length} != $size")
-            for (line, y) <- lines.zipWithIndex do
-              if line.length != size then sys.error(s"\"$line\": ${line.length} != $size")
-              for (stone, x) <- line.zipWithIndex do
-                goban.stones(x + 1)(y + 1)(z + 1) = Color(stone).getOrElse(go3d.Empty)
-          goban
-        }.recoverWith { case e => scala.util.Failure(JsonDecodeError(e.getMessage)) }
-      }
+      val lines = levels.map(_.stripMargin.replace("|", "").split("\n"))
+      val badLevel = lines.find(_.length != size).map(level => s"${level.length} lines != $size")
+      val badLine = lines.flatten.find(_.length != size).map(l => s"\"$l\": ${l.length} != $size")
+      badLevel.orElse(badLine) match
+        case Some(message) => scala.util.Failure(JsonDecodeError(message))
+        case None =>
+          Goban.tabulate(size)((x, y, z) => Color(lines(z - 1)(y - 1)(x - 1)).getOrElse(go3d.Empty))
 
 def gobanToStrings(goban: Goban): Array[String] =
   val strings = Array.fill(goban.size) { "" }

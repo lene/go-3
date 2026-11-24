@@ -11,7 +11,8 @@ broader review (risks, state handling, security) see
 The game logic is split between two key classes:
 
 - **`Goban`** (`src/main/scala/go3d/Goban.scala`): Represents the board state as a 3D array of
-  stones. Handles:
+  stones, an `IArray` that cannot be changed: `setStone` returns a new board that shares the rows
+  it does not change, and `Goban.tabulate` builds a whole board (for `Jsonify` and tests). Handles:
   - Stone placement and validation
   - Liberty calculations (empty adjacent positions)
   - Connected stone detection (areas)
@@ -19,8 +20,7 @@ The game logic is split between two key classes:
   - Board uses sentinel values at boundaries (size+2 array for size board)
   - `Groups` (`Groups.scala`): the liberties of every group, found in one pass over a board.
     `Game.possibleMoves` computes it once per call for the suicide check, instead of copying the
-    board and flood-filling for each point. It is a snapshot, not kept with the board, because
-    `Goban.stones` can be changed in place (by `Jsonify` and by tests)
+    board and flood-filling for each point
   - Rules tests: `TestRulesAgainstReference` compares `Game` move by move with the plain
     `ReferenceRules`; `EngineBenchmark` times the engine (see `docs/development.md`)
 

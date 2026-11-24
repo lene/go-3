@@ -142,14 +142,16 @@ def assertPositionsEqual(expected: Seq[(Int, Int, Int)], actual: Seq[Position]):
 
 def fromStrings(levels: Map[Int, String]): Goban =
   if levels.isEmpty then sys.error("nothing to generate")
-  val size = levels.head._2.stripMargin.replace("|", "").split("\n").length
-  val goban = Goban.start(size).success.value
-  for (z, level) <- levels do
-    val lines = level.stripMargin.replace("|", "").split("\n")
-    for (line, y) <- lines.zipWithIndex do
-      for (stone, x) <- line.zipWithIndex do
-        goban.stones(x + 1)(y + 1)(z) = Color(stone).success.value
-  goban
+  val lines = levels.view.mapValues(_.stripMargin.replace("|", "").split("\n")).toMap
+  val size = lines.head._2.length
+  Goban
+    .tabulate(size)((x, y, z) =>
+      // a point the strings leave out is empty: `stripMargin` empties a first line of blanks
+      lines.get(z).flatMap(_.lift(y - 1)).flatMap(_.lift(x - 1))
+        .fold(Empty)(Color(_).success.value)
+    )
+    .success
+    .value
 
 def fromGoban(goban: Goban): Game =
   Game(goban.size, goban, Array(), Map(), Komi.Default)

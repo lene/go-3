@@ -4,7 +4,7 @@ STRATEGY_BLACK=random
 STRATEGY_WHITE=prioritiseCapture
 BOARD_SIZE=7
 UP_TO=10
-VERSION=0.7.50
+VERSION=0.7.51
 
 # Scores recorded with versions before 0.7.44 counted captures: do not mix them with newer ones in
 # one CSV file.

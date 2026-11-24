@@ -102,23 +102,33 @@ class TestGoban:
       empty.checkValid(Move(2, 2, TestSize + 1, White)).failure.exception
     )
 
-  @Test def testDeepCopy2D(): Unit =
-    val original = Array(Array(1, 2), Array(3, 4))
-    val cloned = deepCopy(original)
-    cloned(0)(0) = 9
-    Assertions.assertEquals(1, original(0)(0))
-
-  @Test def testDeepCopy3D(): Unit =
-    val original = Array(Array(Array(1, 2), Array(3, 4)), Array(Array(5, 6), Array(7, 8)))
-    val cloned = deepCopy(original)
-    cloned(0)(0)(0) = 9
-    Assertions.assertEquals(1, original(0)(0)(0))
-
-  @Test def testClone(): Unit =
+  @Test def testSetStoneLeavesTheBoardUnchanged(): Unit =
     val original = Goban.start(TestSize).success.value
-    val cloned = original.clone()
-    cloned.setStone(1, 1, 1, Black)
+    val changed = original.setStone(1, 1, 1, Black)
     Assertions.assertEquals(Empty, original.at(1, 1, 1))
+    Assertions.assertEquals(Black, changed.at(1, 1, 1))
+
+  @Test def testSetStoneSharesTheRowsItDoesNotChange(): Unit =
+    val original = Goban.start(TestSize).success.value
+    val changed = original.setStone(1, 1, 1, Black)
+    Assertions.assertSame(original.stones(2), changed.stones(2))
+    Assertions.assertSame(original.stones(1)(2), changed.stones(1)(2))
+    Assertions.assertNotSame(original.stones(1)(1), changed.stones(1)(1))
+
+  @Test def testTabulateFillsTheBoardInsideItsBorder(): Unit =
+    val goban = Goban.tabulate(TestSize)((x, y, z) => if x == y && y == z then Black else White)
+      .success
+      .value
+    Assertions.assertEquals(Black, goban.at(2, 2, 2))
+    Assertions.assertEquals(White, goban.at(1, 2, 3))
+    Assertions.assertEquals(Sentinel, goban.at(0, 0, 0))
+    Assertions.assertEquals(Sentinel, goban.at(TestSize + 1, 1, 1))
+
+  @Test def testTabulateFailsForABadSize(): Unit =
+    Assertions.assertInstanceOf(
+      classOf[BadBoardSize],
+      Goban.tabulate(4)((_, _, _) => Empty).failure.exception
+    )
 
   @Test def testSetListOfStones(): Unit =
     val goban = setListOfStones(TestSize, CaptureMoves.dropRight(1))
