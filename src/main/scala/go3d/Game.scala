@@ -155,10 +155,12 @@ class Game(
     }
     areas
 
-  /** A point with an empty neighbour is never suicide, but it can still be ko. */
+  /** The rules of [[checkValid]] for an empty point and the player to move, without building an
+    * exception for each point that is rejected.
+    */
   private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
-    if !goban.hasEmptyNeighbor(emptyPos) then checkValid(Move(emptyPos, color)).isSuccess
-    else !isKo(Move(emptyPos, color))
+    val move = Move(emptyPos, color)
+    !goban.isSuicide(move) && !isKo(move)
 
   private def isDifferentPlayer(color: Color): Boolean = moves.isEmpty || moves.last.color != color
 

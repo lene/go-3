@@ -160,7 +160,7 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
       else clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, opponent)), this)
 
   /** A move is suicide when it leaves its own group without liberties and captures nothing. */
-  private def isSuicide(move: Move): Boolean =
+  private[go3d] def isSuicide(move: Move): Boolean =
     // a stone next to an empty point has a liberty: skip copying the board
     if hasEmptyNeighbor(move.position) then false
     else
