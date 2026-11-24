@@ -77,6 +77,24 @@ sbt "runMain go3d.client.BotClient --server localhost --port 6030 --size 7 --col
 sbt "runMain go3d.client.BotClient --url https://abc.execute-api.eu-central-1.amazonaws.com --game-id XXXXXX --color w --poll-interval-ms 500"
 ```
 
+#### Engine benchmark
+
+`go3d.EngineBenchmark` (test scope) times what self-play calls on the rules engine:
+`possibleMoves`, `makeMove`, `score` and `isOver` on a mid-game and a late-game position, and a
+random playout from the start, per move. The positions come from random games with a fixed seed,
+and each measurement is warmed up for as long as it runs (2 s), so a run of sizes 5, 7 and 9 takes
+about 2 minutes.
+
+```bash
+sbt "Test/runMain go3d.EngineBenchmark 5 7 9"
+```
+
+`TestRulesAgainstReference` is the differential test of the rules: it plays seeded random games
+on sizes 3 and 5 through `Game` and through `ReferenceRules`, a plain implementation written from
+the rules, and compares the board, the captures, the legal moves, the reason each other point is
+illegal, the end of the game and the score after every move. A faster implementation of the rules
+has to pass it unchanged.
+
 #### Rules probe
 
 The rules probe (`src/test/scala/go3d/probe/`, story
