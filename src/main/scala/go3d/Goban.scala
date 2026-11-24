@@ -174,10 +174,10 @@ class Goban private (val size: Int, val stones: IArray[IArray[IArray[Color]]]) e
     */
   private lazy val groups: Groups = Groups.of(this)
 
-  /** A move is suicide when it leaves its own group without liberties and captures nothing. A point
-    * with an empty neighbour never is. Otherwise every neighbour is a stone, and the move is suicide
-    * if no own group next to it has a liberty besides this point and every opponent group next to
-    * it has one; a group next to the point has another liberty if it has two.
+  /** A move is suicide when it leaves its own group without liberties and captures nothing. A
+    * point with an empty neighbour never is. Otherwise every neighbour is a stone, and the move is
+    * suicide if no own group next to it has a liberty besides this point and every opponent group
+    * next to it has one; a group next to the point has another liberty if it has two.
     */
   private[go3d] def isSuicide(move: Move): Boolean =
     !hasEmptyNeighbor(move.position) && neighbors(move.position).forall(p =>
