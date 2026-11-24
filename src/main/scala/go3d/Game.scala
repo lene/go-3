@@ -103,7 +103,11 @@ class Game(
     if !isDifferentPlayer(color) || moves.length >= size * size * size then List()
     else if moves.isEmpty && color == White then List()
     else if moves.isEmpty && color == Black then goban.allPositions.toList
-    else goban.emptyPositions.toList.filter(isPossibleMove(_, color))
+    else
+      // one pass over the board for all points that need the liberties of their neighbours
+      lazy val groups = Groups.of(goban)
+      // a neighbouring group has a liberty besides the point if it has two
+      goban.emptyPositions.toList.filter(isPossibleMove(_, color, p => groups.liberties(p) > 1))
 
   def moveColor: Color = if moves.isEmpty then Black else !moves.last.color
 
@@ -158,9 +162,13 @@ class Game(
   /** The rules of [[checkValid]] for an empty point and the player to move, without building an
     * exception for each point that is rejected.
     */
-  private def isPossibleMove(emptyPos: Position, color: Color): Boolean =
+  private def isPossibleMove(
+      emptyPos: Position,
+      color: Color,
+      hasOtherLiberty: Position => Boolean
+  ): Boolean =
     val move = Move(emptyPos, color)
-    !goban.isSuicide(move) && !isKo(move)
+    !goban.isSuicide(move, hasOtherLiberty) && !isKo(move)
 
   private def isDifferentPlayer(color: Color): Boolean = moves.isEmpty || moves.last.color != color
 

@@ -161,13 +161,18 @@ class Goban private[go3d] (val size: Int, val stones: Array[Array[Array[Color]]]
 
   /** A move is suicide when it leaves its own group without liberties and captures nothing. */
   private[go3d] def isSuicide(move: Move): Boolean =
-    // a stone next to an empty point has a liberty: skip copying the board
-    if hasEmptyNeighbor(move.position) then false
-    else
-      val after = setStone(move)
-      !after.hasLiberties(move) && neighbors(move.position).forall(p =>
-        at(p) != !move.color || after.hasLiberties(Move(p, !move.color))
-      )
+    lazy val after = setStone(move)
+    isSuicide(move, p => after.hasLiberties(Move(p, at(p))))
+
+  /** [[isSuicide]] with `hasOtherLiberty`, whether the group of the stone at a point has a liberty
+    * besides the point of `move`; it is only asked for a point without an empty neighbour. Then
+    * every neighbour is a stone, and the move is suicide if no own group next to it has another
+    * liberty and every opponent group next to it has one.
+    */
+  private[go3d] def isSuicide(move: Move, hasOtherLiberty: Position => Boolean): Boolean =
+    !hasEmptyNeighbor(move.position) && neighbors(move.position).forall(p =>
+      if at(p) == move.color then !hasOtherLiberty(p) else hasOtherLiberty(p)
+    )
 
   private def calculateAreas(): Set[Area] =
     @tailrec
