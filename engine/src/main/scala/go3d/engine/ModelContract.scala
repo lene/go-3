@@ -8,7 +8,7 @@ import scala.util.{Failure, Success, Try}
   * differs does not fail, it plays legal but meaningless moves, so it is refused.
   */
 object ModelContract:
-  val Version: String = "1"
+  val Version: Int = 1
   val ScoringRule: String = "area"
   val KomiKey: String = "komi"
 
@@ -16,7 +16,7 @@ object ModelContract:
     */
   def expected(size: Int): Seq[(String, String)] =
     Seq(
-      "contract_version" -> Version,
+      "contract_version" -> Version.toString,
       "board_size" -> size.toString,
       "scoring_rule" -> ScoringRule,
       "input_planes" -> Encoding.InputPlanes.toString,

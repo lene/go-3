@@ -6,7 +6,7 @@ import go3d.Pass
 import go3d.client.{MoveEngine, MoveEngineError}
 
 import scala.annotation.tailrec
-import scala.util.{Failure, Success, Try}
+import scala.util.{Failure, Random, Success, Try}
 
 /** A PUCT tree search on the Scala `Game` with a fixed number of simulations per move.
   *
@@ -16,14 +16,59 @@ import scala.util.{Failure, Success, Try}
   * up. A simulation follows the child that maximises `Q + c · P · √N / (1 + n)`: `Q` is the mean
   * value of the child (0 while unvisited), `P` its prior, `n` its visits and `N` the visits of
   * the node, whose own evaluation counts as one. The move played is the most visited child of
-  * the root. There is no root noise, no temperature, no tree reuse and no batching.
+  * the root. There is no root noise and no temperature in play ([[move]]), only in self-play
+  * ([[selfPlayMove]]); there is no tree reuse and no batching.
   */
 final class Search(evaluator: Evaluator, simulations: Int, exploration: Double)
     extends MoveEngine:
 
   def move(game: Game): Try[Move | Pass] =
-    if game.isOver then Failure(MoveEngineError("the game is over, there is no move to choose"))
+    if game.isOver then Failure(gameOver)
     else newNode(game).flatMap(search(_, simulations)).map(mostVisited)
+
+  /** The move of self-play, with the root visit distribution as the policy to learn. Before the
+    * simulations, the root priors are mixed with Dirichlet noise ([[Search.NoiseWeight]],
+    * α = [[Search.NoiseConcentration]] / the number of legal actions), so that games differ. With
+    * `sample` the move is drawn from `random` in proportion to the root visits (temperature 1),
+    * else it is the most visited one. The search needs at least one simulation.
+    */
+  def selfPlayMove(game: Game, random: Random, sample: Boolean): Try[SelfPlayMove] =
+    if game.isOver then Failure(gameOver)
+    else
+      newNode(game).map(withNoise(_, random)).flatMap(search(_, simulations)).map { root =>
+        val move = if sample then sampled(root, random) else mostVisited(root)
+        SelfPlayMove(move, visitPolicy(root, game.size))
+      }
+
+  private def gameOver: MoveEngineError =
+    MoveEngineError("the game is over, there is no move to choose")
+
+  /** `root` with the priors of its edges mixed with a Dirichlet sample. */
+  private def withNoise(root: Node, random: Random): Node =
+    val count = root.edges.length
+    val noise = Dirichlet.sample(Search.NoiseConcentration / count, count, random)
+    val weight = Search.NoiseWeight
+    root.copy(edges = root.edges.zip(noise).map { (edge, eta) =>
+      edge.copy(prior = (1 - weight) * edge.prior + weight * eta)
+    })
+
+  /** The move of an edge of `root` drawn in proportion to the visits of the edges. */
+  private def sampled(root: Node, random: Random): Move | Pass =
+    @tailrec
+    def pick(index: Int, rest: Int): Move | Pass =
+      val edge = root.edges(index)
+      if rest < edge.visits || index == root.edges.length - 1 then edge.move
+      else pick(index + 1, rest - edge.visits)
+    val total = root.edges.map(_.visits).sum
+    if total == 0 then mostVisited(root) else pick(0, random.nextInt(total))
+
+  /** The share of the root visits of every action of a game of `size`: 0 for an illegal action,
+    * which has no edge.
+    */
+  private def visitPolicy(root: Node, size: Int): IndexedSeq[Double] =
+    val total = root.edges.map(_.visits).sum.toDouble
+    val visits = root.edges.map(edge => Encoding.action(edge.move, size) -> edge.visits).toMap
+    IndexedSeq.tabulate(Encoding.actionCount(size))(action => visits.getOrElse(action, 0) / total)
 
   /** The move of the most visited edge of `root`; a tie goes to the higher mean value. */
   private def mostVisited(root: Node): Move | Pass =
@@ -88,8 +133,19 @@ object Search:
   /** The exploration constant `c` of PUCT. */
   val Exploration: Double = 1.5
 
+  /** The weight ε of the Dirichlet noise in the root priors of self-play. */
+  val NoiseWeight: Double = 0.25
+
+  /** α times the number of legal actions for the Dirichlet noise of self-play: α = 10 / n. */
+  val NoiseConcentration: Double = 10.0
+
   def apply(evaluator: Evaluator, simulations: Int): Search =
     new Search(evaluator, simulations, Exploration)
+
+/** A move of self-play and the policy to learn there: the share of the root visits of each of the
+  * size³ + 1 actions, in the action order of [[Encoding]].
+  */
+final case class SelfPlayMove(move: Move | Pass, policy: IndexedSeq[Double])
 
 /** A position of the search tree. `value` is its evaluation for the player to move: the
   * network's, or the result of a game that is over. A node of a game that is over has no edges.

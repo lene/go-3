@@ -51,6 +51,8 @@ The sbt subproject `engine` (`engine/`, package `go3d.engine`) loads a generatio
 Runtime and searches with it; `BotClient` finds it through the `MoveEngine` hook of the root
 project (`client/MoveEngine.scala`, a `java.util.ServiceLoader` service), so root never depends
 on it and the Lambda jar stays free of ONNX Runtime.
+`SelfPlay` in the same subproject plays a generation against itself and writes the training
+records of [self-play-records.md](self-play-records.md).
 
 ### Server architecture (go3d.server package)
 

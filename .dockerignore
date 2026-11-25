@@ -1,4 +1,5 @@
-# The Python training project and the model store are not part of the server image; the
-# training venv alone is several GB.
+# The Python training project, the model store and the self-play records are not part of the
+# server image; the training venv alone is several GB.
 training/
 models/
+selfplay/

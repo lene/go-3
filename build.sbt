@@ -14,7 +14,7 @@ ThisBuild / scapegoatDisabledInspections := Seq("OptionGet")
 
 /** The settings of every project: version, compiler options, WartRemover and the test libraries. */
 lazy val commonSettings = Seq(
-    version := "0.7.54",
+    version := "0.7.55",
     scalaVersion := scala3Version,
 
     scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all"),
@@ -25,8 +25,8 @@ lazy val commonSettings = Seq(
     wartremoverWarnings ++= Warts.unsafe.filterNot(w =>
       w == Wart.IterableOps || w.toString.contains("IterableOps") || w == Wart.Throw
     ),
-    // Wart.Throw is a build error: only 4 library-interop throws remain (Scallop onError),
-    // each annotated with @SuppressWarnings(Array("org.wartremover.warts.Throw"))
+    // Wart.Throw is a build error: the few library-interop throws (Scallop onError) are each
+    // annotated with @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     wartremoverErrors += Wart.Throw,
 
     // JUnit
@@ -123,8 +123,9 @@ lazy val engine = project
   .settings(commonSettings)
   .settings(
     name := "go-3d-engine",
-    // the CPU build; the GPU build is for self-play
-    libraryDependencies += "com.microsoft.onnxruntime" % "onnxruntime" % "1.32.0",
+    // the GPU build (CUDA 13, cuDNN 9): self-play runs on CUDA when its provider loads, play and
+    // the tests on the CPU provider that the GPU build also has
+    libraryDependencies += "com.microsoft.onnxruntime" % "onnxruntime_gpu" % "1.32.0",
     // ONNX Runtime loads a native library, which a JVM can load only once: a forked test JVM
     // keeps it out of sbt's own JVM, so that tests can run again in the same sbt session
     Test / fork := true,

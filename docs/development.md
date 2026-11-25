@@ -176,7 +176,7 @@ code 2.
 ### Engine
 
 The sbt subproject `engine` (`engine/src/main/scala/go3d/engine/`) plays a model generation: it
-loads `<store>/<size>/<generation>/model.onnx` with ONNX Runtime (CPU build), refuses a model
+loads `<store>/<size>/<generation>/model.onnx` with ONNX Runtime, refuses a model
 whose contract (`contract_version`, `board_size`, `input_planes`, `actions`, `scoring_rule`) does
 not fit the engine and the game, and chooses each move with a PUCT tree search on `Game`. A game
 whose komi differs from the model's is played with a warning. The root project aggregates
@@ -203,6 +203,39 @@ with code 1. The engine tests use a fake evaluator for the search and a small co
 fixture, `engine/src/test/resources/models/5/0/model.onnx` (`export-generation --size 5
 --generation 0 --blocks 1 --channels 4`); `TestOnnxModel` pins its outputs as computed in
 Python.
+
+ONNX Runtime is the GPU build (`onnxruntime_gpu`, CUDA 13 and cuDNN 9), which has the CPU
+provider too: `BotClient` and the tests run on the CPU, self-play on CUDA when it can. The GPU
+jar is about 400 MB and has native libraries for linux-x64 and win-x64 only: unlike the CPU jar,
+not for macOS or linux-aarch64, so the engine does not run there.
+
+#### Self-play
+
+`SelfPlay` plays a generation against itself and writes one record per game for training, in
+the format of [self-play-records.md](self-play-records.md):
+
+```bash
+sbt "engine/runMain go3d.engine.SelfPlay --size 5 --generation 0 --games 4 --simulations 50"
+```
+
+The records go to `selfplay/5/0/<game id>.json` (`selfplay/` is git-ignored). Each game starts
+at the komi of the model. The search adds Dirichlet noise to the root priors (α = 10 / the
+number of legal actions, ε = 0.25); the first size³ / 8 moves (15 on size 5) are drawn in
+proportion to the root visits, the later ones are the most visited. At the end it prints the
+games and moves played, the time per simulation in the network (`Evaluator.evaluate`) and in
+the engine (the rest of the search and the rules), and Black's win rate. The times are summed
+over the games played at the same time, so with `--parallel` they are thread time, not wall
+time.
+
+Options: `--simulations N` (default 200 per move), `--seed N` (default 1), `--parallel N` games
+at the same time sharing one model (default 1), `--model-store DIR` (default `models`), `--out
+DIR` (default `selfplay`) and `--device cuda|cpu` (default `cuda`). Without a usable CUDA
+provider (no GPU, CUDA or cuDNN) `cuda` logs a warning and runs on the CPU; the report names the
+device used. ONNX Runtime loads its native libraries once per JVM, so run one `SelfPlay` per sbt
+invocation: a second `runMain` in the same sbt session cannot load the CUDA provider again and
+falls back to the CPU. The same seed and options give the same records with `--parallel 1` on
+the CPU. Options that are not valid (`--games 0`, a size other than 5, no `--generation`) write
+nothing and exit with code 2, a missing model with code 1.
 
 ### Docker
 ```bash
