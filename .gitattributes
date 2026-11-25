@@ -1,0 +1,2 @@
+# ONNX models, such as the engine test fixture, are binary
+*.onnx binary

@@ -37,6 +37,7 @@ abstract class Client extends ClientTrait with LazyLogging:
       case e: NumberFormatException => exit(s"not a number: ${e.getMessage}", 1)
       case e: IOException => exit(s"${e.getMessage}", 1)
       case _: BadColor => exit(s"not a color, must be either black/b/@ or white/w/O", 1)
+      case e: MoveEngineError => exit(e.getMessage, 1)
       case e: NoSuchElementException => exit(s"missing argument: --${e.getMessage}", 1)
       case e: IllegalArgumentException => exit(s"missing argument: ${e.getMessage}", 1)
       case e: Throwable =>

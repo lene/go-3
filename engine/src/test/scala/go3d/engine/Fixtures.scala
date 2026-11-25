@@ -1,0 +1,31 @@
+package go3d.engine
+
+import go3d.{Black, Game, Move, Pass, White}
+import org.scalatest.TryValues.*
+
+import java.nio.file.{Path, Paths}
+import scala.util.{Success, Try}
+
+/** The model store with the committed fixture: generation 0 of size 5, 1 block of 4 channels,
+  * made with `export-generation --size 5 --generation 0 --blocks 1 --channels 4`.
+  */
+def fixtureStore: Path = Paths.get(classOf[TestOnnxModel].getResource("/models").toURI)
+
+def fixtureModelPath: Path = OnnxModel.path(fixtureStore, 5, 0)
+
+/** The worked example of `docs/model-contract.md`: size 5, Black at (1,1,1), White at (3,3,3). */
+def workedExample: Game =
+  Game.start(5).flatMap(_.makeMove(Move(1, 1, 1, Black))).flatMap(
+    _.makeMove(Move(3, 3, 3, White))
+  ).success.value
+
+/** The game after `moves` from an empty board of `size` at `komi`. */
+def played(size: Int, komi: Double, moves: (Move | Pass)*): Game =
+  moves.foldLeft(Game.start(size, komi))((game, move) => game.flatMap(_.makeMove(move)))
+    .success.value
+
+/** Gives every action the logit of `logits`, 0 for the others, and the same value everywhere. */
+class FakeEvaluator(logits: Map[Int, Float], value: Double) extends Evaluator:
+  def evaluate(game: Game): Try[Evaluation] =
+    val actions = Encoding.actionCount(game.size)
+    Success(Evaluation(IndexedSeq.tabulate(actions)(logits.getOrElse(_, 0f)), value))

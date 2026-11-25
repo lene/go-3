@@ -47,6 +47,10 @@ Key domain types:
 
 The AlphaZero engine's network, trained in Python (`training/`), is exchanged with the JVM as
 ONNX; what it sees and answers is in [model-contract.md](model-contract.md).
+The sbt subproject `engine` (`engine/`, package `go3d.engine`) loads a generation with ONNX
+Runtime and searches with it; `BotClient` finds it through the `MoveEngine` hook of the root
+project (`client/MoveEngine.scala`, a `java.util.ServiceLoader` service), so root never depends
+on it and the Lambda jar stays free of ONNX Runtime.
 
 ### Server architecture (go3d.server package)
 

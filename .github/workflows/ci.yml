@@ -85,7 +85,7 @@ jobs:
         if: always()
         uses: mikepenz/action-junit-report@a16be3a69023e9bd7e748ede768b3282ea7b30ce # v6.7.1
         with:
-          report_paths: target/test-reports/**/TEST-*.xml
+          report_paths: '**/target/test-reports/**/TEST-*.xml'
 
   coverage:
     name: Check coverage
@@ -125,7 +125,8 @@ jobs:
           branch_rate_old=${branch_rate:-0}
           # suites share global state (e.g. Games), so run them serially for a stable measurement
           sbt "set Test / parallelExecution := false" clean coverage test || true
-          sbt coverageReport
+          # the report of each project, then root and engine together in root's report
+          sbt coverageReport coverageAggregate
           # least covered files with the most uncovered statements, to see where coverage is lost
           python3 ci/coverage_summary.py || true
           REPORT=$(head -n 2 target/scala-3.*.*/scoverage-report/scoverage.xml | tail -n 1 | xargs)
@@ -223,7 +224,7 @@ jobs:
       # scalafmt cannot wrap long string literals and comments, so check them directly
       - name: Check line length
         run: |
-          if grep -rnE '.{101,}' src --include='*.scala'; then
+          if grep -rnE '.{101,}' src engine/src --include='*.scala'; then
             echo "::error::lines longer than 100 characters"
             exit 1
           fi
