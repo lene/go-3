@@ -45,6 +45,9 @@ Key domain types:
 - `Color`: Black, White, Empty, or Sentinel (board boundary)
 - `Area`: A connected group of stones with the same color
 
+The AlphaZero engine's network, trained in Python (`training/`), is exchanged with the JVM as
+ONNX; what it sees and answers is in [model-contract.md](model-contract.md).
+
 ### Server architecture (go3d.server package)
 
 The server uses **http4s with Cats Effect** for async HTTP handling:

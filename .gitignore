@@ -55,3 +55,9 @@ _bmad-output/
 
 # graphify knowledge graph (local, regenerate with: /graphify)
 graphify-out/
+
+# Training (Python): model generations are stored outside git
+/models/
+training/.venv/
+__pycache__/
+.pytest_cache/

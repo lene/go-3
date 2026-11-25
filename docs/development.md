@@ -151,6 +151,28 @@ The flip rate is the share of games whose winner changes when the captures are a
 only says whether the rule fired: whether to keep area scoring or run the size-5 rules lab is the
 user's decision.
 
+### Training (Python)
+
+`training/` is a separate [uv](https://docs.astral.sh/uv/) project (Python 3.12, PyTorch, ONNX)
+for the AlphaZero engine; the Poetry project at the root is unrelated. It defines the board
+encoding, the action indexing and the policy-and-value network of
+[model-contract.md](model-contract.md), and exports a model generation to ONNX. Its tests run
+locally only, not in CI.
+
+```bash
+cd training
+uv sync                    # once: creates training/.venv
+uv run pytest              # all tests
+
+# Untrained generation 0 for size 5: writes ../models/5/0/model.onnx (models/ is git-ignored)
+uv run export-generation --size 5 --generation 0 --out ../models
+```
+
+Options: `--seed N` (default 0, the same seed gives the same network), `--blocks N` (default 6),
+`--channels N` (default 64). An even size, a size below 3 or above 25, a blocks or channels count
+below 1, or a generation other than 0 (there is no training yet) writes nothing and exits with
+code 2.
+
 ### Docker
 ```bash
 # Build Docker image
