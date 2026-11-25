@@ -2,6 +2,8 @@ package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
 import go3d.Game
+import go3d.Move
+import go3d.Pass
 import go3d.Position
 import go3d.server.StatusResponse
 import org.http4s.Status
@@ -26,6 +28,9 @@ class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val maxThinkingTimeMs = opt[Int](required = false, default = Some(0))
   val parallel = opt[Boolean](required = false, default = Some(false))
   val pollIntervalMs = opt[Int](required = false, default = Some(10))
+  val modelStore = opt[String](required = false, default = Some(BotClient.DefaultModelStore))
+  val simulations =
+    opt[Int](required = false, default = Some(BotClient.DefaultSimulations), validate = _ > 0)
   requireOne(size, gameId)
   mutuallyExclusive(url, server)
   mutuallyExclusive(url, port)
@@ -39,7 +44,13 @@ class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
     case other => throw other
   }
 
+/** Picks the next move from the current status: the position of a stone, or None to pass. */
+type MoveChoice = StatusResponse => Try[Option[Position]]
+
 object BotClient extends Client with LazyLogging:
+
+  val DefaultModelStore: String = "models"
+  val DefaultSimulations: Int = 800
 
   // set from --poll-interval-ms, like the other options kept in this object
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
@@ -49,6 +60,10 @@ object BotClient extends Client with LazyLogging:
   private[client] var strategies: Array[String] = Array()
   private var maxThinkingTimeMs: Int = 0
   private var parallel: Boolean = false
+  // set from --model-store and --simulations, like the other options kept in this object
+  @SuppressWarnings(Array("org.wartremover.warts.Var"))
+  private[client] var engineSettings: MoveEngineSettings =
+    MoveEngineSettings(DefaultModelStore, DefaultSimulations)
 
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --size ## --color [b|w]"
   /// sbt "runMain go3d.client.BotClient --server $SERVER --port #### --game-id XXXXXX
@@ -59,68 +74,108 @@ object BotClient extends Client with LazyLogging:
   /// --poll-interval-ms sets how often to poll while waiting for the opponent (default 10)
   /// --strategy is a comma-separated list of:
   ///   closestToCenter|closestToStarPoints|maximizeOwnLiberties|minimizeOpponentLiberties
+  /// or a move engine on its own, e.g. model:3 for generation 3 of the AlphaZero engine, which
+  /// needs the engine on the classpath: sbt "engine/runMain go3d.client.BotClient ..."
+  /// --model-store is the directory of the model generations (default models), --simulations
+  /// the search simulations per move (default 800)
 
+  /// A game that ends without an error exits with code 0, as one that ends on a move does.
+  override def main(args: Array[String]): Unit =
+    super.main(args)
+    exit(0)
+
+  /// The move choice is made once, from the first status, before waiting for the opponent, so
+  /// that a strategy that cannot play fails at once and a model is loaded only once.
   def mainLoop(client: BaseClient): Try[Unit] =
     val token = client.token.fold("")((str) => str)
     logger.info(s"server: ${client.serverURL} game: ${client.id} token: $token")
-    waitUntilReady(client).flatMap { status =>
-      val game = status.game
-      val strategy =
-        if strategies.nonEmpty then Some(SetStrategy(game.size, strategies, maxThinkingTimeMs))
-        else None
-      playMoves(client, Some(status), game, strategy)
-    }
+    for
+      status <- client.status
+      choice <- moveChoice(status.game)
+      ready <- pollFrom(client, status)
+      played <- playMoves(client, Some(ready), choice)
+    yield played
+
+  /// The move choice of the --strategy options for `game`: a move engine, or the heuristics.
+  private[client] def moveChoice(game: Game): Try[MoveChoice] =
+    strategies.find(MoveEngine.isEngineStrategy) match
+      case Some(strategy) if strategies.length == 1 =>
+        MoveEngine.create(strategy, engineSettings, game).map(engineChoice)
+      case Some(strategy) =>
+        Failure(MoveEngineError(s"$strategy cannot be combined with other strategies"))
+      case None =>
+        val strategy =
+          if strategies.nonEmpty then Some(SetStrategy(game.size, strategies, maxThinkingTimeMs))
+          else None
+        Success(heuristicChoice(strategy))
+
+  /// A random one of the server's possible moves that `strategy` keeps, or a pass if none is left.
+  private[client] def heuristicChoice(strategy: Option[SetStrategy]): MoveChoice =
+    status =>
+      strategy.fold[Try[Seq[Position]]](Success(status.moves))(
+        _.narrowDown(status.moves, status.game)
+      ).map(possible => if possible.nonEmpty then Some(randomMove(possible)) else None)
+
+  /// The move that `engine` chooses in the game of the status.
+  private[client] def engineChoice(engine: MoveEngine): MoveChoice =
+    status =>
+      engine.move(status.game).map {
+        case move: Move => Some(move.position)
+        case _: Pass => None
+      }
 
   /// Plays until the game is over. `readyStatus` is a status already known to be ready, so the
-  /// first move does not have to poll the server again.
+  /// first move does not have to poll the server again. Every move is chosen from the game of
+  /// the status that is ready, which has the opponent's last move.
   @tailrec
-  private def playMoves(
+  private[client] def playMoves(
       client: BaseClient,
       readyStatus: Option[StatusResponse],
-      game: Game,
-      strategy: Option[SetStrategy]
+      choice: MoveChoice
   ): Try[Unit] =
-    logger.info(s"Move: ${game.moves.length} ${executionTimeString}")
     val startTime = System.currentTimeMillis()
     val result = readyStatus.fold(waitUntilReady(client))(Success(_))
-      .flatMap(status => makeOneMove(client, status, game, strategy))
+      .flatMap { status =>
+        logger.info(s"Move: ${status.game.moves.length} ${executionTimeString}")
+        // a server may report a game that is over as ready, e.g. the Lambda's status
+        if status.over then Success(true) else makeOneMove(client, status, choice)
+      }
       .recoverWith {
-        case _: InterruptedException => exit(1); Success((true, game))
-        case e: RequestFailedException => checkFailedRequest(client, e).map(_ => (true, game))
+        case _: InterruptedException => exit(1); Success(true)
+        case e: RequestFailedException => checkFailedRequest(client, e, choice).map(_ => true)
       }
     executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
     result match
-      case Success((over, newGame)) =>
-        if !over then playMoves(client, None, newGame, strategy)
-        else Success(logger.info(s"${client.status.map(_.game).getOrElse(game)}"))
+      case Success(over) =>
+        if !over then playMoves(client, None, choice)
+        else Success(client.status.foreach(status => logger.info(s"${status.game}")))
       case Failure(e) => Failure(e)
 
-  private def checkFailedRequest(client: BaseClient, e: RequestFailedException): Try[Unit] =
+  private def checkFailedRequest(
+      client: BaseClient,
+      e: RequestFailedException,
+      choice: MoveChoice
+  ): Try[Unit] =
     logger.warn(e.message)
     if e.response.statusCode == Status.Gone.code then exit(0)
-    mainLoop(client)
+    playMoves(client, None, choice)
 
+  /// Sends the move that `choice` picks for `status`. A move that ends the game exits, so the
+  /// result is false: the game goes on.
   private[client] def makeOneMove(
       client: BaseClient,
       status: StatusResponse,
-      game: Game,
-      strategy: Option[SetStrategy]
-  ): Try[(Boolean, Game)] =
-    strategy.fold[Try[Seq[Position]]](Success(status.moves))(_.narrowDown(status.moves, game))
-      .flatMap { possible =>
-        val move =
-          if possible.nonEmpty then
-            val setPosition = randomMove(possible)
-            client.set(setPosition.x, setPosition.y, setPosition.z)
-          else client.pass
-        move.map { newStatus =>
-          if newStatus.over then
-            logger.info(s"Game over: ${newStatus.game}")
-            exit(0)
-          // a single pass does not end the game; keep playing until the opponent passes too
-          (false, newStatus.game)
-        }
+      choice: MoveChoice
+  ): Try[Boolean] =
+    choice(status).flatMap { position =>
+      position.fold(client.pass)(p => client.set(p.x, p.y, p.z)).map { newStatus =>
+        if newStatus.over then
+          logger.info(s"Game over: ${newStatus.game}")
+          exit(0)
+        // a single pass does not end the game; keep playing until the opponent passes too
+        false
       }
+    }
 
   private def randomMove(possible: Seq[Position]): Position =
     possible(random.nextInt(possible.length))
@@ -138,6 +193,7 @@ object BotClient extends Client with LazyLogging:
       maxThinkingTimeMs = conf.maxThinkingTimeMs()
       parallel = conf.parallel()
       pollIntervalMs = conf.pollIntervalMs()
+      engineSettings = MoveEngineSettings(conf.modelStore(), conf.simulations())
       Client.serverUrl(conf.url.toOption, conf.server.toOption, conf.port.toOption)
         .flatMap(connect(conf, _))
     }
@@ -158,7 +214,11 @@ object BotClient extends Client with LazyLogging:
     else Failure(RuntimeException("Must provide either size or gameId"))
 
   def waitUntilReady(client: BaseClient): Try[StatusResponse] =
-    client.status.flatMap(pollUntilReady(client, _, pollIntervalMs, exitIfOver))
+    client.status.flatMap(pollFrom(client, _))
+
+  /// Polls from `status` until the game is ready for `client`, exiting if it is over meanwhile.
+  private def pollFrom(client: BaseClient, status: StatusResponse): Try[StatusResponse] =
+    pollUntilReady(client, status, pollIntervalMs, exitIfOver)
 
   private def exitIfOver(status: StatusResponse): Unit =
     if status.over then

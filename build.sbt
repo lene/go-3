@@ -12,13 +12,9 @@ ThisBuild / scapegoatVersion := "3.4.1"
 // Disabled here because sbt-scapegoat's own source (Literals.scala) triggers a false positive.
 ThisBuild / scapegoatDisabledInspections := Seq("OptionGet")
 
-lazy val root = project
-  .in(file("."))
-  .enablePlugins(JavaAppPackaging)
-  .settings(
-    name := "go-3d",
-    version := "0.7.53",
-    maintainer := "lene.preuss@gmail.com",
+/** The settings of every project: version, compiler options, WartRemover and the test libraries. */
+lazy val commonSettings = Seq(
+    version := "0.7.54",
     scalaVersion := scala3Version,
 
     scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all"),
@@ -33,11 +29,6 @@ lazy val root = project
     // each annotated with @SuppressWarnings(Array("org.wartremover.warts.Throw"))
     wartremoverErrors += Wart.Throw,
 
-    // Parallel collections
-    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.3.0",
-    // Logging
-    libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
-    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.6.8",
     // JUnit
     libraryDependencies ++= Seq(
           "com.github.sbt.junit" % "jupiter-interface" % JupiterKeys.jupiterVersion.value % Test
@@ -45,6 +36,26 @@ lazy val root = project
     // ScalaTest
     libraryDependencies += "org.scalatest" %% "scalatest" % "3.2.20" % "test",
     Test / logBuffered := false,
+)
+
+lazy val root = project
+  .in(file("."))
+  .enablePlugins(JavaAppPackaging)
+  // test, compile and the format check cover the engine; the Lambda jar and the server package
+  // are built from root alone, so the inference library stays out of them
+  .aggregate(LocalProject("engine"))
+  .settings(commonSettings)
+  .settings(
+    name := "go-3d",
+    maintainer := "lene.preuss@gmail.com",
+    assembly / aggregate := false,
+    Universal / packageBin / aggregate := false,
+
+    // Parallel collections
+    libraryDependencies += "org.scala-lang.modules" %% "scala-parallel-collections" % "1.3.0",
+    // Logging
+    libraryDependencies += "com.typesafe.scala-logging" %% "scala-logging" % "3.9.6",
+    libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.6.8",
     // Rendering-only classes need an OpenGL context and cannot run in unit tests; keep testable
     // logic out of them (e.g. in ReplayState) so that it is measured.
     // Scala 3 matches these patterns against the source path with ".scala" removed.
@@ -100,4 +111,22 @@ lazy val root = project
         "com.badlogicgames.gdx" % "gdx-platform" % libgdxVersion classifier "natives-desktop",
     )
 
+  )
+
+/** The AlphaZero engine: loads a model generation with ONNX Runtime and searches with it. The
+  * root project never depends on it, so ONNX Runtime and its native libraries stay out of the
+  * Lambda jar.
+  */
+lazy val engine = project
+  .in(file("engine"))
+  .dependsOn(root)
+  .settings(commonSettings)
+  .settings(
+    name := "go-3d-engine",
+    // the CPU build; the GPU build is for self-play
+    libraryDependencies += "com.microsoft.onnxruntime" % "onnxruntime" % "1.32.0",
+    // ONNX Runtime loads a native library, which a JVM can load only once: a forked test JVM
+    // keeps it out of sbt's own JVM, so that tests can run again in the same sbt session
+    Test / fork := true,
+    Test / javaOptions += "--enable-native-access=ALL-UNNAMED",
   )

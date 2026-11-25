@@ -173,6 +173,37 @@ Options: `--seed N` (default 0, the same seed gives the same network), `--blocks
 below 1, or a generation other than 0 (there is no training yet) writes nothing and exits with
 code 2.
 
+### Engine
+
+The sbt subproject `engine` (`engine/src/main/scala/go3d/engine/`) plays a model generation: it
+loads `<store>/<size>/<generation>/model.onnx` with ONNX Runtime (CPU build), refuses a model
+whose contract (`contract_version`, `board_size`, `input_planes`, `actions`, `scoring_rule`) does
+not fit the engine and the game, and chooses each move with a PUCT tree search on `Game`. A game
+whose komi differs from the model's is played with a warning. The root project aggregates
+`engine` for `compile`, `test` and the format check, but never depends on it: `sbt assembly` (the
+Lambda jar) and `Universal / packageBin` are built from root alone, without ONNX Runtime.
+
+`BotClient` plays a model with `--strategy model:<generation>` when it runs from the engine's
+classpath; run from root, that strategy fails with a message. The model is chosen by the size of
+the game:
+
+```bash
+# Generation 0 of size 5 (see Training above), against a heuristic bot
+cd training; uv run export-generation --size 5 --generation 0 --out ../models; cd ..
+sbt "engine/runMain go3d.client.BotClient --server localhost --port 6030 --size 5 --color b --strategy model:0 --simulations 100"
+sbt "runMain go3d.client.BotClient --server localhost --port 6030 --game-id XXXXX --color w --strategy closestToCenter"
+```
+
+Options: `--model-store DIR` (default `models`, relative to the directory sbt runs in) and
+`--simulations N` (default 800 per move; a size-5 game then takes several minutes, 100 is
+enough to check that a model plays). `--max-thinking-time-ms` and `--parallel` apply to the
+heuristics only and are ignored for `model:`. A missing model, a model for another size or
+another contract, and a strategy that combines `model:` with heuristics play nothing and exit
+with code 1. The engine tests use a fake evaluator for the search and a small committed
+fixture, `engine/src/test/resources/models/5/0/model.onnx` (`export-generation --size 5
+--generation 0 --blocks 1 --channels 4`); `TestOnnxModel` pins its outputs as computed in
+Python.
+
 ### Docker
 ```bash
 # Build Docker image
@@ -190,10 +221,11 @@ docker run --net=host --env PORT=6030 --env SAVE_DIR=saves -t ghcr.io/lene/go-3/
 - `release.yml`: after CI passes on master, creates the tag and GitHub release for a new version
 - `mirror-to-gitlab.yml`: replicates branches and tags to GitLab
 
-The `Check coverage` job compares statement coverage against the last successful master run and
-fails if it drops by more than 0.1 percentage points (`COVERAGE_TOLERANCE` in `ci.yml`). It runs
-the test suites serially because they share global state, and prints the files with the most
-uncovered statements (`ci/coverage_summary.py`).
+The `Check coverage` job compares statement coverage of root and `engine` together
+(`coverageAggregate`) against the last successful master run and fails if it drops by more than
+0.1 percentage points (`COVERAGE_TOLERANCE` in `ci.yml`). It runs the test suites serially
+because they share global state, and prints the files with the most uncovered statements
+(`ci/coverage_summary.py`).
 
 Rendering-only classes in `go3d.client.gdx` (`GobanDisplay`, `GeometryBuilder`,
 `Go3DInputController`, `GDXResources`, `ParticleMarker`) need an OpenGL context, so they are
