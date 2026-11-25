@@ -58,6 +58,7 @@ graphify-out/
 
 # Training (Python): model generations are stored outside git
 /models/
+/selfplay/
 training/.venv/
 __pycache__/
 .pytest_cache/

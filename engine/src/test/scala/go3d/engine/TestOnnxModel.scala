@@ -23,6 +23,11 @@ class TestOnnxModel:
       Assertions.assertEquals(5, model.size)
     }
 
+  @Test def testModelOnTheCpuSaysSo(): Unit =
+    Using.resource(OnnxModel.load(fixtureModelPath, 5, Device.Cpu).success.value) { model =>
+      Assertions.assertEquals(Device.Cpu, model.device)
+    }
+
   @Test def testInferenceOnAnEmptyBoard(): Unit =
     Using.resource(OnnxModel.load(fixtureModelPath, 5).success.value) { model =>
       val evaluation = model.evaluate(Game.start(5).success.value).success.value

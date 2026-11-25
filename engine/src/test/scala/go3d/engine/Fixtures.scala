@@ -24,6 +24,12 @@ def played(size: Int, komi: Double, moves: (Move | Pass)*): Game =
   moves.foldLeft(Game.start(size, komi))((game, move) => game.flatMap(_.makeMove(move)))
     .success.value
 
+/** The actions of the moves that the player to move in `game` may make, the pass included. */
+def legalActions(game: Game): Set[Int] =
+  val color = game.moveColor
+  val moves: List[Move | Pass] = game.possibleMoves(color).map(Move(_, color)) :+ Pass(color)
+  moves.map(Encoding.action(_, game.size)).toSet
+
 /** Gives every action the logit of `logits`, 0 for the others, and the same value everywhere. */
 class FakeEvaluator(logits: Map[Int, Float], value: Double) extends Evaluator:
   def evaluate(game: Game): Try[Evaluation] =
