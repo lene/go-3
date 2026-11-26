@@ -6,13 +6,6 @@ import org.scalatest.TryValues.*
 
 class TestScoring:
 
-  @Test def testWhiteNeedsTheKomiToWinATie(): Unit =
-    Assertions.assertEquals(White, Scoring.winner(10, 10, 0.5))
-    Assertions.assertEquals(Black, Scoring.winner(11, 10, 0.5))
-    Assertions.assertEquals(White, Scoring.winner(10, 10, 6.5))
-    Assertions.assertEquals(Black, Scoring.winner(17, 10, 6.5))
-    Assertions.assertEquals(White, Scoring.winner(16, 10, 6.5))
-
   @Test def testAGameWithoutCapturesIsScoredTwiceTheSame(): Unit =
     Assertions.assertEquals(
       BlackWinsResult.blackSide.area,

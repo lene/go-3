@@ -10,11 +10,11 @@ class TestLiberties:
     goban = goban.setStone(Move(2, 2, 2, Black))
     Assertions.assertThrows(
       classOf[RuntimeException],
-      () => goban.hasLiberties(Move(2, 2, 2, Empty))
+      () => goban.groupHasLiberties(Move(2, 2, 2, Empty))
     )
     Assertions.assertThrows(
       classOf[RuntimeException],
-      () => goban.hasLiberties(Move(2, 2, 2, Sentinel))
+      () => goban.groupHasLiberties(Move(2, 2, 2, Sentinel))
     )
 
   @Test def testLibertiesOneStone(): Unit =
@@ -36,7 +36,7 @@ class TestLiberties:
       Move(2, 2, 2, Black)
     ).setStone(3, 2, 2, White)
     Assertions.assertFalse(
-      surrounded.hasLiberties(Move(2, 2, 2, Black)),
+      surrounded.groupHasLiberties(Move(2, 2, 2, Black)),
       "\n" + surrounded.toString
     )
 
@@ -50,7 +50,7 @@ class TestLiberties:
       Move(2, 2, 1, Black)
     ).setStone(3, 2, 1, White)
     Assertions.assertFalse(
-      surrounded.hasLiberties(Move(2, 2, 1, Black)),
+      surrounded.groupHasLiberties(Move(2, 2, 1, Black)),
       "\n" + surrounded.toString
     )
 
@@ -64,7 +64,7 @@ class TestLiberties:
       Move(2, 1, 1, Black)
     ).setStone(2, 1, 2, White)
     Assertions.assertFalse(
-      surrounded.hasLiberties(Move(2, 1, 1, Black)),
+      surrounded.groupHasLiberties(Move(2, 1, 1, Black)),
       "\n" + surrounded.toString
     )
 
@@ -78,7 +78,7 @@ class TestLiberties:
       Move(1, 1, 1, Black)
     ).setStone(1, 1, 2, White)
     Assertions.assertFalse(
-      surrounded.hasLiberties(Move(1, 1, 1, Black)),
+      surrounded.groupHasLiberties(Move(1, 1, 1, Black)),
       "\n" + surrounded.toString
     )
 
@@ -129,7 +129,7 @@ class TestLiberties:
         (2, 1, 3) :: (1, 2, 3) :: Nil,
       White
     )
-    Assertions.assertTrue(goban.hasLiberties(Move(2, 1, 1, Black)))
+    Assertions.assertTrue(goban.groupHasLiberties(Move(2, 1, 1, Black)))
     checkNoLiberties(
       goban.setStone(1, 1, 1, White),
       Move(2, 1, 1, Black) :: Move(1, 2, 1, Black) :: Move(1, 1, 2, Black) ::
@@ -149,12 +149,12 @@ def setStonesCheckingLiberties(
 ): Goban =
   positions.foldLeft(goban) { (board, pos) =>
     val next = board.setStone(pos(0), pos(1), pos(2), color)
-    Assertions.assertTrue(next.hasLiberties(toCheck), next.toString)
+    Assertions.assertTrue(next.groupHasLiberties(toCheck), next.toString)
     next
   }
 
 def checkHasLiberties(goban: Goban, stones: List[Move], message: String = ""): Unit =
-  for stone <- stones do Assertions.assertTrue(goban.hasLiberties(stone), message)
+  for stone <- stones do Assertions.assertTrue(goban.groupHasLiberties(stone), message)
 
 def checkNoLiberties(goban: Goban, stones: List[Move], message: String = ""): Unit =
-  for stone <- stones do Assertions.assertFalse(goban.hasLiberties(stone), message)
+  for stone <- stones do Assertions.assertFalse(goban.groupHasLiberties(stone), message)
