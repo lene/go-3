@@ -2,14 +2,13 @@ package go3d.server.http4s
 
 import go3d.server.{
   GameCreatedResponse, OpenGame, OpenGamesResponse, Players, RateLimiter, decodeOpenGamesResponse,
-  IdGenerator, PlayerRegisteredResponse, StatusResponse, decodeGameCreatedResponse,
-  decodePlayerRegisteredResponse, decodeStatusResponse
+  IdGenerator, PlayerRegisteredResponse, StatusAssertions, StatusResponse,
+  decodeGameCreatedResponse, decodePlayerRegisteredResponse, decodeStatusResponse
 }
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import com.typesafe.scalalogging.LazyLogging
-import go3d.{BadKomiTexts, Black, Color, Move, Pass, White}
-import go3d.server.service.{GamePositions, StatusAssertions}
+import go3d.{BadKomiTexts, Black, Color, GamePositions, Move, Pass, White}
 import io.circe.Json
 import io.circe.parser.{decode, parse}
 import org.http4s.implicits.uri
@@ -355,6 +354,15 @@ class TestGoHttpService extends LazyLogging:
   @Test def testNewGameWithBadSizeAndKomiReturns400(): Unit =
     Assertions.assertEquals(Status.BadRequest, newGame(4, "?komi=7").status)
     Assertions.assertEquals(Status.BadRequest, newGame(27, "?komi=6.5").status)
+
+  @Test def testNewGameWithBadSizeAndBadKomiReportsTheSize(): Unit =
+    for size <- List(1, 4, 27) do
+      val response = newGame(size, "?komi=7")
+      Assertions.assertEquals(Status.BadRequest, response.status, size.toString)
+      // the body of a BadBoardSize is its message alone, as a JSON string
+      val body = response.as[String].unsafeRunSync()
+      Assertions.assertTrue(body.contains(s"$size is "), body)
+      Assertions.assertFalse(body.contains("BadKomi"), body)
 
   @Test def testKomiSurvivesMovesAndReplay(): Unit =
     val gameId = createdGameId(3, "?komi=6.5")

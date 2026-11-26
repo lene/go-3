@@ -3,15 +3,15 @@ package go3d.server.lambda
 import com.amazonaws.services.lambda.runtime.events.{
   APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent
 }
-import go3d.{BadKomiTexts, Black, Color, White}
+import go3d.{BadKomiTexts, Black, Color, GamePositions, White}
 import go3d.server.{
-  GameCreatedResponse, OpenGame, OpenGamesResponse, PlayerRegisteredResponse, StatusResponse,
-  decodeGameCreatedResponse, decodeOpenGamesResponse, decodePlayerRegisteredResponse,
-  decodeStatusResponse
+  GameCreatedResponse, OpenGame, OpenGamesResponse, PlayerRegisteredResponse, StatusAssertions,
+  StatusResponse, decodeGameCreatedResponse, decodeOpenGamesResponse,
+  decodePlayerRegisteredResponse, decodeStatusResponse
 }
 import go3d.server.service.{
-  FailingGameStore, FailingReadStore, GamePositions, GameService, InMemoryGameArchive,
-  InMemoryGameStore, InterleavingStore, LogCapture, StatusAssertions
+  FailingGameStore, FailingReadStore, GameService, InMemoryGameArchive, InMemoryGameStore,
+  InterleavingStore, LogCapture
 }
 import io.circe.{DecodingFailure, Json}
 import io.circe.parser.{decode, parse}
@@ -326,6 +326,34 @@ class TestLambdaHandler:
   @Test def testNewGameWithBadSizeAndKomiReturns400(): Unit =
     val resp = storeHandler.handleRequest(withKomiValues("/new/4", List("7")), null)
     Assertions.assertEquals(400, resp.getStatusCode)
+
+  @Test def testNewGameWithBadSizeAndBadKomiReportsTheSize(): Unit =
+    for path <- List("/new/1", "/new/4", "/new/27") do
+      val resp = storeHandler.handleRequest(withKomiValues(path, List("7")), null)
+      Assertions.assertEquals(400, resp.getStatusCode, path)
+      Assertions.assertTrue(resp.getBody.contains("BadBoardSize"), resp.getBody)
+
+  private def withSingleKomi(path: String, komi: String): APIGatewayProxyRequestEvent =
+    request(path).withQueryStringParameters(Map("komi" -> komi).asJava)
+
+  @Test def testKomiIsReadFromSingleValueQueryWithoutMultiValueQuery(): Unit =
+    val resp = storeHandler.handleRequest(withSingleKomi(NewGamePath, "6.5"), null)
+    Assertions.assertEquals(200, resp.getStatusCode, resp.getBody)
+    val gameId = decode[GameCreatedResponse](resp.getBody).toTry.success.value.id
+    Assertions.assertEquals(6.5, statusOfGame(gameId).game.komi)
+
+  @Test def testBadKomiInSingleValueQueryReturns400(): Unit =
+    // payload format 2.0 joins the values of a repeated parameter with commas
+    for komi <- List("7", "", "6.5,7.5") do
+      val resp = storeHandler.handleRequest(withSingleKomi(NewGamePath, komi), null)
+      Assertions.assertEquals(400, resp.getStatusCode, "[" + komi + "]")
+      Assertions.assertTrue(resp.getBody.contains("BadKomi"), resp.getBody)
+
+  @Test def testMultiValueQueryIsReadBeforeSingleValueQuery(): Unit =
+    // payload format 1.0 keeps only the last value of a repeated parameter in the single map
+    val event = withKomiValues(NewGamePath, List("6.5", "7.5"))
+      .withQueryStringParameters(Map("komi" -> "7.5").asJava)
+    Assertions.assertEquals(400, storeHandler.handleRequest(event, null).getStatusCode)
 
   @Test def testKomiSurvivesMovesAndReplay(): Unit =
     val (gameId, black, white) = startedGameWithKomi("6.5")

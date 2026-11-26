@@ -7,11 +7,17 @@ import scala.collection.mutable
 import scala.util.{Failure, Success, Try}
 
 object Goban:
-  def start(size: Int): Try[Goban] =
+  /** `size` if a board can have it: odd and from [[MinBoardSize]] to [[MaxBoardSize]]; else a
+    * [[BadBoardSize]] failure.
+    */
+  def checkSize(size: Int): Try[Int] =
     if size < MinBoardSize then Failure(BadBoardSize(size, "too small"))
     else if size > MaxBoardSize then Failure(BadBoardSize(size, "too big"))
     else if size % 2 == 0 then Failure(BadBoardSize(size, "even"))
-    else Success(new Goban(size, board(size, (_, _, _) => Empty)))
+    else Success(size)
+
+  def start(size: Int): Try[Goban] =
+    checkSize(size).map(valid => new Goban(valid, board(valid, (_, _, _) => Empty)))
 
   /** A board of `size` with the colour of `stoneAt` on each point from 1 to `size`; fails for an
     * invalid size or if `stoneAt` throws.

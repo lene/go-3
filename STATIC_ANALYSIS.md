@@ -51,12 +51,12 @@ DisableSyntax.noIsInstanceOf = true
 
 Measured by the `Check warnings` job in `.github/workflows/ci.yml`, which compiles main and test
 sources and fails when the total goes up (see `ci/warning_summary.sh`).
-Total: **79** compiler warnings (41 main, 38 test), down from 699 before issue #143 and from 418
+Total: **78** compiler warnings (41 main, 37 test), down from 699 before issue #143 and from 418
 before the November 2026 cleanup.
 
 | Warning | main | test | Note |
 |---------|------|------|------|
-| wartremover:Var | 26 | 26 | GUI/libGDX state, lazily initialised AWS clients, CLI option state, JUnit lifecycle |
+| wartremover:Var | 26 | 25 | GUI/libGDX state, lazily initialised AWS clients, CLI option state, JUnit lifecycle |
 | wartremover:DefaultArguments | 13 | 6 | idiomatic Scala, replacing them with overloads adds code for no gain |
 | wartremover:Any | 2 | 6 | macro literals (`uri"..."`, `ipv4"..."`) and `f"..."` with format specifiers: not fixable |
 

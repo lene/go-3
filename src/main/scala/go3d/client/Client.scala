@@ -4,6 +4,7 @@ import com.typesafe.scalalogging.LazyLogging
 import go3d.BadColor
 import go3d.Color
 import go3d.server.StatusResponse
+import org.rogach.scallop.exceptions.ValidationFailure
 
 import java.io.IOException
 import java.net.URI
@@ -31,18 +32,7 @@ abstract class Client extends ClientTrait with LazyLogging:
     parseArgs(args).flatMap { client =>
       init()
       mainLoop(client)
-    }.recover {
-      case e: UnknownHostException => exit(s"unknown host: ${e.getMessage}", 1)
-      case e: ConnectException => exit(s"connection problem: ${e.getMessage}", 1)
-      case e: NumberFormatException => exit(s"not a number: ${e.getMessage}", 1)
-      case e: IOException => exit(s"${e.getMessage}", 1)
-      case _: BadColor => exit(s"not a color, must be either black/b/@ or white/w/O", 1)
-      case e: MoveEngineError => exit(e.getMessage, 1)
-      case e: NoSuchElementException => exit(s"missing argument: --${e.getMessage}", 1)
-      case e: IllegalArgumentException => exit(s"missing argument: ${e.getMessage}", 1)
-      case e: Throwable =>
-        exit(s"unexpected error: ${e.getMessage} ${e.getStackTrace.mkString("\n")}", 1)
-    }
+    }.recover { case e => exit(Client.failureMessage(e), 1) }
 
   def init(): Unit = {}
 
@@ -72,6 +62,23 @@ abstract class Client extends ClientTrait with LazyLogging:
   def exit(status: Int): Unit = exit("", status)
 
 object Client:
+  /** The message a client exits with when it fails with `e`: one line, except for an unexpected
+    * error, which comes with its stack trace.
+    */
+  def failureMessage(e: Throwable): String =
+    e match
+      case e: UnknownHostException => s"unknown host: ${e.getMessage}"
+      case e: ConnectException => s"connection problem: ${e.getMessage}"
+      case e: NumberFormatException => s"not a number: ${e.getMessage}"
+      case e: IOException => s"${e.getMessage}"
+      case _: BadColor => "not a color, must be either black/b/@ or white/w/O"
+      case e: MoveEngineError => e.getMessage
+      // a malformed --game-id, or options that do not go together
+      case e: ValidationFailure => e.getMessage
+      case e: NoSuchElementException => s"missing argument: --${e.getMessage}"
+      case e: IllegalArgumentException => s"missing argument: ${e.getMessage}"
+      case e => s"unexpected error: ${e.getMessage} ${e.getStackTrace.mkString("\n")}"
+
   /** The server's base URL: `url` when given, which must be an absolute http or https URL and is
     * returned without a trailing slash; otherwise `http://server:port`. Without `url`, a missing
     * server or port fails with a NoSuchElementException naming the option.

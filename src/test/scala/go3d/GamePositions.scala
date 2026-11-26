@@ -1,4 +1,4 @@
-package go3d.server.service
+package go3d
 
 /** Move sequences, black first and alternating, after which one more move is illegal. */
 object GamePositions:
@@ -39,6 +39,12 @@ object GamePositions:
     (2, 2, 1),
     (2, 2, 2)
   )
+
+  /** The moves to `positions`, black first and alternating. */
+  def moves(positions: List[Position]): List[Move] =
+    positions.zipWithIndex.map { case ((x, y, z), i) =>
+      Move(x, y, z, if i % 2 == 0 then Black else White)
+    }
 
   /** The positions with the token of the player who makes each move. */
   def withTokens(

@@ -36,6 +36,9 @@ object SideScore:
       game.captures(color)
     )
 
+/** One game to play: game number `game` of `black` against `white` on a board of `size`. */
+final case class Task(size: Int, black: String, white: String, game: Int)
+
 /** One played game: who played, how long it lasted and how it ended, and both scores. `record` is
   * the id of the saved game record, for the games that have one.
   */
@@ -68,20 +71,14 @@ final case class GameResult(
   def flips(komi: Double): Boolean = winnerByArea(komi) != winnerByAreaWithCaptures(komi)
 
 object GameResult:
-  def of(
-      size: Int,
-      black: String,
-      white: String,
-      number: Int,
-      game: Game,
-      record: Option[String]
-  ): GameResult =
+  /** The result of `game`, played for `task`. */
+  def of(task: Task, game: Game, record: Option[String]): GameResult =
     val scores = game.score
     GameResult(
-      size,
-      black,
-      white,
-      number,
+      task.size,
+      task.black,
+      task.white,
+      task.game,
       game.moves.length,
       Ending.of(game),
       SideScore.of(game, scores, Black),

@@ -1,6 +1,7 @@
 package go3d.client
 
 import com.typesafe.scalalogging.LazyLogging
+import go3d.server.IdGenerator
 import go3d.server.StatusResponse
 import org.rogach.scallop._
 import org.rogach.scallop.exceptions.RequiredOptionNotFound
@@ -11,7 +12,7 @@ import scala.util.{Failure, Success, Try}
 class ClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val size = opt[Int](required = false)
   val color = opt[String](required = false)
-  val gameId = opt[String](required = false)
+  val gameId = opt[String](required = false, validate = IdGenerator.isValidId)
   val token = opt[String](required = false)
   val url = opt[String](required = false)
   val server = opt[String](required = false)

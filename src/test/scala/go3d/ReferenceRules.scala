@@ -59,7 +59,8 @@ final case class ReferenceRules(
       color -> (stones.count(_._2 == color) + territory.filter(_._1 == color).map(_._2).sum)
     }.toMap
 
-  def points: Seq[Position] =
+  /** Every point of the board, computed once for each state that needs it. */
+  lazy val points: Seq[Position] =
     for x <- 1 to size; y <- 1 to size; z <- 1 to size yield Position(x, y, z)
 
   private def emptyRegions: List[Set[Position]] =

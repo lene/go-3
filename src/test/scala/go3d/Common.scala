@@ -2,6 +2,7 @@ package go3d
 
 import org.junit.jupiter.api.Assertions
 
+import java.nio.file.{Files, Path}
 import scala.reflect.ClassTag
 import org.scalatest.TryValues.*
 
@@ -155,3 +156,15 @@ def fromStrings(levels: Map[Int, String]): Goban =
 
 def fromGoban(goban: Goban): Game =
   Game(goban.size, goban, Array(), Map(), Komi.Default)
+
+/** The test resources, found on the class path so that a suite does not depend on the working
+  * directory it runs in.
+  */
+object TestResources:
+  /** The path of the resource `name`, relative to the resource root, e.g. `data/rYcmnR.json`. */
+  def path(name: String): Path =
+    Option(getClass.getResource("/" + name))
+      .fold(Assertions.fail[Path](s"no test resource $name"))(url => Path.of(url.toURI))
+
+  /** The text of the resource `name`. */
+  def text(name: String): String = Files.readString(path(name))

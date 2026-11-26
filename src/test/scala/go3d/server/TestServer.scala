@@ -12,7 +12,6 @@ import scala.util.{Failure, Random, Success, Try}
 
 import go3d._
 import go3d.server.http4s.GoHttpService
-import go3d.server.service.{GamePositions, StatusAssertions}
 import org.scalatest.TryValues.*
 import org.scalatest.OptionValues.*
 

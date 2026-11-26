@@ -63,7 +63,7 @@ object Report:
         "the threshold at any of the sizes played. The flip rate is the share of games whose " +
         "winner at komi 0.5 differs between area scoring and area scoring plus captures."
     val rows = metrics.map { m =>
-      val reached = if m.flips.atLeastPercent(StopRule.FlipRatePercent) then "yes" else "no"
+      val reached = if outcome.reached.getOrElse(m.size, false) then "yes" else "no"
       s"| ${m.size} | ${percent(m.flips)} | $reached |"
     }
     val firingSizes = outcome.firingSizes.mkString(", ")

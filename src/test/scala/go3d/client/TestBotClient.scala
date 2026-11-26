@@ -97,7 +97,7 @@ class TestBotClient:
       SizeOpt,
       "3",
       GameIdOpt,
-      "1"
+      ValidGameId
     )
 
   @Test def testStrategyIsParsed(): Unit =
@@ -107,7 +107,7 @@ class TestBotClient:
       PortOpt,
       ClientTestPort.toString,
       GameIdOpt,
-      "",
+      ValidGameId,
       TokenOpt,
       "",
       "--strategy",
@@ -122,7 +122,7 @@ class TestBotClient:
       PortOpt,
       ClientTestPort.toString,
       GameIdOpt,
-      "",
+      ValidGameId,
       TokenOpt,
       "",
       "--strategy",
@@ -137,7 +137,7 @@ class TestBotClient:
       UrlOpt,
       "https://api.example.com/",
       GameIdOpt,
-      "",
+      ValidGameId,
       TokenOpt,
       ""
     ))
@@ -152,10 +152,23 @@ class TestBotClient:
       ServerOpt,
       "localhost",
       GameIdOpt,
-      "",
+      ValidGameId,
       TokenOpt,
       ""
     )
+
+  @Test def testMalformedGameIdFailsBeforeAnyRequest(): Unit =
+    for id <- List("<id>", "", "ABCDE", "ABCDEFG", "ABC-EF") do
+      assertParseFails(
+        classOf[ValidationFailure],
+        BotClient.parseArgs,
+        UrlOpt,
+        "https://api.example.com",
+        GameIdOpt,
+        id,
+        TokenOpt,
+        "token"
+      )
 
   @Test def testPollIntervalIsParsed(): Unit =
     BotClient.parseArgs(Array(
@@ -164,7 +177,7 @@ class TestBotClient:
       PortOpt,
       ClientTestPort.toString,
       GameIdOpt,
-      "",
+      ValidGameId,
       TokenOpt,
       "",
       "--poll-interval-ms",
@@ -177,7 +190,7 @@ class TestBotClient:
       PortOpt,
       ClientTestPort.toString,
       GameIdOpt,
-      "",
+      ValidGameId,
       TokenOpt,
       ""
     )).success.value
@@ -308,10 +321,10 @@ class TestBotClient:
 private val StrategyOpt = "--strategy"
 private val SimOpt = "--simulations"
 
-/** Options for a game that is joined with an empty id and token, which needs no server. */
+/** Options for a game that is joined with an empty token, which needs no server. */
 private def gameArgs(more: String*): Array[String] =
-  (Seq(ServerOpt, "localhost", PortOpt, ClientTestPort.toString, GameIdOpt, "", TokenOpt, "") ++
-    more).toArray
+  (Seq(ServerOpt, "localhost", PortOpt, ClientTestPort.toString, GameIdOpt, ValidGameId) ++
+    Seq(TokenOpt, "") ++ more).toArray
 
 /** Answers a move with `afterOwnMove`, not yet ready, and a status poll with `afterOpponent`, the
   * game once the opponent has moved too.

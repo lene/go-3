@@ -24,8 +24,6 @@ import scala.concurrent.{Await, ExecutionContext, Future}
   */
 object RulesProbe:
 
-  private final case class Task(size: Int, black: String, white: String, game: Int)
-
   private final case class Played(result: GameResult, record: Option[(String, SaveGame)])
 
   private final case class SizeRun(
@@ -152,7 +150,7 @@ object RulesProbe:
       SampleRecords.recordId(task.size, task.black, task.white, task.game)
     )
     Played(
-      GameResult.of(task.size, task.black, task.white, task.game, game, id),
+      GameResult.of(task, game, id),
       id.map(recordId => recordId -> SampleRecords.saveGame(game, recordId))
     )
 

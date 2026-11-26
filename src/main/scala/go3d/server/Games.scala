@@ -3,7 +3,6 @@ package go3d.server
 import com.typesafe.scalalogging.Logger
 import go3d.Color
 import go3d.Game
-import go3d.Komi
 import go3d.server.aws.S3Client
 import go3d.server.given // Circe encoders for SaveGame serialisation
 import io.circe.parser._
@@ -54,8 +53,6 @@ object Games:
         case Failure(e: JsonDecodeError) => logger.warn(s"${saveFile.getName}: ${e.message}")
         case Failure(e) => logger.warn(s"${saveFile.getName}: ${e.getMessage}")
     logger.info(s"${Games.numActiveGames} active games loaded, ${Games.numArchivedGames} archived")
-
-  def register(boardSize: Int): Try[String] = register(boardSize, Komi.Default)
 
   /** Register a new game with lock-free thread safety.
     */

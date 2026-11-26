@@ -39,7 +39,7 @@ class TestScoring:
 
   @Test def testResultOfAGameThatEndedWithPasses(): Unit =
     val game = playListOfMoves(3, BlackLeadsByOneMoves)
-    val result = GameResult.of(3, "random", "random", 7, game, None)
+    val result = GameResult.of(Task(3, "random", "random", 7), game, None)
     Assertions.assertEquals(Ending.Passes, result.ending)
     Assertions.assertEquals(BlackLeadsByOneMoves.length, result.moves)
     Assertions.assertEquals(SideScore(stones = 2, area = 2, captures = 0), result.blackSide)
@@ -61,13 +61,13 @@ class TestScoring:
   @Test def testTheWinnerOfAResultIsTheWinnerOfTheGame(): Unit =
     for moves <- List(BlackLeadsByOneMoves, BlackLeadsBySixMoves) do
       val game = playListOfMoves(3, moves)
-      val result = GameResult.of(3, "random", "random", 0, game, None)
+      val result = GameResult.of(Task(3, "random", "random", 0), game, None)
       Assertions.assertEquals(game.winner, Some(result.winnerByArea(game.komi)))
 
   @Test def testCapturesAreCountedForTheCapturingPlayer(): Unit =
     val captureMove = Move(3, 1, 1, White)
     val game = playListOfMoves(5, TwoDisjointStonesCaptureSetup :+ captureMove)
-    val result = GameResult.of(5, "random", "random", 0, game, None)
+    val result = GameResult.of(Task(5, "random", "random", 0), game, None)
     Assertions.assertEquals(2, result.whiteSide.captures)
     Assertions.assertEquals(0, result.blackSide.captures)
     Assertions.assertEquals(game.score(White), result.whiteSide.area)

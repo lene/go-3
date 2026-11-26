@@ -25,6 +25,10 @@ class TestStopRule:
     val outcome = StopRule.evaluate(Map(9 -> Rate(30, 100), 5 -> Rate(10, 100), 7 -> Rate(2, 100)))
     Assertions.assertEquals(List(5, 9), outcome.firingSizes)
 
+  @Test def testItGivesAVerdictForEverySize(): Unit =
+    val outcome = StopRule.evaluate(Map(5 -> Rate(10, 100), 7 -> Rate(9, 100), 9 -> Rate(0, 0)))
+    Assertions.assertEquals(Map(5 -> true, 7 -> false, 9 -> false), outcome.reached)
+
   @Test def testItDoesNotFireWithoutFlips(): Unit =
     val outcome = StopRule.evaluate(Map(5 -> Rate(0, 100), 7 -> Rate(0, 50), 9 -> Rate(0, 10)))
     Assertions.assertFalse(outcome.fired)

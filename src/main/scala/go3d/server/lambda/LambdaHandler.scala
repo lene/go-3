@@ -5,10 +5,10 @@ import com.amazonaws.services.lambda.runtime.events.{
   APIGatewayProxyRequestEvent, APIGatewayProxyResponseEvent
 }
 import com.typesafe.scalalogging.LazyLogging
-import go3d.{BadBoardSize, BadColor, Color, GameOver, GoException, IllegalMove, Komi}
+import go3d.{BadBoardSize, BadColor, Color, GameOver, Goban, GoException, IllegalMove}
 import go3d.server.{
   AuthorizationError, AuthorizationMethodWrong, AuthorizationMissing, DuplicateColor, GoResponse,
-  IdGenerator, NonexistentGame, NotReadyToSet, OpenGamesResponse, ServerException,
+  IdGenerator, KomiQuery, NonexistentGame, NotReadyToSet, OpenGamesResponse, ServerException,
   encodeGoResponse
 }
 import go3d.server.service.{
@@ -70,7 +70,8 @@ class LambdaHandler(service: Option[GameService])
         ))
       case List("new", IntSegment(size)) =>
         respond(
-          Komi.fromQuery(komiValues(event), size)
+          Goban.checkSize(size)
+            .flatMap(_ => KomiQuery.fromValues(komiValues(event), size))
             .flatMap(komi => writeService.flatMap(_.newGame(size, komi)))
         )
       case List("register", GameIdSegment(gameId), ColorSegment(color)) =>
@@ -90,11 +91,15 @@ class LambdaHandler(service: Option[GameService])
         respond(requiredToken(token).flatMap(t => writeService.flatMap(_.pass(gameId, t))))
       case _ => errorResponse(404, "Not found: " + path)
 
-  /** The raw values of the `komi` query parameter; None if the request has none. */
+  /** The raw values of the `komi` query parameter; None if the request has none. Payload format
+    * 1.0 fills the multi-value map, so it is read first; an event with only the single-value map
+    * gets its one value from there.
+    */
   private def komiValues(event: APIGatewayProxyRequestEvent): Option[Seq[String]] =
-    Option(event.getMultiValueQueryStringParameters)
-      .flatMap(params => Option(params.get(Komi.QueryParameter)))
-      .map(_.asScala.toSeq)
+    def komiIn[A](params: java.util.Map[String, A]): Option[A] =
+      Option(params).flatMap(p => Option(p.get(KomiQuery.Parameter)))
+    komiIn(event.getMultiValueQueryStringParameters).map(_.asScala.toSeq)
+      .orElse(komiIn(event.getQueryStringParameters).map(Seq(_)))
 
   private def writeService: Try[GameService] =
     service.fold[Try[GameService]](Failure(ServiceUnavailable()))(Success(_))

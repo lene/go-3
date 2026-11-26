@@ -5,6 +5,7 @@ import go3d.BadColor
 import go3d.Black
 import go3d.Color
 import go3d.Game
+import go3d.GamePositions
 import go3d.GameOver
 import go3d.BadKomi
 import go3d.Ko
@@ -18,6 +19,7 @@ import go3d.server.NonexistentGame
 import go3d.server.NotReadyToSet
 import go3d.server.OpenGame
 import go3d.server.StatusResponse
+import go3d.server.service.ServiceFixtures.{gameWithFailedArchive, newGame}
 import io.circe.DecodingFailure
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
@@ -85,14 +87,14 @@ class TestGameService:
     (gameId, black, white)
 
   @Test def testNewGameIsStoredEmpty(): Unit =
-    val created = service.newGame(5).success.value
+    val created = newGame(service, 5).success.value
     Assertions.assertEquals(5, created.size)
     val game = service.status(created.id, None).success.value.game
     Assertions.assertEquals(5, game.size)
     Assertions.assertTrue(game.moves.isEmpty)
 
   @Test def testNewGameHasDefaultKomi(): Unit =
-    val created = service.newGame(5).success.value
+    val created = newGame(service, 5).success.value
     Assertions.assertEquals(0.5, service.status(created.id, None).success.value.game.komi)
 
   @Test def testNewGameWithKomiStoresKomi(): Unit =
@@ -188,13 +190,13 @@ class TestGameService:
     Assertions.assertEquals(Some(6.5), archive.archived(gameId).map(_.game.komi))
 
   @Test def testDefaultServiceGeneratesValidIds(): Unit =
-    val gameId = GameService(store, archive).newGame(3).success.value.id
+    val gameId = newGame(GameService(store, archive), 3).success.value.id
     Assertions.assertTrue(go3d.server.IdGenerator.isValidId(gameId))
 
   @Test def testNewGameWithBadSizeFails(): Unit =
     Assertions.assertInstanceOf(
       classOf[BadBoardSize],
-      service.newGame(1).failure.exception
+      newGame(service, 1).failure.exception
     )
 
   @Test def testRegisterNonexistentGameFails(): Unit =
@@ -204,7 +206,7 @@ class TestGameService:
     )
 
   @Test def testRegisterDuplicateColorFails(): Unit =
-    val gameId = service.newGame(3).success.value.id
+    val gameId = newGame(service, 3).success.value.id
     service.register(gameId, Black).success.value
     Assertions.assertInstanceOf(
       classOf[DuplicateColor],
@@ -216,7 +218,7 @@ class TestGameService:
     Assertions.assertNotEquals(black, white)
 
   @Test def testBlackRegisteringAfterWhiteIsReady(): Unit =
-    val gameId = service.newGame(3).success.value.id
+    val gameId = newGame(service, 3).success.value.id
     Assertions.assertFalse(service.register(gameId, White).success.value.ready)
     Assertions.assertTrue(service.register(gameId, Black).success.value.ready)
 
@@ -228,7 +230,7 @@ class TestGameService:
     )
 
   @Test def testRegisterEmptyColorFails(): Unit =
-    val gameId = service.newGame(3).success.value.id
+    val gameId = newGame(service, 3).success.value.id
     Assertions.assertInstanceOf(
       classOf[BadColor],
       service.register(gameId, go3d.Empty).failure.exception
@@ -264,7 +266,7 @@ class TestGameService:
     Assertions.assertFalse(service.status(gameId, Some(white)).success.value.ready)
 
   @Test def testStatusBeforeOpponentRegisteredIsNotReady(): Unit =
-    val gameId = service.newGame(3).success.value.id
+    val gameId = newGame(service, 3).success.value.id
     val black = service.register(gameId, Black).success.value.authToken
     Assertions.assertFalse(service.status(gameId, Some(black)).success.value.ready)
 
@@ -423,21 +425,12 @@ class TestGameService:
 
   @Test def testArchiveFailureDoesNotFailFinalMove(): Unit =
     val failingService = serviceFor(store, InMemoryGameArchive(true))
-    val gameId = failingService.newGame(3).success.value.id
+    val gameId = newGame(failingService, 3).success.value.id
     val black = failingService.register(gameId, Black).success.value.authToken
     val white = failingService.register(gameId, White).success.value.authToken
     failingService.pass(gameId, black).success.value
     Assertions.assertTrue(failingService.pass(gameId, white).success.value.over)
     Assertions.assertEquals(None, store.completion(gameId))
-
-  /** A game that ended while the archive was down: it has no archive key. Returns its id. */
-  private def gameWithFailedArchive(failingService: GameService): String =
-    val gameId = failingService.newGame(3).success.value.id
-    val black = failingService.register(gameId, Black).success.value.authToken
-    val white = failingService.register(gameId, White).success.value.authToken
-    failingService.pass(gameId, black).success.value
-    failingService.pass(gameId, white).success.value
-    gameId
 
   private def failingArchiveService: GameService = serviceFor(store, InMemoryGameArchive(true))
 
@@ -544,14 +537,14 @@ class TestGameService:
     gameId
 
   @Test def testOpenGamesListsGamesWaitingForWhite(): Unit =
-    val gameId = service.newGame(3).success.value.id
+    val gameId = newGame(service, 3).success.value.id
     service.register(gameId, Black).success.value
     Assertions.assertTrue(openGames().map(_.id).contains(gameId))
     service.register(gameId, White).success.value
     Assertions.assertFalse(openGames().map(_.id).contains(gameId))
 
   @Test def testOpenGamesCarryTheKomiOfEachGame(): Unit =
-    val withoutKomi = service.newGame(3).success.value.id
+    val withoutKomi = newGame(service, 3).success.value.id
     service.register(withoutKomi, Black).success.value
     val large = openGame(6.5)
     val negative = openGame(-0.5)

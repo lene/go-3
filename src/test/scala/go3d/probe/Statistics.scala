@@ -43,10 +43,11 @@ object Statistics:
     val komi = Komi.Default
     val selfPlay = results.filter(_.isSelfPlay)
     val margin = median(selfPlay.map(_.areaMargin))
+    val byPairing = results.groupBy(r => (r.black, r.white))
     SizeMetrics(
       size = size,
       games = results.length,
-      pairings = results.map(r => (r.black, r.white)).distinct.length,
+      pairings = byPairing.size,
       selfPlay = rate(selfPlay)(_.winnerByArea(komi) == Black),
       pooled = rate(results)(_.winnerByArea(komi) == Black),
       pooledWithCaptures = rate(results)(_.winnerByAreaWithCaptures(komi) == Black),
@@ -58,10 +59,8 @@ object Statistics:
       territory = rate(results)(_.hasTerritory),
       capturesPerGame = mean(results.map(_.captures)),
       flips = rate(results)(_.flips(komi)),
-      rating = Rating.fit(pairCounts(results, komi)),
-      blackWinsByPairing = results.groupBy(r => (r.black, r.white)).view.mapValues(
-        rate(_)(_.winnerByArea(komi) == Black)
-      ).toMap
+      rating = Rating.fit(pairCounts(byPairing, komi)),
+      blackWinsByPairing = byPairing.view.mapValues(rate(_)(_.winnerByArea(komi) == Black)).toMap
     )
 
   def rate(results: Seq[GameResult])(holds: GameResult => Boolean): Rate =
@@ -84,7 +83,10 @@ object Statistics:
     */
   def fittedKomi(medianMargin: Double): Double = math.floor(medianMargin) + 0.5
 
-  private def pairCounts(results: Seq[GameResult], komi: Double): Seq[Rating.PairCounts] =
-    results.groupBy(r => (r.black, r.white)).toSeq.map { case ((black, white), games) =>
+  private def pairCounts(
+      byPairing: Map[(String, String), Seq[GameResult]],
+      komi: Double
+  ): Seq[Rating.PairCounts] =
+    byPairing.toSeq.map { case ((black, white), games) =>
       Rating.PairCounts(black, white, games.count(_.winnerByArea(komi) == Black), games.length)
     }

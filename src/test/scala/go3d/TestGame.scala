@@ -1,6 +1,5 @@
 package go3d
 
-import go3d.server.service.GamePositions
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
@@ -416,20 +415,7 @@ class TestGame:
     Assertions.assertEquals(0, game.possibleMoves(Black).length)
 
   @Test def testPossibleMovesWithKo(): Unit =
-    val moves = List[Move | Pass](
-      Move(2, 2, 3, Black),
-      Move(2, 2, 4, White),
-      Move(2, 3, 2, Black),
-      Move(2, 3, 3, White),
-      Move(2, 1, 2, Black),
-      Move(2, 1, 3, White),
-      Move(3, 2, 2, Black),
-      Move(3, 2, 3, White),
-      Move(1, 2, 2, Black),
-      Move(1, 2, 3, White),
-      Move(2, 2, 1, Black),
-      Move(2, 2, 2, White)
-    )
+    val moves = GamePositions.moves(GamePositions.BeforeKo)
     val game = playListOfMoves(5, moves)
     Assertions.assertEquals(5 * 5 * 5 - moves.length, game.possibleMoves(Black).length)
     Assertions.assertFalse(game.possibleMoves(Black).contains(Move(2, 2, 3, Black)))
@@ -547,10 +533,7 @@ class TestGame:
     Assertions.assertEquals(game.size * game.size * game.size, game.score(White))
 
   @Test def testScoringPositionReachedThroughACapture(): Unit =
-    val moves = GamePositions.BeforeKo.zipWithIndex.map { case ((x, y, z), i) =>
-      Move(x, y, z, if i % 2 == 0 then Black else White)
-    }
-    val game = playListOfMoves(5, moves)
+    val game = playListOfMoves(5, GamePositions.moves(GamePositions.BeforeKo))
     Assertions.assertEquals(1, game.captures(White))
     Assertions.assertEquals(0, game.captures(Black))
     val whiteStones = game.goban.allPositions.count(game.at(_) == White)
