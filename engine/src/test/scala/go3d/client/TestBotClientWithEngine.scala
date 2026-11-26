@@ -9,14 +9,14 @@ import org.scalatest.TryValues.*
 class TestBotClientWithEngine:
 
   @Test def testModelStrategyPlaysWithTheEngineOnTheClasspath(): Unit =
-    // a game joined with an empty id and token needs no server
+    // a game joined with an empty token needs no server
     val args = Seq(
       "--server",
       "localhost",
       "--port",
       "6030",
       "--game-id",
-      "",
+      "ABCDEF",
       "--token",
       "",
       "--strategy",

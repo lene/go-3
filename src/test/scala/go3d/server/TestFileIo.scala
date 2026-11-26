@@ -35,14 +35,14 @@ class TestFileIo:
     )
 
   @Test def testSaveGameFailsNonexistentPlayers(): Unit =
-    val gameId = Games.register(TestSize).success.value
+    val gameId = registerGame(TestSize)
     Assertions.assertThrows(
       classOf[RuntimeException],
       () => TestFileIo.fileIO.saveGame(gameId)
     )
 
   @Test def testSaveGameWritesFile(): Unit =
-    val gameId = Games.register(TestSize).success.value
+    val gameId = registerGame(TestSize)
     Games.registerPlayer(gameId, Black).success.value
     TestFileIo.fileIO.saveGame(gameId)
     Assertions.assertTrue(
@@ -51,7 +51,7 @@ class TestFileIo:
     )
 
   @Test def testSaveGameContents(): Unit =
-    val gameId = Games.register(TestSize).success.value
+    val gameId = registerGame(TestSize)
     Games.registerPlayer(gameId, Black).success.value
     val path = TestFileIo.fileIO.saveGame(gameId)
 
@@ -84,7 +84,7 @@ class TestFileIo:
     Assertions.assertEquals(6.5, TestFileIo.fileIO.loadArchivedGame(gameId).success.value.game.komi)
 
   @Test def testRegisteredGameHasDefaultKomi(): Unit =
-    val gameId = Games.register(TestSize).success.value
+    val gameId = registerGame(TestSize)
     Assertions.assertEquals(0.5, Games(gameId).komi)
 
   @Test def testRegisterWithInvalidKomiFails(): Unit =
@@ -162,7 +162,7 @@ class TestFileIo:
     )
 
   @Test def testDeleteGameRemovesFile(): Unit =
-    val gameId = Games.register(TestSize).success.value
+    val gameId = registerGame(TestSize)
     Games.registerPlayer(gameId, Black).success.value
     TestFileIo.fileIO.saveGame(gameId)
     Assertions.assertTrue(TestFileIo.exists(s"$gameId.json"))
@@ -177,7 +177,7 @@ class TestFileIo:
     Assertions.assertFalse(TestFileIo.fileIO.archivedExists(IdGenerator.getId))
 
   @Test def testArchivedExistsReturnsTrueAfterArchive(): Unit =
-    val gameId = Games.register(TestSize).success.value
+    val gameId = registerGame(TestSize)
     Games.registerPlayer(gameId, Black).success.value
     TestFileIo.fileIO.saveGame(gameId)
     TestFileIo.fileIO.archiveGame(gameId)
@@ -187,7 +187,7 @@ class TestFileIo:
     Assertions.assertTrue(TestFileIo.fileIO.loadArchivedGame(IdGenerator.getId).isFailure)
 
   @Test def testLoadArchivedGameSucceeds(): Unit =
-    val gameId = Games.register(TestSize).success.value
+    val gameId = registerGame(TestSize)
     Games.registerPlayer(gameId, Black).success.value
     TestFileIo.fileIO.saveGame(gameId)
     TestFileIo.fileIO.archiveGame(gameId)

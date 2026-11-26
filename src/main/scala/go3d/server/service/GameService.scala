@@ -6,7 +6,6 @@ import go3d.Black
 import go3d.Color
 import go3d.Game
 import go3d.GameOver
-import go3d.Komi
 import go3d.Move
 import go3d.Pass
 import go3d.White
@@ -43,8 +42,6 @@ class GameService(
     newId: () => String,
     newToken: () => String
 ) extends LazyLogging:
-
-  def newGame(size: Int): Try[GameCreatedResponse] = newGame(size, Komi.Default)
 
   def newGame(size: Int, komi: Double): Try[GameCreatedResponse] =
     for
@@ -140,7 +137,7 @@ class GameService(
       newGame <- move(color).flatMap(stored.game.makeMove)
       _ <- store.updateGame(gameId, stored.version, newGame)
     yield
-      if newGame.isOver then archiveLogged(gameId, newGame, stored.players)
+      if newGame.isOver then archiveAndComplete(gameId, newGame, stored.players)
       StatusResponse(newGame, newGame.possibleMoves(color), false, Some(color), NullRequestInfo)
 
   /** Archives every finished game that has no archive key, which a failed archive at the end of
@@ -159,7 +156,7 @@ class GameService(
 
   private def recoverArchive(gameId: String): Try[Unit] =
     existing(gameId).flatMap(stored =>
-      archiveLogged(gameId, stored.game, stored.players)
+      archiveAndComplete(gameId, stored.game, stored.players)
     )
 
   /** Archives a finished game, then marks it completed so the store can expire it. The move that
@@ -168,7 +165,7 @@ class GameService(
     * [[recoverArchives]] archives it later. The failure is logged with
     * [[GameService.ArchiveFailedMarker]], which the alarm on archive failures matches.
     */
-  private def archiveLogged(gameId: String, game: Game, players: Set[Color]): Try[Unit] =
+  private def archiveAndComplete(gameId: String, game: Game, players: Set[Color]): Try[Unit] =
     val saveGame = SaveGame(game, players.map(c => c -> Player(c, gameId)).toMap)
     val expiresAt = now() / 1000L + GameService.RetentionSeconds
     val result = archive.archive(gameId, saveGame)

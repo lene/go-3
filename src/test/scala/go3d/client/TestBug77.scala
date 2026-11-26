@@ -4,7 +4,6 @@ import org.junit.jupiter.api.{Assertions, Test}
 import go3d.*
 import go3d.server.*
 import io.circe.parser.decode
-import scala.io.Source
 import org.scalatest.TryValues.*
 
 /** Test for bug #77: bot crashes with "empty.minBy" in prioritiseCapture strategy
@@ -29,9 +28,7 @@ class TestBug77:
     System.err.println("Starting testReplayGameFromJson - loading JSON file...")
     System.err.flush()
 
-    val source = Source.fromFile("src/test/resources/data/rYcmnR.json")
-    val jsonContent = try source.mkString
-    finally source.close()
+    val jsonContent = TestResources.text("data/rYcmnR.json")
     val saveGameResult = decode[go3d.server.SaveGame](jsonContent)
 
     Assertions.assertTrue(saveGameResult.isRight, s"Failed to decode JSON: $saveGameResult")

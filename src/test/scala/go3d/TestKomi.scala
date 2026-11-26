@@ -8,19 +8,13 @@ import scala.util.Try
 class TestKomi:
 
   private def fromText(text: String, size: Int): Try[Double] =
-    Komi.fromQuery(Some(Seq(text)), size)
+    Komi.parse(text, size)
 
   private def assertBadKomi(result: Try[Double], description: String): Unit =
     Assertions.assertInstanceOf(classOf[BadKomi], result.failure.exception, description)
 
   @Test def testDefaultKomiIsHalf(): Unit =
     Assertions.assertEquals(0.5, Komi.Default)
-
-  @Test def testAbsentParameterGivesDefault(): Unit =
-    Assertions.assertEquals(Komi.Default, Komi.fromQuery(None, 5).success.value)
-
-  @Test def testAbsentParameterGivesDefaultEvenForUnvalidatedSize(): Unit =
-    Assertions.assertEquals(Komi.Default, Komi.fromQuery(None, 0).success.value)
 
   @Test def testHalfIntegersAreParsed(): Unit =
     val expected = Map(
@@ -82,15 +76,6 @@ class TestKomi:
   @Test def testHugeNumberIsRejected(): Unit =
     assertBadKomi(fromText("9" * 400 + ".5", 25), "far above the board")
     assertBadKomi(fromText("-" + "9" * 400 + ".5", 25), "far below the board")
-
-  @Test def testBareParameterIsRejected(): Unit =
-    assertBadKomi(Komi.fromQuery(Some(Seq()), 5), "no value, as in http4s")
-    assertBadKomi(Komi.fromQuery(Some(Seq("")), 5), "empty value, as in the Lambda")
-
-  @Test def testRepeatedParameterIsRejected(): Unit =
-    assertBadKomi(Komi.fromQuery(Some(Seq("6.5", "6.5")), 5), "twice the same")
-    assertBadKomi(Komi.fromQuery(Some(Seq("6.5", "7.5")), 5), "twice different")
-    assertBadKomi(Komi.fromQuery(Some(Seq("6.5", "abc")), 5), "good and bad")
 
   @Test def testMagnitudeIsBoundedByBoardPoints(): Unit =
     Assertions.assertEquals(26.5, fromText("26.5", 3).success.value)

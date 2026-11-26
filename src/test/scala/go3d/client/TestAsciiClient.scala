@@ -18,6 +18,9 @@ val TokenOpt = "--token"
 val SizeOpt = "--size"
 val ColorOpt = "--color"
 
+/** A game id of the form the server gives out, for the tests that need no game behind it. */
+val ValidGameId = "ABCDEF"
+
 /// Asserts that parsing `args` with `parse` fails with an exception of type `expected`.
 def assertParseFails[E <: Throwable](
     expected: Class[E],
@@ -31,8 +34,31 @@ private val LocalUrl = "http://localhost:" + ClientTestPort.toString
 class TestAsciiClient:
 
   @Test def testUrlReplacesServerAndPort(): Unit =
-    val client = AsciiClient.parseArgs(Array(UrlOpt, LocalUrl + "/", GameIdOpt, "ABCDEF"))
+    val client = AsciiClient.parseArgs(Array(UrlOpt, LocalUrl + "/", GameIdOpt, ValidGameId))
     Assertions.assertEquals(LocalUrl, client.success.value.serverURL)
+
+  @Test def testMalformedGameIdFails(): Unit =
+    for id <- List("<id>", "", "ABCDE", "ABCDEFG", "ABC-EF") do
+      assertParseFails(
+        classOf[ValidationFailure],
+        AsciiClient.parseArgs,
+        UrlOpt,
+        LocalUrl,
+        GameIdOpt,
+        id
+      )
+
+  @Test def testMalformedGameIdWithTokenFailsBeforeAnyRequest(): Unit =
+    assertParseFails(
+      classOf[ValidationFailure],
+      AsciiClient.parseArgs,
+      UrlOpt,
+      LocalUrl,
+      GameIdOpt,
+      "<id>",
+      TokenOpt,
+      "token"
+    )
 
   @Test def testUrlWithServerFails(): Unit =
     assertParseFails(
@@ -43,7 +69,7 @@ class TestAsciiClient:
       ServerOpt,
       "localhost",
       GameIdOpt,
-      "ABCDEF"
+      ValidGameId
     )
 
   @Test def testUrlWithPortFails(): Unit =
@@ -55,7 +81,7 @@ class TestAsciiClient:
       PortOpt,
       ClientTestPort.toString,
       GameIdOpt,
-      "ABCDEF"
+      ValidGameId
     )
 
   @Test def testUrlWithUnsupportedSchemeFails(): Unit =
@@ -65,7 +91,7 @@ class TestAsciiClient:
       UrlOpt,
       "ftp://localhost",
       GameIdOpt,
-      "ABCDEF"
+      ValidGameId
     )
 
   @Test def testBadColor(): Unit =
@@ -153,5 +179,5 @@ class TestAsciiClient:
       SizeOpt,
       "3",
       GameIdOpt,
-      "1"
+      ValidGameId
     )

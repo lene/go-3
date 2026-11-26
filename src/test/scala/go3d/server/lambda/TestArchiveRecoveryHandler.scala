@@ -1,9 +1,9 @@
 package go3d.server.lambda
 
-import go3d.{Black, White}
-import go3d.server.service.{FailingGameStore, GameService, InMemoryGameArchive, InMemoryGameStore}
+import go3d.server.service.{
+  FailingGameStore, GameService, InMemoryGameArchive, InMemoryGameStore, ServiceFixtures
+}
 import org.junit.jupiter.api.{Assertions, Test}
-import org.scalatest.TryValues.*
 
 import java.util.{Map as JMap}
 import scala.jdk.CollectionConverters._
@@ -20,13 +20,7 @@ class TestArchiveRecoveryHandler:
 
   /** A finished game whose archive failed at the end of the game; returns its id. */
   private def gameWithFailedArchive(): String =
-    val failing = serviceWith(archiveFails = true)
-    val gameId = failing.newGame(3).success.value.id
-    val black = failing.register(gameId, Black).success.value.authToken
-    val white = failing.register(gameId, White).success.value.authToken
-    failing.pass(gameId, black).success.value
-    failing.pass(gameId, white).success.value
-    gameId
+    ServiceFixtures.gameWithFailedArchive(serviceWith(archiveFails = true))
 
   private def run(handler: ArchiveRecoveryHandler): Map[String, List[String]] =
     handler.handleRequest(payload, null).asScala.view.mapValues(_.asScala.toList).toMap

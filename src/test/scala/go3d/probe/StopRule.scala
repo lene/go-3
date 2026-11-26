@@ -11,11 +11,14 @@ package go3d.probe
 object StopRule:
   val FlipRatePercent: Int = 10
 
-  /** What the rule says about the sizes that were played: whether it fired, and for which sizes. */
-  final case class Outcome(fired: Boolean, firingSizes: List[Int])
+  /** What the rule says about the sizes that were played: for each size whether its flip rate
+    * reached the threshold, and from that whether the rule fired and for which sizes.
+    */
+  final case class Outcome(reached: Map[Int, Boolean]):
+    /** The sizes that reached the threshold, smallest first. */
+    def firingSizes: List[Int] = reached.toList.sortBy(_._1).collect { case (size, true) => size }
+
+    def fired: Boolean = firingSizes.nonEmpty
 
   def evaluate(flipsBySize: Map[Int, Rate]): Outcome =
-    val firing = flipsBySize.toList.sortBy(_._1).collect {
-      case (size, flips) if flips.atLeastPercent(FlipRatePercent) => size
-    }
-    Outcome(firing.nonEmpty, firing)
+    Outcome(flipsBySize.map((size, flips) => size -> flips.atLeastPercent(FlipRatePercent)))

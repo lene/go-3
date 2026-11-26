@@ -5,6 +5,7 @@ import go3d.Game
 import go3d.Move
 import go3d.Pass
 import go3d.Position
+import go3d.server.IdGenerator
 import go3d.server.StatusResponse
 import org.http4s.Status
 import org.rogach.scallop._
@@ -19,7 +20,7 @@ import scala.util.{Failure, Success, Try}
 class BotClientCLIConf(arguments: Seq[String]) extends ScallopConf(arguments):
   val size = opt[Int](required = false)
   val color = opt[String](required = false)
-  val gameId = opt[String](required = false)
+  val gameId = opt[String](required = false, validate = IdGenerator.isValidId)
   val token = opt[String](required = false)
   val url = opt[String](required = false)
   val server = opt[String](required = false)
@@ -204,9 +205,9 @@ object BotClient extends Client with LazyLogging:
         .flatMap(color => BaseClient.create(serverURL, conf.size(), color))
     else if conf.gameId.isSupplied then
       if conf.token.isSupplied then
-        val playerColor = if conf.gameId().nonEmpty && conf.token().nonEmpty then
-          getPlayerColor(serverURL, conf.gameId(), conf.token())
-        else None
+        val playerColor =
+          if conf.token().nonEmpty then getPlayerColor(serverURL, conf.gameId(), conf.token())
+          else None
         Success(BaseClient(serverURL, conf.gameId(), conf.token.toOption, playerColor))
       else
         colorFromString(conf.color())

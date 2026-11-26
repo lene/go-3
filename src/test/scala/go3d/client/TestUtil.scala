@@ -1,5 +1,6 @@
 package go3d.client
 
+import go3d.fromStrings
 import org.junit.jupiter.api.{Assertions, Test}
 
 class TestUtil:
@@ -7,7 +8,7 @@ class TestUtil:
   @Test def testGameWithCornerStones(): Unit =
     Assertions.assertEquals(
       Util.gameWithCornerStones(3).goban,
-      Util.fromStrings(Map(
+      fromStrings(Map(
         1 ->
           """@ @|
             |   |

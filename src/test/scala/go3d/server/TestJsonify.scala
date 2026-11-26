@@ -7,7 +7,7 @@ import io.circe.syntax._
 import org.junit.jupiter.api.{Assertions, Test}
 import org.scalatest.TryValues.*
 
-import java.nio.file.{Files, Path}
+import java.nio.file.Files
 import scala.jdk.CollectionConverters.*
 import scala.util.Using
 
@@ -227,7 +227,7 @@ class TestJsonify:
     )
 
   @Test def testSavedGamesOfBeforeKomiDecodeWithDefaultKomi(): Unit =
-    val files = Using.resource(Files.list(Path.of("src/test/resources/data"))) { paths =>
+    val files = Using.resource(Files.list(TestResources.path("data"))) { paths =>
       paths.iterator().asScala.filter(_.toString.endsWith(".json")).toList
     }
     Assertions.assertTrue(files.nonEmpty)

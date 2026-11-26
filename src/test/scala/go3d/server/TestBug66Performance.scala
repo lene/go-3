@@ -5,10 +5,10 @@ import go3d.Game
 import go3d.Move
 import go3d.Pass
 import go3d.Suicide
+import go3d.TestResources
 import io.circe.parser.decode
 import org.scalatest.funsuite.AnyFunSuite
 
-import scala.io.Source
 import org.scalatest.TryValues.*
 
 /** Performance regression tests for bug #66 - "Server hanging sometimes"
@@ -27,9 +27,7 @@ import org.scalatest.TryValues.*
 class TestBug66Performance extends AnyFunSuite:
 
   private def replayGameFile(filename: String, maxTimeMs: Long): Long =
-    val source = Source.fromFile(filename)
-    val jsonContent = try source.mkString
-    finally source.close()
+    val jsonContent = TestResources.text(filename)
     val saveGame = decode[SaveGame](jsonContent) match
       case Right(sg) => sg
       case Left(e) => fail(s"Failed to decode $filename: ${e.getMessage}")
@@ -62,31 +60,31 @@ class TestBug66Performance extends AnyFunSuite:
     totalTimeMs
 
   test("bug #66: gNoDpK.json performance - 341 moves") {
-    val timeMs = replayGameFile("src/test/resources/data/gNoDpK.json", 5000)
+    val timeMs = replayGameFile("data/gNoDpK.json", 5000)
     info(s"Replay completed in ${timeMs}ms")
   }
 
   test("bug #66: yLtN8s.json performance - 336 moves") {
-    val timeMs = replayGameFile("src/test/resources/data/yLtN8s.json", 5000)
+    val timeMs = replayGameFile("data/yLtN8s.json", 5000)
     info(s"Replay completed in ${timeMs}ms")
   }
 
   test("bug #66: gyxAXY.json performance - 337 moves") {
-    val timeMs = replayGameFile("src/test/resources/data/gyxAXY.json", 5000)
+    val timeMs = replayGameFile("data/gyxAXY.json", 5000)
     info(s"Replay completed in ${timeMs}ms")
   }
 
   test("bug #66: sXBvhd.json performance - 342 moves") {
-    val timeMs = replayGameFile("src/test/resources/data/sXBvhd.json", 5000)
+    val timeMs = replayGameFile("data/sXBvhd.json", 5000)
     info(s"Replay completed in ${timeMs}ms")
   }
 
   test("bug #66: 6axryR.json performance - 342 moves") {
-    val timeMs = replayGameFile("src/test/resources/data/6axryR.json", 5000)
+    val timeMs = replayGameFile("data/6axryR.json", 5000)
     info(s"Replay completed in ${timeMs}ms")
   }
 
   test("bug #66: B8orAu.json performance - 340 moves") {
-    val timeMs = replayGameFile("src/test/resources/data/B8orAu.json", 5000)
+    val timeMs = replayGameFile("data/B8orAu.json", 5000)
     info(s"Replay completed in ${timeMs}ms")
   }

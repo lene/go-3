@@ -1,4 +1,4 @@
-package go3d.server.service
+package go3d.server
 
 import go3d.Color
 import go3d.server.{StatusResponse, decodeColor, decodeStatusResponse}
