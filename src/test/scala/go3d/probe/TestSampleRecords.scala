@@ -44,6 +44,13 @@ class TestSampleRecords:
       SampleRecords.recordId(7, "onStarPoints", "random", 2)
     )
 
+  @Test def testRecordIdsStayTheSame(): Unit =
+    // the viewer finds the samples of earlier runs by these ids
+    Assertions.assertEquals("0LegcK", SampleRecords.recordId(5, "random", "random", 0))
+    Assertions.assertEquals("0US9YY", SampleRecords.recordId(7, "random", "onStarPoints", 2))
+    val capture = "prioritiseCapture"
+    Assertions.assertEquals("0hJNEd", SampleRecords.recordId(9, capture, capture, 999_999))
+
   @Test def testARecordLoadsThroughTheServersFileIoAndReplaysToItsScore(): Unit =
     val game = GamePlayer.play(3, "prioritiseCapture", "random", 5L).success.value
     val id = SampleRecords.recordId(5, "prioritiseCapture", "random", 0)

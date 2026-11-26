@@ -52,6 +52,10 @@ class TestSelfPlayOptions:
   @Test def testUnknownDevice(): Unit =
     Assertions.assertTrue(failure(required ++ Seq("--device", "tpu")).contains("tpu"))
 
+  @Test def testDeviceNamesAreTheirCommandLineNames(): Unit =
+    Assertions.assertEquals(List("cpu", "cuda"), Device.values.toList.map(_.name))
+    Assertions.assertEquals(Some(Device.Cuda), Device.named("CUDA"))
+
   @Test def testUnknownOption(): Unit =
     Assertions.assertTrue(failure(required ++ Seq("--komi", "4.5")).contains("komi"))
 

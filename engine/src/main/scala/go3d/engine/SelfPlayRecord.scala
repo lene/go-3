@@ -1,13 +1,12 @@
 package go3d.engine
 
 import go3d.{Black, Color, Game, White}
-import go3d.server.given
+import go3d.server.{IdGenerator, given}
 import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
 import java.nio.charset.StandardCharsets
 import java.nio.file.{Files, Path}
-import scala.annotation.tailrec
 import scala.util.Try
 import scala.util.hashing.MurmurHash3
 
@@ -24,10 +23,6 @@ final case class SelfPlayRecord(
 )
 
 object SelfPlayRecord:
-  private val Alphabet = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-  private val IdLength = 6
-  private val IdCount = BigInt(Alphabet.length).pow(IdLength)
-
   given Encoder[SelfPlayRecord] = record =>
     val game = record.game
     Json.obj(
@@ -72,15 +67,5 @@ object SelfPlayRecord:
     * ids of a run differ, and runs with other seeds are unlikely to reuse them.
     */
   def gameId(seed: Long, size: Int, generation: Int, number: Int): String =
-    val start = BigInt(MurmurHash3.stringHash(s"$seed/$size/$generation")).mod(IdCount)
-    base62(((start + number) mod IdCount).toLong)
-
-  /** The last six base 62 digits of `number`. */
-  private def base62(number: Long): String =
-    @tailrec
-    def digits(rest: Long, count: Int, acc: String): String =
-      if count == IdLength then acc
-      else
-        val digit = Alphabet((rest % Alphabet.length).toInt)
-        digits(rest / Alphabet.length, count + 1, s"$digit$acc")
-    digits(number, 0, "")
+    val start = MurmurHash3.stringHash(s"$seed/$size/$generation").toLong
+    IdGenerator.base62Id(start + number)

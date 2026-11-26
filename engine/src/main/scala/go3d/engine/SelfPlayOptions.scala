@@ -90,7 +90,7 @@ object SelfPlayOptions:
     val parallel = opt[Int](default = Some(1))
     val modelStore = opt[String](default = Some(DefaultModelStore))
     val out = opt[String](default = Some(DefaultOut))
-    val device = opt[String](default = Some(DefaultDevice.toString.toLowerCase))
+    val device = opt[String](default = Some(DefaultDevice.name))
     verify()
 
     @SuppressWarnings(Array("org.wartremover.warts.Throw"))

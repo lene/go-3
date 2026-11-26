@@ -1,5 +1,6 @@
 package go3d.engine
 
+import cats.syntax.all.*
 import go3d.{Black, Game}
 
 import java.nio.file.{Files, Path, Paths}
@@ -76,13 +77,13 @@ object SelfPlay:
       start <- Game.start(options.size, komi)
       _ <- noRecordExists(options)
       dir <- Try(Files.createDirectories(recordDir(options)))
-      games <- sequence(parallelMap(0 until options.games, options.parallel) { number =>
+      games <- parallelMap(0 until options.games, options.parallel) { number =>
         val played = playAndWrite(options, evaluator, start, dir, number)
         val count = finished.incrementAndGet
         if count % printEvery == 0 || count == options.games then
           println(s"$count of ${options.games} games played")
         played
-      })
+      }.sequence
     yield SelfPlaySummary(games, options.simulations, System.nanoTime - started)
 
   /** A failure that names the first record of the run in `options` that exists already: the ids
@@ -137,18 +138,17 @@ object SelfPlay:
       played.networkNanos
     )
 
-  /** The results of `f` for the `items`, in the order of the items, `parallelism` at a time. */
+  /** The results of `f` for the `items`, in the order of the items, `parallelism` at a time: in
+    * the calling thread when that is 1.
+    */
   private def parallelMap[A, B](items: Seq[A], parallelism: Int)(f: A => B): Seq[B] =
-    val pool = Executors.newFixedThreadPool(parallelism)
-    try
-      given ExecutionContext = ExecutionContext.fromExecutor(pool)
-      Await.result(Future.traverse(items)(item => Future(f(item))), Duration.Inf)
-    finally pool.shutdownNow()
-
-  /** All the values of `tries`, or the first failure. */
-  private def sequence[A](tries: Seq[Try[A]]): Try[Seq[A]] =
-    tries.collectFirst { case Failure(error) => error }
-      .fold[Try[Seq[A]]](Success(tries.collect { case Success(value) => value }))(Failure(_))
+    if parallelism == 1 then items.map(f)
+    else
+      val pool = Executors.newFixedThreadPool(parallelism)
+      try
+        given ExecutionContext = ExecutionContext.fromExecutor(pool)
+        Await.result(Future.traverse(items)(item => Future(f(item))), Duration.Inf)
+      finally pool.shutdownNow()
 
 /** What the report needs of one game: its moves, whether Black won, and the time spent in the
   * search and, of that, in the network.
@@ -176,10 +176,9 @@ final case class SelfPlaySummary(games: Seq[GameSummary], simulations: Int, wall
     val engine = SelfPlaySummary.oneDecimal(engineMicros)
     val rate = SelfPlaySummary.oneDecimal(100.0 * blackWins / games.length.max(1))
     val run = s"size ${options.size}, generation ${options.generation}, $simulations simulations"
-    val where = device.toString.toLowerCase
     val time = "time per simulation, summed over the games played at the same time"
     Seq(
-      s"$run on $where: ${games.length} games, $moves moves in $seconds s",
+      s"$run on ${device.name}: ${games.length} games, $moves moves in $seconds s",
       s"records in ${SelfPlay.recordDir(options)}",
       s"$time: network $network µs, engine $engine µs",
       s"Black wins $blackWins of ${games.length} games ($rate%)"

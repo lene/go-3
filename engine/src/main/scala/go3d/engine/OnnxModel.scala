@@ -16,9 +16,12 @@ import scala.util.{Failure, Success, Try, Using}
 enum Device:
   case Cpu, Cuda
 
+  /** The name of the device on the command line and in reports: `cpu` or `cuda`. */
+  def name: String = toString.toLowerCase
+
 object Device:
   /** The device named `name`, as on the command line: `cpu` or `cuda`. */
-  def named(name: String): Option[Device] = values.find(_.toString.equalsIgnoreCase(name))
+  def named(name: String): Option[Device] = values.find(_.name.equalsIgnoreCase(name))
 
 /** A model generation loaded with ONNX Runtime, whose contract fits games of `size`, evaluated
   * on `device`.
@@ -79,14 +82,14 @@ object OnnxModel extends LazyLogging:
     else
       val environment = OrtEnvironment.getEnvironment()
       session(environment, path, device)
-        .recoverWith(error => Failure(MoveEngineError(s"model $path: ${error.getMessage}")))
+        .recoverWith(error => Failure(MoveEngineError(s"model $path: ${error.getMessage}", error)))
         .flatMap { (session, used) =>
           Try(session.getMetadata.getCustomMetadata.asScala.toMap)
             .flatMap(ModelContract.check(_, size))
             .map(komi => new OnnxModel(path, size, komi, used, environment, session))
             .recoverWith { error =>
               session.close()
-              Failure(MoveEngineError(s"model $path for size $size: ${error.getMessage}"))
+              Failure(MoveEngineError(s"model $path for size $size: ${error.getMessage}", error))
             }
         }
 
