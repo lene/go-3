@@ -13,8 +13,8 @@ import json
 import os
 import shutil
 import sys
-import tempfile
 import time
+import uuid
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
@@ -55,7 +55,6 @@ WEIGHT_DECAY = 1e-4
 CUDA = "cuda"
 CPU = "cpu"
 ERROR_EXIT_CODE = 2
-DIRECTORY_MODE = 0o777
 PROGRAM = "train-generation"
 
 
@@ -292,23 +291,17 @@ def _write_candidate(
     failure leaves no partial candidate."""
     target = candidate_dir(options.models, options.size, options.generation)
     target.parent.mkdir(parents=True, exist_ok=True)
-    staging = Path(tempfile.mkdtemp(prefix=f".{options.generation}-", dir=target.parent))
+    # mkdir, unlike mkdtemp (always 0700), gives the directory the mode the umask allows
+    staging = target.parent / f".{options.generation}-{uuid.uuid4().hex}"
+    staging.mkdir()
     try:
         write_model(staging, network, options.generation, komi)
         (staging / METRICS_FILE_NAME).write_text(json.dumps(metrics, indent=2) + "\n")
-        staging.chmod(DIRECTORY_MODE & ~_umask())
         os.rename(staging, target)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
         raise
     return target
-
-
-def _umask() -> int:
-    """The process's umask; mkdtemp makes its directory 0700 whatever the umask is."""
-    umask = os.umask(0)
-    os.umask(umask)
-    return umask
 
 
 def _positive_int(text: str) -> int:
