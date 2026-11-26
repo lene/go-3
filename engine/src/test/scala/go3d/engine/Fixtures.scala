@@ -13,6 +13,16 @@ def fixtureStore: Path = Paths.get(classOf[TestOnnxModel].getResource("/models")
 
 def fixtureModelPath: Path = OnnxModel.path(fixtureStore, 5, 0)
 
+/** The seed of the run that wrote the committed fixture record: the one game of size 5 that
+  * generation 0, played by a uniform [[FakeEvaluator]], plays with 6 simulations per move, a game
+  * with a capture and passes that two passes end. The Python tests in `training/` read the
+  * record, so it pins the record format that training reads.
+  */
+val fixtureRecordSeed: Long = 9L
+
+/** The records of the committed fixture: `<size>/<generation>/<game id>.json`. */
+def fixtureRecords: Path = Paths.get(classOf[TestOnnxModel].getResource("/selfplay").toURI)
+
 /** The worked example of `docs/model-contract.md`: size 5, Black at (1,1,1), White at (3,3,3). */
 def workedExample: Game =
   Game.start(5).flatMap(_.makeMove(Move(1, 1, 1, Black))).flatMap(

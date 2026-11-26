@@ -6,9 +6,11 @@ import onnxruntime
 import pytest
 import torch
 
+from go3d_training.checkpoint import load_checkpoint
 from go3d_training.encoding import encode
-from go3d_training.export import export_generation, main, model_path
+from go3d_training.export import export_generation, main, model_komi, write_model
 from go3d_training.network import NetworkConfig, build_network
+from go3d_training.store import checkpoint_path, model_path
 
 SIZE = 5
 SEED = 0
@@ -55,6 +57,27 @@ def test_layout(store, exported):
     assert exported == model_path(store, SIZE, 0)
     assert exported == store / "5" / "0" / "model.onnx"
     assert exported.is_file()
+
+
+def test_checkpoint_next_to_the_model_holds_the_network(store, exported):
+    checkpoint = checkpoint_path(store, SIZE, 0)
+    assert checkpoint == exported.with_name("model.pt")
+    network = load_checkpoint(checkpoint)
+    expected = build_network(NetworkConfig(SIZE), seed=SEED)
+    assert network.config == expected.config
+    assert not network.training
+    for name, tensor in expected.state_dict().items():
+        assert torch.equal(network.state_dict()[name], tensor), name
+
+
+def test_write_model_takes_the_generation_and_the_komi(tmp_path):
+    network = build_network(NetworkConfig(3, blocks=1, channels=4), seed=SEED)
+    path = write_model(tmp_path / "candidate", network, generation=3, komi=-2.5)
+    metadata = {prop.key: prop.value for prop in onnx.load(path).metadata_props}
+    assert metadata["generation"] == "3"
+    assert metadata["komi"] == "-2.5"
+    assert model_komi(path) == -2.5
+    assert (tmp_path / "candidate" / "model.pt").is_file()
 
 
 def test_round_trip_matches_pytorch(exported):
@@ -105,6 +128,7 @@ def test_cli_writes_the_model(tmp_path, capsys):
     main(argv + ["--channels", "4"])
     path = tmp_path / "3" / "0" / "model.onnx"
     assert path.is_file()
+    assert path.with_name("model.pt").is_file()
     assert str(path) in capsys.readouterr().out
     metadata = {prop.key: prop.value for prop in onnx.load(path).metadata_props}
     assert metadata["blocks"] == "1"
