@@ -73,15 +73,12 @@ class Goban private (val size: Int, val stones: IArray[IArray[IArray[Color]]]) e
     for (pos <- other.emptyPositions.toIndexedSeq if at(pos) != Empty)
       yield Move(pos, at(pos))
 
-  override def toString: String =
-    var out = ""
-    for y <- 0 to size + 1 do
-      for z <- 1 to size do
-        for x <- 0 to size + 1 do
-          out += at(x, y, z).toString
-        if z < size then out += "|"
-      out += "\n"
-    out
+  override def toString: String = rows.mkString("", "\n", "\n")
+
+  /** One line of text for each y, border included: the x rows of each z level, split by `|`. */
+  private[go3d] def rows: Seq[String] = (0 to size + 1).map(y =>
+    (1 to size).map(z => (0 to size + 1).map(at(_, y, z).toString).mkString).mkString("|")
+  )
 
   def checkValid(move: Move): Try[Unit] =
     if move.x > size || move.y > size || move.z > size then
@@ -95,12 +92,15 @@ class Goban private (val size: Int, val stones: IArray[IArray[IArray[Color]]]) e
     if isOnBoardPlusBorder(x, y, z) then sys.error(s"outside board: $x, $y, $z")
     new Goban(size, stones.updated(x, stones(x).updated(y, stones(x)(y).updated(z, color))))
 
-  def hasLiberties(move: Move): Boolean =
+  /** Whether the group of the stone at `move.position` has a liberty; false if that point does not
+    * hold a stone of `move.color`.
+    */
+  def groupHasLiberties(move: Move): Boolean =
     if !Set(Black, White).contains(move.color) then
       sys.error(s"trying to find liberties for $move - not a stone but ${move.color}")
-    hasLibertiesHelper(move, mutable.Set[Position]())
+    groupHasLibertiesHelper(move, mutable.Set[Position]())
 
-  private def hasLibertiesHelper(move: Move, visited: mutable.Set[Position]): Boolean =
+  private def groupHasLibertiesHelper(move: Move, visited: mutable.Set[Position]): Boolean =
     if at(move.position) != move.color || visited.contains(move.position) then false
     else
       visited += move.position
@@ -109,14 +109,14 @@ class Goban private (val size: Int, val stones: IArray[IArray[IArray[Color]]]) e
       else
         val toCheck = neighboring.filter(at(_) == move.color).map(Move(_, move.color)).toSet
         // check if part of a connected area
-        hasLibertiesHelper(toCheck, visited)
+        groupHasLibertiesHelper(toCheck, visited)
 
   @tailrec
-  private def hasLibertiesHelper(moves: Set[Move], visited: mutable.Set[Position]): Boolean =
+  private def groupHasLibertiesHelper(moves: Set[Move], visited: mutable.Set[Position]): Boolean =
     if moves.isEmpty then false
-    else if moves.size == 1 then hasLibertiesHelper(moves.head, visited)
-    else if hasLibertiesHelper(moves.head, visited) then true
-    else hasLibertiesHelper(moves - moves.head, visited)
+    else if moves.size == 1 then groupHasLibertiesHelper(moves.head, visited)
+    else if groupHasLibertiesHelper(moves.head, visited) then true
+    else groupHasLibertiesHelper(moves - moves.head, visited)
 
   /** The empty points next to a stone of `col`, counted directly rather than group by group. */
   def numLiberties(col: Color): Int =
@@ -166,8 +166,8 @@ class Goban private (val size: Int, val stones: IArray[IArray[IArray[Color]]]) e
     if Set(Empty, Sentinel, move.color).contains(at(move.position)) then this
     else
       val opponent = !move.color
-      if hasLiberties(Move(move.x, move.y, move.z, opponent)) then this
-      else clearListOfPlaces(connectedStones(Move(move.x, move.y, move.z, opponent)), this)
+      if groupHasLiberties(Move(move.x, move.y, move.z, opponent)) then this
+      else cleared(connectedStones(Move(move.x, move.y, move.z, opponent)))
 
   /** The liberties of every group, found in one pass the first time a point without an empty
     * neighbour is checked for suicide, and then shared by all checks on this board.
@@ -198,9 +198,17 @@ class Goban private (val size: Int, val stones: IArray[IArray[IArray[Color]]]) e
     val stones = for (p <- allPositions if at(p) == Black || at(p) == White) yield Move(p, at(p))
     areaFromMoves(stones.toSet, Set())
 
-  /** `goban` with the points of `toClear` empty. */
-  private def clearListOfPlaces(toClear: Set[Move], goban: Goban): Goban =
-    toClear.foldLeft(goban)((board, stone) => board.setStone(stone.x, stone.y, stone.z, Empty))
+  /** This board with the points of `toClear` empty, in one new board that copies each changed row
+    * once and shares the others.
+    */
+  private def cleared(toClear: Set[Move]): Goban =
+    val updated = toClear.groupBy(_.x).foldLeft(stones) { case (board, (x, inPlane)) =>
+      val plane = inPlane.groupBy(_.y).foldLeft(board(x)) { case (rows, (y, inRow)) =>
+        rows.updated(y, inRow.foldLeft(rows(y))((row, stone) => row.updated(stone.z, Empty)))
+      }
+      board.updated(x, plane)
+    }
+    new Goban(size, updated)
 
   private def isOnBoardPlusBorder(x: Int, y: Int, z: Int): Boolean =
     x < 0 || y < 0 || z < 0 || x > size + 1 || y > size + 1 || z > size + 1

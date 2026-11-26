@@ -13,6 +13,12 @@ object Game:
       validKomi <- Komi.validate(komi, size)
     yield Game(size, goban, Array(), Map[Int, Array[Move]](), validKomi)
 
+  /** The winner of a game with these area scores: White if White's score plus the komi is higher,
+    * else Black. The komi is a half-integer and the scores are integers, so there is no tie.
+    */
+  def winner(black: Int, white: Int, komi: Double): Color =
+    if white + komi > black then White else Black
+
 class Game(
     val size: Int,
     val goban: Goban,
@@ -36,6 +42,9 @@ class Game(
     obj match
       case g: Game => goban == g.goban && toString == g.toString && komi == g.komi
       case _ => false
+
+  /** Equal games have the same [[toString]], which shows the board, the captures and the score. */
+  override def hashCode: Int = toString.hashCode
 
   def at(pos: Position): Color = goban.at(pos)
   def at(x: Int, y: Int, z: Int): Color = at(new Position(x, y, z))
@@ -65,10 +74,12 @@ class Game(
   /** The game after `move`, without checking that the move is legal. */
   private[go3d] def replayed(move: Move | Pass): Game =
     move match
-      case _: Pass => Game(size, goban, moves.appended(move), captures, komi)
-      case m: Move =>
-        val newboard = setStone(m)
-        Game(size, newboard.goban, moves.appended(move), newboard.captures, komi)
+      case _: Pass => next(goban, moves.appended(move), captures)
+      case m: Move => setStone(m)
+
+  /** This game with another board, moves and captures, on the same size and with the same komi. */
+  private def next(goban: Goban, moves: Array[Move | Pass], captures: Map[Int, Array[Move]]): Game =
+    Game(size, goban, moves, captures, komi)
 
   def checkValid(move: Move): Try[Unit] =
     if !isDifferentPlayer(move.color) then Failure(WrongTurn(move))
@@ -77,25 +88,26 @@ class Game(
         if isKo(move) then Failure(Ko(move)) else Success(())
       }
 
+  /** The board, with the stones that Black captured after its second row and the stones that
+    * White captured after its fourth, then the captures of each move and the score.
+    */
   override def toString: String =
-    var out = "\n"
-    for y <- 0 to size + 1 do
-      for z <- 1 to size do
-        for x <- 0 to size + 1 do
-          out += goban.at(x, y, z).toString
-        if z < size then out += "|"
-        else if y == 1 then
-          out += " " + White.toString * captures(Black) // Black captures White stones
-        else if y == 3 then
-          out += " " + Black.toString * captures(White) // White captures Black stones
-      out += "\n"
-    for (move, caps) <- captures.toSeq.sortBy(x => x._1) do out += s"$move: ${caps.toList}\n"
-    out += score.toString
-    out
+    val capturedStones = Map(
+      1 -> White.toString * captures(Black),
+      3 -> Black.toString * captures(White)
+    )
+    val rows = goban.rows.zipWithIndex.map((row, y) =>
+      capturedStones.get(y).fold(row)(stones => s"$row $stones")
+    )
+    val board = rows.mkString("\n", "\n", "\n")
+    val captureLines =
+      captures.toSeq.sortBy(_._1).map((move, caps) => s"$move: ${caps.toList}\n").mkString
+    val scoreText = score.toString
+    s"$board$captureLines$scoreText"
 
   def setStone(move: Move): Game = doCaptures(move, goban.setStone(move))
 
-  def hasLiberties(move: Move): Boolean = goban.hasLiberties(move)
+  def groupHasLiberties(move: Move): Boolean = goban.groupHasLiberties(move)
 
   def connectedStones(move: Move): Set[Move] = goban.connectedStones(move)
 
@@ -119,14 +131,11 @@ class Game(
     * are captured, or they count for their owner.
     */
   def score: Map[Color, Int] =
-    val scores = mutable.Map[Color, Int](Black -> 0, White -> 0)
-    for color <- Seq(Black, White) do
-      for pos <- goban.allPositions if at(pos) == color do scores(color) = scores(color) + 1
-    for area <- emptyAreas do
-      boundaryColor(area) match
-        case Some(color) => scores(color) = scores(color) + area.size
-        case None =>
-    scores.toMap
+    val territories = emptyAreas.toList.flatMap(area => boundaryColor(area).map(_ -> area.size))
+    def points(color: Color): Int =
+      goban.allPositions.count(at(_) == color) +
+        territories.collect { case (owner, points) if owner == color => points }.sum
+    Map(Black -> points(Black), White -> points(White))
 
   /** The player with the higher score once the komi is added to White's, or None while the game is
     * not over. The komi is a half-integer and the scores are integers, so there is no tie.
@@ -135,7 +144,7 @@ class Game(
     if !isOver then None
     else
       val scores = score
-      if scores(White) + komi > scores(Black) then Some(White) else Some(Black)
+      Some(Game.winner(scores(Black), scores(White), komi))
 
   private def boundaryColor(area: Set[Move]): Option[Color] =
     val boundaryColors = mutable.Set[Color]()
@@ -176,7 +185,7 @@ class Game(
     val newMoves = moves.appended(move)
     val captured = (board - newBoard).toArray
     val newCaptures = if captured.nonEmpty then captures + (moves.length -> captured) else captures
-    Game(size, newBoard, newMoves, newCaptures, komi)
+    next(newBoard, newMoves, newCaptures)
 
   private def captureNeighbors(board: Goban, neighbors: Seq[Position], color: Color): Goban =
     if neighbors.isEmpty then board

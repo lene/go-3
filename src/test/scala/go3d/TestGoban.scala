@@ -208,6 +208,18 @@ class TestGoban:
     ))
     Assertions.assertNotEquals(goban1, "some random thing")
 
+  @Test def testGobansOfDifferentSizesAreNotEqual(): Unit =
+    Assertions.assertNotEquals(Goban.start(3).success.value, Goban.start(5).success.value)
+
+  @Test def testDifferenceOfGobansOfDifferentSizesFails(): Unit =
+    val small = Goban.start(3).success.value
+    val big = Goban.start(5).success.value
+    Assertions.assertThrows(classOf[RuntimeException], () => small - big)
+
+  @Test def testNumLibertiesOfEmptyIsZero(): Unit =
+    val goban = Goban.start(3).success.value.setStone(Move(2, 2, 2, Black))
+    Assertions.assertEquals(0, goban.numLiberties(Empty))
+
   @Test def testNumLibertiesAllNeighborsFreeBlack(): Unit =
     val goban = fromStrings(Map(
       2 ->

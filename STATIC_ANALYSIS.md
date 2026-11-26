@@ -1,7 +1,7 @@
 # Static Analysis Report
 
 Generated: October 19, 2025
-Updated: March 21, 2026; current counts November 20, 2026 (WartRemover 3.6.3 and Return/Any cleanup)
+Updated: March 21, 2026; current counts November 26, 2026 (domain rules cleanup)
 
 ## Tools Configured
 
@@ -51,12 +51,12 @@ DisableSyntax.noIsInstanceOf = true
 
 Measured by the `Check warnings` job in `.github/workflows/ci.yml`, which compiles main and test
 sources and fails when the total goes up (see `ci/warning_summary.sh`).
-Total: **81** compiler warnings (43 main, 38 test), down from 699 before issue #143 and from 418
+Total: **79** compiler warnings (41 main, 38 test), down from 699 before issue #143 and from 418
 before the November 2026 cleanup.
 
 | Warning | main | test | Note |
 |---------|------|------|------|
-| wartremover:Var | 28 | 26 | GUI/libGDX state, lazily initialised AWS clients, CLI option state, JUnit lifecycle |
+| wartremover:Var | 26 | 26 | GUI/libGDX state, lazily initialised AWS clients, CLI option state, JUnit lifecycle |
 | wartremover:DefaultArguments | 13 | 6 | idiomatic Scala, replacing them with overloads adds code for no gain |
 | wartremover:Any | 2 | 6 | macro literals (`uri"..."`, `ipv4"..."`) and `f"..."` with format specifiers: not fixable |
 

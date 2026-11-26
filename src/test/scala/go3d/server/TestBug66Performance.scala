@@ -15,7 +15,7 @@ import org.scalatest.TryValues.*
   *
   * These tests verify that the game data files from issue #66 can be replayed
   * without experiencing the severe performance degradation that was caused by
-  * deep copying board arrays in connectedStones() and hasLiberties() methods.
+  * deep copying board arrays in connectedStones() and groupHasLiberties() methods.
   *
   * Before fix: Individual moves took 2000+ ms, total game time 2000+ ms
   * After fix: All moves complete in <10ms, total game time 64-124ms
@@ -43,7 +43,7 @@ class TestBug66Performance extends AnyFunSuite:
         fail(
           s"Game replay exceeded ${maxTimeMs}ms timeout at move " +
             s"${index}/${saveGame.game.moves.length}. Elapsed: ${elapsedMs}ms. " +
-            "This suggests performance regression in connectedStones() or hasLiberties()."
+            "This suggests performance regression in connectedStones() or groupHasLiberties()."
         )
 
       // the games were recorded before a group was forbidden to fill its own last liberty:

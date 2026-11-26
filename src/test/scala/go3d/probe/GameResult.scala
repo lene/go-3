@@ -36,16 +36,6 @@ object SideScore:
       game.captures(color)
     )
 
-/** The two scorings of a game: area scoring, and area scoring with the captures added (the rule
-  * before 0.7.44). The winner of each follows from the scores and any komi.
-  */
-object Scoring:
-  /** White wins if White's score plus the komi is higher, as in [[go3d.Game.winner]]. A
-    * half-integer komi leaves no tie.
-    */
-  def winner(black: Int, white: Int, komi: Double): Color =
-    if white + komi > black then White else Black
-
 /** One played game: who played, how long it lasted and how it ended, and both scores. `record` is
   * the id of the saved game record, for the games that have one.
   */
@@ -67,10 +57,12 @@ final case class GameResult(
   /** Black's area score minus White's. */
   def areaMargin: Int = blackSide.area - whiteSide.area
 
-  def winnerByArea(komi: Double): Color = Scoring.winner(blackSide.area, whiteSide.area, komi)
+  /** The winner by area scoring, by the rule of [[go3d.Game.winner]]. */
+  def winnerByArea(komi: Double): Color = Game.winner(blackSide.area, whiteSide.area, komi)
 
+  /** The winner by area scoring with the captures added (the rule before 0.7.44). */
   def winnerByAreaWithCaptures(komi: Double): Color =
-    Scoring.winner(blackSide.areaWithCaptures, whiteSide.areaWithCaptures, komi)
+    Game.winner(blackSide.areaWithCaptures, whiteSide.areaWithCaptures, komi)
 
   /** Whether adding the captures changes the winner at `komi`. */
   def flips(komi: Double): Boolean = winnerByArea(komi) != winnerByAreaWithCaptures(komi)

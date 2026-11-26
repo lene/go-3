@@ -260,7 +260,7 @@ class TestGame:
   @Test def testCapturingStoneWithSettingIntoEyeIsNotSuicide(): Unit =
     val goban = fromStrings(eyeSituation)
     val game = fromGoban(goban)
-    Assertions.assertTrue(game.hasLiberties(Move(2, 2, 3, Black)))
+    Assertions.assertTrue(game.groupHasLiberties(Move(2, 2, 3, Black)))
     Assertions.assertEquals(Empty, game.at(2, 2, 2))
     for stone <- game.goban.neighbors(Position(2, 2, 2)) do
       Assertions.assertEquals(Black, game.at(stone))
@@ -316,7 +316,7 @@ class TestGame:
     )
     val after = playListOfMoves(5, moves).makeMove(Move(2, 1, 1, Black)).success.value
     Assertions.assertEquals(Empty, after.at(3, 1, 1))
-    Assertions.assertTrue(after.hasLiberties(Move(1, 1, 1, Black)))
+    Assertions.assertTrue(after.groupHasLiberties(Move(1, 1, 1, Black)))
 
   @Test def testSettingStoneIntoNotEncircledEyeIsSuicide(): Unit =
     val game = buildEye()
@@ -684,6 +684,28 @@ class TestGame:
       Game.start(TestSize, Komi65).success.value,
       Game.start(TestSize, Komi65).success.value
     )
+
+  @Test def testEqualGamesHaveEqualHashCodes(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, Komi65, CaptureMoves)
+    val same = playListOfMovesWithKomi(TestSize, Komi65, CaptureMoves)
+    Assertions.assertEquals(game, same)
+    Assertions.assertEquals(game.hashCode, same.hashCode)
+    Assertions.assertEquals(1, Set(game, same).size)
+
+  @Test def testGameIsNotEqualToItsBoard(): Unit =
+    val game = playListOfMoves(TestSize, CaptureMoves)
+    Assertions.assertNotEquals(game, game.goban)
+
+  @Test def testScoreListsBlackFirst(): Unit =
+    val game = playListOfMovesWithKomi(TestSize, Komi65, CaptureMoves)
+    Assertions.assertEquals(List(Black, White), game.score.keys.toList)
+
+  @Test def testWhiteNeedsTheKomiToWinATie(): Unit =
+    Assertions.assertEquals(White, Game.winner(10, 10, 0.5))
+    Assertions.assertEquals(Black, Game.winner(11, 10, 0.5))
+    Assertions.assertEquals(White, Game.winner(10, 10, 6.5))
+    Assertions.assertEquals(Black, Game.winner(17, 10, 6.5))
+    Assertions.assertEquals(White, Game.winner(16, 10, 6.5))
 
   @Test def testKomiDoesNotChangeScoreOrItsToString(): Unit =
     val withKomi = playListOfMovesWithKomi(TestSize, Komi65, BlackLeadsByOneMoves)
