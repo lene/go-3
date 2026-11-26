@@ -77,6 +77,23 @@ concept (`models/`, git-ignored), an S3 bucket with the same keys later. Generat
 by `uv run export-generation --size 5 --generation 0 --out ../models` in `training/`
 (`docs/development.md`); `--seed` (default 0) makes it reproducible.
 
+Next to `model.onnx`, `model.pt` is the PyTorch checkpoint that training goes on from: a dict
+with `config` (`size`, `blocks`, `channels`) and `state_dict`, the weights and batch-norm
+statistics. `<store>/<s>/<g>/` holds only promoted generations. `uv run train-generation --size
+5 --generation g` writes a candidate for generation `g` to `<store>/<s>/candidates/<g>/`, with
+`model.onnx` (its `generation` is `g`, its `komi` the refitted one), `model.pt` and
+`training.json`, the metrics of the run:
+
+| Key | Value |
+|---|---|
+| `size`, `generation`, `parent` | the board size, `g` and `g - 1` |
+| `old_komi`, `new_komi` | the komi of the parent and the refitted komi of the candidate |
+| `record_generations` | the generations whose self-play records were used |
+| `records`, `samples` | how many records, and how many samples (one per move) |
+| `epochs`, `batch_size`, `learning_rate`, `weight_decay`, `seed`, `device` | the training settings |
+| `losses` | per epoch: `{"epoch", "policy", "value", "total"}`, means over the samples |
+| `duration_seconds` | the wall-clock time of the run |
+
 ## Worked example
 
 Size 5, Black at (1,1,1), White at (3,3,3), Black to move after 2 moves:

@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 export-generation = "go3d_training.export:main"
+train-generation = "go3d_training.train:main"
 
 [dependency-groups]
 dev = ["onnxruntime>=1.20", "pytest>=8.3"]

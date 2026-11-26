@@ -50,7 +50,17 @@ visits of the search that chose move `i`, for every action in the action order o
 contract (point `(x, y, z)` is `((x - 1) · s + (y - 1)) · s + (z - 1)`, a pass is `s³`). The
 values are non-negative and sum to 1, and an illegal action has 0, since the search never
 visits it: training needs no legality information. The value target of that position is the
-`winner`, seen from the player to move there (Black when `i` is even).
+result at the komi of the model being trained, seen from the player to move there (Black when
+`i` is even): Black wins if `score.black > score.white + komi`. That komi is refitted for each
+generation, so it may not be the komi of the record and its `winner`.
+
+The committed record `engine/src/test/resources/selfplay/5/0/<game id>.json` pins this format:
+`TestSelfPlay` checks that the writer still writes it, and the training tests read it. After a
+format change on purpose, delete it and write it again from the repository root:
+
+```bash
+echo 'go3d.engine.SelfPlay.run(go3d.engine.SelfPlayOptions(5, 0, 1, 6, go3d.engine.fixtureRecordSeed, 1, "", "engine/src/test/resources/selfplay", go3d.engine.Device.Cpu), go3d.engine.FakeEvaluator(Map(), 0.0), 4.5)' | sbt engine/Test/console
+```
 
 ## How the games are played
 

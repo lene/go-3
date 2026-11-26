@@ -11,6 +11,7 @@ from enum import Enum, auto
 import numpy as np
 
 CONTRACT_VERSION = 1
+SCORING_RULE = "area"
 INPUT_PLANES = 5
 MIN_BOARD_SIZE = 3
 MAX_BOARD_SIZE = 25

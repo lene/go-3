@@ -156,22 +156,58 @@ user's decision.
 `training/` is a separate [uv](https://docs.astral.sh/uv/) project (Python 3.12, PyTorch, ONNX)
 for the AlphaZero engine; the Poetry project at the root is unrelated. It defines the board
 encoding, the action indexing and the policy-and-value network of
-[model-contract.md](model-contract.md), and exports a model generation to ONNX. Its tests run
-locally only, not in CI.
+[model-contract.md](model-contract.md), exports the untrained generation 0 to ONNX and trains
+the next generations from the self-play records. Its tests run locally only, not in CI.
 
 ```bash
 cd training
 uv sync                    # once: creates training/.venv
 uv run pytest              # all tests
 
-# Untrained generation 0 for size 5: writes ../models/5/0/model.onnx (models/ is git-ignored)
+# Untrained generation 0 for size 5: writes ../models/5/0/model.onnx and model.pt
+# (models/ is git-ignored)
 uv run export-generation --size 5 --generation 0 --out ../models
 ```
 
 Options: `--seed N` (default 0, the same seed gives the same network), `--blocks N` (default 6),
 `--channels N` (default 64). An even size, a size below 3 or above 25, a blocks or channels count
-below 1, or a generation other than 0 (there is no training yet) writes nothing and exits with
-code 2.
+below 1, or a generation other than 0 (`train-generation` makes the others) writes nothing and
+exits with code 2.
+
+A candidate for generation `g` is trained from the checkpoint of the promoted generation `g - 1`
+on the self-play records of generations `g - window` to `g - 1`
+([self-play-records.md](self-play-records.md)):
+
+```bash
+# after: sbt "engine/runMain go3d.engine.SelfPlay --size 5 --generation 0 --games 200"
+cd training
+uv run train-generation --size 5 --generation 1   # writes ../models/5/candidates/1/
+```
+
+Options: `--models DIR` (default `../models`), `--records DIR` (default `../selfplay`),
+`--window N` (default 2), `--epochs N` (default 10), `--batch-size N` (default 256),
+`--learning-rate X` (default 0.001, AdamW with weight decay 1e-4), `--seed N` (default 0) and
+`--device cuda|cpu` (default cuda, the CPU when CUDA is not available). Each move of a record is
+a sample, trained under a random one of the cube's 48 symmetries; the loss is the policy
+cross-entropy against the search's visit shares plus the value's mean squared error. The same
+seed and records give the same weights on the CPU. The candidate's komi is refitted from the
+records of `g - 1`: the half-integer nearest the median Black-minus-White area margin, the one
+above an integer median, within ±(size³ - 0.5). Every value target is the result at that komi,
+which the candidate's metadata carries, not at the komi the game was played at. The losses of each epoch are printed and kept in
+`training.json` (see [model-contract.md](model-contract.md)).
+
+A missing checkpoint of `g - 1` (a generation 0 exported before 0.7.56 has none: re-export it with
+the same `--seed`, `--blocks` and `--channels`), a checkpoint that is not the network of the
+`model.onnx` next to it (board size, blocks, channels or generation), no records in the window or
+none of `g - 1`, a record that is not valid, or an existing candidate or promoted generation `g`
+writes nothing and exits with code 2. The candidate only becomes
+generation `g` in `models/5/g/` once it beats `g - 1` (not built yet); to try it, copy it to a
+model store as generation `g`:
+
+```bash
+mkdir -p /tmp/store/5; cp -r ../models/5/candidates/1 /tmp/store/5/1; cd ..
+sbt "engine/runMain go3d.engine.SelfPlay --size 5 --generation 1 --games 2 --model-store /tmp/store --out /tmp/selfplay"
+```
 
 ### Engine
 

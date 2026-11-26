@@ -127,6 +127,17 @@ class TestSelfPlay:
     ids.foreach(id => Assertions.assertTrue(go3d.server.IdGenerator.isValidId(id), id))
     Assertions.assertNotEquals(SelfPlayRecord.gameId(1, 5, 0, 0), SelfPlayRecord.gameId(2, 5, 0, 0))
 
+  @Test def testWriterStillWritesTheFixtureRecord(): Unit =
+    // training reads the fixture: a change here is a change of the record format
+    val run = options(fixtureRecordSeed, 1, 1, out)
+    SelfPlay.run(run, uniform, komi).success.value
+    val id = SelfPlayRecord.gameId(fixtureRecordSeed, 5, 0, 0)
+    val written = SelfPlayRecord.path(SelfPlay.recordDir(run), id)
+    val fixture = SelfPlayRecord.path(fixtureRecords.resolve("5").resolve("0"), id)
+    val hint = "if the format changed on purpose, update training and the fixture"
+    val changed = s"the writer no longer writes $fixture: $hint"
+    Assertions.assertEquals(Files.readString(fixture), Files.readString(written), changed)
+
   @Test def testOpeningMovesAreAnEighthOfTheBoard(): Unit =
     Assertions.assertEquals(15, SelfPlayGame.openingMoves(5))
     Assertions.assertEquals(91, SelfPlayGame.openingMoves(9))

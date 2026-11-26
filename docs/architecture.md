@@ -52,7 +52,12 @@ Runtime and searches with it; `BotClient` finds it through the `MoveEngine` hook
 project (`client/MoveEngine.scala`, a `java.util.ServiceLoader` service), so root never depends
 on it and the Lambda jar stays free of ONNX Runtime.
 `SelfPlay` in the same subproject plays a generation against itself and writes the training
-records of [self-play-records.md](self-play-records.md).
+records of [self-play-records.md](self-play-records.md). `train-generation`
+(`training/go3d_training/train.py`) trains a candidate for the next generation from those
+records: `records.py` turns them into samples, `symmetry.py` augments them with the cube's 48
+symmetries, and `export.py` writes the ONNX model with its checkpoint.
+`store.py` holds the layout of the model store (promoted generations and `candidates/`) and of
+the records. `checkpoint.py` saves and loads `model.pt`, the network config and its weights.
 
 ### Server architecture (go3d.server package)
 
