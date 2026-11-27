@@ -6,7 +6,7 @@ import io.circe.syntax.EncoderOps
 import io.circe.{Encoder, Json}
 
 import java.nio.charset.StandardCharsets
-import java.nio.file.{Files, Path}
+import java.nio.file.{Files, Path, StandardCopyOption}
 import scala.util.Try
 import scala.util.hashing.MurmurHash3
 
@@ -47,20 +47,21 @@ object SelfPlayRecord:
   /** The file of the record with `id` in `dir`. */
   def path(dir: Path, id: String): Path = dir.resolve(s"$id.json")
 
-  /** Writes `record` to [[path]] and returns that path. */
-  def write(dir: Path, id: String, record: SelfPlayRecord): Try[Path] =
-    Try(Files.write(
-      path(dir, id),
-      record.asJson.noSpaces.getBytes(StandardCharsets.UTF_8)
-    ))
-
-  /** The seed of game `number` of a run, from the run's `seed`, size and generation, so that a
-    * game does not depend on the order in which games are played. Two hashes make 64 bits.
+  /** Writes `record` to [[path]] and returns that path. The record is written to a temporary
+    * file next to it and renamed, so that a run killed while it writes leaves no partial record
+    * for `--resume` to skip.
     */
+  def write(dir: Path, id: String, record: SelfPlayRecord): Try[Path] =
+    val target = path(dir, id)
+    val partial = dir.resolve(s".$id.json.tmp")
+    Try {
+      Files.write(partial, record.asJson.noSpaces.getBytes(StandardCharsets.UTF_8))
+      Files.move(partial, target, StandardCopyOption.ATOMIC_MOVE)
+    }
+
+  /** The seed of game `number` of a run, from the run's `seed`, size and generation. */
   def gameSeed(seed: Long, size: Int, generation: Int, number: Int): Long =
-    val key = s"$seed/$size/$generation/$number"
-    (MurmurHash3.stringHash(key, 1).toLong << 32) |
-      (MurmurHash3.stringHash(key, 2).toLong & 0xffffffffL)
+    Parallel.seed(s"$seed/$size/$generation/$number")
 
   /** The id of game `number` of a run: six base 62 digits, a valid game id of the server. The
     * games of a run count up from a start that the run's seed, size and generation give, so the

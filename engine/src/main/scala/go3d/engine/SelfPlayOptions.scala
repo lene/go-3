@@ -1,5 +1,6 @@
 package go3d.engine
 
+import go3d.engine.Cli.check
 import org.rogach.scallop.*
 
 import scala.util.Try
@@ -7,7 +8,8 @@ import scala.util.Try
 /** What a self-play run does: `games` games of generation `generation` of size `size` against
   * itself, with `simulations` per move, from the model store `modelStore` on `device`. The
   * records go to `<out>/<size>/<generation>/`; `seed` and the game number make each game.
-  * `parallel` games are played at the same time.
+  * `parallel` games are played at the same time. With `resume`, the games whose record exists
+  * already are not played again, which finishes an interrupted run.
   */
 final case class SelfPlayOptions(
     size: Int,
@@ -18,7 +20,8 @@ final case class SelfPlayOptions(
     parallel: Int,
     modelStore: String,
     out: String,
-    device: Device
+    device: Device,
+    resume: Boolean
 )
 
 object SelfPlayOptions:
@@ -42,14 +45,12 @@ object SelfPlayOptions:
       |  --model-store DIR    directory of the model generations (default models)
       |  --out DIR            records go to DIR/<size>/<generation>/ (default selfplay)
       |  --device cuda|cpu    where the network runs; cuda falls back to the CPU with a warning
-      |                       when the CUDA provider cannot load (default cuda)""".stripMargin
+      |                       when the CUDA provider cannot load (default cuda)
+      |  --resume             play only the games of the run whose record does not exist yet,
+      |                       to finish an interrupted run""".stripMargin
 
   /** Whether `args` ask for the usage, as scallop's `--help` does. */
-  def asksForHelp(args: Seq[String]): Boolean =
-    Try(Arguments(args)).failed.toOption.exists {
-      case _: exceptions.Help => true
-      case _ => false
-    }
+  def asksForHelp(args: Seq[String]): Boolean = Cli.asksForHelp(Arguments(args))
 
   /** The options in `args`, or the reason they are not valid. */
   def parse(args: Seq[String]): Either[String, SelfPlayOptions] =
@@ -73,12 +74,10 @@ object SelfPlayOptions:
         parallel,
         arguments.modelStore(),
         arguments.out(),
-        device
+        device,
+        arguments.resume()
       )
     }
-
-  private def check(value: Int, valid: Int => Boolean, rule: String): Either[String, Int] =
-    Either.cond(valid(value), value, s"$rule, not $value")
 
   /** The command line as scallop reads it; an error is thrown, for [[parse]] to return it. */
   private class Arguments(arguments: Seq[String]) extends ScallopConf(arguments):
@@ -91,6 +90,7 @@ object SelfPlayOptions:
     val modelStore = opt[String](default = Some(DefaultModelStore))
     val out = opt[String](default = Some(DefaultOut))
     val device = opt[String](default = Some(DefaultDevice.name))
+    val resume = opt[Boolean](default = Some(false))
     verify()
 
     @SuppressWarnings(Array("org.wartremover.warts.Throw"))

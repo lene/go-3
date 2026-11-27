@@ -5,7 +5,7 @@ the promoted generation 0 (`../models/5/0/model.pt`) on the records of generatio
 `1 - window` to 0 (`../selfplay/5/<generation>/`), and writes the candidate to
 `../models/5/candidates/1/`: `model.onnx` with the refitted komi, `model.pt` and
 `training.json`. Promotion is not its business: a candidate becomes generation 1 only once it
-beats generation 0 (story 8).
+beats generation 0 in the JVM's `Match`, which `promotion-loop` (`loop.py`) runs.
 """
 
 import argparse
@@ -381,3 +381,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     except (TrainingError, RecordError) as error:
         parser.exit(ERROR_EXIT_CODE, f"{PROGRAM}: error: {error}\n")
     print(f"wrote {target}")
+
+
+if __name__ == "__main__":
+    main()

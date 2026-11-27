@@ -41,7 +41,8 @@ class TestSelfPlay:
       parallel,
       fixtureStore.toString,
       outDir.toString,
-      Device.Cpu
+      Device.Cpu,
+      resume = false
     )
 
   /** The records of a run, by file name. */
@@ -190,14 +191,39 @@ class TestSelfPlay:
     val first = SelfPlayRecord.path(SelfPlay.recordDir(run), SelfPlayRecord.gameId(1, 5, 0, 0))
     Assertions.assertTrue(error.getMessage.contains(first.toString), error.getMessage)
     Assertions.assertTrue(error.getMessage.contains("--seed"), error.getMessage)
+    Assertions.assertTrue(error.getMessage.contains("--resume"), error.getMessage)
     Assertions.assertEquals(earlier, records(run))
+
+  @Test def testResumeFinishesAnInterruptedRunWithTheGamesOfAFullRun(): Unit =
+    val full = played(3, 3, 1, out.resolve("full"))
+    val interrupted = options(3, 2, 1, out.resolve("interrupted"))
+    SelfPlay.run(interrupted, uniform, komi).success.value
+    val first = SelfPlayRecord.gameId(3, 5, 0, 0)
+    Files.delete(SelfPlayRecord.path(SelfPlay.recordDir(interrupted), first))
+    val resumed = interrupted.copy(games = 3, resume = true)
+    val summary = SelfPlay.run(resumed, uniform, komi).success.value
+    Assertions.assertEquals(2, summary.games.length)
+    Assertions.assertEquals(full, records(resumed))
+
+  @Test def testResumeOfAFinishedRunPlaysNothing(): Unit =
+    val earlier = played(1, 2, 1, out)
+    val resumed = options(1, 2, 1, out).copy(resume = true)
+    Assertions.assertEquals(0, SelfPlay.run(resumed, uniform, komi).success.value.games.length)
+    Assertions.assertEquals(earlier, records(resumed))
+
+  @Test def testRecordsAreWrittenWithoutLeavingTemporaryFiles(): Unit =
+    val run = options(1, 2, 1, out)
+    SelfPlay.run(run, uniform, komi).success.value
+    val names = entries(SelfPlay.recordDir(run)).map(_.getFileName.toString)
+    Assertions.assertEquals(2, names.length)
+    Assertions.assertTrue(names.forall(name => name.endsWith(".json") && !name.startsWith(".")))
 
   @Test def testRerunOfTheCommandFailsWithoutWriting(): Unit =
     val earlier = played(1, 1, 1, out)
     val args = Seq("--size", "5", "--generation", "0", "--games", "2", "--simulations", "1") ++
       Seq("--model-store", fixtureStore.toString, "--out", out.toString, "--device", "cpu")
     val (code, _, message) = executed(args*)
-    Assertions.assertEquals(SelfPlay.FailureExitCode, code)
+    Assertions.assertEquals(Cli.FailureExitCode, code)
     Assertions.assertTrue(message.contains("--out"), message)
     Assertions.assertEquals(earlier, records(options(1, 1, 1, out)))
 
@@ -237,7 +263,7 @@ class TestSelfPlay:
     val args = Seq("--size", "5", "--generation", "1", "--games", "1") ++
       Seq("--model-store", fixtureStore.toString, "--out", out.toString, "--device", "cpu")
     val (code, _, message) = executed(args*)
-    Assertions.assertEquals(SelfPlay.FailureExitCode, code)
+    Assertions.assertEquals(Cli.FailureExitCode, code)
     Assertions.assertTrue(message.contains(OnnxModel.path(fixtureStore, 5, 1).toString), message)
     Assertions.assertEquals(List(), entries(out))
 
@@ -245,6 +271,6 @@ class TestSelfPlay:
     val args = Seq("--size", "5", "--generation", "0", "--games", "0") ++
       Seq("--model-store", fixtureStore.toString, "--out", out.toString)
     val (code, _, message) = executed(args*)
-    Assertions.assertEquals(SelfPlay.BadOptionsExitCode, code)
+    Assertions.assertEquals(Cli.BadOptionsExitCode, code)
     Assertions.assertTrue(message.contains("Usage"), message)
     Assertions.assertEquals(List(), entries(out))

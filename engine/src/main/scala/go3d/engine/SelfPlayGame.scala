@@ -46,7 +46,8 @@ object SelfPlayGame:
     if game.isOver then Success(progress)
     else
       val started = System.nanoTime
-      val chosen = search.selfPlayMove(game, random, game.moves.length < openingMoves(game.size))
+      val opening = game.moves.length < openingMoves(game.size)
+      val chosen = search.selfPlayMove(game, random, sample = opening, noise = true)
       val nanos = System.nanoTime - started
       chosen.flatMap(choice => game.makeMove(choice.move).map(_ -> choice.policy)) match
         case Success((next, policy)) =>

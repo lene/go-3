@@ -215,13 +215,7 @@ the `model.onnx`), a checkpoint that is not the network of the
 `model.onnx` next to it (board size, blocks, channels or generation), no records in the window or
 none of `g - 1`, a record that is not valid, or an existing candidate or promoted generation `g`
 writes nothing and exits with code 2. The candidate only becomes
-generation `g` in `models/5/g/` once it beats `g - 1` (not built yet); to try it, copy it to a
-model store as generation `g`:
-
-```bash
-mkdir -p /tmp/store/5; cp -r ../models/5/candidates/1 /tmp/store/5/1; cd ..
-sbt "engine/runMain go3d.engine.SelfPlay --size 5 --generation 1 --games 2 --model-store /tmp/store --out /tmp/selfplay"
-```
+generation `g` in `models/5/g/` once it beats `g - 1` in a promotion match (see Promotion below).
 
 ### Engine
 
@@ -277,15 +271,70 @@ the engine (the rest of the search and the rules), and Black's win rate. The tim
 over the games played at the same time, so with `--parallel` they are thread time, not wall
 time.
 
-Options: `--simulations N` (default 200 per move), `--seed N` (default 1), `--parallel N` games
-at the same time sharing one model (default 1), `--model-store DIR` (default `models`), `--out
-DIR` (default `selfplay`) and `--device cuda|cpu` (default `cuda`). Without a usable CUDA
+Options: `--simulations N` (default 200 per move), `--seed N` (default 1), `--parallel N` games at
+the same time sharing one model (default 1), `--model-store DIR` (default `models`), `--out DIR`
+(default `selfplay`), `--device cuda|cpu` (default `cuda`) and `--resume`. Without a usable CUDA
 provider (no GPU, CUDA or cuDNN) `cuda` logs a warning and runs on the CPU; the report names the
 device used. ONNX Runtime loads its native libraries once per JVM, so run one `SelfPlay` per sbt
-invocation: a second `runMain` in the same sbt session cannot load the CUDA provider again and
-falls back to the CPU. The same seed and options give the same records with `--parallel 1` on
-the CPU. Options that are not valid (`--games 0`, a size other than 5, no `--generation`) write
-nothing and exit with code 2, a missing model with code 1.
+invocation: a second `runMain` in the same sbt session cannot load the CUDA provider again and falls
+back to the CPU. The same seed and options give the same records with `--parallel 1` on the CPU.
+Options that are not valid (`--games 0`, a size other than 5, no `--generation`) write nothing and
+exit with code 2, a missing model with code 1. A run whose records exist already exits with code 1
+before it plays, unless `--resume` is given: then it plays only the games of the run that have no
+record yet, which finishes an interrupted run with the games of an uninterrupted one. Each record is
+written to a temporary file and renamed, so an interrupted run leaves no partial record.
+
+#### Promotion
+
+`Match` plays the candidate for generation `g` (`models/5/candidates/g/`) against the promoted
+generation `g - 1`, and promotes it if it wins more than the threshold:
+
+```bash
+sbt "engine/runMain go3d.engine.Match --size 5 --generation 1"
+```
+
+Each side is Black in half the games. Every game starts at the candidate's komi (the refitted
+one of its metadata). Each side searches with its own network, with `--simulations` per move
+and no root noise; the first size³ / 8 moves are drawn in proportion to the root visits, so the
+games differ, the later ones are the most visited. The result goes as one line to the match log
+`models/5/matches.jsonl` ([model-contract.md](model-contract.md), Storage), promoted or not.
+Then the candidate's directory is renamed: to `models/5/g/` if it won, else to
+`models/5/rejected/g-<attempt>/`, the attempt counting from 1, which frees `candidates/g/` for
+the next try. The report gives the candidate's wins as Black and as White.
+
+Options: `--games N` (default 100, an even number), `--threshold N` (default 55: promoted with
+56 wins or more), `--simulations N` (default 200), `--seed N` (default 1; the same seed and
+models give the same games on the CPU), `--parallel N`, `--model-store DIR` and `--device
+cuda|cpu` as for self-play. Options that are not valid exit with code 2. A promoted generation
+`g`, a missing candidate or generation `g - 1`, or a model that does not load plays, logs and
+renames nothing and exits with code 1.
+
+`promotion-loop` chains self-play, training and the match until it has promoted `N`
+candidates. Run it in `training/`; the JVM steps run as `sbt "engine/runMain ..."` in the
+repository root, one JVM each, since ONNX Runtime loads CUDA once per JVM:
+
+```bash
+cd training
+uv run promotion-loop --size 5 --promotions 1
+```
+
+With `p` the latest promoted generation, `g = p + 1` and `attempt` one more than the highest
+rejected attempt of `g` (1 if none), it works out the next step from the store and the records:
+the match if `candidates/g/` exists; else a self-play batch of `p` if `selfplay/5/p/` has fewer
+than `attempt` batches of records (batch `k` has seed `k` and `--resume`); else training of `g`.
+After a rejection, `p` thus plays another batch, which adds to its records, and `g` is
+retrained on the larger set; the match's seed is the attempt. A rerun after an interruption
+therefore goes on with the step that was interrupted. It stops after `--promotions N`
+promotions, and exits with code 1 after `--max-rejections K` (default 3) rejections in a row in
+the run, naming the candidate and the last match, or at the first step that fails.
+
+Options: `--selfplay-games N` (default 200 per batch: keep it the same across runs, the batches
+are counted by it), `--match-games N` (default 100), `--threshold N` (default 55),
+`--simulations N` (default 200, for self-play and the match), `--parallel N` (games at the same
+time in the JVM, default 1), `--device cuda|cpu` (default cuda), `--models DIR` (default
+`../models`), `--records DIR` (default `../selfplay`), `--repository DIR` (where sbt runs,
+default `..`) and `--sbt CMD` (default `sbt`). The paths are passed to sbt as absolute paths and
+may not contain spaces.
 
 ### Docker
 ```bash

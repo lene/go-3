@@ -9,7 +9,7 @@ class TestSelfPlaySummary:
     4,
     1_000_000_000L
   )
-  private val options = SelfPlayOptions(5, 0, 2, 4, 1, 1, "models", "out", Device.Cpu)
+  private val options = SelfPlayOptions(5, 0, 2, 4, 1, 1, "models", "out", Device.Cpu, false)
   private val tolerance = 1e-12
 
   @Test def testCountsTheMovesAndBlackWins(): Unit =
