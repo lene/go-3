@@ -20,6 +20,7 @@ cuda = ["torch>=2.6"]
 [project.scripts]
 export-generation = "go3d_training.export:main"
 train-generation = "go3d_training.train:main"
+promotion-loop = "go3d_training.loop:main"
 
 [dependency-groups]
 dev = [

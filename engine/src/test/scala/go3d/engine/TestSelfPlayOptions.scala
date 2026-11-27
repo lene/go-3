@@ -11,16 +11,48 @@ class TestSelfPlayOptions:
 
   @Test def testDefaults(): Unit =
     Assertions.assertEquals(
-      Right(SelfPlayOptions(5, 0, 4, 200, 1L, 1, "models", "selfplay", Device.Cuda)),
+      Right(SelfPlayOptions(5, 0, 4, 200, 1L, 1, "models", "selfplay", Device.Cuda, false)),
       SelfPlayOptions.parse(required)
     )
 
   @Test def testEveryOption(): Unit =
     val args = Seq("--size", "5", "--generation", "3", "--games", "10", "--simulations", "50") ++
-      Seq("--seed", "-7", "--parallel", "4", "--model-store", "m", "--out", "o", "--device", "cpu")
+      Seq(
+        "--seed",
+        "-7",
+        "--parallel",
+        "4",
+        "--model-store",
+        "m",
+        "--out",
+        "o",
+        "--device",
+        "cpu"
+      ) ++
+      Seq("--resume")
     Assertions.assertEquals(
-      Right(SelfPlayOptions(5, 3, 10, 50, -7L, 4, "m", "o", Device.Cpu)),
+      Right(SelfPlayOptions(5, 3, 10, 50, -7L, 4, "m", "o", Device.Cpu, true)),
       SelfPlayOptions.parse(args)
+    )
+
+  @Test def testOptionsOfThePromotionLoop(): Unit =
+    // as training/go3d_training/loop.py `command` builds them for a SelfPlayStep: keep in sync
+    val loop = "--size 5 --generation 0 --games 200 --seed 2 --simulations 200 --parallel 1 " +
+      "--model-store /store/models --device cuda --out /store/selfplay --resume"
+    Assertions.assertEquals(
+      Right(SelfPlayOptions(
+        5,
+        0,
+        200,
+        200,
+        2L,
+        1,
+        "/store/models",
+        "/store/selfplay",
+        Device.Cuda,
+        true
+      )),
+      SelfPlayOptions.parse(loop.split(" ").toSeq)
     )
 
   @Test def testNoGames(): Unit =

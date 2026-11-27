@@ -17,7 +17,7 @@ import scala.util.{Failure, Random, Success, Try}
   * value of the child (0 while unvisited), `P` its prior, `n` its visits and `N` the visits of
   * the node, whose own evaluation counts as one. The move played is the most visited child of
   * the root. There is no root noise and no temperature in play ([[move]]), only in self-play
-  * ([[selfPlayMove]]); there is no tree reuse and no batching.
+  * and in the opening of a match ([[selfPlayMove]]); there is no tree reuse and no batching.
   */
 final class Search(evaluator: Evaluator, simulations: Int, exploration: Double)
     extends MoveEngine:
@@ -26,16 +26,23 @@ final class Search(evaluator: Evaluator, simulations: Int, exploration: Double)
     if game.isOver then Failure(gameOver)
     else newNode(game).flatMap(search(_, simulations)).map(mostVisited)
 
-  /** The move of self-play, with the root visit distribution as the policy to learn. Before the
-    * simulations, the root priors are mixed with Dirichlet noise ([[Search.NoiseWeight]],
-    * α = [[Search.NoiseConcentration]] / the number of legal actions), so that games differ. With
-    * `sample` the move is drawn from `random` in proportion to the root visits (temperature 1),
-    * else it is the most visited one. The search needs at least one simulation.
+  /** The move of self-play, with the root visit distribution as the policy to learn. With
+    * `noise`, the root priors are mixed with Dirichlet noise before the simulations
+    * ([[Search.NoiseWeight]], α = [[Search.NoiseConcentration]] / the number of legal actions),
+    * so that games differ; self-play has it, the opening of a match does not. With `sample` the
+    * move is drawn from `random` in proportion to the root visits (temperature 1), else it is
+    * the most visited one. The search needs at least one simulation.
     */
-  def selfPlayMove(game: Game, random: Random, sample: Boolean): Try[SelfPlayMove] =
+  def selfPlayMove(
+      game: Game,
+      random: Random,
+      sample: Boolean,
+      noise: Boolean
+  ): Try[SelfPlayMove] =
     if game.isOver then Failure(gameOver)
     else
-      newNode(game).map(withNoise(_, random)).flatMap(search(_, simulations)).map { root =>
+      val root = newNode(game).map(node => if noise then withNoise(node, random) else node)
+      root.flatMap(search(_, simulations)).map { root =>
         val move = if sample then sampled(root, random) else mostVisited(root)
         SelfPlayMove(move, visitPolicy(root, game.size))
       }

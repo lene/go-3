@@ -95,6 +95,28 @@ statistics. `<store>/<s>/<g>/` holds only promoted generations. `uv run train-ge
 | `losses` | per epoch: `{"epoch", "policy", "value", "total"}`, means over the samples |
 | `duration_seconds` | the wall-clock time of the run |
 
+A candidate becomes generation `g` only by winning its promotion match against `g - 1`
+(`go3d.engine.Match`, `docs/development.md`): then `candidates/<g>/` is renamed to `<g>/`.
+A candidate that loses is renamed to `<store>/<s>/rejected/<g>-<attempt>/`, the attempt
+counting from 1, and the next candidate for `g` is trained into `candidates/<g>/` again. Each
+rename is a single directory rename, and a promoted generation is never overwritten.
+
+Every match, promoted or not, appends one line to the match log `<store>/<s>/matches.jsonl`, a
+JSON object; lines are never rewritten:
+
+| Key | Value |
+|---|---|
+| `size`, `generation`, `opponent` | the board size, the candidate's generation `g` and `g - 1` |
+| `attempt` | the attempt of the candidate for `g`, from 1 |
+| `games`, `simulations`, `seed` | the match settings |
+| `threshold` | the candidate is promoted with more wins than this |
+| `komi` | the komi the games were played at: the candidate's |
+| `candidate_wins` | the candidate's wins |
+| `candidate_wins_as_black`, `candidate_wins_as_white` | its wins by colour, each of `games / 2` |
+| `promoted` | `true` if the candidate was promoted |
+| `moved_to` | the candidate's new directory in the store, e.g. `5/1` or `5/rejected/1-2` |
+| `duration_seconds`, `finished` | the match's wall-clock time, and its end (ISO 8601, UTC) |
+
 ## Worked example
 
 Size 5, Black at (1,1,1), White at (3,3,3), Black to move after 2 moves:

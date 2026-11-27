@@ -64,9 +64,27 @@ object OnnxModel extends LazyLogging:
   val ValueOutput: String = "value"
   val FileName: String = "model.onnx"
 
-  /** Where generation `generation` of size `size` is in the model store `store`. */
+  val CandidatesDirName: String = "candidates"
+
+  /** The directory of the promoted generation `generation` of size `size` in the model store
+    * `store` (`docs/model-contract.md`, Storage).
+    */
+  def generationDir(store: Path, size: Int, generation: Int): Path =
+    store.resolve(size.toString).resolve(generation.toString)
+
+  /** The directory of the candidate for generation `generation`, until it is promoted or set
+    * aside: `training/go3d_training/store.py` writes it there.
+    */
+  def candidateDir(store: Path, size: Int, generation: Int): Path =
+    store.resolve(size.toString).resolve(CandidatesDirName).resolve(generation.toString)
+
+  /** Where the promoted generation `generation` of size `size` is in the model store `store`. */
   def path(store: Path, size: Int, generation: Int): Path =
-    store.resolve(size.toString).resolve(generation.toString).resolve(FileName)
+    generationDir(store, size, generation).resolve(FileName)
+
+  /** Where the candidate for generation `generation` of size `size` is in the model store. */
+  def candidatePath(store: Path, size: Int, generation: Int): Path =
+    candidateDir(store, size, generation).resolve(FileName)
 
   /** The model at `path` for a game of `size` on the CPU, if its contract is what the engine and
     * the game expect.

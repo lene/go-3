@@ -4,10 +4,6 @@ import cats.syntax.all.*
 import go3d.{Black, Game}
 
 import java.nio.file.{Files, Path, Paths}
-import java.util.concurrent.Executors
-import java.util.concurrent.atomic.AtomicInteger
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.math.BigDecimal.RoundingMode
 import scala.util.{Failure, Success, Try, Using}
 
@@ -21,36 +17,20 @@ import scala.util.{Failure, Success, Try, Using}
   * Every game starts at the komi of the model. The records go to
   * `<out>/<size>/<generation>/<game id>.json`, one when each game ends. At the end, the games and
   * moves played, the time per simulation in the network and in the engine, and Black's win rate
-  * are printed. Options that are not valid exit with [[BadOptionsExitCode]], a model that does not
-  * load, a record of the run that exists already or a game that fails with [[FailureExitCode]].
-  * `--help` prints the usage.
+  * are printed. Options that are not valid exit with [[Cli.BadOptionsExitCode]], a model that does
+  * not load, a record of the run that exists already (without `--resume`) or a game that fails
+  * with [[Cli.FailureExitCode]]. `--help` prints the usage.
   */
 object SelfPlay:
-  val FailureExitCode: Int = 1
-  val BadOptionsExitCode: Int = 2
-
-  def main(args: Array[String]): Unit =
-    val exitCode = execute(args.toIndexedSeq)
-    if exitCode != 0 then sys.exit(exitCode)
+  def main(args: Array[String]): Unit = Cli.exit(execute(args.toIndexedSeq))
 
   /** Runs self-play with the options in `args` and returns the exit code. */
   def execute(args: Seq[String]): Int =
-    if SelfPlayOptions.asksForHelp(args) then
-      println(SelfPlayOptions.Usage)
-      0
-    else
-      SelfPlayOptions.parse(args) match
-        case Left(message) =>
-          Console.err.println(s"$message\n${SelfPlayOptions.Usage}")
-          BadOptionsExitCode
-        case Right(options) =>
-          playWithModel(options) match
-            case Success(report) =>
-              println(report)
-              0
-            case Failure(error) =>
-              Console.err.println(error.getMessage)
-              FailureExitCode
+    Cli.execute(
+      SelfPlayOptions.Usage,
+      SelfPlayOptions.asksForHelp(args),
+      SelfPlayOptions.parse(args)
+    )(playWithModel)
 
   /** Plays with the model of `options` and returns the report. */
   private def playWithModel(options: SelfPlayOptions): Try[String] =
@@ -67,50 +47,40 @@ object SelfPlay:
 
   /** Plays the games of `options` with `evaluator` from an empty board at `komi`, `parallel` at a
     * time, and writes a record when each game ends. A run whose records would overwrite one that
-    * exists fails before it plays.
+    * exists fails before it plays; with `resume` it plays only the games that have no record.
     */
   def run(options: SelfPlayOptions, evaluator: Evaluator, komi: Double): Try[SelfPlaySummary] =
     val started = System.nanoTime
-    val finished = AtomicInteger()
-    val printEvery = (options.games / ProgressLines).max(1)
     for
       start <- Game.start(options.size, komi)
-      _ <- noRecordExists(options)
+      numbers <- gamesToPlay(options)
       dir <- Try(Files.createDirectories(recordDir(options)))
-      games <- parallelMap(0 until options.games, options.parallel) { number =>
-        val played = playAndWrite(options, evaluator, start, dir, number)
-        val count = finished.incrementAndGet
-        if count % printEvery == 0 || count == options.games then
-          println(s"$count of ${options.games} games played")
-        played
-      }.sequence
+      games <- Parallel.games(numbers, options.parallel)(
+        playAndWrite(options, evaluator, start, dir, _)
+      ).sequence
     yield SelfPlaySummary(games, options.simulations, System.nanoTime - started)
 
-  /** A failure that names the first record of the run in `options` that exists already: the ids
-    * of a run depend only on its seed, size and generation.
+  /** The numbers of the games of `options` to play: those without a record with `resume`, else
+    * all of them, or a failure that names the first record that exists already. The ids of a run
+    * depend only on its seed, size and generation.
     */
-  private def noRecordExists(options: SelfPlayOptions): Try[Unit] =
+  private def gamesToPlay(options: SelfPlayOptions): Try[Seq[Int]] =
     Try(recordDir(options)).flatMap { dir =>
-      (0 until options.games).iterator
-        .map(number =>
-          SelfPlayRecord.path(
-            dir,
-            SelfPlayRecord.gameId(
-              options.seed,
-              options.size,
-              options.generation,
-              number
-            )
+      val numbers = 0 until options.games
+      def recordPath(number: Int): Path = SelfPlayRecord.path(
+        dir,
+        SelfPlayRecord.gameId(options.seed, options.size, options.generation, number)
+      )
+      if options.resume then Success(numbers.filterNot(number => Files.exists(recordPath(number))))
+      else
+        numbers.iterator.map(recordPath).find(Files.exists(_)).fold[Try[Seq[Int]]](
+          Success(numbers)
+        ) { path =>
+          Failure(
+            IllegalStateException(s"$path exists: choose another --seed or --out, or --resume")
           )
-        )
-        .find(Files.exists(_))
-        .fold[Try[Unit]](Success(())) { path =>
-          Failure(IllegalStateException(s"$path exists: choose another --seed or --out"))
         }
     }
-
-  /** About this many progress lines are printed during a run. */
-  private val ProgressLines = 20
 
   private def playAndWrite(
       options: SelfPlayOptions,
@@ -137,18 +107,6 @@ object SelfPlay:
       played.searchNanos,
       played.networkNanos
     )
-
-  /** The results of `f` for the `items`, in the order of the items, `parallelism` at a time: in
-    * the calling thread when that is 1.
-    */
-  private def parallelMap[A, B](items: Seq[A], parallelism: Int)(f: A => B): Seq[B] =
-    if parallelism == 1 then items.map(f)
-    else
-      val pool = Executors.newFixedThreadPool(parallelism)
-      try
-        given ExecutionContext = ExecutionContext.fromExecutor(pool)
-        Await.result(Future.traverse(items)(item => Future(f(item))), Duration.Inf)
-      finally pool.shutdownNow()
 
 /** What the report needs of one game: its moves, whether Black won, and the time spent in the
   * search and, of that, in the network.

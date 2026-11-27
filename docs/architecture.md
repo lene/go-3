@@ -56,8 +56,13 @@ records of [self-play-records.md](self-play-records.md). `train-generation`
 (`training/go3d_training/train.py`) trains a candidate for the next generation from those
 records: `records.py` turns them into samples, `symmetry.py` augments them with the cube's 48
 symmetries, and `export.py` writes the ONNX model with its checkpoint.
-`store.py` holds the layout of the model store (promoted generations and `candidates/`) and of
-the records. `checkpoint.py` saves and loads `model.pt`, the network config and its weights.
+`store.py` holds the layout of the model store (promoted generations, `candidates/`, `rejected/`
+and the match log) and of the records. `checkpoint.py` saves and loads `model.pt`, the network
+config and its weights. `Match` (with `MatchGame`, one search per colour) plays a candidate
+against the generation before it and promotes it or sets it aside; `promotion-loop`
+(`training/go3d_training/loop.py`) chains self-play, training and the match, each a process of
+its own, and works out its next step from the store. `Cli` and `Parallel` hold what `SelfPlay`
+and `Match` share: the command-line handling, and the games played at the same time.
 
 ### Server architecture (go3d.server package)
 
