@@ -242,6 +242,12 @@ jobs:
       - run: shellcheck ci/*.sh
       # the retry wrapper that every sbt step uses, against a fake sbt
       - run: bash ci/test-sbt-retry.sh
+      - name: Every sbt step goes through ci/sbt-retry.sh
+        run: |
+          if grep -nE '^\s*(- run: )?sbt |^RUN sbt ' .github/workflows/*.yml Dockerfile; then
+            echo "::error::run sbt through ci/sbt-retry.sh, which retries download failures"
+            exit 1
+          fi
 
   version-consistent:
     name: Version is new and consistent

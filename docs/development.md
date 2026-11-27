@@ -305,6 +305,14 @@ The `Check warnings` job compiles main and test sources and fails if the number 
 warnings (WartRemover, `-Wunused`, deprecations) is higher than on the last successful master run;
 `ci/warning_summary.sh` prints them by kind and file (see STATIC_ANALYSIS.md and issue #143).
 
+Every sbt step in CI and in the Dockerfile runs through `ci/sbt-retry.sh`. Maven Central answers
+bursts from the shared runner IPs with HTTP 429 and no `Retry-After`, so when sbt fails with a
+download error the script waits 2, 5 and 10 minutes and tries again; a compile error or a failing
+test fails at once. The `CI scripts` job runs its self-test (`ci/test-sbt-retry.sh`) and fails
+on an sbt step that does not use it. `.github/actions/setup-jvm` caches the coursier, ivy and sbt
+directories with `coursier/cache-action`, which falls back to the newest earlier cache, so a PR
+that bumps the version in `build.sbt` starts from master's cache.
+
 ## Testing and development workflow
 
 ### Starting a game session
