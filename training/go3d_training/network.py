@@ -52,7 +52,8 @@ class ResidualBlock(nn.Module):
         self.relu = nn.ReLU()
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.relu(x + self.body(x))
+        out: torch.Tensor = self.relu(x + self.body(x))  # a Module call is typed as Any
+        return out
 
 
 class PolicyValueNetwork(nn.Module):

@@ -43,7 +43,7 @@ class Symmetry:
         lead = planes.ndim - DIMENSIONS
         spatial = [lead + axis for axis in self.axes]
         transposed = np.transpose(planes, [*range(lead), *spatial])
-        flipped = [lead + i for i, flip in enumerate(self.flips) if flip]
+        flipped = tuple(lead + i for i, flip in enumerate(self.flips) if flip)
         return np.ascontiguousarray(np.flip(transposed, axis=flipped))
 
     def policy(self, policy: np.ndarray, size: int) -> np.ndarray:

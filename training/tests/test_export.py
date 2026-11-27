@@ -8,7 +8,7 @@ import torch
 
 from go3d_training.checkpoint import load_checkpoint
 from go3d_training.encoding import encode
-from go3d_training.export import export_generation, main, model_komi, write_model
+from go3d_training.export import ExportError, export_generation, main, model_komi, write_model
 from go3d_training.network import NetworkConfig, build_network
 from go3d_training.store import checkpoint_path, model_path
 
@@ -150,6 +150,45 @@ def test_cli_seed_draws_the_network(tmp_path):
     np.testing.assert_array_equal(cli_policy, policy_1)
     np.testing.assert_array_equal(cli_value, value_1)
     assert not np.array_equal(cli_policy, policy_0)
+
+
+def snapshot(directory: Path) -> dict[str, bytes]:
+    return {
+        str(path.relative_to(directory)): path.read_bytes()
+        for path in sorted(directory.rglob("*"))
+        if path.is_file()
+    }
+
+
+def test_existing_generation_is_not_overwritten(tmp_path):
+    config = NetworkConfig(3, blocks=1, channels=4)
+    export_generation(tmp_path, config, generation=0, seed=0)
+    before = snapshot(tmp_path)
+    with pytest.raises(ExportError, match=str(tmp_path / "3" / "0")):
+        export_generation(tmp_path, config, generation=0, seed=1)
+    assert snapshot(tmp_path) == before
+
+
+def test_existing_generation_directory_is_not_written_to(tmp_path):
+    directory = tmp_path / "3" / "0"
+    directory.mkdir(parents=True)
+    with pytest.raises(ExportError):
+        export_generation(tmp_path, NetworkConfig(3, blocks=1, channels=4), generation=0, seed=0)
+    assert list(directory.iterdir()) == []
+
+
+def test_cli_refuses_an_existing_generation(tmp_path, capsys):
+    argv = ["--size", "3", "--generation", "0", "--out", str(tmp_path), "--blocks", "1"]
+    main(argv + ["--channels", "4"])
+    before = snapshot(tmp_path)
+    capsys.readouterr()
+    with pytest.raises(SystemExit) as exit_info:
+        main(argv + ["--channels", "4", "--seed", "1"])
+    assert exit_info.value.code == 2
+    error = capsys.readouterr().err
+    assert "export-generation: error:" in error
+    assert f"{tmp_path / '3' / '0'} exists and is not overwritten" in error
+    assert snapshot(tmp_path) == before
 
 
 @pytest.mark.parametrize(

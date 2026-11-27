@@ -24,7 +24,13 @@ import torch
 import torch.nn.functional as functional
 
 from go3d_training.checkpoint import load_checkpoint
-from go3d_training.export import DEFAULT_SEED, KOMI_KEY, model_metadata, write_model
+from go3d_training.export import (
+    DEFAULT_SEED,
+    ERROR_EXIT_CODE,
+    KOMI_KEY,
+    model_metadata,
+    write_model,
+)
 from go3d_training.network import PolicyValueNetwork
 from go3d_training.records import (
     Record,
@@ -35,6 +41,7 @@ from go3d_training.records import (
     refit_komi,
 )
 from go3d_training.store import (
+    CHECKPOINT_FILE_NAME,
     METRICS_FILE_NAME,
     candidate_dir,
     checkpoint_path,
@@ -54,7 +61,6 @@ DEFAULT_LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
 CUDA = "cuda"
 CPU = "cpu"
-ERROR_EXIT_CODE = 2
 PROGRAM = "train-generation"
 
 
@@ -94,6 +100,38 @@ class EpochLosses:
     policy: float
     value: float
     total: float
+
+
+@dataclass(frozen=True)
+class TrainingData:
+    """The samples of a training run at `komi`, the komi refitted from the parent's records,
+    and the number of records they come from."""
+
+    komi: float
+    records: int
+    samples: Samples
+
+
+@dataclass(frozen=True)
+class TrainingMetrics:
+    """The content of `training.json`, in the order of its keys."""
+
+    size: int
+    generation: int
+    parent: int
+    old_komi: float
+    new_komi: float
+    record_generations: list[int]
+    records: int
+    samples: int
+    epochs: int
+    batch_size: int
+    learning_rate: float
+    weight_decay: float
+    seed: int
+    device: str
+    losses: list[EpochLosses]
+    duration_seconds: float
 
 
 def resolve_device(name: str) -> torch.device:
@@ -188,7 +226,7 @@ def _parent(options: TrainingOptions) -> tuple[PolicyValueNetwork, float]:
     if not checkpoint.is_file():
         hint = (
             ": re-export generation 0 with export-generation and the same --seed, --blocks and "
-            "--channels to write it"
+            f"--channels to another --out and copy its {CHECKPOINT_FILE_NAME} here"
             if options.parent == 0
             else ""
         )
@@ -234,35 +272,13 @@ def _records(options: TrainingOptions) -> list[Record]:
     return records
 
 
-def _metrics(
-    options: TrainingOptions,
-    komi: tuple[float, float],
-    records: int,
-    samples: int,
-    device: torch.device,
-    history: list[EpochLosses],
-    seconds: float,
-) -> dict[str, object]:
-    """The content of `training.json`; `komi` is the parent's and the refitted one."""
-    old_komi, new_komi = komi
-    return {
-        "size": options.size,
-        "generation": options.generation,
-        "parent": options.parent,
-        "old_komi": old_komi,
-        "new_komi": new_komi,
-        "record_generations": options.record_generations,
-        "records": records,
-        "samples": samples,
-        "epochs": options.epochs,
-        "batch_size": options.batch_size,
-        "learning_rate": options.learning_rate,
-        "weight_decay": WEIGHT_DECAY,
-        "seed": options.seed,
-        "device": device.type,
-        "losses": [asdict(epoch) for epoch in history],
-        "duration_seconds": seconds,
-    }
+def _training_data(options: TrainingOptions) -> TrainingData:
+    """The samples of the records of `options` at the komi refitted from the parent's records.
+    The records, which hold their planes too, are dropped once their samples are taken."""
+    records = _records(options)
+    margins = [record.margin for record in records if record.generation == options.parent]
+    komi = refit_komi(margins, options.size)
+    return TrainingData(komi, len(records), all_samples(records, komi))
 
 
 def train_generation(options: TrainingOptions) -> Path:
@@ -271,21 +287,32 @@ def train_generation(options: TrainingOptions) -> Path:
     started = time.monotonic()
     _check_free(options)
     network, old_komi = _parent(options)
-    records = _records(options)
-    margins = [record.margin for record in records if record.generation == options.parent]
-    komi = refit_komi(margins, options.size)
-    samples = all_samples(records, komi)
+    data = _training_data(options)
     device = resolve_device(options.device)
-    history = fit(network, samples, options, device)
-    seconds = time.monotonic() - started
-    metrics = _metrics(
-        options, (old_komi, komi), len(records), len(samples), device, history, seconds
+    history = fit(network, data.samples, options, device)
+    metrics = TrainingMetrics(
+        size=options.size,
+        generation=options.generation,
+        parent=options.parent,
+        old_komi=old_komi,
+        new_komi=data.komi,
+        record_generations=options.record_generations,
+        records=data.records,
+        samples=len(data.samples),
+        epochs=options.epochs,
+        batch_size=options.batch_size,
+        learning_rate=options.learning_rate,
+        weight_decay=WEIGHT_DECAY,
+        seed=options.seed,
+        device=device.type,
+        losses=history,
+        duration_seconds=time.monotonic() - started,
     )
-    return _write_candidate(options, network, komi, metrics)
+    return _write_candidate(options, network, data.komi, metrics)
 
 
 def _write_candidate(
-    options: TrainingOptions, network: PolicyValueNetwork, komi: float, metrics: dict[str, object]
+    options: TrainingOptions, network: PolicyValueNetwork, komi: float, metrics: TrainingMetrics
 ) -> Path:
     """Write the candidate to a hidden directory next to its own, then rename it, so that a
     failure leaves no partial candidate."""
@@ -296,7 +323,7 @@ def _write_candidate(
     staging.mkdir()
     try:
         write_model(staging, network, options.generation, komi)
-        (staging / METRICS_FILE_NAME).write_text(json.dumps(metrics, indent=2) + "\n")
+        (staging / METRICS_FILE_NAME).write_text(json.dumps(asdict(metrics), indent=2) + "\n")
         os.rename(staging, target)
     except BaseException:
         shutil.rmtree(staging, ignore_errors=True)
@@ -347,18 +374,8 @@ def _parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> None:
     parser = _parser()
     args = parser.parse_args(argv)
-    options = TrainingOptions(
-        size=args.size,
-        generation=args.generation,
-        models=args.models,
-        records=args.records,
-        window=args.window,
-        epochs=args.epochs,
-        batch_size=args.batch_size,
-        learning_rate=args.learning_rate,
-        seed=args.seed,
-        device=args.device,
-    )
+    # every option of the parser is a field of TrainingOptions under the same name
+    options = TrainingOptions(**vars(args))
     try:
         target = train_generation(options)
     except (TrainingError, RecordError) as error:
