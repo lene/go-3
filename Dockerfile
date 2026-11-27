@@ -6,7 +6,7 @@ ARG version=0.7.60
 
 WORKDIR /go-3
 COPY . /go-3
-RUN sbt "Universal / packageBin"
+RUN ci/sbt-retry.sh "Universal / packageBin"
 RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf /var/lib/apt/lists/*
 RUN unzip -oq /go-3/target/universal/go-3d-${version}.zip
 RUN mv go-3d-${version}/??? . && rm -r go-3d-*.*.* target
