@@ -11,7 +11,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends unzip && rm -rf
 RUN unzip -oq /go-3/target/universal/go-3d-${version}.zip
 RUN mv go-3d-${version}/??? . && rm -r go-3d-*.*.* target
 
-FROM eclipse-temurin:25-jre@sha256:945247f9d092703e0c6be92243ef3c51640229e23ab34d353c8dcdc73e6cd4e6
+FROM eclipse-temurin:25-jre@sha256:4ed132f6832e9804b123e89a849a7b4502756ae64a4ee08ebab939d9d5d0a9fa
 ARG version=0.7.62
 ENV SAVE_DIR=saves
 ENV PORT=6030
