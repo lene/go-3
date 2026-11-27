@@ -14,7 +14,7 @@ ThisBuild / scapegoatDisabledInspections := Seq("OptionGet")
 
 /** The settings of every project: version, compiler options, WartRemover and the test libraries. */
 lazy val commonSettings = Seq(
-    version := "0.7.58",
+    version := "0.7.59",
     scalaVersion := scala3Version,
 
     scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all"),
@@ -126,6 +126,8 @@ lazy val engine = project
     // the GPU build (CUDA 13, cuDNN 9): self-play runs on CUDA when its provider loads, play and
     // the tests on the CPU provider that the GPU build also has
     libraryDependencies += "com.microsoft.onnxruntime" % "onnxruntime_gpu" % "1.32.0",
+    // Try's sequence in SelfPlay; the version that http4s brings in through the root project
+    libraryDependencies += "org.typelevel" %% "cats-core" % "2.13.0",
     // ONNX Runtime loads a native library, which a JVM can load only once: a forked test JVM
     // keeps it out of sbt's own JVM, so that tests can run again in the same sbt session
     Test / fork := true,

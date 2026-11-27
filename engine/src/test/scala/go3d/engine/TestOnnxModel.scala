@@ -1,5 +1,6 @@
 package go3d.engine
 
+import ai.onnxruntime.OrtException
 import go3d.Game
 import go3d.client.MoveEngineError
 import org.junit.jupiter.api.{Assertions, Test}
@@ -63,3 +64,16 @@ class TestOnnxModel:
     val message = errorMessage(OnnxModel.load(path, 5).failure.exception)
     Files.delete(path)
     Assertions.assertTrue(message.contains(path.toString), message)
+
+  @Test def testFileThatIsNoModelKeepsTheErrorOfOnnxRuntime(): Unit =
+    val path = Files.createTempFile("model", ".onnx")
+    Files.writeString(path, "not a model")
+    val error = OnnxModel.load(path, 5).failure.exception
+    Files.delete(path)
+    Assertions.assertInstanceOf(classOf[OrtException], error.getCause)
+    Assertions.assertEquals(s"model $path: ${error.getCause.getMessage}", error.getMessage)
+
+  @Test def testModelForAnotherSizeKeepsTheErrorOfTheContract(): Unit =
+    val error = OnnxModel.load(fixtureModelPath, 7).failure.exception
+    Assertions.assertInstanceOf(classOf[MoveEngineError], error.getCause)
+    Assertions.assertTrue(error.getMessage.endsWith(error.getCause.getMessage), error.getMessage)

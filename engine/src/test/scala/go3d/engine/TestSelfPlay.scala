@@ -23,7 +23,13 @@ class TestSelfPlay:
   private val tolerance = 1e-9
 
   @AfterEach def deleteRecords(): Unit =
-    Files.walk(out).sorted(Comparator.reverseOrder()).iterator.asScala.foreach(Files.delete)
+    Using.resource(Files.walk(out))(
+      _.sorted(Comparator.reverseOrder()).iterator.asScala.foreach(Files.delete)
+    )
+
+  /** The files and directories in `dir`. */
+  private def entries(dir: Path): List[Path] =
+    Using.resource(Files.list(dir))(_.iterator.asScala.toList)
 
   private def options(seed: Long, games: Int, parallel: Int, outDir: Path): SelfPlayOptions =
     SelfPlayOptions(
@@ -43,7 +49,7 @@ class TestSelfPlay:
     val dir = SelfPlay.recordDir(options)
     if !Files.isDirectory(dir) then Map()
     else
-      Files.list(dir).iterator.asScala.toList.map { path =>
+      entries(dir).map { path =>
         path.getFileName.toString -> parse(Files.readString(path)).value
       }.toMap
 
@@ -120,6 +126,10 @@ class TestSelfPlay:
     def firstMove(seed: Long): Move | Pass =
       recordedGame(played(seed, 1, 1, out.resolve(seed.toString)).values.head).moves.head
     Assertions.assertNotEquals(firstMove(1), firstMove(2))
+
+  @Test def testGameIdOfTheFixtureRecordStaysTheSame(): Unit =
+    // training finds the fixture record by this id
+    Assertions.assertEquals("023ENq", SelfPlayRecord.gameId(fixtureRecordSeed, 5, 0, 0))
 
   @Test def testGameIdsOfARunDiffer(): Unit =
     val ids = (0 until 1000).map(SelfPlayRecord.gameId(1, 5, 0, _))
@@ -199,6 +209,13 @@ class TestSelfPlay:
     val error = SelfPlay.run(options(1, 2, 1, out), failing, komi).failure.exception
     Assertions.assertEquals("network failed", error.getMessage)
 
+  @Test def testLongRunPrintsAboutTwentyProgressLines(): Unit =
+    val run = options(1, 40, 1, out).copy(simulations = 1)
+    val stdout = ByteArrayOutputStream()
+    Console.withOut(stdout)(SelfPlay.run(run, uniform, komi)).success.value
+    val progress = stdout.toString.linesIterator.filter(_.endsWith(" games played")).toList
+    Assertions.assertEquals((2 to 40 by 2).map(count => s"$count of 40 games played"), progress)
+
   @Test def testOpeningMovesAreSampledAndTheRestAreTheMostVisited(): Unit =
     val start = Game.start(5, komi).success.value
     val game = SelfPlayGame.play(uniform, start, 10, 1).success.value
@@ -222,7 +239,7 @@ class TestSelfPlay:
     val (code, _, message) = executed(args*)
     Assertions.assertEquals(SelfPlay.FailureExitCode, code)
     Assertions.assertTrue(message.contains(OnnxModel.path(fixtureStore, 5, 1).toString), message)
-    Assertions.assertEquals(List(), Files.list(out).iterator.asScala.toList)
+    Assertions.assertEquals(List(), entries(out))
 
   @Test def testBadOptionWritesNoRecords(): Unit =
     val args = Seq("--size", "5", "--generation", "0", "--games", "0") ++
@@ -230,4 +247,4 @@ class TestSelfPlay:
     val (code, _, message) = executed(args*)
     Assertions.assertEquals(SelfPlay.BadOptionsExitCode, code)
     Assertions.assertTrue(message.contains("Usage"), message)
-    Assertions.assertEquals(List(), Files.list(out).iterator.asScala.toList)
+    Assertions.assertEquals(List(), entries(out))

@@ -31,7 +31,11 @@ trait MoveEngineProvider:
   def create(argument: String, settings: MoveEngineSettings, game: Game): Try[MoveEngine]
 
 /** A move engine that cannot be found or created, with a message for the user. */
-class MoveEngineError(message: String) extends RuntimeException(message)
+class MoveEngineError(message: String) extends RuntimeException(message):
+  /** The error with `message` that `cause`, e.g. a failure of the inference library, led to. */
+  def this(message: String, cause: Throwable) =
+    this(message)
+    val _ = initCause(cause)
 
 object MoveEngine:
   /** Separates the provider prefix of an engine strategy from its argument, as in `model:3`. */
