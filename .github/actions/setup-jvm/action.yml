@@ -1,6 +1,14 @@
 name: Set up JVM and sbt
 description: JDK and sbt setup shared by all workflows, so the JDK policy lives in one place
 
+inputs:
+  cache-group:
+    description: >
+      Which dependency cache the job shares: "full" for jobs that resolve the engine too (its
+      ONNX Runtime jar is most of the cache), "root" for jobs that need the root project only.
+      One cache per group rather than per job keeps the repository under its cache limit.
+    default: root
+
 runs:
   using: composite
   steps:
@@ -13,3 +21,5 @@ runs:
     # the coursier, ivy and sbt caches; unlike setup-java's sbt cache it falls back to the newest
     # cache of an earlier build, so a PR that bumps the version in build.sbt starts from master's
     - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
+      with:
+        job: ${{ inputs.cache-group }}

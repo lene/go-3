@@ -311,7 +311,9 @@ download error the script waits 2, 5 and 10 minutes and tries again; a compile e
 test fails at once. The `CI scripts` job runs its self-test (`ci/test-sbt-retry.sh`) and fails
 on an sbt step that does not use it. `.github/actions/setup-jvm` caches the coursier, ivy and sbt
 directories with `coursier/cache-action`, which falls back to the newest earlier cache, so a PR
-that bumps the version in `build.sbt` starts from master's cache.
+that bumps the version in `build.sbt` starts from master's cache. Jobs share one cache per
+`cache-group` input: `full` for those that resolve the engine (its ONNX Runtime jar dominates),
+`root` for the rest; a cache per job would overflow the repository's 10 GB cache limit.
 
 ## Testing and development workflow
 

@@ -7,6 +7,8 @@
 # retried: a compile error or a failing test fails at once.
 #
 # SBT_RETRY_DELAYS: the seconds to wait before each retry (default "120 300 600": three retries).
+# SBT_RETRY_LOG: if set, the file that receives the output of the last attempt only (a failed
+# attempt may already have compiled part of the build and printed its warnings).
 set -uo pipefail
 
 PATTERN='HTTP 429|could not retrieve|Error downloading|shasum mismatch'
@@ -20,6 +22,7 @@ attempt=0
 while true; do
   sbt "$@" 2>&1 | tee "$log"
   status=${PIPESTATUS[0]}
+  if [ -n "${SBT_RETRY_LOG:-}" ]; then cp "$log" "$SBT_RETRY_LOG"; fi
   if [ "$status" -eq 0 ]; then exit 0; fi
   if [ "$attempt" -ge "${#delays[@]}" ] || ! grep -Eq "$PATTERN" "$log"; then exit "$status"; fi
   delay=${delays[$attempt]}

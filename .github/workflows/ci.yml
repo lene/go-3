@@ -56,10 +56,8 @@ jobs:
           apt-get -y update
           apt-get -y install sbt
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # a cache per image: home is /github/home here, and the compression may differ
+      # one cache per image: the action puts the job and the matrix into its keys
       - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
-        with:
-          extraKey: ${{ matrix.image }}
       - run: ci/sbt-retry.sh test
 
   test:
@@ -85,6 +83,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
+        with:
+          cache-group: full
       - run: ci/sbt-retry.sh test
       - name: Publish test report
         if: always()
@@ -114,6 +114,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
+        with:
+          cache-group: full
       - name: Download coverage of last successful master build
         uses: dawidd6/action-download-artifact@a92c7ae74cf1df8810783758581e485ac3aaa309 # v28
         with:
@@ -162,6 +164,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
+        with:
+          cache-group: full
       - name: Download warning count of last successful master build
         uses: dawidd6/action-download-artifact@a92c7ae74cf1df8810783758581e485ac3aaa309 # v28
         with:
@@ -175,7 +179,9 @@ jobs:
         run: |
           if [ -f previous-warnings/warnings.log ]; then . previous-warnings/warnings.log; fi
           warnings_old=${warnings:-}
-          ci/sbt-retry.sh -Dsbt.log.noformat=true clean compile Test/compile | tee compile.log
+          # the last attempt only: a failed one may have compiled root and printed its warnings
+          SBT_RETRY_LOG=compile.log \
+            ci/sbt-retry.sh -Dsbt.log.noformat=true clean compile Test/compile
           ci/warning_summary.sh compile.log
           echo "warnings=$(grep -c '^\[warn\] -- ' compile.log || true)" > warnings.log
           . ./warnings.log
@@ -205,6 +211,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
+        with:
+          cache-group: full
       - run: ci/sbt-retry.sh compile
       - name: Run benchmark and check user time
         run: |
@@ -244,7 +252,7 @@ jobs:
       - run: bash ci/test-sbt-retry.sh
       - name: Every sbt step goes through ci/sbt-retry.sh
         run: |
-          if grep -nE '^\s*(- run: )?sbt |^RUN sbt ' .github/workflows/*.yml Dockerfile; then
+          if grep -rnE '^\s*(- )?(run: )?sbt( |$)|^RUN sbt( |$)' .github Dockerfile; then
             echo "::error::run sbt through ci/sbt-retry.sh, which retries download failures"
             exit 1
           fi
@@ -474,4 +482,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
+        with:
+          cache-group: full
+      # resolves every dependency with retries, so that the action's own sbt finds them cached
+      - run: ci/sbt-retry.sh update
       - uses: scalacenter/sbt-dependency-submission@7b2f7e1418cb4a77fee99f9eb07c3f7577b9a867 # v3

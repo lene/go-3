@@ -29,7 +29,8 @@ jobs:
     name: Bot vs bot on staging
     if: vars.GO3D_STAGING_API_URL != '' && github.repository == 'lene/go-3'
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # room for ci/sbt-retry.sh to wait out a Maven Central rate limit (up to about 85 minutes)
+    timeout-minutes: 120
     env:
       API_URL: ${{ vars.GO3D_STAGING_API_URL }}
       BOARD_SIZE: ${{ inputs.board_size }}

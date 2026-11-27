@@ -19,6 +19,13 @@ case "$FAKE_SBT_MODE" in
     echo "[success]"; exit 0 ;;
   test-failure) echo "[error] Failed: Total 3, Failed 1"; exit 3 ;;
   429-always) echo "[error] [launcher] could not retrieve sbt 1.13.1"; exit 1 ;;
+  # root compiles with a warning, then the engine's dependency download fails
+  warn-then-429)
+    echo "[warn] -- attempt $calls"
+    if [ "$calls" -eq 1 ]; then
+      echo "Error downloading com.microsoft.onnxruntime:onnxruntime_gpu:1.32.0" >&2; exit 1
+    fi
+    exit 0 ;;
 esac
 EOF
 chmod +x "$dir/sbt"
@@ -48,5 +55,13 @@ if ! grep -q '^\[success\]$' "$dir/out"; then
 fi
 check test-failure 3 1
 check 429-always 1 4
+
+# SBT_RETRY_LOG keeps the output of the last attempt only, so that the warnings step counts the
+# warnings of one compile; the failure on stderr is still recognised
+SBT_RETRY_LOG="$dir/last.log" check warn-then-429 0 2
+if [ "$(cat "$dir/last.log" 2>/dev/null)" != "[warn] -- attempt 2" ]; then
+  echo "FAIL: warn-then-429 expected only the last attempt in SBT_RETRY_LOG"
+  failed=1
+fi
 
 exit "$failed"
