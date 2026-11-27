@@ -9,5 +9,7 @@ runs:
         distribution: temurin
         java-version: 25
         check-latest: true
-        cache: sbt
     - uses: sbt/setup-sbt@7e114eae4f32ec3f93c851c2793376a77f384409 # v1
+    # the coursier, ivy and sbt caches; unlike setup-java's sbt cache it falls back to the newest
+    # cache of an earlier build, so a PR that bumps the version in build.sbt starts from master's
+    - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1

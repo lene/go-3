@@ -30,8 +30,9 @@ jobs:
       - id: version
         run: echo "version=$(grep 'version :=' build.sbt | cut -d '"' -f 2)" >> "$GITHUB_OUTPUT"
 
-  # Installs sbt from the sbt apt repository on several distributions. Somewhat slower than the
-  # other jobs, kept mostly as documentation of how to install the environment.
+  # Installs sbt from the sbt apt repository on one distribution per JDK that default-jdk gives
+  # (21 on Debian stable, 25 on the latest Ubuntu LTS). Somewhat slower than the other jobs, kept
+  # mostly as documentation of how to install the environment.
   test-debian:
     name: Test (${{ matrix.image }})
     runs-on: ubuntu-latest
@@ -39,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [ubuntu:24.04, ubuntu:latest, debian:stable-slim, debian:testing-slim]
+        image: [debian:stable-slim, ubuntu:latest]
     steps:
       - name: Install sbt
         run: |
@@ -55,6 +56,10 @@ jobs:
           apt-get -y update
           apt-get -y install sbt
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      # a cache per image: home is /github/home here, and the compression may differ
+      - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
+        with:
+          extraKey: ${{ matrix.image }}
       - run: ci/sbt-retry.sh test
 
   test:
