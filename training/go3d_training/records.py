@@ -42,7 +42,8 @@ class RecordError(ValueError):
 @dataclass(frozen=True)
 class Record:
     """A self-play game: its moves (a point, or None for a pass) in order, the stones each move
-    captured by the index of the move, the policy of each move, the winner and the score."""
+    captured by the index of the move, the planes of the position before each move, the policy
+    of each move, the winner and the score."""
 
     path: Path
     size: int
@@ -50,6 +51,7 @@ class Record:
     komi: float
     moves: tuple[Point | None, ...]
     captures: dict[int, tuple[Point, ...]]
+    planes: np.ndarray
     policies: np.ndarray
     winner: Color
     black_score: int
@@ -95,7 +97,7 @@ def load_record(path: Path, size: int, generation: int) -> Record:
     that names the path."""
     try:
         record = _parse(json.loads(path.read_text()), path, size, generation)
-        _check_replay(record)
+        _check_winner(record)
         return record
     except (OSError, ValueError, KeyError, TypeError) as error:
         raise RecordError(f"{path} is not a valid self-play record: {error}") from error
@@ -145,6 +147,7 @@ def _parse(data: dict[str, Any], path: Path, size: int, generation: int) -> Reco
         komi=komi,
         moves=moves,
         captures=captures,
+        planes=_replay(moves, captures, size),
         policies=policies.astype(np.float32),
         winner=WINNER_NAMES[data["winner"]],
         black_score=int(data["score"]["black"]),
@@ -197,20 +200,27 @@ def _check_policies(policies: np.ndarray, move_count: int, size: int) -> None:
     _expect(bool(np.allclose(sums, 1.0, atol=POLICY_SUM_TOLERANCE)), "a policy does not sum to 1")
 
 
-def _check_replay(record: Record) -> None:
-    """Replay the record to its end, which checks the stones of every move, then the winner."""
-    for _ in positions(record):
-        pass
+def _check_winner(record: Record) -> None:
     winner = record.winner_at(record.komi)
     _expect(record.winner is winner, "the winner does not follow from the score and the komi")
 
 
-def positions(record: Record) -> Iterator[Position]:
-    """The position before each move of `record`: the empty board with the moves before it
-    played in order, each stone placed, then the stones it captured removed."""
+def _replay(
+    moves: tuple[Point | None, ...], captures: dict[int, tuple[Point, ...]], size: int
+) -> np.ndarray:
+    """The planes `[n, 5, s, s, s]` of the position before each of the `n` moves; the replay
+    checks the stones of every move."""
+    return np.stack([position.planes(size) for position in _positions(moves, captures)])
+
+
+def _positions(
+    moves: tuple[Point | None, ...], captures: dict[int, tuple[Point, ...]]
+) -> Iterator[Position]:
+    """The position before each of `moves`: the empty board with the moves before it played in
+    order, each stone placed, then the stones it captured removed."""
     stones: dict[Color, set[Point]] = {Color.BLACK: set(), Color.WHITE: set()}
-    for index, move in enumerate(record.moves):
-        previous_pass = index > 0 and record.moves[index - 1] is None
+    for index, move in enumerate(moves):
+        previous_pass = index > 0 and moves[index - 1] is None
         black, white = frozenset(stones[Color.BLACK]), frozenset(stones[Color.WHITE])
         yield Position(black, white, index, previous_pass)
         player = player_to_move(index)
@@ -218,7 +228,7 @@ def positions(record: Record) -> Iterator[Position]:
             occupied = move in stones[Color.BLACK] or move in stones[Color.WHITE]
             _expect(not occupied, f"move {index} is on the stone at {move}")
             stones[player].add(move)
-        for stone in record.captures.get(index, ()):
+        for stone in captures.get(index, ()):
             _expect(stone in stones[player.opponent()], f"move {index} captured {stone}, no stone")
             stones[player.opponent()].remove(stone)
 
@@ -226,13 +236,12 @@ def positions(record: Record) -> Iterator[Position]:
 def samples(record: Record, komi: float) -> Samples:
     """One sample per move of `record`, its value the result at `komi`: the komi of the model
     that is trained on it, which may not be the komi the game was played at."""
-    planes = [position.planes(record.size) for position in positions(record)]
     winner = record.winner_at(komi)
     values = [
         WIN if player_to_move(index) is winner else LOSS for index in range(len(record.moves))
     ]
     return Samples(
-        planes=np.stack(planes),
+        planes=record.planes,
         policies=record.policies,
         values=np.array(values, dtype=np.float32),
     )

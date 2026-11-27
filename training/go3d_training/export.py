@@ -41,6 +41,12 @@ INITIAL_KOMI = 4.5
 DEFAULT_SEED = 0
 UNTRAINED_GENERATION = 0
 EXAMPLE_BATCH = 2
+ERROR_EXIT_CODE = 2
+PROGRAM = "export-generation"
+
+
+class ExportError(Exception):
+    """An export that cannot start; it has written nothing."""
 
 
 def contract_metadata(network: PolicyValueNetwork, generation: int, komi: float) -> dict[str, str]:
@@ -110,14 +116,17 @@ def export_generation(
     seed: int,
 ) -> Path:
     """Write generation `generation` of `config`, its weights drawn from `seed`, at the initial
-    komi; return the path of its ONNX model."""
+    komi; return the path of its ONNX model. An existing generation is not overwritten: with
+    another seed or shape it would no longer be the network that played its records."""
     directory = generation_dir(out, config.size, generation)
+    if directory.exists():
+        raise ExportError(f"{directory} exists and is not overwritten")
     return write_model(directory, build_network(config, seed), generation, INITIAL_KOMI)
 
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="export-generation",
+        prog=PROGRAM,
         description="Export an untrained model generation to <out>/<size>/<generation>/.",
     )
     parser.add_argument("--size", type=int, required=True, help="odd board size, 3 to 25")
@@ -143,5 +152,8 @@ def main(argv: Sequence[str] | None = None) -> None:
         config = NetworkConfig(args.size, args.blocks, args.channels)
     except ValueError as error:
         parser.error(str(error))
-    path = export_generation(args.out, config, args.generation, args.seed)
+    try:
+        path = export_generation(args.out, config, args.generation, args.seed)
+    except ExportError as error:
+        parser.exit(ERROR_EXIT_CODE, f"{PROGRAM}: error: {error}\n")
     print(f"wrote {path} and {path.with_name(CHECKPOINT_FILE_NAME)}")

@@ -157,12 +157,16 @@ user's decision.
 for the AlphaZero engine; the Poetry project at the root is unrelated. It defines the board
 encoding, the action indexing and the policy-and-value network of
 [model-contract.md](model-contract.md), exports the untrained generation 0 to ONNX and trains
-the next generations from the self-play records. Its tests run locally only, not in CI.
+the next generations from the self-play records. The CI job `Training (Python)` runs its lint,
+type check and tests.
 
 ```bash
 cd training
-uv sync                    # once: creates training/.venv
+uv sync                    # once: creates training/.venv, with the CUDA build of PyTorch on Linux
 uv run pytest              # all tests
+uv run ruff check          # lint (rules and line length 100 in pyproject.toml)
+uv run ruff format --check # formatting; `uv run ruff format` fixes it
+uv run mypy                # type check of go3d_training
 
 # Untrained generation 0 for size 5: writes ../models/5/0/model.onnx and model.pt
 # (models/ is git-ignored)
@@ -171,8 +175,17 @@ uv run export-generation --size 5 --generation 0 --out ../models
 
 Options: `--seed N` (default 0, the same seed gives the same network), `--blocks N` (default 6),
 `--channels N` (default 64). An even size, a size below 3 or above 25, a blocks or channels count
-below 1, or a generation other than 0 (`train-generation` makes the others) writes nothing and
-exits with code 2.
+below 1, a generation other than 0 (`train-generation` makes the others) or an existing
+`<out>/<size>/0/` writes nothing and exits with code 2: with another seed or shape, generation 0
+would no longer be the network that played its records.
+
+Without a GPU, or to keep the download small, take the CPU build of PyTorch as CI does. `uv run`
+syncs the environment back to the default build unless it is given the same extra:
+
+```bash
+uv sync --extra cpu
+uv run --extra cpu pytest  # or uv run --no-sync pytest
+```
 
 A candidate for generation `g` is trained from the checkpoint of the promoted generation `g - 1`
 on the self-play records of generations `g - window` to `g - 1`
@@ -193,11 +206,12 @@ cross-entropy against the search's visit shares plus the value's mean squared er
 seed and records give the same weights on the CPU. The candidate's komi is refitted from the
 records of `g - 1`: the half-integer nearest the median Black-minus-White area margin, the one
 above an integer median, within ±(size³ - 0.5). Every value target is the result at that komi,
-which the candidate's metadata carries, not at the komi the game was played at. The losses of each epoch are printed and kept in
-`training.json` (see [model-contract.md](model-contract.md)).
+which the candidate's metadata carries, not at the komi the game was played at. The losses of
+each epoch are printed and kept in `training.json` (see [model-contract.md](model-contract.md)).
 
 A missing checkpoint of `g - 1` (a generation 0 exported before 0.7.56 has none: re-export it with
-the same `--seed`, `--blocks` and `--channels`), a checkpoint that is not the network of the
+the same `--seed`, `--blocks` and `--channels` to another `--out` and copy its `model.pt` next to
+the `model.onnx`), a checkpoint that is not the network of the
 `model.onnx` next to it (board size, blocks, channels or generation), no records in the window or
 none of `g - 1`, a record that is not valid, or an existing candidate or promoted generation `g`
 writes nothing and exits with code 2. The candidate only becomes

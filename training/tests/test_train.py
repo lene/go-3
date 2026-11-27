@@ -9,9 +9,9 @@ import onnxruntime
 import pytest
 import torch
 
+from go3d_training import train as train_module
 from go3d_training.checkpoint import load_checkpoint
 from go3d_training.encoding import encode
-from go3d_training import train as train_module
 from go3d_training.export import export_generation, write_model
 from go3d_training.network import NetworkConfig
 from go3d_training.records import load_record, refit_komi
@@ -126,6 +126,42 @@ def test_metrics(store, fixture_records, fixture_record_path):
     for epoch in metrics["losses"]:
         assert epoch["total"] == pytest.approx(epoch["policy"] + epoch["value"])
     assert metrics["duration_seconds"] > 0
+
+
+def test_metrics_keys_and_types(store, fixture_records):
+    """`training.json` keeps its keys in this order and its values of these types."""
+    train(store, fixture_records)
+    text = (candidate_dir(store, SIZE, 1) / "training.json").read_text()
+    metrics = json.loads(text)
+    expected_types = {
+        "size": int,
+        "generation": int,
+        "parent": int,
+        "old_komi": float,
+        "new_komi": float,
+        "record_generations": list,
+        "records": int,
+        "samples": int,
+        "epochs": int,
+        "batch_size": int,
+        "learning_rate": float,
+        "weight_decay": float,
+        "seed": int,
+        "device": str,
+        "losses": list,
+        "duration_seconds": float,
+    }
+    assert list(metrics) == list(expected_types)
+    for key, kind in expected_types.items():
+        assert type(metrics[key]) is kind, key
+    assert metrics["size"] == SIZE
+    assert metrics["weight_decay"] == 1e-4
+    assert all(type(generation) is int for generation in metrics["record_generations"])
+    for epoch in metrics["losses"]:
+        assert list(epoch) == ["epoch", "policy", "value", "total"]
+        assert [type(value) for value in epoch.values()] == [int, float, float, float]
+    assert text.startswith('{\n  "size": 5,\n')
+    assert text.endswith("\n}\n")
 
 
 def test_losses_fall(store, fixture_records):
@@ -277,7 +313,7 @@ def test_training_draws_a_seeded_symmetry_per_sample(
         symmetries = rng.integers(len(SYMMETRIES), size=count)
         expected += [symmetries[order[start : start + 32]] for start in range(0, count, 32)]
     assert len(received) == len(expected)
-    for got, want in zip(received, expected):
+    for got, want in zip(received, expected, strict=True):
         np.testing.assert_array_equal(got, want)
     identity = SYMMETRIES.index(IDENTITY)
     assert any((indices != identity).any() for indices in received)

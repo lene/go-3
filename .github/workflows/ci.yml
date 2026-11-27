@@ -229,6 +229,27 @@ jobs:
             exit 1
           fi
 
+  training:
+    name: Training (Python)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: training
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: astral-sh/setup-uv@1db35dd8eee11c5894872e0b383ae6c406cf738d # v10.4.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: training/uv.lock
+      # the CPU build of PyTorch; the default one, for training on a GPU, is several GB of CUDA
+      - run: uv sync --locked --extra cpu
+      # without --no-sync, uv run would sync the environment back to the default PyTorch
+      - run: uv run --no-sync ruff check
+      - run: uv run --no-sync ruff format --check
+      - run: uv run --no-sync mypy
+      - run: uv run --no-sync pytest
+
   version-consistent:
     name: Version is new and consistent
     runs-on: ubuntu-latest

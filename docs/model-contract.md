@@ -75,7 +75,8 @@ server game defaults to 0.5) or another scoring rule gets a biased value; whethe
 Generation `g` of size `s` is `<store>/<s>/<g>/model.onnx`: a local directory for the proof of
 concept (`models/`, git-ignored), an S3 bucket with the same keys later. Generation 0 is written
 by `uv run export-generation --size 5 --generation 0 --out ../models` in `training/`
-(`docs/development.md`); `--seed` (default 0) makes it reproducible.
+(`docs/development.md`), which does not overwrite an existing generation; `--seed` (default 0)
+makes it reproducible.
 
 Next to `model.onnx`, `model.pt` is the PyTorch checkpoint that training goes on from: a dict
 with `config` (`size`, `blocks`, `channels`) and `state_dict`, the weights and batch-norm
