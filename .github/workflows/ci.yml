@@ -242,8 +242,9 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: training/uv.lock
-      # the CPU build of PyTorch; the default one, for training on a GPU, is several GB of CUDA
-      - run: uv sync --locked --extra cpu
+      # the CPU build of PyTorch; the default one, for training on a GPU, is several GB of CUDA.
+      # --no-build: wheels only, so no dependency's build script runs (the project still builds)
+      - run: uv sync --locked --extra cpu --no-build
       # without --no-sync, uv run would sync the environment back to the default PyTorch
       - run: uv run --no-sync ruff check
       - run: uv run --no-sync ruff format --check
