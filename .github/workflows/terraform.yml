@@ -75,7 +75,7 @@ jobs:
       - uses: ./.github/actions/setup-jvm
       - name: Build Lambda assembly
         run: |
-          sbt assembly
+          ci/sbt-retry.sh assembly
           jar=$(find target/scala-* -name 'go-3d-lambda-*.jar' | head -n 1)
           test -n "$jar"
           cp "$jar" go-3d-lambda.jar

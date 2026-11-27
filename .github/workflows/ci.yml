@@ -30,8 +30,9 @@ jobs:
       - id: version
         run: echo "version=$(grep 'version :=' build.sbt | cut -d '"' -f 2)" >> "$GITHUB_OUTPUT"
 
-  # Installs sbt from the sbt apt repository on several distributions. Somewhat slower than the
-  # other jobs, kept mostly as documentation of how to install the environment.
+  # Installs sbt from the sbt apt repository on one distribution per JDK that default-jdk gives
+  # (21 on Debian stable, 25 on the latest Ubuntu LTS). Somewhat slower than the other jobs, kept
+  # mostly as documentation of how to install the environment.
   test-debian:
     name: Test (${{ matrix.image }})
     runs-on: ubuntu-latest
@@ -39,7 +40,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        image: [ubuntu:24.04, ubuntu:latest, debian:stable-slim, debian:testing-slim]
+        image: [debian:stable-slim, ubuntu:latest]
     steps:
       - name: Install sbt
         run: |
@@ -55,7 +56,9 @@ jobs:
           apt-get -y update
           apt-get -y install sbt
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: sbt test
+      # one cache per image: the action puts the job and the matrix into its keys
+      - uses: coursier/cache-action@ee0650f98295f27a505e4bfd284c9bfaa913a465 # v9.0.1
+      - run: ci/sbt-retry.sh test
 
   test:
     name: Test
@@ -80,7 +83,9 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
-      - run: sbt test
+        with:
+          cache-group: full
+      - run: ci/sbt-retry.sh test
       - name: Publish test report
         if: always()
         uses: mikepenz/action-junit-report@a16be3a69023e9bd7e748ede768b3282ea7b30ce # v6.7.1
@@ -109,6 +114,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
+        with:
+          cache-group: full
       - name: Download coverage of last successful master build
         uses: dawidd6/action-download-artifact@a92c7ae74cf1df8810783758581e485ac3aaa309 # v28
         with:
@@ -124,9 +131,9 @@ jobs:
           statement_rate_old=${statement_rate:-0}
           branch_rate_old=${branch_rate:-0}
           # suites share global state (e.g. Games), so run them serially for a stable measurement
-          sbt "set Test / parallelExecution := false" clean coverage test || true
+          ci/sbt-retry.sh "set Test / parallelExecution := false" clean coverage test || true
           # the report of each project, then root and engine together in root's report
-          sbt coverageReport coverageAggregate
+          ci/sbt-retry.sh coverageReport coverageAggregate
           # least covered files with the most uncovered statements, to see where coverage is lost
           python3 ci/coverage_summary.py || true
           REPORT=$(head -n 2 target/scala-3.*.*/scoverage-report/scoverage.xml | tail -n 1 | xargs)
@@ -157,6 +164,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
+        with:
+          cache-group: full
       - name: Download warning count of last successful master build
         uses: dawidd6/action-download-artifact@a92c7ae74cf1df8810783758581e485ac3aaa309 # v28
         with:
@@ -170,7 +179,9 @@ jobs:
         run: |
           if [ -f previous-warnings/warnings.log ]; then . previous-warnings/warnings.log; fi
           warnings_old=${warnings:-}
-          sbt -Dsbt.log.noformat=true clean compile Test/compile | tee compile.log
+          # the last attempt only: a failed one may have compiled root and printed its warnings
+          SBT_RETRY_LOG=compile.log \
+            ci/sbt-retry.sh -Dsbt.log.noformat=true clean compile Test/compile
           ci/warning_summary.sh compile.log
           echo "warnings=$(grep -c '^\[warn\] -- ' compile.log || true)" > warnings.log
           . ./warnings.log
@@ -192,7 +203,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
-      - run: sbt "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
+      - run: ci/sbt-retry.sh "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
 
   check-runtime:
     name: Check run time
@@ -200,11 +211,13 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
-      - run: sbt compile
+        with:
+          cache-group: full
+      - run: ci/sbt-retry.sh compile
       - name: Run benchmark and check user time
         run: |
           /usr/bin/time -f %U -o runtime.log \
-            sbt "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
+            ci/sbt-retry.sh "runMain go3d.server.GoServer --benchmark $TEST_RUN_BOARD_SIZE"
           echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME"
           if [ "$(echo "$(<runtime.log) > $TEST_RUN_MAX_RUNNING_TIME" | bc -l)" -eq 1 ]; then
             exit 1
@@ -220,12 +233,27 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
-      - run: sbt scalafmtCheckAll
+      - run: ci/sbt-retry.sh scalafmtCheckAll
       # scalafmt cannot wrap long string literals and comments, so check them directly
       - name: Check line length
         run: |
           if grep -rnE '.{101,}' src engine/src --include='*.scala'; then
             echo "::error::lines longer than 100 characters"
+            exit 1
+          fi
+
+  ci-scripts:
+    name: CI scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: shellcheck ci/*.sh
+      # the retry wrapper that every sbt step uses, against a fake sbt
+      - run: bash ci/test-sbt-retry.sh
+      - name: Every sbt step goes through ci/sbt-retry.sh
+        run: |
+          if grep -rnE '^\s*(- )?(run: )?sbt( |$)|^RUN sbt( |$)' .github Dockerfile; then
+            echo "::error::run sbt through ci/sbt-retry.sh, which retries download failures"
             exit 1
           fi
 
@@ -289,7 +317,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
-      - run: sbt "Universal / packageBin"
+      - run: ci/sbt-retry.sh "Universal / packageBin"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: deployable
@@ -454,4 +482,8 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
+        with:
+          cache-group: full
+      # resolves every dependency with retries, so that the action's own sbt finds them cached
+      - run: ci/sbt-retry.sh update
       - uses: scalacenter/sbt-dependency-submission@7b2f7e1418cb4a77fee99f9eb07c3f7577b9a867 # v3
