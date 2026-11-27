@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: ./.github/actions/setup-jvm
-      - run: sbt "Universal / packageBin"
+      - run: ci/sbt-retry.sh "Universal / packageBin"
       - name: Unpack deployable
         run: |
           unzip -q target/universal/go-3d-*.zip
