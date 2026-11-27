@@ -17,3 +17,22 @@ updates:
       interval: "weekly"
     commit-message:
       prefix: "CI Fix"
+  # The ecosystems below are dependency updates, which need a version bump (AGENTS.md): no
+  # "CI Fix" prefix, so version-consistent fails until the bump is pushed onto the PR.
+  # Training dependencies (training/uv.lock)
+  - package-ecosystem: "uv"
+    directory: "/training"
+    schedule:
+      interval: "weekly"
+  # The game analysis scripts (Poetry, pyproject.toml and poetry.lock)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  # AWS provider versions; apply still needs the reviewed plan in the production environment
+  - package-ecosystem: "terraform"
+    directories:
+      - "/infra/terraform/bootstrap"
+      - "/infra/terraform/go3d-readonly"
+    schedule:
+      interval: "weekly"
