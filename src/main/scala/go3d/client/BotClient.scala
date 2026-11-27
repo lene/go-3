@@ -52,6 +52,8 @@ object BotClient extends Client with LazyLogging:
 
   val DefaultModelStore: String = "models"
   val DefaultSimulations: Int = 800
+  // consecutive failed requests the bot retries before it gives up, one poll interval apart
+  private val MaxFailedRequests: Int = 100
 
   // set from --poll-interval-ms, like the other options kept in this object
   @SuppressWarnings(Array("org.wartremover.warts.Var"))
@@ -128,11 +130,20 @@ object BotClient extends Client with LazyLogging:
   /// Plays until the game is over. `readyStatus` is a status already known to be ready, so the
   /// first move does not have to poll the server again. Every move is chosen from the game of
   /// the status that is ready, which has the opponent's last move.
-  @tailrec
   private[client] def playMoves(
       client: BaseClient,
       readyStatus: Option[StatusResponse],
       choice: MoveChoice
+  ): Try[Unit] = playFrom(client, readyStatus, choice, 0)
+
+  /// A failed request is retried every poll interval, up to `MaxFailedRequests` times in a row:
+  /// a game that has just ended is briefly unknown to the server while it is archived.
+  @tailrec
+  private def playFrom(
+      client: BaseClient,
+      readyStatus: Option[StatusResponse],
+      choice: MoveChoice,
+      failedRequests: Int
   ): Try[Unit] =
     val startTime = System.currentTimeMillis()
     val result = readyStatus.fold(waitUntilReady(client))(Success(_))
@@ -141,25 +152,21 @@ object BotClient extends Client with LazyLogging:
         // a server may report a game that is over as ready, e.g. the Lambda's status
         if status.over then Success(true) else makeOneMove(client, status, choice)
       }
-      .recoverWith {
-        case _: InterruptedException => exit(1); Success(true)
-        case e: RequestFailedException => checkFailedRequest(client, e, choice).map(_ => true)
-      }
+      .recoverWith { case _: InterruptedException => exit(1); Success(true) }
     executionTimes = executionTimes.appended(System.currentTimeMillis() - startTime)
     result match
       case Success(over) =>
-        if !over then playMoves(client, None, choice)
+        if !over then playFrom(client, None, choice, 0)
         else Success(client.status.foreach(status => logger.info(s"${status.game}")))
+      case Failure(e: RequestFailedException) if e.response.statusCode == Status.Gone.code =>
+        logger.warn(e.message)
+        exit(0)
+        Success(())
+      case Failure(e: RequestFailedException) if failedRequests < MaxFailedRequests =>
+        logger.warn(e.message)
+        Thread.sleep(pollIntervalMs)
+        playFrom(client, None, choice, failedRequests + 1)
       case Failure(e) => Failure(e)
-
-  private def checkFailedRequest(
-      client: BaseClient,
-      e: RequestFailedException,
-      choice: MoveChoice
-  ): Try[Unit] =
-    logger.warn(e.message)
-    if e.response.statusCode == Status.Gone.code then exit(0)
-    playMoves(client, None, choice)
 
   /// Sends the move that `choice` picks for `status`. A move that ends the game exits, so the
   /// result is false: the game goes on.

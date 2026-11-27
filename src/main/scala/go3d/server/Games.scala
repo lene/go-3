@@ -138,13 +138,14 @@ object Games:
     Logger(Games.getClass).info(s"Archiving $gameId")
     activeGames.get(gameId).foreach { state =>
       val game = state.get()
-      activeGames.remove(gameId)
-      lastActivity.remove(gameId)
+      // archive first: removed before that, the game is unknown and its status a 404 meanwhile
       fileIO.foreach(io =>
         Try(io.archiveGame(gameId)).failed.foreach(e =>
           Logger(Games.getClass).warn(s"Failed to archive $gameId on disk: ${e.getMessage}")
         )
       )
+      activeGames.remove(gameId)
+      lastActivity.remove(gameId)
       S3Client.archiveGame(gameId, SaveGame(game, Players(gameId)).asJson.noSpaces).failed.foreach(
         e => Logger(Games.getClass).warn("Failed to archive " + gameId + " to S3: " + e.getMessage)
       )

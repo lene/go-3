@@ -14,7 +14,7 @@ ThisBuild / scapegoatDisabledInspections := Seq("OptionGet")
 
 /** The settings of every project: version, compiler options, WartRemover and the test libraries. */
 lazy val commonSettings = Seq(
-    version := "0.7.60",
+    version := "0.7.61",
     scalaVersion := scala3Version,
 
     scalacOptions ++= Seq("-deprecation", "-explain", "-feature", "-Wunused:all"),

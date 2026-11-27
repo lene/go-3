@@ -318,6 +318,20 @@ class TestBotClient:
     val choice: MoveChoice = _ => Failure(IllegalStateException("a move was chosen"))
     Assertions.assertTrue(BotClient.playMoves(client, Some(ready), choice).isSuccess)
 
+  // a game that has just ended is briefly unknown to the server while it is archived
+  @Test def testGameOverAfterNotFoundStatusesEndsTheGame(): Unit =
+    val client = new NotFoundClient(50, overGame)
+    val choice: MoveChoice = _ => Failure(IllegalStateException("a move was chosen"))
+    Assertions.assertTrue(BotClient.playMoves(client, None, choice).isSuccess)
+
+  @Test def testStatusThatStaysNotFoundFailsWithoutStackOverflow(): Unit =
+    val client = new NotFoundClient(Int.MaxValue, overGame)
+    val choice: MoveChoice = _ => Failure(IllegalStateException("a move was chosen"))
+    Assertions.assertTrue(BotClient.playMoves(client, None, choice).isFailure)
+
+private def overGame: Game =
+  Game.start(3).flatMap(_.makeMove(Pass(Black))).flatMap(_.makeMove(Pass(White))).success.value
+
 private val StrategyOpt = "--strategy"
 private val SimOpt = "--simulations"
 
@@ -335,6 +349,18 @@ private class OpponentMovesClient(afterOwnMove: Game, afterOpponent: Game)
     Success(StatusResponse(afterOwnMove, List(), false, None, RequestInfo(Map(), "", "", false)))
   override def status: Try[StatusResponse] =
     Success(StatusResponse(afterOpponent, List(), true, None, RequestInfo(Map(), "", "", false)))
+
+/** Answers the first `failures` status polls with 404 Not Found, then with `game`, ready. */
+private class NotFoundClient(failures: Int, game: Game)
+    extends BaseClient("mock server", "mock id", None, None):
+  @SuppressWarnings(Array("org.wartremover.warts.Var"))
+  private var polls: Int = 0
+  override def status: Try[StatusResponse] =
+    polls += 1
+    if polls <= failures then
+      val notFound = requests.Response("mock", 404, "Not Found", geny.Bytes(Array()), Map(), None)
+      Failure(requests.RequestFailedException(notFound))
+    else Success(StatusResponse(game, List(), true, None, RequestInfo(Map(), "", "", false)))
 
 /** Ready with no possible move, so a bot passes, and fails the pass to end the game loop. */
 private class PassFailsClient extends MockClient:
